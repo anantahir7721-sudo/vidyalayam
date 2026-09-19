@@ -1,0 +1,264 @@
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocFromServer,
+  getDocs,
+  updateDoc,
+  onSnapshot,
+} from 'firebase/firestore';
+import { signInWithEmailAndPassword, User, signOut as fbSignOut } from 'firebase/auth';
+import {
+  auth,
+  db,
+  projectId,
+  FIRESTORE_DATABASE_ID,
+} from '../firebase/config';
+import { School, SchoolStatus, AdminRecord } from '../types';
+
+export interface DatabaseCheckDiagnostic {
+  databaseId: string;
+  docPath: string;
+  exists: boolean;
+  roleValue?: string;
+  isRoleAdmin: boolean;
+  fieldKeys?: string[];
+  error?: string | null;
+}
+
+export interface AdminDiagnosticReport {
+  timestamp: string;
+  uid: string;
+  projectId: string;
+  activeDatabaseId: string;
+  checks: DatabaseCheckDiagnostic[];
+  authorized: boolean;
+}
+
+let latestAdminDiagnostic: AdminDiagnosticReport | null = null;
+
+export function getLatestAdminDiagnostic(): AdminDiagnosticReport | null {
+  return latestAdminDiagnostic;
+}
+
+/**
+ * Check if the given UID exists in /admins/{uid} and has role === 'admin'
+ * strictly inside the AI Studio named database: ai-studio-f31f93ae-44ec-4b38-97ab-6ff71ff82da1.
+ */
+export async function checkIsAdmin(uid: string): Promise<boolean> {
+  if (!uid) return false;
+
+  const docPath = `admins/${uid}`;
+  let exists = false;
+  let roleValue: string | undefined = undefined;
+  let isRoleAdmin = false;
+  let fieldKeys: string[] = [];
+  let errorMsg: string | null = null;
+
+  try {
+    const docRef = doc(db, 'admins', uid);
+    let snap = await getDoc(docRef);
+
+    // Verify directly with Firestore server if local snapshot returns non-existent
+    if (!snap.exists()) {
+      try {
+        snap = await getDocFromServer(docRef);
+      } catch (serverErr: any) {
+        if (!errorMsg && serverErr?.message) {
+          errorMsg = serverErr.message;
+        }
+      }
+    }
+
+    if (snap.exists()) {
+      exists = true;
+      const data = snap.data();
+      fieldKeys = Object.keys(data || {});
+      const rawRole = data?.role;
+      roleValue = typeof rawRole === 'string' ? rawRole : String(rawRole ?? '');
+      const roleNormalized = roleValue.trim().toLowerCase();
+      isRoleAdmin = roleNormalized === 'admin' || data?.isAdmin === true;
+    }
+  } catch (err: any) {
+    errorMsg = err?.message || String(err);
+    console.warn(`[checkIsAdmin] Error checking /admins/${uid} in named database "${FIRESTORE_DATABASE_ID}":`, errorMsg);
+  }
+
+  const checkInfo: DatabaseCheckDiagnostic = {
+    databaseId: FIRESTORE_DATABASE_ID,
+    docPath,
+    exists,
+    roleValue,
+    isRoleAdmin,
+    fieldKeys,
+    error: errorMsg,
+  };
+
+  latestAdminDiagnostic = {
+    timestamp: new Date().toISOString(),
+    uid,
+    projectId,
+    activeDatabaseId: FIRESTORE_DATABASE_ID,
+    checks: [checkInfo],
+    authorized: isRoleAdmin,
+  };
+
+  if (typeof window !== 'undefined') {
+    (window as any).__ADMIN_DIAGNOSTIC__ = latestAdminDiagnostic;
+  }
+
+  return isRoleAdmin;
+}
+
+/**
+ * Converts an Admin Mobile number or ID to the corresponding Firebase Auth email identifier.
+ * Example:
+ *   Mobile "9876543210" -> "admin_9876543210@gujarat-schools.internal"
+ *   ID "superadmin"     -> "admin_superadmin@gujarat-schools.internal"
+ * If the input already contains '@' (e.g. an email address), it is preserved.
+ */
+export function adminIdentifierToAuthEmail(identifier: string): string {
+  const trimmed = identifier.trim().toLowerCase();
+  if (trimmed.includes('@')) {
+    return trimmed;
+  }
+  let clean = trimmed.replace(/[^a-z0-9_]/g, '');
+  if (clean.startsWith('admin_')) {
+    clean = clean.substring('admin_'.length);
+  }
+  return `admin_${clean}@gujarat-schools.internal`;
+}
+
+/**
+ * Admin Login:
+ * Authenticates using Firebase Auth by converting Admin Mobile / ID into the
+ * internal Firebase Auth identifier, then verifies /admins/{uid} has role == "admin".
+ * If the user is authenticated in Firebase Auth but not in /admins, immediately signs out and throws an error.
+ */
+export async function loginAdmin(
+  identifier: string,
+  pass: string
+): Promise<{ user: User; adminRecord: AdminRecord }> {
+  const cleanId = identifier.trim();
+  if (!cleanId || !pass) {
+    throw new Error('Please enter both Admin Mobile / ID and Password.');
+  }
+
+  const primaryEmail = adminIdentifierToAuthEmail(cleanId);
+  let user: User;
+
+  try {
+    const credential = await signInWithEmailAndPassword(auth, primaryEmail, pass);
+    user = credential.user;
+  } catch (err: any) {
+    // If not found and identifier didn't have '@', try alternative fallback without 'admin_' prefix just in case
+    if (
+      (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') &&
+      !cleanId.includes('@')
+    ) {
+      const sanitized = cleanId.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const altEmail = `${sanitized}@gujarat-schools.internal`;
+      if (altEmail !== primaryEmail) {
+        try {
+          const fallbackCred = await signInWithEmailAndPassword(auth, altEmail, pass);
+          user = fallbackCred.user;
+        } catch {
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    } else {
+      throw err;
+    }
+  }
+
+  // Authorization check: Must exist in /admins/{uid} with role: "admin"
+  const isAdminAuthorized = await checkIsAdmin(user.uid);
+  if (!isAdminAuthorized) {
+    await fbSignOut(auth);
+    throw new Error(
+      'Access Denied: This account is authenticated in Firebase Auth but not registered in the /admins database. Please ensure your UID exists in /admins with role: "admin".'
+    );
+  }
+
+  return {
+    user,
+    adminRecord: {
+      id: user.uid,
+      role: 'admin',
+    },
+  };
+}
+
+/**
+ * Normalize school status:
+ * Legacy schools created before the status field existed are treated as 'approved'
+ * so legitimate existing schools are never locked out.
+ */
+export function normalizeSchoolStatus(school: School): School {
+  return {
+    ...school,
+    status: school.status || 'approved',
+  };
+}
+
+/**
+ * Fetch all registered schools (Admin Only)
+ */
+export async function getAllSchools(): Promise<School[]> {
+  const schoolsCol = collection(db, 'schools');
+  const snapshot = await getDocs(schoolsCol);
+  const list: School[] = snapshot.docs.map((d) => {
+    const data = d.data() as School;
+    return normalizeSchoolStatus({
+      ...data,
+      id: d.id,
+      ownerUid: data.ownerUid || d.id,
+    });
+  });
+
+  // Sort by registration date descending
+  list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  return list;
+}
+
+/**
+ * Real-time subscription to all registered schools (Admin Only)
+ */
+export function subscribeToSchools(callback: (schools: School[]) => void): () => void {
+  const schoolsCol = collection(db, 'schools');
+  return onSnapshot(
+    schoolsCol,
+    (snapshot) => {
+      const list: School[] = snapshot.docs.map((d) => {
+        const data = d.data() as School;
+        return normalizeSchoolStatus({
+          ...data,
+          id: d.id,
+          ownerUid: data.ownerUid || d.id,
+        });
+      });
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      callback(list);
+    },
+    (err) => {
+      console.error('Error in subscribeToSchools snapshot:', err);
+    }
+  );
+}
+
+/**
+ * Update a school's status (Admin Only: 'approved' | 'rejected' | 'inactive' | 'pending')
+ */
+export async function updateSchoolStatus(
+  schoolId: string,
+  newStatus: SchoolStatus
+): Promise<void> {
+  if (!schoolId) throw new Error('School ID is required.');
+  const schoolDocRef = doc(db, 'schools', schoolId);
+  await updateDoc(schoolDocRef, {
+    status: newStatus,
+    updatedAt: new Date().toISOString(),
+  });
+}

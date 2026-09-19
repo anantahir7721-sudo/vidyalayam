@@ -1,0 +1,117 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "State level system administrator record",
+      "type": "object",
+      "properties": {
+        "adminUid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["adminUid", "role"]
+    },
+    "School": {
+      "title": "School",
+      "description": "Registered Gujarat school profile",
+      "type": "object",
+      "properties": {
+        "schoolName": { "type": "string" },
+        "diseCode": { "type": "string", "maxLength": 11, "minLength": 11 },
+        "district": { "type": "string" },
+        "address": { "type": "string" },
+        "principalName": { "type": "string" },
+        "contactNumber": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "active", "rejected"] },
+        "ownerUid": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["schoolName", "diseCode", "status", "ownerUid"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student record enrolled in a school",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "standard": { "type": "string" },
+        "section": { "type": "string" },
+        "rollNumber": { "type": "string" },
+        "grNumber": { "type": "string" },
+        "dob": { "type": "string" },
+        "gender": { "type": "string" }
+      },
+      "required": ["schoolId", "studentName", "standard", "dob"]
+    },
+    "MarkRecord": {
+      "title": "MarkRecord",
+      "description": "Student marks and exam performance records",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "standard": { "type": "string" },
+        "examType": { "type": "string" }
+      },
+      "required": ["schoolId", "studentId", "standard", "examType"]
+    },
+    "OnlineExam": {
+      "title": "OnlineExam",
+      "description": "Online MCQ examination configured by a school",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string", "enum": ["school", "extra"] },
+        "standard": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "status": { "type": "string", "enum": ["draft", "published", "completed"] }
+      },
+      "required": ["schoolId", "title", "category", "standard", "status"]
+    },
+    "ExamAttempt": {
+      "title": "ExamAttempt",
+      "description": "Student online exam attempt and score",
+      "type": "object",
+      "properties": {
+        "examId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "score": { "type": "number" },
+        "totalMarks": { "type": "number" },
+        "submitted": { "type": "boolean" }
+      },
+      "required": ["examId", "studentId", "schoolId"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/Admin" },
+      "description": "Admin directory records"
+    },
+    "/schools/{schoolId}": {
+      "schema": { "$ref": "#/entities/School" },
+      "description": "School directory profile documents"
+    },
+    "/schools/{schoolId}/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Student records for a school"
+    },
+    "/schools/{schoolId}/marks/{markId}": {
+      "schema": { "$ref": "#/entities/MarkRecord" },
+      "description": "Marks records for a school"
+    },
+    "/schools/{schoolId}/online_exams/{examId}": {
+      "schema": { "$ref": "#/entities/OnlineExam" },
+      "description": "Online MCQ tests created by school"
+    },
+    "/schools/{schoolId}/exam_attempts/{attemptId}": {
+      "schema": { "$ref": "#/entities/ExamAttempt" },
+      "description": "Student submissions and attempts for online tests"
+    }
+  }
+}

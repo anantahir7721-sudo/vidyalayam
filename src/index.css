@@ -1,0 +1,456 @@
+@import "tailwindcss";
+
+@theme {
+  /* Uploaded Palette (5 Swatches):
+     1. #202d38 - Deep Petrol Slate
+     2. #a99f91 - Warm Earth Taupe
+     3. #e4ded6 - Soft Sand / Cream Alabaster
+     4. #9d512d - Rich Terracotta / Burnt Sienna
+     5. #090c10 - Onyx Black Base
+  */
+  --color-canvas: #090c10;
+  --color-petrol: #202d38;
+  --color-petrol-dark: #141d24;
+  --color-petrol-light: #2b3b4a;
+  
+  --color-taupe: #a99f91;
+  --color-taupe-light: #c5beba;
+  --color-taupe-dark: #7b7163;
+  
+  --color-sand: #e4ded6;
+  --color-sand-light: #f5f2ec;
+  --color-sand-muted: #c9c3b8;
+
+  --color-terracotta: #9d512d;
+  --color-terracotta-hover: #b55f37;
+  --color-terracotta-active: #824020;
+  --color-terracotta-glow: rgba(157, 81, 45, 0.35);
+
+  /* Mapping of default slate shades to the uploaded palette */
+  --color-slate-950: #080b0f;
+  --color-slate-900: #121921;
+  --color-slate-800: #1d2732;
+  --color-slate-700: #293847;
+  --color-slate-600: #465565;
+  --color-slate-500: #7b7e82;
+  --color-slate-400: #a99f91;
+  --color-slate-300: #c9c3b8;
+  --color-slate-200: #ded8ce;
+  --color-slate-100: #e4ded6;
+  --color-slate-50: #f5f2ec;
+
+  /* Accent mapping */
+  --color-emerald-300: #f59c73;
+  --color-emerald-400: #e27d4e;
+  --color-emerald-500: #b55f37;
+  --color-emerald-600: #9d512d;
+  --color-emerald-700: #854323;
+  --color-emerald-800: #683218;
+  --color-emerald-950: #29140b;
+}
+
+:root {
+  font-family: 'Anek Gujarati', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: dark;
+}
+
+/* =========================================================================
+   DARK THEME VARIABLES (Default)
+   ========================================================================= */
+:root,
+[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+  --app-bg: #080b0f;
+  --app-text: #e4ded6;
+  --app-text-muted: #a99f91;
+  --app-header-bg: rgba(18, 25, 33, 0.94);
+  --app-strip-bg: rgba(9, 12, 16, 0.96);
+  --glass-panel-bg: rgba(32, 45, 56, 0.75);
+  --glass-panel-border: rgba(228, 222, 214, 0.12);
+  --glass-card-bg: rgba(32, 45, 56, 0.6);
+  --glass-card-border: rgba(228, 222, 214, 0.1);
+  --glass-pill-bg: rgba(18, 25, 33, 0.7);
+  --glass-pill-border: rgba(169, 159, 145, 0.2);
+  --glass-input-bg: rgba(14, 19, 25, 0.85);
+  --glass-input-border: rgba(169, 159, 145, 0.28);
+  --glass-input-text: #e4ded6;
+  --scrollbar-track: rgba(14, 19, 25, 0.5);
+  --scrollbar-thumb: rgba(169, 159, 145, 0.3);
+}
+
+/* =========================================================================
+   LIGHT THEME VARIABLES (Warm Sand Alabaster + Petrol Slate + Terracotta)
+   ========================================================================= */
+[data-theme="light"],
+.light {
+  color-scheme: light;
+  --app-bg: #f7f5f0;
+  --app-text: #141d24;
+  --app-text-muted: #635848;
+  --app-header-bg: rgba(247, 245, 240, 0.95);
+  --app-strip-bg: rgba(235, 230, 220, 0.96);
+  --glass-panel-bg: rgba(255, 255, 255, 0.92);
+  --glass-panel-border: rgba(169, 159, 145, 0.32);
+  --glass-card-bg: rgba(255, 255, 255, 0.82);
+  --glass-card-border: rgba(169, 159, 145, 0.28);
+  --glass-pill-bg: rgba(235, 230, 220, 0.85);
+  --glass-pill-border: rgba(169, 159, 145, 0.35);
+  --glass-input-bg: #ffffff;
+  --glass-input-border: rgba(169, 159, 145, 0.45);
+  --glass-input-text: #141d24;
+  --scrollbar-track: rgba(235, 230, 220, 0.6);
+  --scrollbar-thumb: rgba(169, 159, 145, 0.45);
+}
+
+body {
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.app-container {
+  background-color: var(--app-bg);
+  color: var(--app-text);
+}
+
+/* iOS-Style Glassmorphism Utilities */
+.glass-panel {
+  background: var(--glass-panel-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-panel-border);
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.3);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.glass-card {
+  background: var(--glass-card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-card-border);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.15);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(157, 81, 45, 0.5);
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.25), 0 0 16px rgba(157, 81, 45, 0.15);
+}
+
+.glass-pill {
+  background: var(--glass-pill-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-pill-border);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.glass-input {
+  background: var(--glass-input-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-input-border);
+  color: var(--glass-input-text);
+  transition: all 0.2s ease;
+}
+.glass-input:focus {
+  border-color: #9d512d;
+  box-shadow: 0 0 0 3px rgba(157, 81, 45, 0.25);
+  outline: none;
+}
+
+/* Terracotta and Taupe custom button & badge classes */
+.btn-terracotta {
+  background-color: #9d512d !important;
+  color: #ffffff !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-terracotta:hover {
+  background-color: #b55f37 !important;
+  box-shadow: 0 4px 14px rgba(157, 81, 45, 0.4);
+}
+.btn-terracotta:active {
+  background-color: #824020 !important;
+}
+
+.badge-terracotta {
+  background: rgba(157, 81, 45, 0.18);
+  color: #f59c73;
+  border: 1px solid rgba(157, 81, 45, 0.4);
+}
+
+.badge-taupe {
+  background: rgba(169, 159, 145, 0.16);
+  color: var(--app-text);
+  border: 1px solid rgba(169, 159, 145, 0.28);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(157, 81, 45, 0.6);
+}
+
+/* =========================================================================
+   LIGHT THEME OVERRIDES (Comprehensive & Bulletproof)
+   ========================================================================= */
+html.light body,
+[data-theme="light"] body {
+  background-color: #f7f5f0 !important;
+  color: #141d24 !important;
+}
+
+html.light .app-container,
+[data-theme="light"] .app-container {
+  background-color: #f7f5f0 !important;
+  color: #141d24 !important;
+}
+
+/* Headers in light theme */
+html.light header.app-header,
+[data-theme="light"] header.app-header {
+  background-color: rgba(247, 245, 240, 0.96) !important;
+  border-color: rgba(169, 159, 145, 0.3) !important;
+  color: #141d24 !important;
+}
+
+html.light .top-strip,
+[data-theme="light"] .top-strip {
+  background-color: #ede7df !important;
+  border-color: rgba(169, 159, 145, 0.3) !important;
+  color: #5c5243 !important;
+}
+
+/* Light theme card and panel background overrides */
+html.light .glass-panel,
+[data-theme="light"] .glass-panel {
+  background: #ffffff !important;
+  border-color: rgba(169, 159, 145, 0.32) !important;
+  box-shadow: 0 4px 20px -2px rgba(32, 45, 56, 0.08), 0 2px 6px -1px rgba(32, 45, 56, 0.04) !important;
+  color: #141d24 !important;
+}
+
+html.light .glass-card,
+[data-theme="light"] .glass-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(169, 159, 145, 0.3) !important;
+  box-shadow: 0 2px 10px -2px rgba(32, 45, 56, 0.06) !important;
+  color: #141d24 !important;
+}
+
+html.light .glass-card-hover:hover,
+[data-theme="light"] .glass-card-hover:hover {
+  background: #ffffff !important;
+  border-color: rgba(157, 81, 45, 0.5) !important;
+  box-shadow: 0 10px 24px -4px rgba(32, 45, 56, 0.12) !important;
+}
+
+html.light .glass-pill,
+[data-theme="light"] .glass-pill {
+  background: #ede7df !important;
+  border-color: rgba(169, 159, 145, 0.35) !important;
+  color: #141d24 !important;
+}
+
+/* Form controls in Light Mode */
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light select,
+html.light textarea,
+html.light .glass-input,
+[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="light"] select,
+[data-theme="light"] textarea,
+[data-theme="light"] .glass-input {
+  background-color: #ffffff !important;
+  color: #141d24 !important;
+  border-color: rgba(169, 159, 145, 0.45) !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder,
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #7b7163 !important;
+}
+
+/* Text overrides in Light Mode */
+html.light .text-\[\#e4ded6\],
+[data-theme="light"] .text-\[\#e4ded6\] {
+  color: #141d24 !important;
+}
+
+/* Terracotta crisp accent replacement in Light Mode instead of pale peach */
+html.light .text-\[\#f59c73\],
+[data-theme="light"] .text-\[\#f59c73\] {
+  color: #9d512d !important;
+}
+
+html.light .text-\[\#a99f91\],
+[data-theme="light"] .text-\[\#a99f91\] {
+  color: #5c5243 !important;
+}
+
+html.light .text-slate-100,
+html.light .text-slate-200,
+[data-theme="light"] .text-slate-100,
+[data-theme="light"] .text-slate-200 {
+  color: #141d24 !important;
+}
+
+html.light .text-slate-300,
+[data-theme="light"] .text-slate-300 {
+  color: #3d352b !important;
+}
+
+html.light .text-slate-400,
+[data-theme="light"] .text-slate-400 {
+  color: #5c5243 !important;
+}
+
+html.light .text-slate-500,
+[data-theme="light"] .text-slate-500 {
+  color: #706555 !important;
+}
+
+/* Ensure background containers in light mode adapt */
+html.light .bg-slate-950,
+html.light .bg-slate-900,
+html.light .bg-\[\#080b0f\],
+html.light .bg-\[\#090c10\],
+html.light .bg-\[\#121921\],
+[data-theme="light"] .bg-slate-950,
+[data-theme="light"] .bg-slate-900,
+[data-theme="light"] .bg-\[\#080b0f\],
+[data-theme="light"] .bg-\[\#090c10\],
+[data-theme="light"] .bg-\[\#121921\] {
+  background-color: #f7f5f0 !important;
+}
+
+html.light .bg-slate-800,
+html.light .bg-\[\#202d38\],
+[data-theme="light"] .bg-slate-800,
+[data-theme="light"] .bg-\[\#202d38\] {
+  background-color: #ede7df !important;
+}
+
+/* Semi-transparent tint adapters in light mode */
+html.light .bg-white\/5,
+[data-theme="light"] .bg-white\/5 {
+  background-color: rgba(32, 45, 56, 0.05) !important;
+}
+
+html.light .bg-white\/10,
+[data-theme="light"] .bg-white\/10 {
+  background-color: rgba(32, 45, 56, 0.09) !important;
+}
+
+html.light .border-white\/5,
+html.light .border-white\/10,
+html.light .border-white\/15,
+html.light .border-white\/20,
+html.light .border-slate-800,
+html.light .border-slate-700,
+[data-theme="light"] .border-white\/5,
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-white\/15,
+[data-theme="light"] .border-white\/20,
+[data-theme="light"] .border-slate-800,
+[data-theme="light"] .border-slate-700 {
+  border-color: rgba(169, 159, 145, 0.35) !important;
+}
+
+/* Button & Badge text preservation in Light Mode (CRITICAL FIX) */
+html.light .btn-terracotta,
+html.light .btn-terracotta *,
+html.light .bg-\[\#9d512d\],
+html.light .bg-\[\#9d512d\] *,
+html.light [class*="bg-emerald-600"],
+html.light [class*="bg-emerald-600"] *,
+html.light [class*="bg-blue-600"],
+html.light [class*="bg-blue-600"] *,
+html.light [class*="bg-rose-600"],
+html.light [class*="bg-rose-600"] *,
+html.light [class*="bg-red-600"],
+html.light [class*="bg-red-600"] *,
+[data-theme="light"] .btn-terracotta,
+[data-theme="light"] .btn-terracotta *,
+[data-theme="light"] .bg-\[\#9d512d\],
+[data-theme="light"] .bg-\[\#9d512d\] *,
+[data-theme="light"] [class*="bg-emerald-600"],
+[data-theme="light"] [class*="bg-emerald-600"] *,
+[data-theme="light"] [class*="bg-blue-600"],
+[data-theme="light"] [class*="bg-blue-600"] *,
+[data-theme="light"] [class*="bg-rose-600"],
+[data-theme="light"] [class*="bg-rose-600"] *,
+[data-theme="light"] [class*="bg-red-600"],
+[data-theme="light"] [class*="bg-red-600"] * {
+  color: #ffffff !important;
+}
+
+/* Light mode table styling */
+html.light thead,
+[data-theme="light"] thead {
+  background-color: #ede7df !important;
+  border-bottom: 2px solid rgba(169, 159, 145, 0.45) !important;
+}
+
+html.light thead th,
+[data-theme="light"] thead th {
+  color: #141d24 !important;
+  font-weight: 700 !important;
+  border-color: rgba(169, 159, 145, 0.35) !important;
+}
+
+html.light tbody tr,
+[data-theme="light"] tbody tr {
+  border-color: rgba(169, 159, 145, 0.22) !important;
+}
+
+html.light tbody tr:hover,
+[data-theme="light"] tbody tr:hover {
+  background-color: rgba(157, 81, 45, 0.05) !important;
+}
+
+html.light tbody td,
+[data-theme="light"] tbody td {
+  color: #141d24 !important;
+  border-color: rgba(169, 159, 145, 0.2) !important;
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-family: 'Anek Gujarati', 'Plus Jakarta Sans', sans-serif !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}

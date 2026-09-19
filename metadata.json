@@ -1,0 +1,6 @@
+{
+  "name": "Vidyalayam",
+  "description": "Vidyalayam (વિદ્યાલયમ) — General School Management System & એકમ કસોટી ગુણપત્રક • Created by NR Chad",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

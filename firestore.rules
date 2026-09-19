@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function: verify user is authenticated via Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function: verify caller's UID strictly matches the schoolId
+    function isSchoolOwner(schoolId) {
+      return isAuthenticated() && request.auth.uid == schoolId;
+    }
+
+    // Helper function: verify if caller is an authorized Admin
+    // Checks that /admins/{uid} exists and has role == "admin" (case-insensitive check)
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        (
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "admin" ||
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "Admin" ||
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "ADMIN" ||
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true
+        );
+    }
+
+    // Admin records collection: /admins/{adminUid}
+    match /admins/{adminUid} {
+      allow get: if isAuthenticated() && request.auth.uid == adminUid;
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Collection group match for student portal login (finding student by their Student DISE Code)
+    match /{path=**}/students/{studentId} {
+      allow read: if true;
+    }
+
+    // School profile document: /schools/{schoolId}
+    match /schools/{schoolId} {
+      // Public directory read: enables students and public to verify school by 11-digit DISE code
+      allow read: if true;
+
+      // New school registration: must be authenticated, self UID, status == 'pending'
+      allow create: if isSchoolOwner(schoolId) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.status == "pending";
+
+      // Status updates: Admin can update any school (approve, reject, activate, deactivate)
+      // School owner can update profile information (name, district, address), but CANNOT change status or DISE code
+      allow update: if isAdmin() || (
+        isSchoolOwner(schoolId) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'ownerUid', 'id', 'diseCode']))
+      );
+
+      // Only an Admin can delete a school
+      allow delete: if isAdmin();
+
+      // Subcollection: Students belonging to this school
+      // Read allowed for student verification & portal; write strictly locked to School Owner
+      match /students/{studentId} {
+        allow read: if true;
+        allow write: if isSchoolOwner(schoolId);
+      }
+
+      // Subcollection: Marks belonging to this school
+      // Read allowed for student results; write strictly locked to School Owner
+      match /marks/{markId} {
+        allow read: if true;
+        allow write: if isSchoolOwner(schoolId);
+      }
+
+      // Subcollection: Staff belonging to this school
+      match /staff/{staffId} {
+        allow read, write: if isSchoolOwner(schoolId) || isAdmin();
+      }
+
+      // Subcollection: Online MCQ Exams
+      match /online_exams/{examId} {
+        allow read: if true;
+        allow write: if isSchoolOwner(schoolId);
+
+        match /questions/{questionId} {
+          allow read: if true;
+          allow write: if isSchoolOwner(schoolId);
+        }
+      }
+
+      // Subcollection: Exam Attempts
+      match /exam_attempts/{attemptId} {
+        allow read: if true;
+        allow create, update: if true;
+        allow delete: if isSchoolOwner(schoolId);
+      }
+
+      // All other school-specific subcollections
+      match /{allChildren=**} {
+        allow read: if isSchoolOwner(schoolId) || isAdmin();
+        allow write: if isSchoolOwner(schoolId);
+      }
+    }
+
+    // Default deny: Block all other database collections and root queries
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
