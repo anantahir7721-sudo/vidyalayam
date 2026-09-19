@@ -30,7 +30,8 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [removeWhiteBg, setRemoveWhiteBg] = useState<boolean>(false);
+  const [removeWhiteBg, setRemoveWhiteBg] = useState<boolean>(true);
+  const [transparencySensitivity, setTransparencySensitivity] = useState<number>(230);
   const [previewUrl, setPreviewUrl] = useState<string>('');
 
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -83,17 +84,32 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
     ctx.drawImage(img, -img.width / 2, -img.height / 2);
     ctx.restore();
 
-    // If remove white background is enabled, filter near-white pixels
+    // If remove white background is enabled, filter near-white pixels with smooth edge blending
     if (removeWhiteBg) {
       const imgData = ctx.getImageData(0, 0, outputSize, outputSize);
       const data = imgData.data;
+      const threshold = transparencySensitivity; // e.g. 230
+      const fadeRange = 25; // Gradual fade from 230 - 25 = 205 up to 230
+
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        // If pixel is white or near-white (all channels > 238)
-        if (r > 238 && g > 238 && b > 238) {
-          data[i + 3] = 0; // Set alpha to 0
+        const a = data[i + 3];
+
+        if (a === 0) continue;
+
+        // Minimum brightness across all 3 color channels
+        const minChannel = Math.min(r, g, b);
+        const maxDiff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+
+        // Near-neutral white/off-white pixel (channels are high and close to each other)
+        if (minChannel >= threshold && maxDiff < 30) {
+          data[i + 3] = 0; // Completely transparent
+        } else if (minChannel >= threshold - fadeRange && maxDiff < 25) {
+          // Soft anti-aliased edge blending
+          const factor = (threshold - minChannel) / fadeRange;
+          data[i + 3] = Math.round(a * Math.max(0, Math.min(1, factor)));
         }
       }
       ctx.putImageData(imgData, 0, 0);
@@ -102,7 +118,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
     const dataUrl = canvas.toDataURL('image/png');
     setPreviewUrl(dataUrl);
     return dataUrl;
-  }, [scale, position, removeWhiteBg]);
+  }, [scale, position, removeWhiteBg, transparencySensitivity]);
 
   // Update preview whenever parameters change
   useEffect(() => {
@@ -303,21 +319,43 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
               </button>
             </div>
 
-            {/* Remove White Background Checkbox */}
-            <div className="flex items-center justify-between pt-1 border-t border-white/5">
-              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-200">
-                <input
-                  type="checkbox"
-                  checked={removeWhiteBg}
-                  onChange={(e) => setRemoveWhiteBg(e.target.checked)}
-                  className="rounded accent-[#f59c73] w-4 h-4 cursor-pointer"
-                />
-                <span className="flex items-center gap-1 font-medium">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  સફેદ બેકગ્રાઉન્ડ દૂર કરો (Make White Background Transparent)
+            {/* Remove White Background Checkbox & Sensitivity */}
+            <div className="pt-2 border-t border-white/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={removeWhiteBg}
+                    onChange={(e) => setRemoveWhiteBg(e.target.checked)}
+                    className="rounded accent-[#f59c73] w-4 h-4 cursor-pointer"
+                  />
+                  <span className="flex items-center gap-1 font-semibold text-emerald-300">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    લોગો પારદર્શક (Transparent) રાખો — ફરતે સફેદ બોક્સ ન આવે
+                  </span>
+                </label>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">
+                  {removeWhiteBg ? 'સક્રિય (Transparent ON)' : 'બંધ (OFF)'}
                 </span>
-              </label>
-              <span className="text-[10px] text-slate-400">PNG માટે ઉપયોગી</span>
+              </div>
+
+              {removeWhiteBg && (
+                <div className="flex items-center gap-3 pl-6 pr-1 text-[11px] text-slate-300">
+                  <span className="text-slate-400 whitespace-nowrap">પારદર્શકતા સ્તર:</span>
+                  <input
+                    type="range"
+                    min="180"
+                    max="250"
+                    step="5"
+                    value={transparencySensitivity}
+                    onChange={(e) => setTransparencySensitivity(parseInt(e.target.value))}
+                    className="flex-1 accent-[#f59c73] h-1 bg-slate-700 rounded cursor-pointer"
+                  />
+                  <span className="font-mono text-amber-300 text-[10px] w-14 text-right">
+                    {transparencySensitivity > 235 ? 'હળવું' : transparencySensitivity < 210 ? 'મજબૂત' : 'મધ્યમ'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

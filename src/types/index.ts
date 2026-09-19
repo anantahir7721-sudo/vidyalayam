@@ -70,16 +70,27 @@ export interface Staff {
   id: string;
   schoolId: string;
   fullName: string;
-  designation: string; // e.g. 'આચાર્યશ્રી', 'મદદનીશ શિક્ષક', 'વિષય શિક્ષક', 'ક્લાર્ક'
+  designation: string; // e.g. 'આચાર્ય (વર્ગ–2)', 'આચાર્ય (ઇન્ચાર્જ)', 'શિક્ષણ સહાયક', 'મદદનીશ શિક્ષક', 'Gyan Sahayak', 'Para Teacher', 'પટાવાળા', 'ક્લાર્ક', 'સફાઈ કર્મચારી', 'ચોકીદાર', 'Others'
+  category?: 'teaching' | 'non_teaching'; // શૈક્ષણિક અથવા બિન-શૈક્ષણિક સ્ટાફ
   subject?: string;
   qualification?: string;
   dob?: string;
-  joiningDate?: string;
+  serviceJoiningDate?: string; // ખાતામાં દાખલ તારીખ (Date of Joining Department/Service)
+  schoolJoiningDate?: string; // આ શાળામાં દાખલ તારીખ (Date of Joining This School)
+  joiningDate?: string; // Legacy fallback
   mobile?: string;
   email?: string;
   address?: string;
   photoUrl?: string;
   bloodGroup?: string;
+  // Aadhaar & Identity
+  aadhaarNumber?: string; // આધાર કાર્ડ નંબર (12 digits)
+  panNumber?: string; // PAN કાર્ડ નંબર
+  // Bank details
+  bankName?: string; // બેંકનું નામ
+  bankAccountNo?: string; // બેંક ખાતા નંબર
+  bankIfsc?: string; // IFSC કોડ
+  bankBranch?: string; // શાખા (Branch)
   createdAt: string;
   updatedAt?: string;
 }

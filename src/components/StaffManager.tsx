@@ -24,6 +24,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Briefcase,
+  Landmark,
+  ShieldCheck,
+  Building,
 } from 'lucide-react';
 
 interface StaffManagerProps {
@@ -51,15 +54,23 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
   // Form State
   const initialForm = {
     fullName: '',
-    designation: 'શિક્ષક (Teacher)',
+    designation: 'શિક્ષણ સહાયક',
+    category: 'teaching' as 'teaching' | 'non_teaching',
     subject: '',
     qualification: '',
     dob: '',
-    joiningDate: '',
+    serviceJoiningDate: '',
+    schoolJoiningDate: '',
     mobile: '',
     email: '',
     address: '',
     bloodGroup: '',
+    aadhaarNumber: '',
+    panNumber: '',
+    bankName: '',
+    bankAccountNo: '',
+    bankIfsc: '',
+    bankBranch: '',
   };
   const [formData, setFormData] = useState(initialForm);
 
@@ -89,15 +100,23 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     setEditingStaff(staff);
     setFormData({
       fullName: staff.fullName || '',
-      designation: staff.designation || 'શિક્ષક (Teacher)',
+      designation: staff.designation || 'શિક્ષણ સહાયક',
+      category: staff.category || 'teaching',
       subject: staff.subject || '',
       qualification: staff.qualification || '',
       dob: staff.dob || '',
-      joiningDate: staff.joiningDate || '',
+      serviceJoiningDate: staff.serviceJoiningDate || staff.joiningDate || '',
+      schoolJoiningDate: staff.schoolJoiningDate || staff.joiningDate || '',
       mobile: staff.mobile || '',
       email: staff.email || '',
       address: staff.address || '',
       bloodGroup: staff.bloodGroup || '',
+      aadhaarNumber: staff.aadhaarNumber || '',
+      panNumber: staff.panNumber || '',
+      bankName: staff.bankName || '',
+      bankAccountNo: staff.bankAccountNo || '',
+      bankIfsc: staff.bankIfsc || '',
+      bankBranch: staff.bankBranch || '',
     });
     setIsModalOpen(true);
   };
@@ -120,13 +139,26 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     e.preventDefault();
     if (!formData.fullName.trim()) return;
 
+    // Validate Aadhaar (if provided, must be 12 digits)
+    if (formData.aadhaarNumber && !/^\d{12}$/.test(formData.aadhaarNumber.replace(/\s|-/g, ''))) {
+      alert('કૃપા કરીને માન્ય ૧૨ અંકનો આધાર કાર્ડ નંબર દાખલ કરો.');
+      return;
+    }
+
     setSubmitting(true);
     try {
+      const payload = {
+        ...formData,
+        aadhaarNumber: formData.aadhaarNumber.replace(/\s|-/g, ''),
+        // Keep joiningDate in sync for backwards compatibility
+        joiningDate: formData.schoolJoiningDate || formData.serviceJoiningDate || '',
+      };
+
       if (editingStaff) {
-        await updateStaff(schoolId, editingStaff.id, formData);
+        await updateStaff(schoolId, editingStaff.id, payload);
         showToast('success', 'સ્ટાફ વિગત સફળતાપૂર્વક સુધારવામાં આવી.');
       } else {
-        await addStaff(schoolId, formData);
+        await addStaff(schoolId, payload);
         showToast('success', 'નવા સ્ટાફ સભ્ય સફળતાપૂર્વક ઉમેરાયા.');
       }
       setIsModalOpen(false);
@@ -149,12 +181,20 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
       'ક્રમ': idx + 1,
       'પૂરું નામ': s.fullName,
       'હોદ્દો / પદ': s.designation,
-      'વિષય': s.subject || '-',
+      'સ્ટાફ પ્રકાર': s.category === 'non_teaching' ? 'બિન-શૈક્ષણિક' : 'શૈક્ષણિક',
+      'મુખ્ય વિષય': s.subject || '-',
       'લાયકાત': s.qualification || '-',
       'મોબાઈલ': s.mobile || '-',
       'ઈમેલ': s.email || '-',
       'જન્મ તારીખ': s.dob || '-',
-      'જોડાવાની તારીખ': s.joiningDate || '-',
+      'ખાતામાં દાખલ તારીખ': s.serviceJoiningDate || s.joiningDate || '-',
+      'આ શાળામાં દાખલ તારીખ': s.schoolJoiningDate || s.joiningDate || '-',
+      'આધાર કાર્ડ નં.': s.aadhaarNumber || '-',
+      'PAN કાર્ડ નં.': s.panNumber || '-',
+      'બેંકનું નામ': s.bankName || '-',
+      'બેંક ખાતા નં.': s.bankAccountNo || '-',
+      'IFSC કોડ': s.bankIfsc || '-',
+      'શાખા': s.bankBranch || '-',
       'સરનામું': s.address || '-',
       'બ્લડ ગ્રુપ': s.bloodGroup || '-',
     }));
@@ -167,13 +207,19 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
 
   // Filtered staff
   const filteredStaff = staffList.filter((s) => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      s.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.subject && s.subject.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (s.mobile && s.mobile.includes(searchQuery));
+      s.fullName.toLowerCase().includes(q) ||
+      (s.subject && s.subject.toLowerCase().includes(q)) ||
+      (s.mobile && s.mobile.includes(q)) ||
+      (s.aadhaarNumber && s.aadhaarNumber.includes(q)) ||
+      (s.bankAccountNo && s.bankAccountNo.includes(q));
 
     const matchesDesignation =
-      designationFilter === 'ALL' || s.designation.toLowerCase().includes(designationFilter.toLowerCase());
+      designationFilter === 'ALL' ||
+      (designationFilter === 'TEACHING' && s.category !== 'non_teaching') ||
+      (designationFilter === 'NON_TEACHING' && s.category === 'non_teaching') ||
+      s.designation.toLowerCase().includes(designationFilter.toLowerCase());
 
     return matchesSearch && matchesDesignation;
   });
@@ -246,14 +292,24 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
             <select
               value={designationFilter}
               onChange={(e) => setDesignationFilter(e.target.value)}
-              className="w-full sm:w-48 px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+              className="w-full sm:w-64 px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
             >
-              <option value="ALL">તમામ હોદ્દા (All)</option>
-              <option value="આચાર્ય">આચાર્યશ્રી (Principal)</option>
-              <option value="શિક્ષક">શિક્ષક (Teacher)</option>
-              <option value="મદદનીશ">મદદનીશ શિક્ષક (Assistant)</option>
-              <option value="ક્લાર્ક">ક્લાર્ક / વહીવટી (Clerk)</option>
-              <option value="પટાવાળા">સહાયક કર્મચારી (Peon)</option>
+              <option value="ALL">તમામ સ્ટાફ (All)</option>
+              <optgroup label="શૈક્ષણિક સ્ટાફ (Teaching Staff)">
+                <option value="આચાર્ય (વર્ગ–2)">આચાર્ય (વર્ગ–2)</option>
+                <option value="આચાર્ય (ઇન્ચાર્જ)">આચાર્ય (ઇન્ચાર્જ)</option>
+                <option value="શિક્ષણ સહાયક">શિક્ષણ સહાયક</option>
+                <option value="મદદનીશ શિક્ષક">મદદનીશ શિક્ષક</option>
+                <option value="Gyan Sahayak">Gyan Sahayak (જ્ઞાન સહાયક)</option>
+                <option value="Para Teacher">Para Teacher (પેરા ટીચર)</option>
+              </optgroup>
+              <optgroup label="બિન-શૈક્ષણિક સ્ટાફ (Non-Teaching Staff)">
+                <option value="ક્લાર્ક">ક્લાર્ક (Clerk)</option>
+                <option value="પટાવાળા">પટાવાળા (Peon)</option>
+                <option value="સફાઈ કર્મચારી">સફાઈ કર્મચારી (Sweeper)</option>
+                <option value="ચોકીદાર">ચોકીદાર (Watchman/Guard)</option>
+              </optgroup>
+              <option value="Others">અન્ય (Others)</option>
             </select>
           </div>
         </div>
@@ -289,18 +345,29 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-[#9d512d]/25 border border-[#9d512d]/40 flex items-center justify-center text-[#f59c73] font-bold text-base shadow">
+                    <div className="w-12 h-12 rounded-2xl bg-[#9d512d]/25 border border-[#9d512d]/40 flex items-center justify-center text-[#f59c73] font-bold text-base shadow shrink-0">
                       {staff.fullName.charAt(0) || 'S'}
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-[#e4ded6]">{staff.fullName}</h4>
-                      <span className="inline-block px-2 py-0.5 mt-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25">
-                        {staff.designation}
-                      </span>
+                      <h4 className="font-bold text-sm text-[#e4ded6] leading-tight">{staff.fullName}</h4>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                          {staff.designation}
+                        </span>
+                        {staff.category === 'non_teaching' ? (
+                          <span className="inline-block px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/20">
+                            બિન-શૈક્ષણિક
+                          </span>
+                        ) : (
+                          <span className="inline-block px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">
+                            શૈક્ષણિક
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => handleOpenEdit(staff)}
                       title="વિગત સુધારો"
@@ -346,10 +413,40 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       <span className="text-[#e4ded6] truncate">{staff.email}</span>
                     </div>
                   )}
-                  {staff.joiningDate && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-[#f59c73] shrink-0" />
-                      <span>જોડાવાની તારીખ: <span className="text-[#e4ded6]">{staff.joiningDate}</span></span>
+
+                  {/* Joining Dates */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-white/5">
+                    {staff.serviceJoiningDate && (
+                      <div className="flex flex-col text-[11px]">
+                        <span className="text-[#8e8579]">ખાતામાં દાખલ:</span>
+                        <span className="text-[#e4ded6] font-medium">{staff.serviceJoiningDate}</span>
+                      </div>
+                    )}
+                    {(staff.schoolJoiningDate || staff.joiningDate) && (
+                      <div className="flex flex-col text-[11px]">
+                        <span className="text-[#8e8579]">શાળામાં દાખલ:</span>
+                        <span className="text-[#e4ded6] font-medium">
+                          {staff.schoolJoiningDate || staff.joiningDate}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bank and Aadhaar badges */}
+                  {(staff.aadhaarNumber || staff.bankAccountNo) && (
+                    <div className="pt-2 border-t border-white/5 space-y-1 text-[11px]">
+                      {staff.aadhaarNumber && (
+                        <div className="flex items-center gap-1.5 text-[#8e8579]">
+                          <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                          <span>આધાર: <span className="text-[#e4ded6] font-mono">XXXX-XXXX-{staff.aadhaarNumber.slice(-4)}</span></span>
+                        </div>
+                      )}
+                      {staff.bankAccountNo && (
+                        <div className="flex items-center gap-1.5 text-[#8e8579]">
+                          <Landmark className="w-3 h-3 text-[#f59c73]" />
+                          <span>બેંક: <span className="text-[#e4ded6] font-mono">{staff.bankAccountNo}</span> {staff.bankIfsc ? `(${staff.bankIfsc})` : ''}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -391,150 +488,328 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-[#a99f91] mb-1">
-                    પૂરું નામ (Full Name) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="દા.ત. પટેલ રમેશભાઈ કે."
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#a99f91] mb-1">
-                    હોદ્દો / પદ (Designation) *
-                  </label>
-                  <select
-                    value={formData.designation}
-                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+            <form onSubmit={handleSubmit} className="mt-4 space-y-5">
+              {/* Category selector */}
+              <div>
+                <label className="block text-xs font-semibold text-[#a99f91] mb-1.5">
+                  સ્ટાફ પ્રકાર (Staff Category) *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        category: 'teaching',
+                        designation: 'શિક્ષણ સહાયક',
+                      });
+                    }}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      formData.category !== 'non_teaching'
+                        ? 'bg-[#9d512d] text-white border-[#f59c73]'
+                        : 'bg-black/20 text-[#a99f91] border-white/10 hover:border-white/20'
+                    }`}
                   >
-                    <option value="આચાર્યશ્રી (Principal)">આચાર્યશ્રી (Principal)</option>
-                    <option value="શિક્ષક (Teacher)">શિક્ષક (Teacher)</option>
-                    <option value="મદદનીશ શિક્ષક (Assistant Teacher)">મદદનીશ શિક્ષક (Assistant Teacher)</option>
-                    <option value="વિષય શિક્ષક (Subject Teacher)">વિષય શિક્ષક (Subject Teacher)</option>
-                    <option value="મુખ્ય ક્લાર્ક (Head Clerk)">મુખ્ય ક્લાર્ક (Head Clerk)</option>
-                    <option value="જુનિયર ક્લાર્ક (Junior Clerk)">જુનિયર ક્લાર્ક (Junior Clerk)</option>
-                    <option value="લેબ સહાયક (Lab Assistant)">લેબ સહાયક (Lab Assistant)</option>
-                    <option value="સહાયક કર્મચારી (Peon)">સહાયક કર્મચારી (Peon)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#a99f91] mb-1">
-                    મુખ્ય વિષય (Subject Taught)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="દા.ત. ગણિત, વિજ્ઞાન, અંગ્રેજી"
-                    value={formData.subject}
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#a99f91] mb-1">
-                    શૈક્ષણિક લાયકાત (Qualification)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="દા.ત. M.Sc., B.Ed."
-                    value={formData.qualification}
-                    onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#a99f91] mb-1">
-                    મોબાઈલ નંબર (Mobile)
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="10 અંકનો મોબાઈલ"
-                    value={formData.mobile}
-                    onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#a99f91] mb-1">
-                    ઈમેલ (Email)
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="teacher@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#a99f91] mb-1">
-                    જન્મ તારીખ (Date of Birth)
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.dob}
-                    onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#a99f91] mb-1">
-                    શાળામાં જોડાવાની તારીખ (Joining Date)
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.joiningDate}
-                    onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#a99f91] mb-1">
-                    બ્લડ ગ્રુપ (Blood Group)
-                  </label>
-                  <select
-                    value={formData.bloodGroup}
-                    onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    શૈક્ષણિક સ્ટાફ (Teaching)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        category: 'non_teaching',
+                        designation: 'પટાવાળા',
+                      });
+                    }}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      formData.category === 'non_teaching'
+                        ? 'bg-purple-700 text-white border-purple-400'
+                        : 'bg-black/20 text-[#a99f91] border-white/10 hover:border-white/20'
+                    }`}
                   >
-                    <option value="">પસંદ કરો...</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                  </select>
+                    બિન-શૈક્ષણિક સ્ટાફ (Non-Teaching)
+                  </button>
                 </div>
+              </div>
 
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-[#a99f91] mb-1">
-                    સરનામું (Address)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="ગામ/શહેર, જિલ્લો"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
-                  />
+              {/* Basic Details */}
+              <div className="space-y-3 pt-2 border-t border-white/10">
+                <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">મૂળભૂત વિગતો (Basic Details)</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      પૂરું નામ (Full Name) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="દા.ત. પટેલ રમેશભાઈ કે."
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      હોદ્દો / પદ (Designation) *
+                    </label>
+                    <select
+                      value={formData.designation}
+                      onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    >
+                      {formData.category === 'non_teaching' ? (
+                        <>
+                          <option value="પટાવાળા">પટાવાળા (Peon)</option>
+                          <option value="ક્લાર્ક">ક્લાર્ક (Clerk)</option>
+                          <option value="સફાઈ કર્મચારી">સફાઈ કર્મચારી (Sweeper)</option>
+                          <option value="ચોકીદાર">ચોકીદાર (Watchman)</option>
+                          <option value="લેબ સહાયક">લેબ સહાયક (Lab Assistant)</option>
+                          <option value="Others">અન્ય (Others)</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="આચાર્ય (વર્ગ–2)">આચાર્ય (વર્ગ–2)</option>
+                          <option value="આચાર્ય (ઇન્ચાર્જ)">આચાર્ય (ઇન્ચાર્જ)</option>
+                          <option value="શિક્ષણ સહાયક">શિક્ષણ સહાયક</option>
+                          <option value="મદદનીશ શિક્ષક">મદદનીશ શિક્ષક</option>
+                          <option value="Gyan Sahayak">Gyan Sahayak (જ્ઞાન સહાયક)</option>
+                          <option value="Para Teacher">Para Teacher (પેરા ટીચર)</option>
+                          <option value="Others">અન્ય (Others)</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      {formData.category === 'non_teaching' ? 'વિભાગ / કામગીરી' : 'મુખ્ય વિષય (Subject)'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={formData.category === 'non_teaching' ? 'દા.ત. ઓફિસ કામગીરી, વહીવટ' : 'દા.ત. ગણિત, વિજ્ઞાન, ભાષા'}
+                      value={formData.subject}
+                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      શૈક્ષણિક લાયકાત (Qualification)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="દા.ત. M.Sc., B.Ed. / ધોરણ 12 પાસ"
+                      value={formData.qualification}
+                      onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      જન્મ તારીખ (Date of Birth)
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.dob}
+                      onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Service & Joining Dates */}
+              <div className="space-y-3 pt-2 border-t border-white/10">
+                <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">સેવા / જોડાવાની તારીખો (Joining Dates)</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      ખાતામાં દાખલ તારીખ *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.serviceJoiningDate}
+                      onChange={(e) => setFormData({ ...formData, serviceJoiningDate: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                    <span className="text-[10px] text-[#8e8579] mt-0.5 block">સરકારી ખાતામાં પ્રથમ નિમણૂક તારીખ</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      આ શાળામાં દાખલ તારીખ *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.schoolJoiningDate}
+                      onChange={(e) => setFormData({ ...formData, schoolJoiningDate: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                    <span className="text-[10px] text-[#8e8579] mt-0.5 block">હાજર શાળામાં હાજર થયા તારીખ</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Identity Details */}
+              <div className="space-y-3 pt-2 border-t border-white/10">
+                <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">ઓળખ વિગતો (Identity Details)</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      આધાર કાર્ડ નંબર (12 અંક)
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={14}
+                      placeholder="XXXX-XXXX-XXXX"
+                      value={formData.aadhaarNumber}
+                      onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      PAN કાર્ડ નંબર (10 અક્ષર)
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={10}
+                      placeholder="ABCDE1234F"
+                      value={formData.panNumber}
+                      onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs uppercase font-mono focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bank Details */}
+              <div className="space-y-3 pt-2 border-t border-white/10">
+                <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">બેંક ખાતાની વિગતો (Bank Details)</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      બેંકનું નામ (Bank Name)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="દા.ત. SBI, BOB, HDFC"
+                      value={formData.bankName}
+                      onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      બેંક ખાતા નંબર (Account No.)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="ખાતા નંબર દાખલ કરો"
+                      value={formData.bankAccountNo}
+                      onChange={(e) => setFormData({ ...formData, bankAccountNo: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      IFSC કોડ (11 અક્ષર)
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={11}
+                      placeholder="દા.ત. SBIN0001234"
+                      value={formData.bankIfsc}
+                      onChange={(e) => setFormData({ ...formData, bankIfsc: e.target.value.toUpperCase() })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs uppercase font-mono focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      શાખા (Branch Name)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="દા.ત. રાજકોટ મુખ્ય શાખા"
+                      value={formData.bankBranch}
+                      onChange={(e) => setFormData({ ...formData, bankBranch: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact & Personal */}
+              <div className="space-y-3 pt-2 border-t border-white/10">
+                <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">સંપર્ક અને અંગત વિગતો (Contact & Personal)</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      મોબાઈલ નંબર (Mobile)
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="10 અંકનો મોબાઈલ"
+                      value={formData.mobile}
+                      onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      ઈમેલ (Email)
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="staff@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      બ્લડ ગ્રુપ (Blood Group)
+                    </label>
+                    <select
+                      value={formData.bloodGroup}
+                      onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    >
+                      <option value="">પસંદ કરો...</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      સરનામું (Address)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="ગામ/શહેર, જિલ્લો, પિનકોડ"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -211,8 +211,9 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       else if (std === '11') std11++;
       else if (std === '12') std12++;
 
-      if (student.gender === 'Boy') boys++;
-      else if (student.gender === 'Girl') girls++;
+      const gStr = (student.gender || '').trim().toLowerCase();
+      if (gStr === 'boy' || gStr === 'male' || gStr === 'm' || gStr === 'કુમાર' || gStr === 'પુરુષ' || gStr === 'છોકરો') boys++;
+      else if (gStr === 'girl' || gStr === 'female' || gStr === 'f' || gStr === 'કન્યા' || gStr === 'સ્ત્રી' || gStr === 'છોકરી') girls++;
     }
 
     return {
@@ -1353,13 +1354,14 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      શાળા DISE કોડ
+                      વિદ્યાર્થી DISE કોડ (૧૮ આંકડાનો Child UID)
                     </label>
                     <input
                       type="text"
+                      placeholder="૧૮ આંકડાનો વિદ્યાર્થી DISE કોડ"
                       value={addForm.diseCode}
                       onChange={(e) => setAddForm({ ...addForm, diseCode: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta font-mono"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-cyan-300 focus:outline-none focus:border-terracotta font-mono"
                     />
                   </div>
                 </div>

@@ -359,7 +359,9 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
           }
           .card-header.light-header .school-logo-img {
             background: transparent !important;
+            background-color: transparent !important;
             border: none !important;
+            outline: none !important;
             box-shadow: none !important;
           }
           .card-header.light-header .school-logo-img.logo-contrast {
@@ -370,6 +372,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             align-items: center;
             gap: 5.5px;
             width: 100%;
+            background: transparent !important;
           }
           .school-logo-img {
             width: 10.5mm;
@@ -378,10 +381,14 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             max-height: 10.5mm;
             object-fit: contain;
             background: transparent !important;
-            padding: 0;
+            background-color: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
             flex-shrink: 0;
             border: none !important;
+            outline: none !important;
             box-shadow: none !important;
+            image-rendering: -webkit-optimize-contrast;
           }
           .school-logo-img.logo-contrast {
             filter: brightness(0) invert(1); /* Pure white on black background */

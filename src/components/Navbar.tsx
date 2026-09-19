@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { School } from '../types';
 import {
   School as SchoolIcon,
@@ -46,6 +46,31 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
 }) => {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setMoreMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMoreMenuOpen(false);
+      }
+    };
+
+    if (moreMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [moreMenuOpen]);
 
   const mainTabs: { id: ActiveTabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'ડેશબોર્ડ', icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
@@ -114,8 +139,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {school ? (
-          <div className="w-full lg:w-auto flex items-center justify-between sm:justify-end gap-2 overflow-x-auto pb-1 sm:pb-0">
-            <nav className="flex items-center glass-card p-1 rounded-2xl border border-white/10 text-xs shrink-0">
+          <div className="w-full lg:w-auto flex items-center justify-between sm:justify-end gap-2 overflow-visible pb-1 sm:pb-0">
+            <nav className="flex items-center glass-card p-1 rounded-2xl border border-white/10 text-xs shrink-0 overflow-visible">
               {mainTabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -138,9 +163,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               })}
 
               {/* More Dropdown */}
-              <div className="relative">
+              <div ref={moreMenuRef} className="relative inline-block">
                 <button
-                  onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+                  type="button"
+                  onClick={() => setMoreMenuOpen((prev) => !prev)}
+                  aria-expanded={moreMenuOpen}
                   className={`px-2.5 py-2 rounded-xl font-bold transition-all touch-manipulation min-h-[38px] flex items-center gap-1 cursor-pointer ${
                     isMoreActive
                       ? 'bg-[#9d512d] text-white shadow-md'
@@ -148,28 +175,35 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <span>વધુ</span>
-                  <ChevronDown className="w-3.5 h-3.5" />
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${moreMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {moreMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 glass-panel rounded-2xl border border-white/20 p-2 shadow-2xl z-50 divide-y divide-white/5">
-                    {moreTabs.map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => {
-                          setActiveTab(tab.id);
-                          setMoreMenuOpen(false);
-                        }}
-                        className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 transition-colors cursor-pointer ${
-                          activeTab === tab.id
-                            ? 'bg-[#9d512d] text-white'
-                            : 'text-[#e4ded6] hover:bg-white/10'
-                        }`}
-                      >
-                        <span className="text-[#f59c73]">{tab.icon}</span>
-                        <span>{tab.label}</span>
-                      </button>
-                    ))}
+                  <div className="absolute right-0 top-full mt-2 w-60 bg-[#16202c] dark:bg-[#121921] rounded-2xl border border-white/20 p-2 shadow-2xl z-[100] divide-y divide-white/10 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl">
+                    <div className="px-3 py-1.5 text-[11px] font-bold text-[#f59c73] uppercase tracking-wider flex items-center justify-between">
+                      <span>વધુ વિકલ્પો (More Options)</span>
+                      <span className="text-[10px] text-slate-400 font-normal">ESC બંધ કરવા</span>
+                    </div>
+                    <div className="pt-1 space-y-1">
+                      {moreTabs.map((tab) => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveTab(tab.id);
+                            setMoreMenuOpen(false);
+                          }}
+                          className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 transition-all cursor-pointer ${
+                            activeTab === tab.id
+                              ? 'bg-[#9d512d] text-white shadow-md'
+                              : 'text-[#e4ded6] hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          <span className={`${activeTab === tab.id ? 'text-white' : 'text-[#f59c73]'}`}>{tab.icon}</span>
+                          <span className="truncate">{tab.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

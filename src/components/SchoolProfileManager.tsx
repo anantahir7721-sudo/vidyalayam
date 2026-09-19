@@ -197,7 +197,7 @@ export const SchoolProfileManager: React.FC<SchoolProfileManagerProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 {formData.logoUrl ? (
-                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white/10 border border-white/20 shrink-0 p-1 flex items-center justify-center shadow-lg">
+                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-slate-900 border border-white/20 shrink-0 p-1 flex items-center justify-center shadow-lg bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:8px_8px]">
                     <img
                       src={formData.logoUrl}
                       alt="School Logo"

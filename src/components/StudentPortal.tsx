@@ -23,6 +23,8 @@ import {
   RefreshCw,
   ExternalLink,
   History,
+  Timer,
+  Play,
 } from 'lucide-react';
 import { StudentSession, OnlineExam, MarkRecord } from '../types';
 import {
@@ -48,6 +50,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
   const [loading, setLoading] = useState(true);
   const [serverTime, setServerTime] = useState<number>(Date.now());
   const [activeExamId, setActiveExamId] = useState<string | null>(null);
+  const autoStartTriggeredRef = React.useRef<{ [examId: string]: boolean }>({});
 
   const student = session.student;
   const school = session.school || {
@@ -87,6 +90,29 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
     return () => clearInterval(interval);
   }, []);
 
+  // Auto-start exam when scheduled countdown reaches 0
+  useEffect(() => {
+    if (activeExamId || !exams || exams.length === 0) return;
+
+    for (const ex of exams) {
+      if (ex.attempt && ex.attempt.status === 'submitted') continue;
+      if (!ex.scheduledStartTimestamp) continue;
+
+      const diff = ex.scheduledStartTimestamp - serverTime;
+      // If countdown has reached 0 and not past late entry cutoff
+      const durationMs = (ex.durationMinutes || 60) * 60 * 1000;
+      const cutoffTime = ex.scheduledStartTimestamp + durationMs + 10 * 60 * 1000;
+
+      if (diff <= 0 && serverTime <= cutoffTime) {
+        if (!autoStartTriggeredRef.current[ex.id]) {
+          autoStartTriggeredRef.current[ex.id] = true;
+          setActiveExamId(ex.id);
+          break;
+        }
+      }
+    }
+  }, [serverTime, exams, activeExamId]);
+
   // Compute calculated GSEB result for this student using the official calculation engine
   const calculatedResult = React.useMemo(() => {
     if (!student || marks.length === 0) return null;
@@ -119,10 +145,26 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
     );
   }
 
+  // Helper to check if an exam has reached the 10-minute late cutoff
+  const isExamPastLateCutoff = (ex: any) => {
+    if (!ex.scheduledStartTimestamp) return false;
+    const durationMs = (ex.durationMinutes || 60) * 60 * 1000;
+    const cutoffTime = ex.scheduledStartTimestamp + durationMs + 10 * 60 * 1000;
+    return serverTime > cutoffTime;
+  };
+
   // Filter Upcoming / Live exams vs History exams (all exams without arbitrary type separation)
+  // Priority order:
+  // 1. Live Now (within scheduled duration + 10m buffer)
+  // 2. Upcoming (starting soonest first)
+  // 3. Expired / Past Cutoff
   const upcomingExams = exams
     .filter((e) => !e.attempt || e.attempt.status !== 'submitted')
     .sort((a, b) => {
+      const aExpired = isExamPastLateCutoff(a);
+      const bExpired = isExamPastLateCutoff(b);
+      if (aExpired !== bExpired) return aExpired ? 1 : -1;
+
       const aIsScheduled = a.scheduledStartTimestamp && serverTime < a.scheduledStartTimestamp;
       const bIsScheduled = b.scheduledStartTimestamp && serverTime < b.scheduledStartTimestamp;
       if (!aIsScheduled && bIsScheduled) return -1;
@@ -131,17 +173,27 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
     });
   const historyExams = exams.filter((e) => e.attempt && e.attempt.status === 'submitted');
 
-  // Format countdown string
+  // Format countdown string with seconds precision
   const getCountdownLabel = (startTimestamp: number) => {
     const diff = startTimestamp - serverTime;
     if (diff <= 0) return 'શરૂ થઈ ગઈ છે';
-    const mins = Math.floor(diff / 60000);
-    const hrs = Math.floor(mins / 60);
+    const totalSecs = Math.floor(diff / 1000);
+    const secs = totalSecs % 60;
+    const totalMins = Math.floor(totalSecs / 60);
+    const mins = totalMins % 60;
+    const hrs = Math.floor(totalMins / 60);
     const days = Math.floor(hrs / 24);
 
-    if (days > 0) return `પરીક્ષા શરૂ થવામાં ${days} દિવસ બાકી છે`;
-    if (hrs > 0) return `પરીક્ષા શરૂ થવામાં ${hrs} કલાક ${mins % 60} મિનિટ બાકી છે`;
-    return `પરીક્ષા શરૂ થવામાં ${mins} મિનિટ બાકી છે`;
+    if (days > 0) {
+      return `પરીક્ષા શરૂ થવામાં ${days} દિવસ, ${hrs % 24} કલાક ${mins} મિનિટ બાકી`;
+    }
+    if (hrs > 0) {
+      return `પરીક્ષા શરૂ થવામાં ${hrs} કલાક, ${mins} મિનિટ અને ${secs} સેકન્ડ બાકી`;
+    }
+    if (mins > 0) {
+      return `પરીક્ષા શરૂ થવામાં ${mins} મિનિટ અને ${secs} સેકન્ડ બાકી`;
+    }
+    return `પરીક્ષા શરૂ થવામાં ${secs} સેકન્ડ બાકી`;
   };
 
   return (
@@ -249,6 +301,88 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
         </div>
       </div>
 
+      {/* Prominent Live / Upcoming Exam Highlight Banner */}
+      {(() => {
+        const priorityExam = upcomingExams.find((ex) => !isExamPastLateCutoff(ex));
+        if (!priorityExam) return null;
+
+        const isLive =
+          !priorityExam.scheduledStartTimestamp ||
+          serverTime >= priorityExam.scheduledStartTimestamp;
+
+        return (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-1">
+            <div
+              className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl ${
+                isLive
+                  ? 'bg-gradient-to-r from-emerald-950/80 via-teal-950/70 to-slate-900 border-emerald-500/50 ring-1 ring-emerald-500/30'
+                  : 'bg-gradient-to-r from-blue-950/70 via-slate-900 to-[#121921] border-blue-500/40 ring-1 ring-blue-500/20'
+              }`}
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {isLive ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      પરીક્ષા ચાલુ છે (Live Now)
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
+                      આગામી પરીક્ષા (Upcoming Exam)
+                    </span>
+                  )}
+                  <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-white/10 text-slate-200">
+                    {priorityExam.subject} • ધોરણ {priorityExam.standard}
+                  </span>
+                </div>
+
+                <h3 className="text-base sm:text-lg font-bold text-white tracking-wide">
+                  {priorityExam.title}
+                </h3>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
+                  <span>તારીખ: <strong className="text-white">{priorityExam.scheduledDate}</strong></span>
+                  <span>•</span>
+                  <span>સમય: <strong className="text-white">{priorityExam.scheduledStartTime}</strong> ({priorityExam.durationMinutes} મિનિટ)</span>
+                  <span>•</span>
+                  <span>કુલ ગુણ: <strong className="text-emerald-400">{priorityExam.totalMarks}</strong></span>
+                </div>
+
+                {!isLive && priorityExam.scheduledStartTimestamp && (
+                  <div className="pt-1 text-xs font-bold text-amber-300 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                    <span>⏳ {getCountdownLabel(priorityExam.scheduledStartTimestamp)} (ઓટોમેટિક શરૂ થશે)</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="sm:shrink-0">
+                {isLive ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveExamId(priorityExam.id)}
+                    className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+                  >
+                    <span>પરીક્ષા આપો (Start Exam)</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 text-xs font-semibold cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Clock className="w-4 h-4 text-blue-400" />
+                    <span>નિયત સમયે આપમેળે શરૂ થશે</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Navigation Tabs (Direct Upcoming Exams, No Exam Type Tabs) */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -343,7 +477,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                   const hasSubmitted = attempt && attempt.status === 'submitted';
                   const isScheduled =
                     ex.scheduledStartTimestamp && serverTime < ex.scheduledStartTimestamp;
-                  const isLive = !isScheduled && !hasSubmitted;
+                  const isCutoff = isExamPastLateCutoff(ex);
+                  const isLive = !isScheduled && !hasSubmitted && !isCutoff;
 
                   return (
                     <div
@@ -351,6 +486,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                       className={`p-5 rounded-3xl bg-[#121921] border transition-all flex flex-col justify-between space-y-4 shadow-lg ${
                         isLive
                           ? 'border-emerald-500/50 shadow-emerald-950/30 ring-1 ring-emerald-500/30'
+                          : isCutoff
+                          ? 'border-rose-500/20 opacity-75'
                           : 'border-white/10 hover:border-white/20'
                       }`}
                     >
@@ -365,6 +502,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 animate-pulse">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                               પરીક્ષા ચાલુ છે (Live Now)
+                            </span>
+                          ) : isCutoff ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                              પરીક્ષા પૂર્ણ થઈ ગઈ છે
                             </span>
                           ) : (
                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
@@ -401,6 +542,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                             <span>{getCountdownLabel(ex.scheduledStartTimestamp)}</span>
                           </div>
                         )}
+
+                        {/* Cutoff message if time exceeded */}
+                        {isCutoff && (
+                          <div className="mt-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                            <span>પરીક્ષા પૂર્ણ થઈ ગઈ છે. સમય મર્યાદા સમાપ્ત થયેલ છે.</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Action Button */}
@@ -413,6 +562,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                           >
                             <span>પરીક્ષા આપો (Start Exam)</span>
                             <ChevronRight className="w-4 h-4" />
+                          </button>
+                        ) : isCutoff ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="w-full py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold cursor-not-allowed"
+                          >
+                            પરીક્ષા પૂર્ણ થઈ ગઈ છે (સમાપ્ત)
                           </button>
                         ) : (
                           <button

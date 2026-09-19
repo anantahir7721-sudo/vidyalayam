@@ -106,6 +106,12 @@ function datesMatch(d1: any, d2: any): boolean {
   const norm1 = normalizeDate(s1);
   const norm2 = normalizeDate(s2);
   if (norm1 && norm2 && norm1 === norm2) return true;
+
+  // Compare purely digits if normalization didn't match
+  const digits1 = s1.replace(/[^0-9]/g, '');
+  const digits2 = s2.replace(/[^0-9]/g, '');
+  if (digits1 && digits2 && digits1 === digits2) return true;
+
   return false;
 }
 
@@ -705,6 +711,25 @@ Schema per question:
         });
       }
 
+      // Late entry prevention rule:
+      // If student tries to start after the exam's designated completion time + 10 minutes grace,
+      // prevent starting and inform them that the exam has concluded.
+      if (examData.scheduledStartTimestamp && examData.durationMinutes) {
+        const durationMs = Number(examData.durationMinutes) * 60 * 1000;
+        const examOfficialEndTime = examData.scheduledStartTimestamp + durationMs;
+        const cutoffTime = examOfficialEndTime + 10 * 60 * 1000; // 10 minutes past exam completion
+
+        if (now > cutoffTime) {
+          return res.status(403).json({
+            error: 'પરીક્ષા પૂર્ણ થઈ ગઈ છે. પરીક્ષાનો સમય સમાપ્ત થઈ ગયેલ હોવાથી હવે પરીક્ષા શરૂ કરી શકાશે નહીં.',
+            isExpired: true,
+            scheduledStartTimestamp: examData.scheduledStartTimestamp,
+            examOfficialEndTime,
+            serverTime: now,
+          });
+        }
+      }
+
       // Check existing attempt
       const attemptsCol = collection(db, 'schools', school.id, 'exam_attempts');
       const q = query(attemptsCol, where('examId', '==', examId), where('studentId', '==', student.id));
@@ -721,7 +746,14 @@ Schema per question:
         }
       } else {
         // Create new attempt with authoritative start & expiry time
-        const durationMs = (examData.durationMinutes || 30) * 60 * 1000;
+        const durationMs = (Number(examData.durationMinutes) || 30) * 60 * 1000;
+        // Cap expiry at the exam's official end time plus 10 minutes grace, or now + durationMs
+        let calculatedExpiry = now + durationMs;
+        if (examData.scheduledStartTimestamp) {
+          const hardCutoff = examData.scheduledStartTimestamp + durationMs + 10 * 60 * 1000;
+          calculatedExpiry = Math.min(calculatedExpiry, hardCutoff);
+        }
+
         const newAttemptData = {
           examId,
           schoolId: school.id,
@@ -731,7 +763,7 @@ Schema per question:
           grNumber: student.grNumber || '',
           rollNumber: student.rollNumber || '',
           startedAt: now,
-          expiresAt: now + durationMs,
+          expiresAt: calculatedExpiry,
           status: 'in_progress',
           answers: {},
           score: 0,

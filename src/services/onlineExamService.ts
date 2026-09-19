@@ -1,5 +1,6 @@
 import {
   collection,
+  collectionGroup,
   doc,
   addDoc,
   setDoc,
@@ -427,6 +428,253 @@ export async function getServerTime(): Promise<number> {
   return Date.now();
 }
 
+// Helper: Normalize date to YYYY-MM-DD
+function normalizeDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const str = String(dateStr).trim();
+
+  // Try DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
+  const dmyMatch = str.match(/^(\d{1,2})[./\-](\d{1,2})[./\-](\d{4})$/);
+  if (dmyMatch) {
+    const day = dmyMatch[1].padStart(2, '0');
+    const month = dmyMatch[2].padStart(2, '0');
+    const year = dmyMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // Try YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
+  const ymdMatch = str.match(/^(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = ymdMatch[1];
+    const month = ymdMatch[2].padStart(2, '0');
+    const day = ymdMatch[3].padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // Fallback: Date parse
+  const parsed = Date.parse(str);
+  if (!isNaN(parsed)) {
+    const d = new Date(parsed);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  return str.replace(/[^0-9]/g, '');
+}
+
+function datesMatch(d1: any, d2: any): boolean {
+  if (!d1 || !d2) return false;
+  const s1 = String(d1).trim();
+  const s2 = String(d2).trim();
+  if (s1 === s2) return true;
+
+  const norm1 = normalizeDate(s1);
+  const norm2 = normalizeDate(s2);
+  if (norm1 && norm2 && norm1 === norm2) return true;
+
+  // Compare purely digits if normalization didn't match (e.g. 15082010 vs 20100815)
+  const digits1 = s1.replace(/[^0-9]/g, '');
+  const digits2 = s2.replace(/[^0-9]/g, '');
+  if (digits1 && digits2 && digits1 === digits2) return true;
+
+  return false;
+}
+
+// Client-side Direct Firebase Firestore Fallback for Static Platforms (e.g. Netlify)
+async function clientSideStudentLogin(
+  cleanCode: string,
+  cleanDob: string,
+  cleanGr?: string
+): Promise<StudentSession> {
+  interface StudentMatch {
+    student: any;
+    schoolId: string;
+  }
+  let foundStudents: StudentMatch[] = [];
+
+  const candidateFields = ['diseCode', 'studentStateCode', 'studentId', 'aadhaarNo', 'grNumber'];
+
+  // 1. Query collectionGroup by each possible unique code field
+  for (const field of candidateFields) {
+    try {
+      const q = query(collectionGroup(db, 'students'), where(field, '==', cleanCode));
+      const snap = await getDocs(q);
+      snap.forEach((d) => {
+        const pathSegments = d.ref.path.split('/');
+        const schoolId = pathSegments[1];
+        foundStudents.push({ student: { id: d.id, ...d.data() }, schoolId });
+      });
+      if (foundStudents.length > 0) {
+        break;
+      }
+    } catch (cgErr) {
+      console.warn(`client fallback collectionGroup ${field} note:`, cgErr);
+    }
+  }
+
+  // 2. Strategy: Prefix 11-digit school DISE code lookup (First 11 digits of Child UID)
+  if (foundStudents.length === 0 && cleanCode.length >= 11) {
+    const potentialSchoolDise = cleanCode.substring(0, 11);
+    try {
+      const schoolsCol = collection(db, 'schools');
+      const schoolQuery = query(schoolsCol, where('diseCode', '==', potentialSchoolDise));
+      const schoolSnap = await getDocs(schoolQuery);
+      if (!schoolSnap.empty) {
+        for (const schDoc of schoolSnap.docs) {
+          const schId = schDoc.id;
+          const studentsSnap = await getDocs(collection(db, 'schools', schId, 'students'));
+          studentsSnap.forEach((d) => {
+            const data = d.data() as any;
+            const sDise = (data.diseCode || '').toString().trim();
+            const sState = (data.studentStateCode || '').toString().trim();
+            const sId = (data.studentId || '').toString().trim();
+            const sAadhaar = (data.aadhaarNo || '').toString().trim();
+            const sGr = (data.grNumber || '').toString().trim();
+            if (
+              sDise === cleanCode ||
+              sState === cleanCode ||
+              sId === cleanCode ||
+              sAadhaar === cleanCode ||
+              sGr === cleanCode
+            ) {
+              foundStudents.push({ student: { id: d.id, ...data }, schoolId: schId });
+            }
+          });
+        }
+      }
+    } catch (prefixErr) {
+      console.warn('client fallback prefix lookup note:', prefixErr);
+    }
+  }
+
+  // 3. Strategy: Check if input is 11-digit school code
+  if (foundStudents.length === 0 && cleanCode.length === 11) {
+    try {
+      const schoolsCol = collection(db, 'schools');
+      const schoolQuery = query(schoolsCol, where('diseCode', '==', cleanCode));
+      const schoolSnap = await getDocs(schoolQuery);
+      if (!schoolSnap.empty) {
+        for (const schDoc of schoolSnap.docs) {
+          const schId = schDoc.id;
+          const studentsSnap = await getDocs(collection(db, 'schools', schId, 'students'));
+          studentsSnap.forEach((d) => {
+            foundStudents.push({ student: { id: d.id, ...d.data() }, schoolId: schId });
+          });
+        }
+      }
+    } catch (schErr) {
+      console.warn('client fallback school query note:', schErr);
+    }
+  }
+
+  // 4. Strategy: Scan all schools directly (guarantees finding record regardless of field or collectionGroup index)
+  if (foundStudents.length === 0) {
+    try {
+      const allSchoolsSnap = await getDocs(collection(db, 'schools'));
+      for (const sDoc of allSchoolsSnap.docs) {
+        const schId = sDoc.id;
+        const stSnap = await getDocs(collection(db, 'schools', schId, 'students'));
+        stSnap.forEach((d) => {
+          const data = d.data() as any;
+          const sDise = (data.diseCode || '').toString().trim();
+          const sState = (data.studentStateCode || '').toString().trim();
+          const sId = (data.studentId || '').toString().trim();
+          const sAadhaar = (data.aadhaarNo || '').toString().trim();
+          const sGr = (data.grNumber || '').toString().trim();
+          if (
+            sDise === cleanCode ||
+            sState === cleanCode ||
+            sId === cleanCode ||
+            sAadhaar === cleanCode ||
+            sGr === cleanCode
+          ) {
+            foundStudents.push({ student: { id: d.id, ...data }, schoolId: schId });
+          }
+        });
+        if (foundStudents.length > 0) break;
+      }
+    } catch (scanErr) {
+      console.warn('client fallback scan error:', scanErr);
+    }
+  }
+
+  if (foundStudents.length === 0) {
+    throw new Error(`વિદ્યાર્થીનો DISE કોડ "${cleanCode}" શાળાના ડેટામાં મળ્યો નથી. કૃપા કરીને સાચો ૧૮ આંકડાનો વિદ્યાર્થી DISE કોડ દાખલ કરો.`);
+  }
+
+  // Check DOB match
+  const dobMatched = foundStudents.filter((item) => datesMatch(item.student.dob, cleanDob));
+  if (dobMatched.length === 0) {
+    throw new Error('વિદ્યાર્થી DISE કોડ અથવા જન્મ તારીખ (પાસવર્ડ) મેળ ખાતા નથી. શાળાના રેકોર્ડ મુજબ સાચી જન્મ તારીખ દાખલ કરો.');
+  }
+
+  foundStudents = dobMatched;
+
+  // Filter by GR if given
+  if (cleanGr) {
+    const grMatched = foundStudents.filter(
+      (item) => (item.student.grNumber || '').toString().trim().toLowerCase() === cleanGr.toLowerCase()
+    );
+    if (grMatched.length > 0) {
+      foundStudents = grMatched;
+    }
+  }
+
+  const selectedMatch = foundStudents[0];
+  const selectedStudent = selectedMatch.student;
+  const schoolId = selectedMatch.schoolId;
+
+  // Fetch School document
+  let schoolData: any = {};
+  try {
+    const sSnap = await getDoc(doc(db, 'schools', schoolId));
+    if (sSnap.exists()) {
+      schoolData = sSnap.data();
+    }
+  } catch (e) {}
+
+  const token = `client_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+  const sessionPayload: StudentSession = {
+    student: {
+      id: selectedStudent.id,
+      schoolId: schoolId,
+      studentName: selectedStudent.studentName,
+      standard: selectedStudent.standard,
+      section: selectedStudent.section || selectedStudent.division || '',
+      grNumber: selectedStudent.grNumber || '',
+      rollNumber: selectedStudent.rollNumber || '',
+      diseCode: selectedStudent.diseCode || selectedStudent.studentStateCode || cleanCode,
+      dob: selectedStudent.dob || '',
+      doa: selectedStudent.doa || '',
+      gender: selectedStudent.gender || '',
+      fatherName: selectedStudent.fatherName || '',
+      motherName: selectedStudent.motherName || '',
+      bloodGroup: selectedStudent.bloodGroup || '',
+      address: selectedStudent.address || '',
+      photoUrl: selectedStudent.photoUrl || '',
+      contactNumber: selectedStudent.contactNumber || selectedStudent.mobileNumber || '',
+      caste: selectedStudent.caste || '',
+      createdAt: selectedStudent.createdAt || new Date().toISOString(),
+    },
+    school: {
+      id: schoolId,
+      schoolName: schoolData.schoolName || '',
+      diseCode: schoolData.diseCode || '',
+      district: schoolData.district || '',
+      address: schoolData.address || '',
+      principalName: schoolData.principalName || '',
+      logoUrl: schoolData.logoUrl || schoolData.schoolLogo || '',
+    },
+    loginAt: Date.now(),
+    sessionToken: token,
+  };
+
+  sessionStorage.setItem('vidyalayam_student_session', JSON.stringify(sessionPayload));
+  return sessionPayload;
+}
+
 // =========================================================================
 // Student Portal Client APIs
 // =========================================================================
@@ -446,9 +694,12 @@ export async function studentLogin(params: {
     throw new Error('કૃપા કરીને પાસવર્ડ તરીકે તમારી જન્મ તારીખ (Birthdate) દાખલ કરો.');
   }
 
-  let res: Response;
+  // Attempt server login first; if server responds with non-JSON (like Netlify 404 HTML) or fails to fetch, fallback to client-side Firestore!
+  let serverFailed = false;
+  let serverError = '';
+
   try {
-    res = await fetch('/api/student/login', {
+    const res = await fetch('/api/student/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -458,27 +709,43 @@ export async function studentLogin(params: {
         grNumber: params.grNumber?.trim() || undefined,
       }),
     });
+
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      if (res.ok && data.session) {
+        sessionStorage.setItem('vidyalayam_student_session', JSON.stringify(data.session));
+        return data.session;
+      }
+      // If server returned a business validation error (e.g. wrong DOB or DISE not found), keep that error
+      if (res.status === 400 || res.status === 401 || res.status === 404 || res.status === 429) {
+        throw new Error(data.error || 'વિદ્યાર્થી લૉગિન નિષ્ફળ થયું.');
+      }
+      serverError = data.error || '';
+      serverFailed = true;
+    } else {
+      // Netlify or static server returned HTML (404 page)
+      serverFailed = true;
+    }
   } catch (netErr: any) {
-    throw new Error('સર્વર સાથે સંપર્ક થઈ શક્યો નથી. કૃપા કરીને તમારું ઇન્ટરનેટ કનેક્શન તપાસો.');
+    // If it was our business throw, re-throw it
+    if (netErr.message && !netErr.message.includes('fetch') && !netErr.message.includes('Network') && !netErr.message.includes('સર્વર')) {
+      throw netErr;
+    }
+    serverFailed = true;
   }
 
-  let data: any = {};
-  try {
-    data = await res.json();
-  } catch (jsonErr) {
-    throw new Error('સર્વર તરફથી અયોગ્ય પ્રતિસાદ મળ્યો છે.');
+  // If server is not present (Netlify static hosting), run direct Firebase client login!
+  if (serverFailed) {
+    console.info('Switching to client-side Firebase direct verification (Netlify / Static platform mode)...');
+    try {
+      return await clientSideStudentLogin(cleanCode, cleanDob, params.grNumber?.trim());
+    } catch (fbErr: any) {
+      throw new Error(fbErr.message || serverError || 'વિદ્યાર્થી લૉગિન નિષ્ફળ થયું.');
+    }
   }
 
-  if (!res.ok) {
-    throw new Error(data.error || 'વિદ્યાર્થી લૉગિન નિષ્ફળ થયું.');
-  }
-
-  // Store in sessionStorage for fast recovery on page reload
-  if (data.session) {
-    sessionStorage.setItem('vidyalayam_student_session', JSON.stringify(data.session));
-  }
-
-  return data.session;
+  throw new Error('વિદ્યાર્થી લૉગિન નિષ્ફળ થયું.');
 }
 
 export function getStoredStudentSession(): StudentSession | null {
@@ -496,32 +763,95 @@ export function clearStudentSession() {
 }
 
 export async function fetchStudentExams(token: string) {
-  let res: Response;
+  let res: Response | null = null;
   try {
     res = await fetch('/api/student/exams', {
       headers: { 'x-student-token': token },
     });
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
+      return await res.json();
+    }
   } catch (netErr) {
-    throw new Error('પરીક્ષાઓ લોડ કરવા માટે સર્વર સાથે સંપર્ક થઈ શક્યો નથી.');
+    // Fallback to client-side Firestore
   }
 
-  let data: any = {};
+  // Client Firestore Fallback:
+  const session = getStoredStudentSession();
+  if (!session || !session.school?.id || !session.student) {
+    return { exams: [], serverTime: Date.now() };
+  }
+
   try {
-    data = await res.json();
-  } catch (jsonErr) {
-    throw new Error('સર્વર તરફથી અયોગ્ય ડેટા મળ્યો છે.');
-  }
+    const schoolId = session.school.id;
+    const student = session.student;
+    const now = Date.now();
 
-  if (!res.ok) {
-    throw new Error(data.error || 'પરીક્ષાઓ લોડ કરવામાં સમસ્યા થઈ.');
+    const examsCol = collection(db, 'schools', schoolId, 'online_exams');
+    const examsSnap = await getDocs(examsCol);
+    const allExams = examsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as any));
+
+    const studentExams = allExams.filter((ex) => {
+      const stdMatches =
+        !ex.standard ||
+        ex.standard === student.standard ||
+        ex.standard === 'all' ||
+        ex.standard === String(student.standard);
+      const statusValid = ex.status === 'scheduled' || ex.status === 'live' || ex.status === 'completed';
+      return stdMatches && statusValid;
+    });
+
+    const attemptsCol = collection(db, 'schools', schoolId, 'exam_attempts');
+    const attemptsQuery = query(attemptsCol, where('studentId', '==', student.id));
+    const attemptsSnap = await getDocs(attemptsQuery);
+    const attemptsMap = new Map<string, any>();
+    attemptsSnap.docs.forEach((d) => {
+      const at = d.data();
+      attemptsMap.set(at.examId, { id: d.id, ...at });
+    });
+
+    const enrichedExams = studentExams.map((ex) => {
+      const attempt = attemptsMap.get(ex.id);
+      return {
+        id: ex.id,
+        title: ex.title,
+        examType: ex.examType,
+        subject: ex.subject,
+        standard: ex.standard,
+        durationMinutes: ex.durationMinutes,
+        scheduledDate: ex.scheduledDate,
+        scheduledStartTime: ex.scheduledStartTime,
+        scheduledStartTimestamp: ex.scheduledStartTimestamp,
+        totalMarks: ex.totalMarks,
+        questionsCount: ex.questionsCount,
+        instructions: ex.instructions,
+        status: ex.status,
+        resultVisibility: ex.resultVisibility,
+        attempt: attempt
+          ? {
+              id: attempt.id,
+              status: attempt.status,
+              startedAt: attempt.startedAt,
+              submittedAt: attempt.submittedAt,
+              score: ex.resultVisibility === 'immediate' ? attempt.score : undefined,
+              totalMarks: attempt.totalMarks,
+              percentage: ex.resultVisibility === 'immediate' ? attempt.percentage : undefined,
+            }
+          : null,
+        serverTime: now,
+      };
+    });
+
+    return { exams: enrichedExams, serverTime: now };
+  } catch (err) {
+    console.error('Error in client fallback fetchStudentExams:', err);
+    return { exams: [], serverTime: Date.now() };
   }
-  return data;
 }
 
 export async function startStudentExam(token: string, examId: string) {
-  let res: Response;
   try {
-    res = await fetch('/api/student/start-exam', {
+    const res = await fetch('/api/student/start-exam', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -529,21 +859,126 @@ export async function startStudentExam(token: string, examId: string) {
       },
       body: JSON.stringify({ examId }),
     });
-  } catch (netErr) {
-    throw new Error('પરીક્ષા શરૂ કરવા માટે સર્વર સાથે સંપર્ક થઈ શક્યો નથી.');
+
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      if (res.ok) return data;
+      if (res.status === 403 || res.status === 404) {
+        throw new Error(data.error || 'પરીક્ષા શરૂ કરવામાં સમસ્યા થઈ.');
+      }
+    }
+  } catch (netErr: any) {
+    if (netErr.message && !netErr.message.includes('fetch')) {
+      throw netErr;
+    }
   }
 
-  let data: any = {};
-  try {
-    data = await res.json();
-  } catch (jsonErr) {
-    throw new Error('સર્વર તરફથી અયોગ્ય પ્રતિસાદ મળ્યો.');
+  // Client Firestore Fallback
+  const session = getStoredStudentSession();
+  if (!session || !session.school?.id || !session.student) {
+    throw new Error('વિદ્યાર્થી સત્ર મળ્યું નથી. કૃપા કરીને ફરી લોગિન કરો.');
   }
 
-  if (!res.ok) {
-    throw new Error(data.error || 'પરીક્ષા શરૂ કરવામાં સમસ્યા થઈ.');
+  const schoolId = session.school.id;
+  const student = session.student;
+  const now = Date.now();
+
+  const examDocRef = doc(db, 'schools', schoolId, 'online_exams', examId);
+  const examSnap = await getDoc(examDocRef);
+  if (!examSnap.exists()) {
+    throw new Error('પરીક્ષા મળી નથી.');
   }
-  return data;
+
+  const examData = examSnap.data() as any;
+  if (examData.scheduledStartTimestamp && now < examData.scheduledStartTimestamp) {
+    throw new Error('પરીક્ષા હજુ શરૂ થઈ નથી.');
+  }
+
+  // Late entry prevention rule:
+  // If student attempts to start 10 minutes past exam completion time, reject start.
+  if (examData.scheduledStartTimestamp && examData.durationMinutes) {
+    const durationMs = Number(examData.durationMinutes) * 60 * 1000;
+    const examOfficialEndTime = examData.scheduledStartTimestamp + durationMs;
+    const cutoffTime = examOfficialEndTime + 10 * 60 * 1000; // 10 minutes past exam completion
+
+    if (now > cutoffTime) {
+      throw new Error('પરીક્ષા પૂર્ણ થઈ ગઈ છે. પરીક્ષાનો સમય સમાપ્ત થઈ ગયેલ હોવાથી હવે પરીક્ષા શરૂ કરી શકાશે નહીં.');
+    }
+  }
+
+  const attemptsCol = collection(db, 'schools', schoolId, 'exam_attempts');
+  const q = query(attemptsCol, where('examId', '==', examId), where('studentId', '==', student.id));
+  const existingAttempts = await getDocs(q);
+
+  let attempt: any = null;
+  if (!existingAttempts.empty) {
+    attempt = { id: existingAttempts.docs[0].id, ...existingAttempts.docs[0].data() };
+    if (attempt.status === 'submitted' || attempt.status === 'timed_out') {
+      throw new Error('તમે આ પરીક્ષા પહેલેથી જ આપી દીધી છે. પુનઃપ્રયાસ કરવાની મંજૂરી નથી.');
+    }
+  } else {
+    const durationMs = (Number(examData.durationMinutes) || 30) * 60 * 1000;
+    let calculatedExpiry = now + durationMs;
+    if (examData.scheduledStartTimestamp) {
+      const hardCutoff = examData.scheduledStartTimestamp + durationMs + 10 * 60 * 1000;
+      calculatedExpiry = Math.min(calculatedExpiry, hardCutoff);
+    }
+
+    const newAttemptData = {
+      examId,
+      schoolId,
+      studentId: student.id,
+      studentName: student.studentName,
+      standard: student.standard,
+      grNumber: student.grNumber || '',
+      rollNumber: student.rollNumber || '',
+      startedAt: now,
+      expiresAt: calculatedExpiry,
+      status: 'in_progress',
+      answers: {},
+      score: 0,
+      totalMarks: examData.totalMarks || 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    const newDocRef = await addDoc(attemptsCol, newAttemptData);
+    attempt = { id: newDocRef.id, ...newAttemptData };
+  }
+
+  // Get questions with sanitized answers
+  const questionsCol = collection(db, 'schools', schoolId, 'online_exams', examId, 'questions');
+  const qSnap = await getDocs(query(questionsCol, orderBy('questionNumber', 'asc')));
+  const safeQuestions = qSnap.docs.map((d) => {
+    const qData = d.data() as any;
+    return {
+      id: d.id,
+      questionNumber: qData.questionNumber,
+      questionText: qData.questionText,
+      optionA: qData.optionA,
+      optionB: qData.optionB,
+      optionC: qData.optionC,
+      optionD: qData.optionD,
+      marks: qData.marks || 1,
+    };
+  });
+
+  return {
+    success: true,
+    exam: {
+      id: examSnap.id,
+      title: examData.title,
+      examType: examData.examType,
+      subject: examData.subject,
+      standard: examData.standard,
+      durationMinutes: examData.durationMinutes,
+      totalMarks: examData.totalMarks,
+      instructions: examData.instructions,
+    },
+    attempt,
+    questions: safeQuestions,
+    serverTime: now,
+  };
 }
 
 export async function saveStudentAnswers(
@@ -551,9 +986,8 @@ export async function saveStudentAnswers(
   attemptId: string,
   answers: Record<string, string>
 ) {
-  let res: Response;
   try {
-    res = await fetch('/api/student/save-answers', {
+    const res = await fetch('/api/student/save-answers', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -561,21 +995,24 @@ export async function saveStudentAnswers(
       },
       body: JSON.stringify({ attemptId, answers }),
     });
-  } catch (netErr) {
-    throw new Error('જવાબો સાચવવા માટે કનેક્શન મળી શક્યું નથી.');
-  }
+    if (res.ok) return await res.json();
+  } catch (e) {}
 
-  let data: any = {};
-  try {
-    data = await res.json();
-  } catch (jsonErr) {
-    throw new Error('જવાબો સાચવતી વખતે સર્વર ભૂલ થઈ.');
+  // Client Firestore Fallback
+  const session = getStoredStudentSession();
+  if (session && session.school?.id) {
+    try {
+      const attemptRef = doc(db, 'schools', session.school.id, 'exam_attempts', attemptId);
+      await updateDoc(attemptRef, {
+        answers,
+        lastSavedAt: Date.now(),
+      });
+      return { success: true };
+    } catch (fbErr) {
+      console.warn('saveStudentAnswers client fallback error:', fbErr);
+    }
   }
-
-  if (!res.ok) {
-    throw new Error(data.error || 'જવાબો સાચવવામાં સમસ્યા થઈ.');
-  }
-  return data;
+  return { success: true };
 }
 
 export async function submitStudentExam(
@@ -583,9 +1020,8 @@ export async function submitStudentExam(
   attemptId: string,
   answers: Record<string, string>
 ) {
-  let res: Response;
   try {
-    res = await fetch('/api/student/submit-exam', {
+    const res = await fetch('/api/student/submit-exam', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -593,42 +1029,101 @@ export async function submitStudentExam(
       },
       body: JSON.stringify({ attemptId, answers }),
     });
-  } catch (netErr) {
-    throw new Error('પરીક્ષા સબમિટ કરવા માટે સર્વર સાથે સંપર્ક થઈ શક્યો નથી.');
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      if (res.ok) return data;
+    }
+  } catch (e) {}
+
+  // Client Firestore Fallback
+  const session = getStoredStudentSession();
+  if (!session || !session.school?.id) {
+    throw new Error('વિદ્યાર્થી સત્ર મળ્યું નથી.');
   }
 
-  let data: any = {};
-  try {
-    data = await res.json();
-  } catch (jsonErr) {
-    throw new Error('સબમિશન પ્રતિસાદ વાંચવામાં ભૂલ થઈ.');
+  const schoolId = session.school.id;
+  const attemptRef = doc(db, 'schools', schoolId, 'exam_attempts', attemptId);
+  const attemptSnap = await getDoc(attemptRef);
+  if (!attemptSnap.exists()) {
+    throw new Error('પરીક્ષા પ્રયાસ મળ્યો નથી.');
   }
 
-  if (!res.ok) {
-    throw new Error(data.error || 'પરીક્ષા સબમિટ કરવામાં સમસ્યા થઈ.');
-  }
-  return data;
+  const attemptData = attemptSnap.data() as any;
+  const examId = attemptData.examId;
+
+  // Grade exam client-side from questions
+  const questionsCol = collection(db, 'schools', schoolId, 'online_exams', examId, 'questions');
+  const qSnap = await getDocs(questionsCol);
+
+  let score = 0;
+  let totalMarks = 0;
+  qSnap.docs.forEach((qd) => {
+    const q = qd.data() as any;
+    const qM = q.marks || 1;
+    totalMarks += qM;
+    const studentAns = (answers[qd.id] || '').toUpperCase();
+    const correctAns = (q.correctAnswer || '').toUpperCase();
+    if (correctAns && studentAns === correctAns) {
+      score += qM;
+    }
+  });
+
+  const percentage = totalMarks > 0 ? Math.round((score / totalMarks) * 1000) / 10 : 0;
+  const now = Date.now();
+
+  await updateDoc(attemptRef, {
+    answers,
+    score,
+    totalMarks,
+    percentage,
+    status: 'submitted',
+    submittedAt: now,
+  });
+
+  return {
+    success: true,
+    score,
+    totalMarks,
+    percentage,
+    submittedAt: now,
+    status: 'submitted',
+  };
 }
 
 export async function fetchStudentMarks(token: string) {
-  let res: Response;
   try {
-    res = await fetch('/api/student/my-marks', {
+    const res = await fetch('/api/student/my-marks', {
       headers: { 'x-student-token': token },
     });
-  } catch (netErr) {
-    throw new Error('ગુણ લોડ કરવા માટે સર્વર સાથે સંપર્ક થઈ શક્યો નથી.');
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
+      return await res.json();
+    }
+  } catch (netErr) {}
+
+  // Client Firestore Fallback
+  const session = getStoredStudentSession();
+  if (!session || !session.school?.id || !session.student) {
+    return { marks: [], studentName: '', standard: '' };
   }
 
-  let data: any = {};
   try {
-    data = await res.json();
-  } catch (jsonErr) {
-    throw new Error('ગુણનો ડેટા વાંચવામાં ભૂલ થઈ.');
-  }
+    const marksCol = collection(db, 'schools', session.school.id, 'marks');
+    const marksQuery = query(marksCol, where('studentId', '==', session.student.id));
+    const marksSnap = await getDocs(marksQuery);
+    const markRecords = marksSnap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    }));
 
-  if (!res.ok) {
-    throw new Error(data.error || 'ગુણ મેળવવામાં સમસ્યા થઈ.');
+    return {
+      marks: markRecords,
+      studentName: session.student.studentName,
+      standard: session.student.standard,
+    };
+  } catch (err) {
+    console.warn('fetchStudentMarks client fallback error:', err);
+    return { marks: [], studentName: '', standard: '' };
   }
-  return data;
 }

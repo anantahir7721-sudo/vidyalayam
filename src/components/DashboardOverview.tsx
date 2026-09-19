@@ -47,12 +47,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const std11Count = students.filter((s) => String(s.standard) === '11').length;
   const std12Count = students.filter((s) => String(s.standard) === '12').length;
 
-  const boysCount = students.filter(
-    (s) => s.gender === 'boy' || s.gender === 'male' || s.gender === 'કુમાર'
-  ).length;
-  const girlsCount = students.filter(
-    (s) => s.gender === 'girl' || s.gender === 'female' || s.gender === 'કન્યા'
-  ).length;
+  const isBoy = (g?: string) => {
+    if (!g) return false;
+    const str = String(g).trim().toLowerCase();
+    return str === 'boy' || str === 'male' || str === 'm' || str === 'કુમાર' || str === 'પુરુષ' || str === 'છોકરો';
+  };
+
+  const isGirl = (g?: string) => {
+    if (!g) return false;
+    const str = String(g).trim().toLowerCase();
+    return str === 'girl' || str === 'female' || str === 'f' || str === 'કન્યા' || str === 'સ્ત્રી' || str === 'છોકરી';
+  };
+
+  const boysCount = students.filter((s) => isBoy(s.gender)).length;
+  const girlsCount = students.filter((s) => isGirl(s.gender)).length;
 
   const teachingStaffCount = staffList.filter(
     (st) =>

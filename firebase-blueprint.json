@@ -86,6 +86,36 @@
         "submitted": { "type": "boolean" }
       },
       "required": ["examId", "studentId", "schoolId"]
+    },
+    "Staff": {
+      "title": "Staff",
+      "description": "School staff member with designation, dates, bank, and identity details",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "designation": { "type": "string" },
+        "category": { "type": "string", "enum": ["teaching", "non_teaching"] },
+        "subject": { "type": "string" },
+        "qualification": { "type": "string" },
+        "dob": { "type": "string" },
+        "serviceJoiningDate": { "type": "string" },
+        "schoolJoiningDate": { "type": "string" },
+        "joiningDate": { "type": "string" },
+        "mobile": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "bloodGroup": { "type": "string" },
+        "aadhaarNumber": { "type": "string" },
+        "panNumber": { "type": "string" },
+        "bankName": { "type": "string" },
+        "bankAccountNo": { "type": "string" },
+        "bankIfsc": { "type": "string" },
+        "bankBranch": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["schoolId", "fullName", "designation"]
     }
   },
   "firestore": {
@@ -104,6 +134,10 @@
     "/schools/{schoolId}/marks/{markId}": {
       "schema": { "$ref": "#/entities/MarkRecord" },
       "description": "Marks records for a school"
+    },
+    "/schools/{schoolId}/staff/{staffId}": {
+      "schema": { "$ref": "#/entities/Staff" },
+      "description": "Staff member records for a school"
     },
     "/schools/{schoolId}/online_exams/{examId}": {
       "schema": { "$ref": "#/entities/OnlineExam" },

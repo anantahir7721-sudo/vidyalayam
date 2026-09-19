@@ -447,9 +447,16 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   </span>
                   <span>•</span>
                   <span>
-                    DISE કોડ:{' '}
+                    શાળા DISE:{' '}
                     <strong className="text-slate-200 font-mono">
-                      {student.diseCode || school.diseCode || '-'}
+                      {school.diseCode || '-'}
+                    </strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    વિદ્યાર્થી DISE:{' '}
+                    <strong className="text-cyan-300 font-mono">
+                      {student.diseCode || student.studentStateCode || student.studentId || '-'}
                     </strong>
                   </span>
                 </p>
@@ -536,13 +543,14 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      શાળા DISE કોડ
+                      વિદ્યાર્થી DISE કોડ (૧૮ આંકડાનો Child UID)
                     </label>
                     <input
                       type="text"
+                      placeholder="૧૮ આંકડાનો UDISE+ / Child UID દાખલ કરો"
                       value={formData.diseCode}
                       onChange={(e) => setFormData({ ...formData, diseCode: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta font-mono"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-cyan-300 focus:outline-none focus:border-terracotta font-mono"
                     />
                   </div>
                 </div>
@@ -844,10 +852,16 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                     <span className="text-slate-400">પ્રવેશ તારીખ (DOA):</span>
                     <span className="text-white">{student.doa || '-'}</span>
                   </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-slate-400">શાળા DISE કોડ:</span>
+                  <div className="flex justify-between py-1 border-b border-white/5">
+                    <span className="text-slate-400">શાળા DISE કોડ (૧૧ આંકડા):</span>
                     <span className="font-mono text-white">
-                      {student.diseCode || school.diseCode || '-'}
+                      {school.diseCode || '-'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-slate-400">વિદ્યાર્થી DISE કોડ (૧૮ આંકડા):</span>
+                    <span className="font-mono text-cyan-300 font-semibold">
+                      {student.diseCode || student.studentStateCode || student.studentId || '-'}
                     </span>
                   </div>
                 </div>
