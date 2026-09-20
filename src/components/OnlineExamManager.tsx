@@ -21,6 +21,7 @@ import {
   Award,
   AlertTriangle,
   RefreshCw,
+  Copy,
 } from 'lucide-react';
 import {
   School,
@@ -67,6 +68,17 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editingExam, setEditingExam] = useState<OnlineExam | null>(null);
   const [editingQuestions, setEditingQuestions] = useState<MCQQuestion[]>([]);
+  const [isCloneAsNew, setIsCloneAsNew] = useState(false);
+
+  // Helper: check if exam is completed or its time has expired
+  const isExamConcluded = (exam: OnlineExam) => {
+    if (exam.status === 'completed') return true;
+    if (exam.scheduledStartTimestamp && exam.durationMinutes) {
+      const endTimestamp = exam.scheduledStartTimestamp + Number(exam.durationMinutes) * 60 * 1000;
+      if (serverTime > endTimestamp) return true;
+    }
+    return false;
+  };
 
   // Analytics Modal
   const [analyticsExam, setAnalyticsExam] = useState<OnlineExam | null>(null);
@@ -130,13 +142,16 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
 
   // Handle Create / Edit Save
   const handleSaveExam = async (examPayload: any, questions: MCQQuestion[]) => {
+    const isCompleted = editingExam ? isExamConcluded(editingExam) : false;
+    const shouldCreateNew = !editingExam || isCloneAsNew || isCompleted;
+
     // Validate time clash against other exams
     const conflict = findConflictingExam(
       exams,
       examPayload.scheduledDate,
       examPayload.scheduledStartTime,
       examPayload.durationMinutes,
-      editingExam?.id,
+      shouldCreateNew ? undefined : editingExam?.id,
       examPayload.standard
     );
 
@@ -150,23 +165,44 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
       );
     }
 
-    if (editingExam) {
-      // Update
+    if (!shouldCreateNew && editingExam) {
+      // Update uncompleted/draft exam
       await updateOnlineExam(school.id, editingExam.id, examPayload, questions);
     } else {
-      // Create
+      // Strictly create a new exam entry: 1 exam = 1 result. Completed exam results are preserved!
       await createOnlineExam(school.id, examPayload, questions);
     }
     setIsEditing(false);
     setEditingExam(null);
     setEditingQuestions([]);
+    setIsCloneAsNew(false);
+  };
+
+  // Launch Editor for brand new exam
+  const handleOpenCreate = () => {
+    setEditingExam(null);
+    setEditingQuestions([]);
+    setIsCloneAsNew(false);
+    setIsEditing(true);
+  };
+
+  // Launch Editor to retake / create new entry from existing exam (1 exam = 1 result)
+  const handleOpenRetakeNew = async (exam: OnlineExam) => {
+    const qs = await getExamQuestions(school.id, exam.id);
+    setEditingExam(exam);
+    setEditingQuestions(qs);
+    setIsCloneAsNew(true);
+    setIsEditing(true);
   };
 
   // Launch Editor for existing exam
   const handleOpenEdit = async (exam: OnlineExam) => {
     const qs = await getExamQuestions(school.id, exam.id);
+    const concluded = isExamConcluded(exam);
     setEditingExam(exam);
     setEditingQuestions(qs);
+    // If exam is already completed or ended, editing it MUST create a new entry to preserve student marks!
+    setIsCloneAsNew(concluded);
     setIsEditing(true);
   };
 
@@ -205,11 +241,13 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
         existingExam={editingExam}
         existingQuestions={editingQuestions}
         allExams={exams}
+        isCloneAsNew={isCloneAsNew}
         onSave={handleSaveExam}
         onCancel={() => {
           setIsEditing(false);
           setEditingExam(null);
           setEditingQuestions([]);
+          setIsCloneAsNew(false);
         }}
       />
     );
@@ -256,12 +294,8 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
 
           <button
             type="button"
-            onClick={() => {
-              setEditingExam(null);
-              setEditingQuestions([]);
-              setIsEditing(true);
-            }}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-emerald-950/50 flex items-center gap-2 transition-all"
+            onClick={handleOpenCreate}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-emerald-950/50 flex items-center gap-2 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             નવી પરીક્ષા બનાવો (Create Exam)
@@ -483,15 +517,27 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                       પરિણામ
                     </button>
 
-                    {/* Edit */}
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEdit(exam)}
-                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
-                      title="પરીક્ષા સુધારો"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
+                    {/* Edit or Retake New Entry */}
+                    {isExamConcluded(exam) ? (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenRetakeNew(exam)}
+                        className="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="આ પરીક્ષા ફરીથી લેવા માટે નવી એન્ટ્રી બનાવો (અગાઉનું પરિણામ સુરક્ષિત રહેશે)"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>ફરી પરીક્ષા / નવી એન્ટ્રી</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(exam)}
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                        title="પરીક્ષા સુધારો"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Delete */}

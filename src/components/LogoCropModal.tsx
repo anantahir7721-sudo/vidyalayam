@@ -26,10 +26,13 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
   onClose,
   onCropComplete,
 }) => {
-  const [scale, setScale] = useState<number>(1);
+  const [zoom, setZoom] = useState<number>(1);
+  const [baseFitScale, setBaseFitScale] = useState<number>(1);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [pinchStartDist, setPinchStartDist] = useState<number | null>(null);
+  const [pinchStartZoom, setPinchStartZoom] = useState<number>(1);
   const [removeWhiteBg, setRemoveWhiteBg] = useState<boolean>(true);
   const [transparencySensitivity, setTransparencySensitivity] = useState<number>(230);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -38,6 +41,18 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  // Calculate effective scale = base fit scale * user zoom factor
+  const effectiveScale = baseFitScale * zoom;
+
+  // Auto-fit function that fits the complete image inside the square box
+  const fitEntireLogo = (img: HTMLImageElement) => {
+    const cropSize = 250; // Leave 15px safe margin so entire logo fits comfortably
+    const fitScale = Math.min(cropSize / img.width, cropSize / img.height, 1);
+    setBaseFitScale(fitScale > 0 ? fitScale : 1);
+    setZoom(1.0);
+    setPosition({ x: 0, y: 0 });
+  };
+
   // Load image
   useEffect(() => {
     if (!imageSrc) return;
@@ -45,11 +60,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       imageRef.current = img;
-      // Auto-fit initial scale
-      const cropSize = 280;
-      const initialScale = Math.min(cropSize / img.width, cropSize / img.height, 1);
-      setScale(Math.max(initialScale, 0.5));
-      setPosition({ x: 0, y: 0 });
+      fitEntireLogo(img);
     };
     img.src = imageSrc;
   }, [imageSrc]);
@@ -68,7 +79,6 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
 
     ctx.clearRect(0, 0, outputSize, outputSize);
 
-    // Coordinate math:
     // Viewport is 280x280. Center is (140, 140).
     // Output is 320x320. Multiplier is 320 / 280.
     const multiplier = outputSize / 280;
@@ -77,7 +87,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
 
     ctx.save();
     ctx.translate(centerX + position.x * multiplier, centerY + position.y * multiplier);
-    ctx.scale(scale * multiplier, scale * multiplier);
+    ctx.scale(effectiveScale * multiplier, effectiveScale * multiplier);
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
@@ -88,8 +98,8 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
     if (removeWhiteBg) {
       const imgData = ctx.getImageData(0, 0, outputSize, outputSize);
       const data = imgData.data;
-      const threshold = transparencySensitivity; // e.g. 230
-      const fadeRange = 25; // Gradual fade from 230 - 25 = 205 up to 230
+      const threshold = transparencySensitivity;
+      const fadeRange = 25;
 
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
@@ -99,15 +109,12 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
 
         if (a === 0) continue;
 
-        // Minimum brightness across all 3 color channels
         const minChannel = Math.min(r, g, b);
         const maxDiff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
 
-        // Near-neutral white/off-white pixel (channels are high and close to each other)
         if (minChannel >= threshold && maxDiff < 30) {
-          data[i + 3] = 0; // Completely transparent
+          data[i + 3] = 0;
         } else if (minChannel >= threshold - fadeRange && maxDiff < 25) {
-          // Soft anti-aliased edge blending
           const factor = (threshold - minChannel) / fadeRange;
           data[i + 3] = Math.round(a * Math.max(0, Math.min(1, factor)));
         }
@@ -118,7 +125,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
     const dataUrl = canvas.toDataURL('image/png');
     setPreviewUrl(dataUrl);
     return dataUrl;
-  }, [scale, position, removeWhiteBg, transparencySensitivity]);
+  }, [effectiveScale, position, removeWhiteBg, transparencySensitivity]);
 
   // Update preview whenever parameters change
   useEffect(() => {
@@ -154,34 +161,55 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
       setIsDragging(true);
       const touch = e.touches[0];
       setDragStart({ x: touch.clientX - position.x, y: touch.clientY - position.y });
+    } else if (e.touches.length === 2) {
+      setIsDragging(false);
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      setPinchStartDist(dist);
+      setPinchStartZoom(zoom);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    setPosition({
-      x: touch.clientX - dragStart.x,
-      y: touch.clientY - dragStart.y,
-    });
+    if (e.touches.length === 1 && isDragging) {
+      const touch = e.touches[0];
+      setPosition({
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y,
+      });
+    } else if (e.touches.length === 2 && pinchStartDist) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const newZoom = Math.min(Math.max((dist / pinchStartDist) * pinchStartZoom, 0.2), 3.0);
+      setZoom(newZoom);
+    }
   };
 
   const handleTouchEnd = () => {
     setIsDragging(false);
+    setPinchStartDist(null);
   };
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY * -0.0015;
-    setScale((prev) => Math.min(Math.max(prev + delta, 0.3), 3.5));
+    setZoom((prev) => Math.min(Math.max(prev + delta, 0.2), 3.0));
   };
 
   const handleReset = () => {
     if (!imageRef.current) return;
-    const cropSize = 280;
-    const initialScale = Math.min(cropSize / imageRef.current.width, cropSize / imageRef.current.height, 1);
-    setScale(Math.max(initialScale, 0.5));
-    setPosition({ x: 0, y: 0 });
+    fitEntireLogo(imageRef.current);
+  };
+
+  // Option to use the original image without any forced crop cuts
+  const handleUseOriginal = () => {
+    if (!imageSrc) return;
+    onCropComplete(imageSrc);
+    onClose();
   };
 
   const handleApply = () => {
@@ -248,7 +276,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
                   alt="Crop Source"
                   draggable={false}
                   style={{
-                    transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                    transform: `translate(${position.x}px, ${position.y}px) scale(${effectiveScale})`,
                     transformOrigin: 'center center',
                     filter: removeWhiteBg ? 'contrast(1.05)' : 'none',
                   }}
@@ -274,49 +302,67 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
 
           {/* Controls: Zoom & Options */}
           <div className="space-y-3 bg-white/[0.02] border border-white/10 p-3.5 rounded-2xl">
-            {/* Zoom Slider */}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setScale((s) => Math.max(s - 0.1, 0.3))}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
-                title="ઝૂમ આઉટ"
-              >
-                <ZoomOut className="w-4 h-4" />
-              </button>
+            {/* Zoom Slider & Quick Fit */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setZoom((z) => Math.max(z - 0.05, 0.2))}
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+                  title="ઝૂમ આઉટ (Zoom Out)"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
 
-              <input
-                type="range"
-                min="0.3"
-                max="3.0"
-                step="0.05"
-                value={scale}
-                onChange={(e) => setScale(parseFloat(e.target.value))}
-                className="flex-1 accent-[#f59c73] h-1.5 bg-slate-700 rounded-lg cursor-pointer"
-              />
+                <input
+                  type="range"
+                  min="0.2"
+                  max="2.5"
+                  step="0.05"
+                  value={zoom}
+                  onChange={(e) => setZoom(parseFloat(e.target.value))}
+                  className="flex-1 accent-[#f59c73] h-1.5 bg-slate-700 rounded-lg cursor-pointer"
+                />
 
-              <button
-                type="button"
-                onClick={() => setScale((s) => Math.min(s + 0.1, 3.0))}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
-                title="ઝૂમ ઇન"
-              >
-                <ZoomIn className="w-4 h-4" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setZoom((z) => Math.min(z + 0.05, 2.5))}
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+                  title="ઝૂમ ઇન (Zoom In)"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
 
-              <span className="text-[11px] font-mono text-amber-300 w-12 text-right">
-                {Math.round(scale * 100)}%
-              </span>
+                <span className="text-[11px] font-mono text-amber-300 w-14 text-right">
+                  {Math.round(zoom * 100)}%
+                </span>
+              </div>
 
-              <button
-                type="button"
-                onClick={handleReset}
-                className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-[11px] flex items-center gap-1 transition-colors border border-white/10"
-                title="મૂળ સ્થિતિમાં લાવો"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>રીસેટ</span>
-              </button>
+              {/* Quick Helper Buttons for Auto-fit / Reset */}
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-[11px] font-semibold flex items-center gap-1.5 transition-colors border border-emerald-500/30 cursor-pointer"
+                  title="આખો લોગો બોક્સમાં સમાવી લો"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>આખો લોગો ફિટ કરો (Fit Full Logo)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoom(1.0);
+                    setPosition({ x: 0, y: 0 });
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-[11px] flex items-center gap-1 transition-colors border border-white/10 cursor-pointer"
+                  title="૧૦૦% સામાન્ય સાઇઝ"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>૧૦૦% સ્કેલ</span>
+                </button>
+              </div>
             </div>
 
             {/* Remove White Background Checkbox & Sensitivity */}
@@ -392,22 +438,32 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
         </div>
 
         {/* Footer Buttons */}
-        <div className="px-5 py-4 border-t border-white/10 flex items-center justify-end gap-2.5 bg-white/[0.02]">
+        <div className="px-5 py-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-2.5 bg-white/[0.02]">
           <button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            onClick={handleUseOriginal}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors"
+            title="ક્રોપ વગર આખો લોગો જેમ છે તેમ વાપરો"
           >
-            રદ કરો (Cancel)
+            ક્રોપ વિના સીધો રાખો (Full Logo)
           </button>
-          <button
-            type="button"
-            onClick={handleApply}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg transition-all"
-          >
-            <Check className="w-4 h-4" />
-            <span>લોગો સાચવો અને અપલોડ કરો (Crop & Save Logo)</span>
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              રદ કરો (Cancel)
+            </button>
+            <button
+              type="button"
+              onClick={handleApply}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg transition-all"
+            >
+              <Check className="w-4 h-4" />
+              <span>લોગો સાચવો અને અપલોડ કરો (Crop & Save Logo)</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

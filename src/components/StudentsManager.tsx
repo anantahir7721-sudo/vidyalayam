@@ -20,10 +20,12 @@ import {
   DualFileMergeResult,
   MergedStudentRow,
   ParsedStudentRow,
+  StudentFieldChange,
 } from '../utils/excelUtils';
 import { printStudentIdCards } from '../utils/idCardPdf';
 import { compressStudentPhoto } from '../utils/imageUtils';
 import { StudentProfileModal } from './StudentProfileModal';
+import { ImportConfirmationModal } from './ImportConfirmationModal';
 import {
   cleanAndNormalizeBloodGroup,
   diagnoseStudentBloodGroup,
@@ -41,6 +43,7 @@ import {
   Download,
   Upload,
   CheckCircle2,
+  RefreshCw,
   AlertCircle,
   AlertTriangle,
   X,
@@ -108,6 +111,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
     motherOccupation: '',
     address: '',
     placeOfBirth: '',
+    aadhaarNo: '',
     photoUrl: '',
     diseCode: school.diseCode || '',
   });
@@ -135,6 +139,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
   const [isParsingExcel, setIsParsingExcel] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
+
+  // Import Confirmation Popup State (to review new vs update count & changed fields)
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [confirmImportMode, setConfirmImportMode] = useState<'single' | 'dual'>('single');
 
   // Dual-File (CTS + UDISE+) Import State
   const [isDualImportModalOpen, setIsDualImportModalOpen] = useState(false);
@@ -360,6 +368,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
         motherOccupation: addForm.motherOccupation.trim() || undefined,
         address: addForm.address.trim() || undefined,
         placeOfBirth: addForm.placeOfBirth.trim() || undefined,
+        aadhaarNo: addForm.aadhaarNo.trim() || undefined,
         photoUrl: addForm.photoUrl || undefined,
       });
 
@@ -383,6 +392,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
         motherOccupation: '',
         address: '',
         placeOfBirth: '',
+        aadhaarNo: '',
         photoUrl: '',
         diseCode: school.diseCode || '',
       });
@@ -528,6 +538,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
         studentName: r.name,
         standard: r.standard,
         diseCode: r.diseCode,
+        studentStateCode: r.diseCode,
         grNumber: r.grNumber,
         section: r.section,
         division: r.section,
@@ -545,6 +556,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
         motherOccupation: r.motherOccupation,
         placeOfBirth: r.placeOfBirth,
         photoUrl: r.photoUrl,
+        aadhaarNo: r.aadhaarNo,
       }));
 
       const res = await bulkUpsertStudents(schoolId, studentsToImport, students);
@@ -552,6 +564,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       setImportStatusMessage(
         `Excel આયાત સફળ! ${res.added} નવા વિદ્યાર્થીઓ ઉમેરાયા અને ${res.updated} જૂના વિદ્યાર્થીઓના રેકોર્ડ્સ અપડેટ થયા.`
       );
+      setIsConfirmModalOpen(false);
       setPreviewModalOpen(false);
       onRefresh();
       setTimeout(() => setImportStatusMessage(null), 7000);
@@ -610,6 +623,11 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
         cwsnDisability: r.cwsnDisability,
         fatherName: r.fatherName,
         motherName: r.motherName,
+        address: r.address,
+        aadhaarNo: r.aadhaarNo,
+        placeOfBirth: r.placeOfBirth,
+        fatherOccupation: r.fatherOccupation,
+        motherOccupation: r.motherOccupation,
       }));
 
       const res = await bulkUpsertStudents(schoolId, studentsToImport, students);
@@ -617,6 +635,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       setImportStatusMessage(
         `દ્વિ-ફાઇલ (CTS + UDISE+) આયાત સફળ! ${res.added} નવા વિદ્યાર્થીઓ ઉમેરાયા અને ${res.updated} વિદ્યાર્થીઓના રેકોર્ડ્સ અપડેટ થયા.`
       );
+      setIsConfirmModalOpen(false);
       setIsDualImportModalOpen(false);
       setCtsFile(null);
       setUdiseFile(null);
@@ -629,6 +648,62 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       setIsExecutingDualImport(false);
     }
   };
+
+  // Memoized New vs Updated Student lists for Single Excel Import confirmation
+  const singleNewEntries = useMemo(() => {
+    if (!parseResult) return [];
+    return parseResult.validRows
+      .filter((r) => !r.isExistingUpdate)
+      .map((r) => ({
+        name: r.name,
+        grNumber: r.grNumber,
+        standard: r.standard,
+        section: r.section,
+        rollNumber: r.rollNumber,
+        diseCode: r.diseCode,
+      }));
+  }, [parseResult]);
+
+  const singleUpdatedEntries = useMemo(() => {
+    if (!parseResult) return [];
+    return parseResult.existingUpdateRows.map((r) => ({
+      name: r.existingStudentName || r.name,
+      grNumber: r.existingGrNumber || r.grNumber,
+      standard: r.existingStandard || r.standard,
+      section: r.section,
+      rollNumber: r.rollNumber,
+      diseCode: r.diseCode,
+      changes: r.changes || [],
+    }));
+  }, [parseResult]);
+
+  // Memoized New vs Updated Student lists for Dual-File Import confirmation
+  const dualNewEntries = useMemo(() => {
+    if (!dualParseResult) return [];
+    return dualParseResult.validRows
+      .filter((r) => !r.isExistingUpdate)
+      .map((r) => ({
+        name: r.name,
+        grNumber: r.grNumber,
+        standard: r.standard,
+        section: r.section,
+        rollNumber: r.rollNumber,
+        diseCode: r.studentStateCode || r.diseCode,
+      }));
+  }, [dualParseResult]);
+
+  const dualUpdatedEntries = useMemo(() => {
+    if (!dualParseResult) return [];
+    return dualParseResult.existingUpdateRows.map((r) => ({
+      name: r.existingStudentName || r.name,
+      grNumber: r.existingGrNumber || r.grNumber,
+      standard: r.existingStandard || r.standard,
+      section: r.section,
+      rollNumber: r.rollNumber,
+      diseCode: r.studentStateCode || r.diseCode,
+      changes: r.changes || [],
+    }));
+  }, [dualParseResult]);
 
   return (
     <div className="space-y-6">
@@ -656,67 +731,28 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Dual-File Smart Import Button (CTS + UDISE+) */}
+            {/* Primary 1: Add Student Button */}
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-terracotta hover:bg-terracotta-hover text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-terracotta/25 transition-all min-h-[44px] cursor-pointer"
+              title="નવો વિદ્યાર્થી ઉમેરો"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>+ નવો ઉમેરો</span>
+            </button>
+
+            {/* Primary 2: Dual-File Smart Import Button (CTS + UDISE+) */}
             <button
               onClick={() => setIsDualImportModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-emerald-900/30 transition-all min-h-[44px] border border-emerald-400/40 cursor-pointer animate-pulse-slow"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-900/30 transition-all min-h-[44px] border border-emerald-400/40 cursor-pointer"
               title="CTS અને UDISE+ એક્સેલ ફાઇલો મર્જ કરીને આયાત કરો"
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>દ્વિ-ફાઇલ સ્માર્ટ આયાત (CTS + UDISE+)</span>
+              <span>દ્વિ-ફાઇલ આયાત (CTS + UDISE+)</span>
             </button>
 
-            {/* Template Downloads Menu / Buttons */}
-            <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-700/80">
-              <span className="text-[11px] font-semibold text-slate-400 px-2 flex items-center gap-1">
-                <Download className="w-3.5 h-3.5 text-emerald-400" />
-                ટેમ્પ્લેટ:
-              </span>
-              <button
-                onClick={() => downloadCtsTemplate(school.diseCode, school.schoolName)}
-                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-xs font-semibold transition-colors border border-emerald-700/40"
-                title="CTS Excel Template (GR No. & AadhaarUID)"
-              >
-                CTS
-              </button>
-              <button
-                onClick={() => downloadUdisePlusTemplate(school.diseCode, school.schoolName)}
-                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg text-xs font-semibold transition-colors border border-cyan-700/40"
-                title="UDISE+ Excel Template (Col 1 to 61)"
-              >
-                UDISE+
-              </button>
-              <button
-                onClick={() => downloadStudentTemplate(school.diseCode, school.schoolName)}
-                className="px-2 py-1.5 hover:bg-slate-800 text-slate-300 rounded-lg text-xs transition-colors"
-                title="General Student Master Template"
-              >
-                સામાન્ય
-              </button>
-            </div>
-
-            {/* Generate ID Cards Button */}
-            <button
-              onClick={() => setIsIdCardModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-amber-600 to-terracotta hover:from-amber-500 hover:to-terracotta-hover text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-terracotta/20 transition-all min-h-[44px]"
-              title="Generate Student ID Cards"
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>આઈડી કાર્ડ ({selectedStudentIds.size > 0 ? selectedStudentIds.size : 'બધા'})</span>
-            </button>
-
-            {/* Export to Excel */}
-            <button
-              onClick={() => exportStudentsExcel(students, school.schoolName, school.diseCode)}
-              className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-sm min-h-[44px]"
-              title="Export all students to Excel"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-amber-400" />
-              <span>એક્સપોર્ટ</span>
-            </button>
-
-            {/* Single File Upload Excel */}
-            <label className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-sm cursor-pointer min-h-[44px]">
+            {/* Secondary 1: Single File Upload Excel */}
+            <label className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-sm cursor-pointer min-h-[44px]">
               {isParsingExcel ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
@@ -736,6 +772,68 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 }}
               />
             </label>
+
+            {/* Secondary 2: Export to Excel */}
+            <button
+              onClick={() => exportStudentsExcel(students, school.schoolName, school.diseCode)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-sm min-h-[44px] cursor-pointer"
+              title="Export all students to Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-amber-400" />
+              <span>એક્સપોર્ટ</span>
+            </button>
+
+            {/* Template Downloads Menu / Buttons */}
+            <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-700/80">
+              <span className="text-[11px] font-semibold text-slate-400 px-1.5 flex items-center gap-1">
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                ટેમ્પ્લેટ:
+              </span>
+              <button
+                onClick={() => downloadCtsTemplate(school.diseCode, school.schoolName)}
+                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-xs font-semibold transition-colors border border-emerald-700/40"
+                title="CTS Excel Template (GR No. & AadhaarUID)"
+              >
+                CTS
+              </button>
+              <button
+                onClick={() => downloadUdisePlusTemplate(school.diseCode, school.schoolName)}
+                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg text-xs font-semibold transition-colors border border-cyan-700/40"
+                title="UDISE+ Excel Template (Col 1 to 61)"
+              >
+                UDISE+
+              </button>
+              <button
+                onClick={() => downloadStudentTemplate(school.diseCode, school.schoolName)}
+                className="px-2 py-1 hover:bg-slate-800 text-slate-300 rounded-lg text-xs transition-colors"
+                title="General Student Master Template"
+              >
+                સામાન્ય
+              </button>
+            </div>
+
+            {/* Fix All Blood Groups Button */}
+            <button
+              onClick={() => {
+                setFixBloodResult(null);
+                setIsFixBloodModalOpen(true);
+              }}
+              disabled={students.length === 0}
+              className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed min-h-[44px] ${
+                bloodGroupIssues.length > 0
+                  ? 'bg-amber-950/80 hover:bg-amber-900 text-amber-200 border border-amber-500/80 ring-2 ring-amber-500/30'
+                  : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700'
+              }`}
+              title="બ્લડ ગ્રૂપની અયોગ્ય એન્ટ્રીઓ સુધારો (Fix Blood Group Column Entries)"
+            >
+              <Heart className={`w-4 h-4 ${bloodGroupIssues.length > 0 ? 'text-amber-400 fill-amber-400' : 'text-red-400'}`} />
+              <span>બ્લડ ગ્રૂપ ફિક્સ</span>
+              {bloodGroupIssues.length > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">
+                  {bloodGroupIssues.length}
+                </span>
+              )}
+            </button>
 
             {/* Delete All Students Button */}
             <button
@@ -762,38 +860,6 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             >
               <Trash2 className="w-4 h-4 text-red-400" />
               <span>બધા કાઢી નાખો</span>
-            </button>
-
-            {/* Fix All Blood Groups Button */}
-            <button
-              onClick={() => {
-                setFixBloodResult(null);
-                setIsFixBloodModalOpen(true);
-              }}
-              disabled={students.length === 0}
-              className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed min-h-[44px] ${
-                bloodGroupIssues.length > 0
-                  ? 'bg-amber-950/80 hover:bg-amber-900 text-amber-200 border border-amber-500/80 ring-2 ring-amber-500/30'
-                  : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700'
-              }`}
-              title="બ્લડ ગ્રૂપની અયોગ્ય એન્ટ્રીઓ સુધારો (Fix Blood Group Column Entries)"
-            >
-              <Heart className={`w-4 h-4 ${bloodGroupIssues.length > 0 ? 'text-amber-400 fill-amber-400' : 'text-red-400'}`} />
-              <span>બ્લડ ગ્રૂપ ફિક્સ</span>
-              {bloodGroupIssues.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">
-                  {bloodGroupIssues.length}
-                </span>
-              )}
-            </button>
-
-            {/* Add Student Button */}
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-terracotta hover:bg-terracotta-hover text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-terracotta/20 transition-all min-h-[44px]"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>નવો ઉમેરો</span>
             </button>
           </div>
         </div>
@@ -1476,12 +1542,38 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    પિતાનો વ્યવસાય (Father Occupation)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ખેતી, વેપાર, નોકરી..."
+                    value={addForm.fatherOccupation}
+                    onChange={(e) => setAddForm({ ...addForm, fatherOccupation: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
                     માતાનું નામ (Mother Name)
                   </label>
                   <input
                     type="text"
                     value={addForm.motherName}
                     onChange={(e) => setAddForm({ ...addForm, motherName: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    માતાનો વ્યવસાય (Mother Occupation)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ગૃહિણી, નોકરી..."
+                    value={addForm.motherOccupation}
+                    onChange={(e) => setAddForm({ ...addForm, motherOccupation: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
                   />
                 </div>
@@ -1495,6 +1587,33 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     placeholder="10 અંકનો મોબાઈલ"
                     value={addForm.contactNumber}
                     onChange={(e) => setAddForm({ ...addForm, contactNumber: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    જન્મ સ્થળ (Place of Birth)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ગામ / શહેરનું નામ"
+                    value={addForm.placeOfBirth}
+                    onChange={(e) => setAddForm({ ...addForm, placeOfBirth: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    આધાર કાર્ડ નંબર (Aadhaar No. - 12 Digits)
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={14}
+                    placeholder="XXXX XXXX XXXX"
+                    value={addForm.aadhaarNo}
+                    onChange={(e) => setAddForm({ ...addForm, aadhaarNo: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta font-mono"
                   />
                 </div>
@@ -1725,9 +1844,27 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                         <td className="p-2">
                           {r.isValid ? (
                             r.isExistingUpdate ? (
-                              <span className="text-[11px] px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
-                                અસ્તિત્વમાં છે (અપડેટ થશે)
-                              </span>
+                              <div className="space-y-1">
+                                <span className="text-[11px] px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 font-semibold inline-flex items-center gap-1">
+                                  <RefreshCw className="w-2.5 h-2.5" />
+                                  અસ્તિત્વમાં છે (અપડેટ થશે)
+                                </span>
+                                {r.changes && r.changes.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1 mt-0.5">
+                                    {r.changes.map((ch, cIdx) => (
+                                      <span
+                                        key={cIdx}
+                                        className="text-[10px] bg-slate-950 text-blue-300 border border-blue-900/60 px-1.5 py-0.2 rounded"
+                                        title={`${ch.fieldLabel}: ${ch.oldValue || '(ખાલી)'} ➔ ${ch.newValue}`}
+                                      >
+                                        {ch.fieldLabel}: <strong className="text-emerald-300">{ch.newValue}</strong>
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] text-slate-400 italic">માહિતી સમાન છે</div>
+                                )}
+                              </div>
                             ) : (
                               <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
                                 માન્ય (નવો ઉમેરાશે)
@@ -1756,11 +1893,14 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
               <button
                 disabled={isImporting || parseResult.validRows.length === 0}
-                onClick={handleExecuteImport}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 disabled:opacity-50"
+                onClick={() => {
+                  setIsConfirmModalOpen(true);
+                  setConfirmImportMode('single');
+                }}
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-lg"
               >
-                {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                <span>આયાત પૂર્ણ કરો ({parseResult.validRows.length} માન્ય રેકોર્ડ્સ)</span>
+                <CheckCircle2 className="w-4 h-4 text-white" />
+                <span>આયાત અને અપડેટ પુષ્ટિ કરો ({parseResult.validRows.length} વિદ્યાર્થીઓ)</span>
               </button>
             </div>
           </div>
@@ -2084,9 +2224,28 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                             <td className="p-2">
                               {r.isValid ? (
                                 r.isExistingUpdate ? (
-                                  <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-blue-950 text-blue-300 border border-blue-800">
-                                    અપડેટ થશે
-                                  </span>
+                                  <div className="space-y-1">
+                                    <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-blue-950 text-blue-300 border border-blue-800 inline-flex items-center gap-1">
+                                      <RefreshCw className="w-2.5 h-2.5" />
+                                      અપડેટ થશે
+                                    </span>
+                                    {r.changes && r.changes.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-0.5">
+                                        {r.changes.slice(0, 3).map((ch, cIdx) => (
+                                          <span
+                                            key={cIdx}
+                                            className="text-[9px] bg-slate-950 text-blue-300 border border-blue-900/60 px-1 py-0.2 rounded"
+                                            title={`${ch.fieldLabel}: ${ch.oldValue || '(ખાલી)'} ➔ ${ch.newValue}`}
+                                          >
+                                            {ch.fieldLabel}: <strong className="text-emerald-300">{ch.newValue}</strong>
+                                          </span>
+                                        ))}
+                                        {r.changes.length > 3 && (
+                                          <span className="text-[9px] text-slate-400">+{r.changes.length - 3} વધુ</span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 ) : r.matchSource === 'both' ? (
                                   <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1 w-fit">
                                     <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
@@ -2155,28 +2314,49 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 <button
                   type="button"
                   disabled={isExecutingDualImport || dualParseResult.validRows.length === 0}
-                  onClick={handleExecuteDualImport}
+                  onClick={() => {
+                    setIsConfirmModalOpen(true);
+                    setConfirmImportMode('dual');
+                  }}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold text-xs flex items-center gap-2 disabled:opacity-50 shadow-lg cursor-pointer"
                 >
-                  {isExecutingDualImport ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>ડેટાબેઝમાં સાચવી રહ્યું છે...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 text-white" />
-                      <span>
-                        આયાત પૂર્ણ કરો ({dualParseResult.validRows.length} માન્ય વિદ્યાર્થીઓ સાચવો)
-                      </span>
-                    </>
-                  )}
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span>
+                    આયાત અને અપડેટ પુષ્ટિ કરો ({dualParseResult.validRows.length} વિદ્યાર્થીઓ)
+                  </span>
                 </button>
               )}
             </div>
           </div>
         </div>
       )}
+
+      {/* MODAL 3.8: IMPORT CONFIRMATION & DIFF POPUP */}
+      <ImportConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={confirmImportMode === 'single' ? handleExecuteImport : handleExecuteDualImport}
+        isSubmitting={confirmImportMode === 'single' ? isImporting : isExecutingDualImport}
+        sourceTitle={confirmImportMode === 'single' ? 'સામાન્ય Excel આયાત' : 'દ્વિ-ફાઇલ (CTS + UDISE+) આયાત'}
+        fileName={
+          confirmImportMode === 'single'
+            ? excelFile?.name
+            : ctsFile && udiseFile
+            ? `${ctsFile.name} + ${udiseFile.name}`
+            : undefined
+        }
+        newEntries={confirmImportMode === 'single' ? singleNewEntries : dualNewEntries}
+        updatedEntries={confirmImportMode === 'single' ? singleUpdatedEntries : dualUpdatedEntries}
+        invalidCount={
+          confirmImportMode === 'single'
+            ? parseResult
+              ? parseResult.invalidRows.length + parseResult.duplicateInFileRows.length
+              : 0
+            : dualParseResult
+            ? dualParseResult.invalidRows.length
+            : 0
+        }
+      />
 
       {/* MODAL 4: QUICK EDIT MODAL */}
       {editingStudent && (

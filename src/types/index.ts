@@ -83,6 +83,9 @@ export interface Staff {
   address?: string;
   photoUrl?: string;
   bloodGroup?: string;
+  // Teaching Specific Codes
+  teacherCode?: string; // શિક્ષક કોડ (Teacher Code)
+  hrpnNumber?: string; // HRPN નંબર (HRPN Number - Optional)
   // Aadhaar & Identity
   aadhaarNumber?: string; // આધાર કાર્ડ નંબર (12 digits)
   panNumber?: string; // PAN કાર્ડ નંબર

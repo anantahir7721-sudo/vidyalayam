@@ -31,6 +31,7 @@ import {
   fetchStudentExams,
   fetchStudentMarks,
   getServerTime,
+  getAuthoritativeNow,
   clearStudentSession,
 } from '../services/onlineExamService';
 import { StudentExamScreen } from './StudentExamScreen';
@@ -48,8 +49,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
   const [exams, setExams] = useState<any[]>([]);
   const [marks, setMarks] = useState<MarkRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [serverTime, setServerTime] = useState<number>(Date.now());
+  const [serverTime, setServerTime] = useState<number>(0);
+  const [isTimeSynced, setIsTimeSynced] = useState<boolean>(false);
   const [activeExamId, setActiveExamId] = useState<string | null>(null);
+  const [startExamError, setStartExamError] = useState<string | null>(null);
+  const [isVerifyingStart, setIsVerifyingStart] = useState<boolean>(false);
   const autoStartTriggeredRef = React.useRef<{ [examId: string]: boolean }>({});
 
   const student = session.student;
@@ -73,6 +77,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
       setExams(examData.exams || []);
       setMarks(marksData.marks || []);
       setServerTime(time);
+      setIsTimeSynced(true);
     } catch (e) {
       console.error('Error loading student data:', e);
     } finally {
@@ -83,16 +88,42 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
   useEffect(() => {
     loadPortalData();
 
+    // Uses monotonic hardware clock - immune to mobile phone date/time adjustments
     const interval = setInterval(() => {
-      setServerTime((prev) => prev + 1000);
+      setServerTime(getAuthoritativeNow());
     }, 1000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-start exam when scheduled countdown reaches 0
+  // Secure Start Exam Handler - Verifies with cloud server before starting
+  const handleRequestStartExam = async (examId: string) => {
+    setIsVerifyingStart(true);
+    setStartExamError(null);
+    try {
+      // Query authoritative server time directly
+      const trueServerNow = await getServerTime();
+      const targetExam = exams.find((e) => e.id === examId);
+
+      if (targetExam?.scheduledStartTimestamp && trueServerNow < targetExam.scheduledStartTimestamp) {
+        setStartExamError(
+          'પરીક્ષા હજુ શરૂ થઈ નથી. સત્તાવાર સમય પર જ શરૂ થશે. (મોબાઇલની તારીખ કે સમય બદલવાથી પરીક્ષા વહેલી શરૂ થશે નહીં.)'
+        );
+        return;
+      }
+
+      setActiveExamId(examId);
+    } catch (err: any) {
+      console.error('Error verifying exam start:', err);
+      setStartExamError(err.message || 'પરીક્ષા શરૂ કરવામાં સમસ્યા થઈ.');
+    } finally {
+      setIsVerifyingStart(false);
+    }
+  };
+
+  // Auto-start exam when scheduled countdown reaches 0 (verified against authoritative server time)
   useEffect(() => {
-    if (activeExamId || !exams || exams.length === 0) return;
+    if (!isTimeSynced || serverTime === 0 || activeExamId || !exams || exams.length === 0) return;
 
     for (const ex of exams) {
       if (ex.attempt && ex.attempt.status === 'submitted') continue;
@@ -106,12 +137,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
       if (diff <= 0 && serverTime <= cutoffTime) {
         if (!autoStartTriggeredRef.current[ex.id]) {
           autoStartTriggeredRef.current[ex.id] = true;
-          setActiveExamId(ex.id);
+          // Re-verify with live cloud server before launching
+          getServerTime().then((trueNow) => {
+            if (trueNow >= (ex.scheduledStartTimestamp || 0)) {
+              setActiveExamId(ex.id);
+            }
+          });
           break;
         }
       }
     }
-  }, [serverTime, exams, activeExamId]);
+  }, [serverTime, isTimeSynced, exams, activeExamId]);
 
   // Compute calculated GSEB result for this student using the official calculation engine
   const calculatedResult = React.useMemo(() => {
@@ -361,11 +397,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                 {isLive ? (
                   <button
                     type="button"
-                    onClick={() => setActiveExamId(priorityExam.id)}
-                    className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+                    disabled={isVerifyingStart}
+                    onClick={() => handleRequestStartExam(priorityExam.id)}
+                    className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                   >
-                    <span>પરીક્ષા આપો (Start Exam)</span>
-                    <ChevronRight className="w-4 h-4" />
+                    {isVerifyingStart ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>ચકાસી રહ્યા છીએ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>પરીક્ષા આપો (Start Exam)</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
                 ) : (
                   <button
@@ -382,6 +428,19 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
           </div>
         );
       })()}
+
+      {/* Start Exam Error Alert Banner if time tampering or early start detected */}
+      {startExamError && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-2 pb-2">
+          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-start gap-3 shadow-lg">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <div className="font-bold text-white text-sm">સત્તાવાર પરીક્ષા સમય સૂચના</div>
+              <p className="leading-relaxed">{startExamError}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Tabs (Direct Upcoming Exams, No Exam Type Tabs) */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
@@ -557,8 +616,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                         {isLive ? (
                           <button
                             type="button"
-                            onClick={() => setActiveExamId(ex.id)}
-                            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+                            disabled={isVerifyingStart}
+                            onClick={() => handleRequestStartExam(ex.id)}
+                            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                           >
                             <span>પરીક્ષા આપો (Start Exam)</span>
                             <ChevronRight className="w-4 h-4" />

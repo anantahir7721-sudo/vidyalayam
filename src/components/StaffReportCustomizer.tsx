@@ -47,6 +47,22 @@ const ALL_STAFF_COLUMNS: StaffColumnDef[] = [
     align: 'left',
   },
   {
+    id: 'teacherCode',
+    label: 'શિક્ષક કોડ (Teacher Code)',
+    getValue: (st) => st.teacherCode || '-',
+    defaultSelected: true,
+    minWidth: '70px',
+    align: 'center',
+  },
+  {
+    id: 'hrpnNumber',
+    label: 'HRPN નંબર',
+    getValue: (st) => st.hrpnNumber || '-',
+    defaultSelected: false,
+    minWidth: '70px',
+    align: 'center',
+  },
+  {
     id: 'subject',
     label: 'મુખ્ય વિષય',
     getValue: (st) => st.subject || '-',

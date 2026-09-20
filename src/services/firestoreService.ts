@@ -179,6 +179,7 @@ export async function bulkUpsertStudents(
   // Map existing students by grNumber (lowercase) and by name+standard
   const existingByGr = new Map<string, Student>();
   const existingByNameStd = new Map<string, Student>();
+  const existingByDise = new Map<string, Student>();
 
   for (const s of existingStudents) {
     if (s.grNumber && s.grNumber.trim()) {
@@ -186,6 +187,16 @@ export async function bulkUpsertStudents(
     }
     const key = `${s.studentName.trim().toLowerCase()}_${String(s.standard).trim()}`;
     existingByNameStd.set(key, s);
+
+    if (s.diseCode && s.diseCode.trim()) {
+      existingByDise.set(s.diseCode.trim().toLowerCase(), s);
+    }
+    if (s.studentStateCode && s.studentStateCode.trim()) {
+      existingByDise.set(s.studentStateCode.trim().toLowerCase(), s);
+    }
+    if (s.aadhaarNo && s.aadhaarNo.trim()) {
+      existingByDise.set(s.aadhaarNo.trim().toLowerCase(), s);
+    }
   }
 
   const chunkSize = 400;
@@ -200,11 +211,14 @@ export async function bulkUpsertStudents(
       const cleanName = item.studentName.trim();
       const cleanStd = item.standard.trim();
       const cleanGr = item.grNumber ? item.grNumber.trim().toLowerCase() : '';
+      const cleanDise = item.diseCode ? item.diseCode.trim().toLowerCase() : (item.studentStateCode ? item.studentStateCode.trim().toLowerCase() : '');
 
-      // Check for match: first by GR number, then by Name + Standard
+      // Check for match: first by GR number, then by DISE/State code, then by Name + Standard
       let match: Student | undefined;
       if (cleanGr && existingByGr.has(cleanGr)) {
         match = existingByGr.get(cleanGr);
+      } else if (cleanDise && existingByDise.has(cleanDise)) {
+        match = existingByDise.get(cleanDise);
       } else {
         const key = `${cleanName.toLowerCase()}_${cleanStd}`;
         if (existingByNameStd.has(key)) {
@@ -309,12 +323,20 @@ export async function updateStudent(
 ): Promise<void> {
   const studentDocRef = doc(db, 'schools', schoolId, 'students', studentId);
   const updateData: Record<string, any> = {
-    ...data,
     updatedAt: new Date().toISOString(),
   };
+
+  // Safe stripping of undefined values so Firestore updateDoc never throws invalid field value
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      updateData[key] = value;
+    }
+  }
+
   if (data.bloodGroup !== undefined) {
     updateData.bloodGroup = cleanAndNormalizeBloodGroup(data.bloodGroup) || '';
   }
+
   await updateDoc(studentDocRef, updateData);
 }
 

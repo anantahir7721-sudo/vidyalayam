@@ -37,6 +37,7 @@ interface OnlineExamEditorProps {
   existingExam?: OnlineExam | null;
   existingQuestions?: MCQQuestion[];
   allExams?: OnlineExam[];
+  isCloneAsNew?: boolean;
   onSave: (examData: any, questions: MCQQuestion[]) => Promise<void>;
   onCancel: () => void;
 }
@@ -46,6 +47,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
   existingExam,
   existingQuestions = [],
   allExams = [],
+  isCloneAsNew = false,
   onSave,
   onCancel,
 }) => {
@@ -316,10 +318,16 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
           </button>
           <div>
             <h2 className="text-base sm:text-lg font-bold text-white tracking-wide">
-              {existingExam ? '✏️ પરીક્ષા સંપાદન (Edit Online Exam)' : '📝 નવી ઓનલાઇન પરીક્ષા બનાવો (Create Exam)'}
+              {isCloneAsNew
+                ? '📋 નવી પરીક્ષા એન્ટ્રી (New Exam Entry Mode)'
+                : existingExam
+                ? '✏️ પરીક્ષા સંપાદન (Edit Online Exam)'
+                : '📝 નવી ઓનલાઇન પરીક્ષા બનાવો (Create Exam)'}
             </h2>
             <p className="text-xs text-slate-400">
-              MCQ પ્રશ્નો, સમયપત્રક અને પરિણામ નિયમો ગોઠવો
+              {isCloneAsNew
+                ? 'અગાઉની પરીક્ષાનું પરિણામ સુરક્ષિત રહેશે — નવી એન્ટ્રી તરીકે સંગ્રહ થશે'
+                : 'MCQ પ્રશ્નો, સમયપત્રક અને પરિણામ નિયમો ગોઠવો'}
             </p>
           </div>
         </div>
@@ -351,10 +359,27 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
             className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold shadow-lg shadow-emerald-950/50 hover:brightness-110 flex items-center gap-2 transition-all disabled:opacity-50"
           >
             <CheckCircle2 className="w-4 h-4" />
-            {isSaving ? 'સાચવી રહ્યું છે...' : 'પરીક્ષા શેડ્યૂલ કરો / પબ્લિશ કરો'}
+            {isSaving
+              ? 'સાચવી રહ્યું છે...'
+              : isCloneAsNew
+              ? 'નવી પરીક્ષા તરીકે શેડ્યૂલ કરો'
+              : 'પરીક્ષા શેડ્યૂલ કરો / પબ્લિશ કરો'}
           </button>
         </div>
       </div>
+
+      {/* Notice for New Entry Mode */}
+      {isCloneAsNew && (
+        <div className="p-4 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 text-cyan-200 text-xs flex items-start gap-3 shadow-lg">
+          <Copy className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <div className="font-bold text-white text-sm">૧ પરીક્ષા = ૧ જ પરિણામ (સુરક્ષિત આર્કાઇવ)</div>
+            <p className="leading-relaxed text-cyan-300">
+              અગાઉ પૂર્ણ થયેલી પરીક્ષા અને તેના તમામ વિદ્યાર્થીઓના ગુણ તેમજ પરિણામો ૧૦૦% સુરક્ષિત રાખવામાં આવ્યા છે. આ પરીક્ષા <strong>સંપૂર્ણપણે નવી એન્ટ્રી તરીકે</strong> સાચવવામાં આવશે જેથી ભવિષ્યમાં પરિણામો ઓવરરાઈટ (ગૂંચવાડો) ન થાય.
+            </p>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-3">

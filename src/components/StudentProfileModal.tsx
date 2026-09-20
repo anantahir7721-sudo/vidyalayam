@@ -132,11 +132,30 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
     }
   };
 
-  // Save all edited fields
+  // Save profile with ONLY the 4 mandatory fields requested:
+  // 1. Name, 2. DISE Code, 3. DOB, 4. Standard
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.studentName.trim()) {
-      setError('વિદ્યાર્થીનું નામ (Name as in GR) જરૂરી છે.');
+
+    const name = formData.studentName.trim();
+    const standard = formData.standard.trim();
+    const diseCode = formData.diseCode.trim();
+    const dob = formData.dob.trim();
+
+    if (!name) {
+      setError('વિદ્યાર્થીનું નામ (Student Name) દાખલ કરવું ફરજિયાત છે.');
+      return;
+    }
+    if (!standard) {
+      setError('ધોરણ (Standard) પસંદ કરવું ફરજિયાત છે.');
+      return;
+    }
+    if (!diseCode) {
+      setError('વિદ્યાર્થી DISE નંબર (Student DISE / Child UID) દાખલ કરવો ફરજિયાત છે.');
+      return;
+    }
+    if (!dob) {
+      setError('જન્મ તારીખ (Birthdate / DOB) દાખલ કરવી ફરજિયાત છે.');
       return;
     }
 
@@ -144,29 +163,30 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
       setLoading(true);
       setError(null);
 
-      const payload = {
-        studentName: formData.studentName.trim(),
-        standard: formData.standard.trim(),
-        diseCode: formData.diseCode.trim() || undefined,
-        grNumber: formData.grNumber.trim() || undefined,
-        section: formData.section.trim() || undefined,
-        division: formData.section.trim() || undefined,
-        rollNumber: formData.rollNumber.trim() || undefined,
-        dob: formData.dob.trim() || undefined,
-        doa: formData.doa.trim() || undefined,
-        address: formData.address.trim() || undefined,
-        motherName: formData.motherName.trim() || undefined,
-        fatherName: formData.fatherName.trim() || undefined,
-        gender: formData.gender as any,
-        caste: formData.caste.trim() || undefined,
-        bloodGroup: formData.bloodGroup.trim() || undefined,
-        contactNumber: formData.contactNumber.trim() || undefined,
-        mobileNumber: formData.contactNumber.trim() || undefined,
-        fatherOccupation: formData.fatherOccupation.trim() || undefined,
-        motherOccupation: formData.motherOccupation.trim() || undefined,
-        placeOfBirth: formData.placeOfBirth.trim() || undefined,
-        aadhaarNo: formData.aadhaarNo.trim() || undefined,
-        academicYear: formData.academicYear.trim() || undefined,
+      // Construct clean payload where only entered fields are passed (no undefined)
+      const payload: Record<string, any> = {
+        studentName: name,
+        standard: standard,
+        diseCode: diseCode,
+        dob: dob,
+        grNumber: formData.grNumber.trim() || '',
+        section: formData.section.trim() || '',
+        division: formData.section.trim() || '',
+        rollNumber: formData.rollNumber.trim() || '',
+        doa: formData.doa.trim() || '',
+        address: formData.address.trim() || '',
+        motherName: formData.motherName.trim() || '',
+        fatherName: formData.fatherName.trim() || '',
+        gender: formData.gender || 'Boy',
+        caste: formData.caste.trim() || '',
+        bloodGroup: formData.bloodGroup.trim() || '',
+        contactNumber: formData.contactNumber.trim() || '',
+        mobileNumber: formData.contactNumber.trim() || '',
+        fatherOccupation: formData.fatherOccupation.trim() || '',
+        motherOccupation: formData.motherOccupation.trim() || '',
+        placeOfBirth: formData.placeOfBirth.trim() || '',
+        aadhaarNo: formData.aadhaarNo.trim() || '',
+        academicYear: formData.academicYear.trim() || '',
       };
 
       await updateStudent(school.id, student.id, payload);
@@ -182,6 +202,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
       setSuccessMsg('વિદ્યાર્થીની માહિતી સફળતાપૂર્વક સાચવવામાં આવી (Details saved successfully)');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
+      console.error('Error saving profile:', err);
       setError(err.message || 'માહિતી સાચવવામાં ક્ષતિ આવી.');
     } finally {
       setLoading(false);
@@ -509,6 +530,12 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
           {/* Form or Display Mode */}
           {isEditing ? (
             <form onSubmit={handleSaveProfile} className="space-y-6">
+              {/* Mandatory fields alert notice */}
+              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                <span className="font-bold bg-emerald-500/20 px-2 py-0.5 rounded text-[11px]">સરળ સાચવણી</span>
+                <span>ફક્ત <strong>નામ, DISE નંબર, જન્મ તારીખ અને ધોરણ</strong> જ ફરજિયાત છે. બાકીની તમામ વિગતો વૈકલ્પિક છે.</span>
+              </div>
+
               {/* SECTION 1: IDENTIFICATION */}
               <div className="bg-slate-800/40 border border-white/5 rounded-xl p-5">
                 <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wide flex items-center gap-2 mb-4">
@@ -518,7 +545,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="lg:col-span-2">
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      વિદ્યાર્થીનું નામ (Name as in GR) *
+                      વિદ્યાર્થીનું નામ (Name as in GR) <span className="text-rose-400 font-bold">* (ફરજિયાત)</span>
                     </label>
                     <input
                       type="text"
@@ -531,7 +558,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      G.R. નંબર (GR No.)
+                      G.R. નંબર (GR No.) <span className="text-slate-400 text-[11px]">(વૈકલ્પિક)</span>
                     </label>
                     <input
                       type="text"
@@ -543,11 +570,12 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      વિદ્યાર્થી DISE કોડ (૧૮ આંકડાનો Child UID)
+                      વિદ્યાર્થી DISE નંબર (Child UID) <span className="text-rose-400 font-bold">* (ફરજિયાત)</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="૧૮ આંકડાનો UDISE+ / Child UID દાખલ કરો"
+                      required
+                      placeholder="૧૮ આંકડાનો UDISE+ / Child UID"
                       value={formData.diseCode}
                       onChange={(e) => setFormData({ ...formData, diseCode: e.target.value })}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-cyan-300 focus:outline-none focus:border-terracotta font-mono"
@@ -627,10 +655,11 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      જન્મ તારીખ (DOB)
+                      જન્મ તારીખ (DOB) <span className="text-rose-400 font-bold">* (ફરજિયાત)</span>
                     </label>
                     <input
                       type="date"
+                      required
                       value={formData.dob}
                       onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"

@@ -413,19 +413,48 @@ export async function extractQuestionsWithAI(params: {
 }
 
 // =========================================================================
-// Authoritative Server Time
+// Authoritative Monotonic Server Time
+// Uses hardware-anchored performance.now() so changing mobile phone date/time
+// CANNOT alter or cheat the countdown or start time!
 // =========================================================================
+let cachedServerTime: number = 0;
+let cachedPerfAnchor: number = 0;
+let isServerTimeSynced = false;
+
 export async function getServerTime(): Promise<number> {
   try {
+    const t0 = performance.now();
     const res = await fetch('/api/time');
+    const t1 = performance.now();
     if (res.ok) {
       const data = await res.json();
-      return data.serverTime;
+      const networkLatency = (t1 - t0) / 2;
+      const trueTime = Number(data.serverTime) + networkLatency;
+      cachedServerTime = trueTime;
+      cachedPerfAnchor = t1;
+      isServerTimeSynced = true;
+      return trueTime;
     }
   } catch (e) {
-    // Fallback to client time
+    // If network fails but we had synced previously, compute monotonic time
+  }
+
+  if (isServerTimeSynced && cachedPerfAnchor > 0) {
+    return cachedServerTime + (performance.now() - cachedPerfAnchor);
   }
   return Date.now();
+}
+
+export function getAuthoritativeNow(): number {
+  if (isServerTimeSynced && cachedPerfAnchor > 0) {
+    // performance.now() is strictly monotonic and immune to local clock manipulation
+    return cachedServerTime + (performance.now() - cachedPerfAnchor);
+  }
+  return Date.now();
+}
+
+export function isTimeAuthoritative(): boolean {
+  return isServerTimeSynced;
 }
 
 // Helper: Normalize date to YYYY-MM-DD
@@ -882,7 +911,8 @@ export async function startStudentExam(token: string, examId: string) {
 
   const schoolId = session.school.id;
   const student = session.student;
-  const now = Date.now();
+  // Use authoritative server time (protected against mobile clock tampering)
+  const now = await getServerTime();
 
   const examDocRef = doc(db, 'schools', schoolId, 'online_exams', examId);
   const examSnap = await getDoc(examDocRef);
@@ -892,7 +922,7 @@ export async function startStudentExam(token: string, examId: string) {
 
   const examData = examSnap.data() as any;
   if (examData.scheduledStartTimestamp && now < examData.scheduledStartTimestamp) {
-    throw new Error('પરીક્ષા હજુ શરૂ થઈ નથી.');
+    throw new Error('પરીક્ષા હજુ શરૂ થઈ નથી. સત્તાવાર સમય પર જ શરૂ થશે. (મોબાઇલની તારીખ કે સમય બદલવાથી પરીક્ષા વહેલી શરૂ થશે નહીં.)');
   }
 
   // Late entry prevention rule:

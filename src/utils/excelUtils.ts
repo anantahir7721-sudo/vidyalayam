@@ -2,6 +2,13 @@ import * as XLSX from 'xlsx';
 import { AllowedStandard, Student } from '../types';
 import { cleanAndNormalizeBloodGroup, isValidBloodGroup, inspectInvalidBloodGroupEntry, isDateLikeString } from './bloodGroupUtils';
 
+export interface StudentFieldChange {
+  fieldLabel: string;
+  fieldName: string;
+  oldValue: string;
+  newValue: string;
+}
+
 export interface ParsedStudentRow {
   rowNumber: number;
   name: string;
@@ -30,6 +37,10 @@ export interface ParsedStudentRow {
   isDuplicateInFile: boolean;
   isExistingUpdate: boolean;
   existingStudentId?: string;
+  existingStudentName?: string;
+  existingGrNumber?: string;
+  existingStandard?: string;
+  changes?: StudentFieldChange[];
   errorReason?: string;
 }
 
@@ -63,6 +74,10 @@ export interface MergedStudentRow {
   isDuplicateInFile: boolean;
   isExistingUpdate: boolean;
   existingStudentId?: string;
+  existingStudentName?: string;
+  existingGrNumber?: string;
+  existingStandard?: string;
+  changes?: StudentFieldChange[];
   errorReason?: string;
 }
 
@@ -1026,6 +1041,74 @@ export function normalizeGender(val: any): 'Boy' | 'Girl' | 'Other' | undefined 
 }
 
 /**
+ * Calculates differences between an existing student record and newly parsed Excel row data.
+ * Returns a list of changed fields with user-friendly labels in Gujarati.
+ */
+export function computeStudentFieldChanges(
+  existing: Student,
+  parsed: {
+    name: string;
+    standard: string;
+    grNumber?: string;
+    section?: string;
+    rollNumber?: string;
+    dob?: string;
+    doa?: string;
+    gender?: string;
+    caste?: string;
+    bloodGroup?: string;
+    contactNumber?: string;
+    motherName?: string;
+    fatherName?: string;
+    address?: string;
+    diseCode?: string;
+    studentStateCode?: string;
+    aadhaarNo?: string;
+    placeOfBirth?: string;
+    fatherOccupation?: string;
+    motherOccupation?: string;
+  }
+): StudentFieldChange[] {
+  const diffs: StudentFieldChange[] = [];
+
+  const check = (label: string, fieldName: string, oldVal: any, newVal: any) => {
+    if (newVal === undefined || newVal === null) return;
+    const n = String(newVal).trim();
+    if (n === '') return;
+    const o = String(oldVal || '').trim();
+    // Compare trimmed values
+    if (n.toLowerCase() !== o.toLowerCase()) {
+      diffs.push({
+        fieldLabel: label,
+        fieldName,
+        oldValue: o || '(ખાલી)',
+        newValue: n,
+      });
+    }
+  };
+
+  check('વિદ્યાર્થીનું નામ', 'studentName', existing.studentName, parsed.name);
+  check('ધોરણ', 'standard', existing.standard, parsed.standard);
+  check('G.R. નંબર', 'grNumber', existing.grNumber, parsed.grNumber);
+  check('વર્ગ / વિભાગ', 'section', existing.section || existing.division, parsed.section);
+  check('રોલ નંબર', 'rollNumber', existing.rollNumber, parsed.rollNumber);
+  check('જન્મ તારીખ (DOB)', 'dob', existing.dob, parsed.dob);
+  check('પ્રવેશ તારીખ (DOA)', 'doa', existing.doa, parsed.doa);
+  check('જાતિ (Gender)', 'gender', existing.gender, parsed.gender);
+  check('જ્ઞાતિ / કેટેગરી', 'caste', existing.caste, parsed.caste);
+  check('બ્લડ ગ્રૂપ', 'bloodGroup', existing.bloodGroup, parsed.bloodGroup);
+  check('સંપર્ક / મોબાઇલ', 'contactNumber', existing.contactNumber || existing.mobileNumber, parsed.contactNumber);
+  check('માતાનું નામ', 'motherName', existing.motherName, parsed.motherName);
+  check('પિતાનું નામ', 'fatherName', existing.fatherName, parsed.fatherName);
+  check('સરનામું', 'address', existing.address, parsed.address);
+  check('DISE / આધાર કોડ', 'diseCode', existing.diseCode || existing.studentStateCode, parsed.diseCode || parsed.studentStateCode);
+  check('આધાર કાર્ડ નં.', 'aadhaarNo', existing.aadhaarNo, parsed.aadhaarNo);
+  check('જન્મ સ્થળ', 'placeOfBirth', existing.placeOfBirth, parsed.placeOfBirth);
+
+  return diffs;
+}
+
+/**
  * Parses and validates an uploaded Excel (.xlsx/.xls) file containing student records.
  * Supports the full Student Master Information template.
  * Validates required fields, checks for duplicate rows in file, and checks for existing students to update.
@@ -1050,9 +1133,10 @@ export async function parseStudentsExcelFile(
     throw new Error('Excel ફાઈલ ખાલી છે (The uploaded Excel file contains no data rows).');
   }
 
-  // Build lookup index for existing school students (by GR number & by Name+Standard)
+  // Build lookup index for existing school students (by GR number & by Name+Standard & by DISE/Aadhaar)
   const existingByGr = new Map<string, Student>();
   const existingByNameStd = new Map<string, Student>();
+  const existingByDise = new Map<string, Student>();
 
   for (const s of existingSchoolStudents) {
     if (s.grNumber && s.grNumber.trim()) {
@@ -1060,6 +1144,16 @@ export async function parseStudentsExcelFile(
     }
     const key = `${s.studentName.trim().toLowerCase()}_${String(s.standard).trim()}`;
     existingByNameStd.set(key, s);
+
+    if (s.diseCode && s.diseCode.trim() && s.diseCode.trim() !== schoolDiseCode?.trim()) {
+      existingByDise.set(s.diseCode.trim().toLowerCase(), s);
+    }
+    if (s.studentStateCode && s.studentStateCode.trim()) {
+      existingByDise.set(s.studentStateCode.trim().toLowerCase(), s);
+    }
+    if (s.aadhaarNo && s.aadhaarNo.trim()) {
+      existingByDise.set(s.aadhaarNo.trim().toLowerCase(), s);
+    }
   }
 
   const seenInFileGr = new Set<string>();
@@ -1306,6 +1400,8 @@ export async function parseStudentsExcelFile(
     let isDuplicateInFile = false;
     let isExistingUpdate = false;
     let existingStudentId: string | undefined = undefined;
+    let matchedStudent: Student | undefined = undefined;
+    let studentChanges: StudentFieldChange[] | undefined = undefined;
     let errorReason = '';
 
     // Validation 1: Required Name
@@ -1334,19 +1430,39 @@ export async function parseStudentsExcelFile(
         seenInFileNameStd.add(`${trimmedName.toLowerCase()}_${normalizedStd}`);
 
         // Check if student already exists in school database
-        let existingMatch: Student | undefined;
         if (grNumber && existingByGr.has(grNumber.toLowerCase())) {
-          existingMatch = existingByGr.get(grNumber.toLowerCase());
+          matchedStudent = existingByGr.get(grNumber.toLowerCase());
+        } else if (diseCode && existingByDise.has(diseCode.toLowerCase())) {
+          matchedStudent = existingByDise.get(diseCode.toLowerCase());
         } else {
           const key = `${trimmedName.toLowerCase()}_${normalizedStd}`;
           if (existingByNameStd.has(key)) {
-            existingMatch = existingByNameStd.get(key);
+            matchedStudent = existingByNameStd.get(key);
           }
         }
 
-        if (existingMatch) {
+        if (matchedStudent) {
           isExistingUpdate = true;
-          existingStudentId = existingMatch.id;
+          existingStudentId = matchedStudent.id;
+          studentChanges = computeStudentFieldChanges(matchedStudent, {
+            name: trimmedName,
+            standard: normalizedStd || String(rawStd || ''),
+            diseCode,
+            grNumber,
+            section,
+            dob,
+            address,
+            doa,
+            motherName,
+            fatherName,
+            gender,
+            caste,
+            bloodGroup,
+            contactNumber,
+            fatherOccupation,
+            motherOccupation,
+            placeOfBirth,
+          });
         }
       }
     }
@@ -1375,6 +1491,10 @@ export async function parseStudentsExcelFile(
       isDuplicateInFile,
       isExistingUpdate,
       existingStudentId,
+      existingStudentName: matchedStudent?.studentName,
+      existingGrNumber: matchedStudent?.grNumber,
+      existingStandard: matchedStudent?.standard,
+      changes: studentChanges,
       errorReason: errorReason || undefined,
     };
 
@@ -1534,6 +1654,12 @@ export async function parseDualFiles(
     motherName?: string;
     fatherName?: string;
     address?: string;
+    placeOfBirth?: string;
+    fatherOccupation?: string;
+    motherOccupation?: string;
+    bankAccountNo?: string;
+    bankIfsc?: string;
+    bankName?: string;
   }
 
   const udiseMap = new Map<string, UdiseParsedRecord>();
@@ -1583,6 +1709,13 @@ export async function parseDualFiles(
   let impTypeColIdx = -1;
   let impPctColIdx = -1;
   let udidColIdx = -1;
+  let addressColIdx = -1;
+  let placeOfBirthColIdx = -1;
+  let fatherOccupationColIdx = -1;
+  let motherOccupationColIdx = -1;
+  let bankAccountColIdx = -1;
+  let bankIfscColIdx = -1;
+  let bankNameColIdx = -1;
 
   if (headerRowIndex >= 0 && udise2D[headerRowIndex]) {
     const headerCells = udise2D[headerRowIndex].map((c) =>
@@ -1754,9 +1887,63 @@ export async function parseDualFiles(
         h.includes('student aadhaar') ||
         h.includes('aadhaar number') ||
         h.includes('aadhar number') ||
-        h.includes('આધાર નંબર')
+        h.includes('આધાર નંબર') ||
+        h === 'aadhaar' ||
+        h === 'aadhar'
       ) {
         if (aadhaarColIdx === -1) aadhaarColIdx = c;
+      }
+      // 18. Address
+      else if (
+        h.includes('address') ||
+        h.includes('સરનામું') ||
+        h.includes('residence') ||
+        h.includes('મુકામ')
+      ) {
+        if (addressColIdx === -1) addressColIdx = c;
+      }
+      // 19. Place of Birth
+      else if (
+        h.includes('place of birth') ||
+        h.includes('birth place') ||
+        h.includes('birthplace') ||
+        h.includes('જન્મ સ્થળ') ||
+        h.includes('જન્મસ્થળ')
+      ) {
+        if (placeOfBirthColIdx === -1) placeOfBirthColIdx = c;
+      }
+      // 20. Father Occupation
+      else if (
+        (h.includes('father') && (h.includes('occupation') || h.includes('profession') || h.includes('business'))) ||
+        h.includes('પિતાનો વ્યવસાય') ||
+        h.includes('પિતા વ્યવસાય')
+      ) {
+        if (fatherOccupationColIdx === -1) fatherOccupationColIdx = c;
+      }
+      // 21. Mother Occupation
+      else if (
+        (h.includes('mother') && (h.includes('occupation') || h.includes('profession') || h.includes('housewife'))) ||
+        h.includes('માતાનો વ્યવસાય') ||
+        h.includes('માતા વ્યવસાય')
+      ) {
+        if (motherOccupationColIdx === -1) motherOccupationColIdx = c;
+      }
+      // 22. Bank Account
+      else if (
+        h.includes('bank account') ||
+        h.includes('account number') ||
+        h.includes('ખાતા નંબર') ||
+        h.includes('ખાતા નં')
+      ) {
+        if (bankAccountColIdx === -1) bankAccountColIdx = c;
+      }
+      // 23. Bank IFSC
+      else if (h.includes('ifsc') || h.includes('આઈએફએસસી')) {
+        if (bankIfscColIdx === -1) bankIfscColIdx = c;
+      }
+      // 24. Bank Name
+      else if (h.includes('bank name') || h.includes('બેંકનું નામ') || h === 'bank') {
+        if (bankNameColIdx === -1) bankNameColIdx = c;
       }
     });
   }
@@ -1937,12 +2124,48 @@ export async function parseDualFiles(
     let rawAadhaar = aadhaarColIdx >= 0 && aadhaarColIdx < row.length ? getCellStr(row[aadhaarColIdx]) : '';
     if (!rawAadhaar && obj) {
       rawAadhaar =
-        obj['Bank Account Number'] ||
         obj['Student Aadhaar Number'] ||
         obj['Aadhaar Number'] ||
+        obj['Aadhar Number'] ||
+        obj['Aadhaar'] ||
+        obj['Aadhar'] ||
         obj['આધાર નંબર'] ||
         '';
     }
+
+    // 16. Address
+    let rawAddress = addressColIdx >= 0 && addressColIdx < row.length ? getCellStr(row[addressColIdx]) : '';
+    if (!rawAddress && obj) {
+      rawAddress = obj['Address'] || obj['Residential Address'] || obj['સરનામું'] || obj['મુકામ'] || '';
+    }
+
+    // 17. Place of Birth
+    let rawPlaceOfBirth = placeOfBirthColIdx >= 0 && placeOfBirthColIdx < row.length ? getCellStr(row[placeOfBirthColIdx]) : '';
+    if (!rawPlaceOfBirth && obj) {
+      rawPlaceOfBirth = obj['Place of Birth'] || obj['Birth Place'] || obj['Birthplace'] || obj['જન્મ સ્થળ'] || obj['જન્મસ્થળ'] || '';
+    }
+
+    // 18. Father Occupation
+    let rawFatherOcc = fatherOccupationColIdx >= 0 && fatherOccupationColIdx < row.length ? getCellStr(row[fatherOccupationColIdx]) : '';
+    if (!rawFatherOcc && obj) {
+      rawFatherOcc = obj['Father Occupation'] || obj["Father's Occupation"] || obj['Father Profession'] || obj['પિતાનો વ્યવસાય'] || '';
+    }
+
+    // 19. Mother Occupation
+    let rawMotherOcc = motherOccupationColIdx >= 0 && motherOccupationColIdx < row.length ? getCellStr(row[motherOccupationColIdx]) : '';
+    if (!rawMotherOcc && obj) {
+      rawMotherOcc = obj['Mother Occupation'] || obj["Mother's Occupation"] || obj['Mother Profession'] || obj['માતાનો વ્યવસાય'] || '';
+    }
+
+    // 20. Bank details
+    let rawBankAcc = bankAccountColIdx >= 0 && bankAccountColIdx < row.length ? getCellStr(row[bankAccountColIdx]) : '';
+    if (!rawBankAcc && obj) {
+      rawBankAcc = obj['Bank Account Number'] || obj['Account Number'] || obj['Bank Account'] || obj['ખાતા નંબર'] || '';
+    }
+    let rawBankIfsc = bankIfscColIdx >= 0 && bankIfscColIdx < row.length ? getCellStr(row[bankIfscColIdx]) : '';
+    if (!rawBankIfsc && obj) rawBankIfsc = obj['Bank IFSC Code'] || obj['IFSC Code'] || obj['IFSC'] || '';
+    let rawBankName = bankNameColIdx >= 0 && bankNameColIdx < row.length ? getCellStr(row[bankNameColIdx]) : '';
+    if (!rawBankName && obj) rawBankName = obj['Bank Name'] || obj['Bank'] || obj['બેંકનું નામ'] || '';
 
     // =========================================================================
     // CRITICAL DEFENSIVE SANITIZATION: PREVENT FIELD-SHIFT / POLLUTION
@@ -2024,6 +2247,13 @@ export async function parseDualFiles(
       aadhaarNo: rawAadhaar,
       motherName: rawMother,
       fatherName: rawFather,
+      address: rawAddress,
+      placeOfBirth: rawPlaceOfBirth,
+      fatherOccupation: rawFatherOcc,
+      motherOccupation: rawMotherOcc,
+      bankAccountNo: rawBankAcc,
+      bankIfsc: rawBankIfsc,
+      bankName: rawBankName,
     };
 
     allUdiseRecords.push(record);
@@ -2046,6 +2276,14 @@ export async function parseDualFiles(
     medium?: string;
     fatherName?: string;
     motherName?: string;
+    address?: string;
+    placeOfBirth?: string;
+    fatherOccupation?: string;
+    motherOccupation?: string;
+    aadhaarNo?: string;
+    bankAccountNo?: string;
+    bankIfsc?: string;
+    bankName?: string;
   }
 
   const ctsList: CtsParsedRecord[] = [];
@@ -2097,6 +2335,11 @@ export async function parseDualFiles(
     const rawGender = row['GENDER'] || row['Gender'];
     const rawCaste = row['SOCIALCAT'] || row['SocialCat'] || row['Caste'];
     const rawMedium = row['Medium1'] || row['Medium'] || 'Gujarati';
+    const rawCtsAddress = String(row['Address'] || row['address'] || row['સરનામું'] || row['મુકામ'] || row['Village'] || '').trim();
+    const rawCtsBirthPlace = String(row['PlaceOfBirth'] || row['BirthPlace'] || row['જન્મ સ્થળ'] || row['જન્મસ્થળ'] || '').trim();
+    const rawCtsFatherOcc = String(row['FatherOccupation'] || row['Occupation'] || row['પિતાનો વ્યવસાય'] || '').trim();
+    const rawCtsMotherOcc = String(row['MotherOccupation'] || row['માતાનો વ્યવસાય'] || '').trim();
+    const rawCtsAadhaar = String(row['AadhaarNo'] || row['AadharNo'] || row['Aadhaar'] || row['Aadhar'] || row['આધાર નંબર'] || '').trim();
 
     ctsList.push({
       diseCode,
@@ -2111,18 +2354,34 @@ export async function parseDualFiles(
       medium: rawMedium,
       fatherName: fName,
       motherName: mName,
+      address: rawCtsAddress || undefined,
+      placeOfBirth: rawCtsBirthPlace || undefined,
+      fatherOccupation: rawCtsFatherOcc || undefined,
+      motherOccupation: rawCtsMotherOcc || undefined,
+      aadhaarNo: rawCtsAadhaar || undefined,
     });
   }
 
   // 3. Existing Students Cache
   const existingByGr = new Map<string, Student>();
   const existingByNameStd = new Map<string, Student>();
+  const existingByDise = new Map<string, Student>();
   for (const s of existingStudents) {
     if (s.grNumber && s.grNumber.trim()) {
       existingByGr.set(s.grNumber.trim().toLowerCase(), s);
     }
     const key = `${s.studentName.trim().toLowerCase()}_${String(s.standard).trim()}`;
     existingByNameStd.set(key, s);
+
+    if (s.diseCode && s.diseCode.trim() && s.diseCode.trim() !== schoolDiseCode?.trim()) {
+      existingByDise.set(s.diseCode.trim().toLowerCase(), s);
+    }
+    if (s.studentStateCode && s.studentStateCode.trim()) {
+      existingByDise.set(s.studentStateCode.trim().toLowerCase(), s);
+    }
+    if (s.aadhaarNo && s.aadhaarNo.trim()) {
+      existingByDise.set(s.aadhaarNo.trim().toLowerCase(), s);
+    }
   }
 
   // 4. Perform the Merge
@@ -2188,11 +2447,17 @@ export async function parseDualFiles(
     const aadhaarNo = udise && udise.aadhaarNo ? udise.aadhaarNo : undefined;
     const fatherName = (udise && udise.fatherName ? udise.fatherName : cts.fatherName) || undefined;
     const motherName = (udise && udise.motherName ? udise.motherName : cts.motherName) || undefined;
+    const address = (udise && udise.address ? udise.address : cts.address) || undefined;
+    const placeOfBirth = (udise && udise.placeOfBirth ? udise.placeOfBirth : cts.placeOfBirth) || undefined;
+    const fatherOccupation = (udise && udise.fatherOccupation ? udise.fatherOccupation : cts.fatherOccupation) || undefined;
+    const motherOccupation = (udise && udise.motherOccupation ? udise.motherOccupation : cts.motherOccupation) || undefined;
 
     let isValid = true;
     let isDuplicateInFile = false;
     let isExistingUpdate = false;
     let existingStudentId: string | undefined = undefined;
+    let matchedStudent: Student | undefined = undefined;
+    let studentChanges: StudentFieldChange[] | undefined = undefined;
     let errorReason = '';
 
     if (!studentName) {
@@ -2216,19 +2481,42 @@ export async function parseDualFiles(
         seenInFileNameStd.add(`${studentName.toLowerCase()}_${normalizedStd}`);
 
         // Check existing in school database
-        let existingMatch: Student | undefined;
         if (grNumber && existingByGr.has(grNumber.toLowerCase())) {
-          existingMatch = existingByGr.get(grNumber.toLowerCase());
+          matchedStudent = existingByGr.get(grNumber.toLowerCase());
+        } else if (diseKey && existingByDise.has(diseKey.toLowerCase())) {
+          matchedStudent = existingByDise.get(diseKey.toLowerCase());
         } else {
           const key = `${studentName.toLowerCase()}_${normalizedStd}`;
           if (existingByNameStd.has(key)) {
-            existingMatch = existingByNameStd.get(key);
+            matchedStudent = existingByNameStd.get(key);
           }
         }
 
-        if (existingMatch) {
+        if (matchedStudent) {
           isExistingUpdate = true;
-          existingStudentId = existingMatch.id;
+          existingStudentId = matchedStudent.id;
+          studentChanges = computeStudentFieldChanges(matchedStudent, {
+            name: studentName,
+            standard: normalizedStd,
+            diseCode: diseKey || schoolDiseCode,
+            studentStateCode: diseKey,
+            grNumber,
+            section,
+            rollNumber,
+            dob,
+            doa,
+            gender,
+            caste,
+            bloodGroup,
+            contactNumber,
+            fatherName,
+            motherName,
+            address,
+            placeOfBirth,
+            fatherOccupation,
+            motherOccupation,
+            aadhaarNo,
+          });
         }
       }
     }
@@ -2250,6 +2538,10 @@ export async function parseDualFiles(
       contactNumber,
       medium,
       aadhaarNo,
+      address,
+      placeOfBirth,
+      fatherOccupation,
+      motherOccupation,
       cwsnDisability,
       fatherName,
       motherName,
@@ -2258,6 +2550,10 @@ export async function parseDualFiles(
       isDuplicateInFile,
       isExistingUpdate,
       existingStudentId,
+      existingStudentName: matchedStudent?.studentName,
+      existingGrNumber: matchedStudent?.grNumber,
+      existingStandard: matchedStudent?.standard,
+      changes: studentChanges,
       errorReason: errorReason || undefined,
     };
 

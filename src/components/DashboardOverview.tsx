@@ -171,15 +171,6 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       color: 'hover:border-[#f59c73]/40',
       actionText: 'પ્રોફાઇલ જુઓ',
     },
-    {
-      id: 'security' as ActiveTabType,
-      title: 'સુરક્ષા અને ઓડિટ (Cloud Security Audit)',
-      desc: 'Cloud Firestore સુરક્ષા નિયમો, ટેનન્ટ આઇસોલેશન અને ડેટા પ્રાઇવસીનું ઓન-ડિમાન્ડ ઓડિટ.',
-      icon: <ShieldCheck className="w-5 h-5 text-emerald-400" />,
-      badge: '૧૦૦% સુરક્ષિત',
-      color: 'hover:border-emerald-500/40',
-      actionText: 'ઓડિટ રિપોર્ટ',
-    },
   ];
 
   return (

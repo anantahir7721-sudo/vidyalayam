@@ -61,6 +61,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     dob: '',
     serviceJoiningDate: '',
     schoolJoiningDate: '',
+    teacherCode: '',
+    hrpnNumber: '',
     mobile: '',
     email: '',
     address: '',
@@ -107,6 +109,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
       dob: staff.dob || '',
       serviceJoiningDate: staff.serviceJoiningDate || staff.joiningDate || '',
       schoolJoiningDate: staff.schoolJoiningDate || staff.joiningDate || '',
+      teacherCode: staff.teacherCode || '',
+      hrpnNumber: staff.hrpnNumber || '',
       mobile: staff.mobile || '',
       email: staff.email || '',
       address: staff.address || '',
@@ -149,6 +153,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     try {
       const payload = {
         ...formData,
+        teacherCode: formData.teacherCode?.trim() || '',
+        hrpnNumber: formData.hrpnNumber?.trim() || '',
         aadhaarNumber: formData.aadhaarNumber.replace(/\s|-/g, ''),
         // Keep joiningDate in sync for backwards compatibility
         joiningDate: formData.schoolJoiningDate || formData.serviceJoiningDate || '',
@@ -182,6 +188,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
       'પૂરું નામ': s.fullName,
       'હોદ્દો / પદ': s.designation,
       'સ્ટાફ પ્રકાર': s.category === 'non_teaching' ? 'બિન-શૈક્ષણિક' : 'શૈક્ષણિક',
+      'શિક્ષક કોડ': s.teacherCode || '-',
+      'HRPN નંબર': s.hrpnNumber || '-',
       'મુખ્ય વિષય': s.subject || '-',
       'લાયકાત': s.qualification || '-',
       'મોબાઈલ': s.mobile || '-',
@@ -211,6 +219,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     const matchesSearch =
       s.fullName.toLowerCase().includes(q) ||
       (s.subject && s.subject.toLowerCase().includes(q)) ||
+      (s.teacherCode && s.teacherCode.toLowerCase().includes(q)) ||
+      (s.hrpnNumber && s.hrpnNumber.toLowerCase().includes(q)) ||
       (s.mobile && s.mobile.includes(q)) ||
       (s.aadhaarNumber && s.aadhaarNumber.includes(q)) ||
       (s.bankAccountNo && s.bankAccountNo.includes(q));
@@ -387,6 +397,18 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
 
                 {/* Details list */}
                 <div className="mt-4 pt-3 border-t border-white/5 space-y-2 text-xs text-[#a99f91]">
+                  {staff.teacherCode && (
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>શિક્ષક કોડ: <strong className="text-white font-mono">{staff.teacherCode}</strong></span>
+                    </div>
+                  )}
+                  {staff.hrpnNumber && (
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span>HRPN નંબર: <strong className="text-white font-mono">{staff.hrpnNumber}</strong></span>
+                    </div>
+                  )}
                   {staff.subject && (
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-3.5 h-3.5 text-[#f59c73] shrink-0" />
@@ -606,6 +628,36 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
                       className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
                     />
+                  </div>
+
+                  {/* Teacher Code and HRPN Number (Shaikshanik staff) */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      શિક્ષક કોડ (Teacher Code)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="દા.ત. TC-1049 અથવા 12049"
+                      value={formData.teacherCode}
+                      onChange={(e) => setFormData({ ...formData, teacherCode: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#f59c73]"
+                    />
+                    <span className="text-[10px] text-[#8e8579] mt-0.5 block">શિક્ષક ઓળખ કોડ નંબર</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1 flex items-center justify-between">
+                      <span>HRPN નંબર (HRPN Number)</span>
+                      <span className="text-[10px] text-amber-400 font-normal">(ફરજિયાત નથી / Optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="દા.ત. HRPN-89230 (વૈકલ્પિક)"
+                      value={formData.hrpnNumber}
+                      onChange={(e) => setFormData({ ...formData, hrpnNumber: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#f59c73]"
+                    />
+                    <span className="text-[10px] text-[#8e8579] mt-0.5 block">HRPN નંબર વૈકલ્પિક છે</span>
                   </div>
 
                   <div>
