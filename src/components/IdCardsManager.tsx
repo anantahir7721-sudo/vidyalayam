@@ -80,26 +80,38 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
     (s) => selectedStaffIds.size === 0 || selectedStaffIds.has(s.id)
   );
 
+  // Format date cleanly as DD-MM-YYYY
+  const formatDateGuj = (dateStr?: string) => {
+    if (!dateStr || dateStr.trim() === '' || dateStr === '-') return '-';
+    const clean = dateStr.trim();
+    const match = clean.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (match) {
+      const [, y, m, d] = match;
+      return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`;
+    }
+    return clean;
+  };
+
   // Dynamic font sizing helpers to ensure long names never cut or wrap
   const getNamePrintStyle = (name: string, basePt: number = 11.5) => {
     const len = (name || '').trim().length;
-    if (len <= 16) return `font-size: ${basePt}pt; font-weight: 900;`;
-    if (len <= 21) return `font-size: ${(basePt * 0.92).toFixed(2)}pt; font-weight: 900; letter-spacing: -0.1px;`;
-    if (len <= 26) return `font-size: ${(basePt * 0.84).toFixed(2)}pt; font-weight: 800; letter-spacing: -0.15px;`;
-    if (len <= 32) return `font-size: ${(basePt * 0.77).toFixed(2)}pt; font-weight: 800; letter-spacing: -0.2px;`;
-    if (len <= 38) return `font-size: ${(basePt * 0.70).toFixed(2)}pt; font-weight: 800; letter-spacing: -0.25px;`;
-    return `font-size: ${(basePt * 0.64).toFixed(2)}pt; font-weight: 800; letter-spacing: -0.35px;`;
+    if (len <= 16) return `font-size: ${basePt}pt; font-weight: 900; line-height: 1.45;`;
+    if (len <= 21) return `font-size: ${(basePt * 0.92).toFixed(2)}pt; font-weight: 900; letter-spacing: -0.1px; line-height: 1.45;`;
+    if (len <= 26) return `font-size: ${(basePt * 0.84).toFixed(2)}pt; font-weight: 800; letter-spacing: -0.15px; line-height: 1.45;`;
+    if (len <= 32) return `font-size: ${(basePt * 0.77).toFixed(2)}pt; font-weight: 800; letter-spacing: -0.2px; line-height: 1.45;`;
+    if (len <= 38) return `font-size: ${(basePt * 0.70).toFixed(2)}pt; font-weight: 800; letter-spacing: -0.25px; line-height: 1.45;`;
+    return `font-size: ${(basePt * 0.64).toFixed(2)}pt; font-weight: 800; letter-spacing: -0.35px; line-height: 1.45;`;
   };
 
   const getSchoolTitlePrintStyle = (name: string) => {
     const len = (name || '').trim().length;
-    // Strict single-line fit: dynamically scales so school name NEVER wraps or gets cut
-    if (len <= 18) return 'font-size: 10.5pt; font-weight: 800; letter-spacing: 0.1px; white-space: nowrap;';
-    if (len <= 26) return 'font-size: 9.5pt; font-weight: 800; letter-spacing: 0px; white-space: nowrap;';
-    if (len <= 34) return 'font-size: 8.5pt; font-weight: 800; letter-spacing: -0.15px; white-space: nowrap;';
-    if (len <= 42) return 'font-size: 7.8pt; font-weight: 800; letter-spacing: -0.2px; white-space: nowrap;';
-    if (len <= 52) return 'font-size: 7.0pt; font-weight: 800; letter-spacing: -0.3px; white-space: nowrap;';
-    return 'font-size: 6.4pt; font-weight: 700; letter-spacing: -0.35px; white-space: nowrap;';
+    // Scales dynamically so school name fills boldly across the entire header right to the end without wrapping or getting cut
+    if (len <= 20) return 'font-size: 11.5pt; font-weight: 800; letter-spacing: 0.1px; line-height: 1.35; white-space: nowrap;';
+    if (len <= 28) return 'font-size: 10.5pt; font-weight: 800; letter-spacing: 0px; line-height: 1.35; white-space: nowrap;';
+    if (len <= 36) return 'font-size: 9.8pt; font-weight: 800; letter-spacing: -0.1px; line-height: 1.35; white-space: nowrap;';
+    if (len <= 45) return 'font-size: 9.0pt; font-weight: 800; letter-spacing: -0.15px; line-height: 1.35; white-space: nowrap;';
+    if (len <= 55) return 'font-size: 8.4pt; font-weight: 800; letter-spacing: -0.2px; line-height: 1.35; white-space: nowrap;';
+    return 'font-size: 7.8pt; font-weight: 800; letter-spacing: -0.25px; line-height: 1.35; white-space: nowrap;';
   };
 
   const getPreviewNameFontSize = (name: string) => {
@@ -246,32 +258,43 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
                   }
                 </div>
                 ${stf.bloodGroup ? `<div class="blood-pill">BLOOD ${stf.bloodGroup}</div>` : ''}
+                <div class="teacher-sign-box">
+                  <div class="teacher-sign-line"></div>
+                  <div class="teacher-sign-label">શિક્ષકની સહી</div>
+                </div>
               </div>
               <div class="details-box">
-                <div class="name-field" style="${getNamePrintStyle(stf.fullName, 10)}" title="${stf.fullName}">${stf.fullName}</div>
+                <div class="name-field staff-name" style="${getNamePrintStyle(stf.fullName, 10.5)}" title="${stf.fullName}">${stf.fullName}</div>
                 <div class="field-row">
                   <span class="lbl">હોદ્દો:</span>
-                  <span class="val font-bold">${stf.designation}</span>
+                  <span class="val font-bold" style="color:#78350f;">${stf.designation || 'શિક્ષક'}</span>
+                  <span class="lbl" style="margin-left: 6px;">વિષય:</span>
+                  <span class="val font-bold" style="color:#0f172a;">${stf.subject || '-'}</span>
                 </div>
                 <div class="field-row">
-                  <span class="lbl">વિષય:</span>
-                  <span class="val font-bold">${stf.subject || '-'}</span>
+                  <span class="lbl">શિક્ષક કોડ:</span>
+                  <span class="val font-bold" style="font-family: monospace; color: #78350f; font-size: 6.8pt;">${stf.teacherCode || '-'}</span>
+                  <span class="lbl" style="margin-left: 6px;">HRPN:</span>
+                  <span class="val font-bold" style="font-family: monospace; color: #0369a1; font-size: 6.8pt;">${stf.hrpnNumber || '-'}</span>
                 </div>
                 <div class="field-row">
-                  <span class="lbl">લાયકાત:</span>
-                  <span class="val font-bold">${stf.qualification || '-'}</span>
+                  <span class="lbl">જન્મ તારીખ:</span>
+                  <span class="val font-bold" style="color:#0f172a;">${formatDateGuj(stf.dob)}</span>
+                  ${stf.mobile ? `<span class="lbl" style="margin-left: 6px;">મોબાઇલ:</span><span class="val font-bold font-mono">${stf.mobile}</span>` : ''}
                 </div>
                 <div class="field-row">
-                  <span class="lbl">મોબાઈલ:</span>
-                  <span class="val font-bold">${stf.mobile || '-'}</span>
+                  <span class="lbl">ખાતામાં દાખલ:</span>
+                  <span class="val font-bold" style="color:#0284c7;">${formatDateGuj(stf.serviceJoiningDate || stf.joiningDate)}</span>
                 </div>
                 <div class="field-row">
-                  <span class="lbl">જોડાવાની તારીખ:</span>
-                  <span class="val" style="color:#0284c7;font-weight:700;">${stf.joiningDate || '-'}</span>
+                  <span class="lbl">શાળામાં દાખલ:</span>
+                  <span class="val font-bold" style="color:#0d9488;">${formatDateGuj(stf.schoolJoiningDate || stf.joiningDate)}</span>
                 </div>
                 <div class="field-row">
                   <span class="lbl">સરનામું:</span>
-                  <span class="val" title="${stf.address || '-'}" style="font-size:5.9pt;color:#475569;">${stf.address || school.district || '-'}</span>
+                  <span class="val" title="${stf.address || '-'}" style="font-size:5.8pt;color:#475569;max-width:48mm;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    ${stf.address || school.district || '-'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -291,16 +314,17 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
       <html lang="gu">
       <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${school.schoolName} - ID Cards Print</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;500;600;700;800;900&family=Anek+Gujarati:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;500;600;700;800;900&family=Anek+Gujarati:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
           
           @page {
             size: A4 portrait;
-            margin: 10mm;
+            margin: 8mm 6mm;
           }
           * {
             box-sizing: border-box;
@@ -308,7 +332,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             print-color-adjust: exact;
           }
           body {
-            font-family: 'Anek Gujarati', 'Plus Jakarta Sans', system-ui, sans-serif;
+            font-family: 'Noto Sans Gujarati', 'Anek Gujarati', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
             background: #fff;
             color: #0f172a;
             margin: 0;
@@ -317,8 +341,26 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
           .grid-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12mm 8mm;
+            gap: 8mm 6mm;
             page-break-inside: auto;
+            justify-items: center;
+          }
+          @media screen and (max-width: 768px) {
+            .grid-container {
+              grid-template-columns: 1fr;
+              gap: 8mm;
+              padding: 0;
+            }
+            .id-card {
+              margin: 0 auto;
+              max-width: 100%;
+            }
+          }
+          @media print {
+            .grid-container {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 8mm 6mm !important;
+            }
           }
           .id-card {
             border: 1.5px solid #0f172a;
@@ -341,6 +383,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             text-align: left;
             border-bottom: 2px solid #f59c73;
             box-sizing: border-box;
+            width: 100%;
           }
           .card-header.light-header {
             background: #ffffff !important;
@@ -403,13 +446,14 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
           .school-title {
             font-weight: 800;
             text-transform: uppercase;
-            line-height: 1.15;
+            line-height: 1.35;
             color: #ffffff;
-            letter-spacing: 0.1px;
+            letter-spacing: 0.05px;
             white-space: nowrap !important;
             overflow: hidden;
-            text-overflow: ellipsis;
+            text-overflow: clip;
             width: 100%;
+            display: block;
           }
           .school-sub-row {
             display: flex;
@@ -446,11 +490,11 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             color: #78350f !important;
           }
           .card-body {
-            padding: 2mm 3.2mm 1.5mm 3.2mm;
+            padding: 1.8mm 3.2mm 1.5mm 3.2mm;
             display: flex;
             gap: 6.5px;
             flex: 1;
-            align-items: center;
+            align-items: stretch;
             box-sizing: border-box;
             overflow: hidden;
           }
@@ -458,12 +502,14 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: space-between;
             flex-shrink: 0;
-            gap: 2px;
+            width: 19mm;
+            gap: 1.5px;
           }
           .photo-box {
-            width: 20mm;
-            height: 24.5mm;
+            width: 19mm;
+            height: 22.5mm;
             border: 1px solid #94a3b8;
             border-radius: 4px;
             background: #f8fafc;
@@ -473,6 +519,27 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             justify-content: center;
             flex-shrink: 0;
             overflow: hidden;
+          }
+          .staff-card .photo-box {
+            border-color: #b45309;
+          }
+          .teacher-sign-box {
+            width: 100%;
+            text-align: center;
+            margin-top: auto;
+            padding-top: 1px;
+          }
+          .teacher-sign-line {
+            width: 88%;
+            border-bottom: 0.8px dashed #64748b;
+            margin: 0 auto 1px auto;
+          }
+          .teacher-sign-label {
+            font-size: 5pt;
+            font-weight: 700;
+            color: #475569;
+            line-height: 1.35;
+            white-space: nowrap;
           }
           .gr-pill {
             font-size: 5.5pt;
@@ -518,39 +585,44 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             flex-direction: column;
             justify-content: space-between;
             height: 100%;
-            overflow: hidden;
+            overflow: visible;
           }
           .name-field {
             font-size: 9.8pt;
-            font-weight: 900;
+            font-weight: 800;
             color: #0f172a;
             background: #f8fafc;
-            border-left: 2.5px solid #e27d4e;
+            border-left: 2.8px solid #e27d4e;
             border-bottom: 1px solid #cbd5e1;
-            padding: 1.2px 3.5px;
-            margin-bottom: 1.5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: clip;
-            line-height: 1.18;
-            border-radius: 0 3px 3px 0;
-          }
-          .field-row {
-            font-size: 6.2pt;
-            line-height: 1.38;
-            display: flex;
-            align-items: center;
-            color: #334155;
+            padding: 2.5px 5px 2px 5px;
+            margin-bottom: 1px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            line-height: 1.45;
+            border-radius: 0 4px 4px 0;
+            box-sizing: border-box;
+          }
+          .staff-card .name-field {
+            border-left: 2.8px solid #b45309;
+            background: #fffbeb;
+          }
+          .field-row {
+            font-size: 6.2pt;
+            line-height: 1.48;
+            display: flex;
+            align-items: baseline;
+            color: #334155;
+            white-space: nowrap;
+            padding: 0.5px 0;
           }
           .field-row .lbl {
             color: #64748b;
-            margin-right: 2.5px;
+            margin-right: 3px;
             font-weight: 600;
             white-space: nowrap;
             flex-shrink: 0;
+            line-height: 1.48;
           }
           .field-row .val {
             color: #0f172a;
@@ -558,6 +630,8 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             overflow: hidden;
             text-overflow: ellipsis;
             flex-shrink: 0;
+            line-height: 1.48;
+            font-weight: 700;
           }
           .field-row .val.mono-dise {
             font-family: monospace;
@@ -639,7 +713,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
               var maxW = parent.getBoundingClientRect ? parent.getBoundingClientRect().width : parent.clientWidth;
               if (maxW <= 0) return;
               var curSize = parseFloat(window.getComputedStyle(el).fontSize) || 11;
-              while (el.scrollWidth > maxW && curSize > 5.5) {
+              while (el.scrollWidth > maxW && curSize > 6.5) {
                 curSize -= 0.2;
                 el.style.fontSize = curSize + 'px';
                 el.style.letterSpacing = '-0.25px';
@@ -653,9 +727,10 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
               var maxW = parent.getBoundingClientRect ? parent.getBoundingClientRect().width : parent.clientWidth;
               if (maxW <= 0) return;
               var curSize = parseFloat(window.getComputedStyle(el).fontSize) || 12;
-              while (el.scrollWidth > maxW && curSize > 6.5) {
-                curSize -= 0.2;
+              while (el.scrollWidth > maxW && curSize > 7.5) {
+                curSize -= 0.15;
                 el.style.fontSize = curSize + 'px';
+                el.style.letterSpacing = '-0.2px';
               }
             });
           }
@@ -886,19 +961,19 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
                         )}
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
                           <div
-                            className={`font-extrabold uppercase leading-tight whitespace-nowrap overflow-hidden text-ellipsis ${
+                            className={`font-extrabold uppercase leading-normal whitespace-nowrap overflow-hidden text-ellipsis ${
                               headerTheme === 'dark' ? 'text-white' : 'text-slate-900'
                             }`}
                             style={{
                               fontSize:
                                 school.schoolName.length > 50
-                                  ? '10px'
+                                  ? '12px'
                                   : school.schoolName.length > 35
-                                  ? '11.5px'
+                                  ? '13.5px'
                                   : school.schoolName.length > 24
-                                  ? '12.5px'
-                                  : '14px',
-                              letterSpacing: school.schoolName.length > 40 ? '-0.2px' : '0.1px',
+                                  ? '15px'
+                                  : '16.5px',
+                              letterSpacing: school.schoolName.length > 40 ? '-0.15px' : '0.1px',
                             }}
                             title={school.schoolName}
                           >
@@ -1057,19 +1132,19 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
                       )}
                       <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <div
-                          className={`font-extrabold uppercase leading-tight whitespace-nowrap overflow-hidden text-ellipsis ${
+                          className={`font-extrabold uppercase leading-normal whitespace-nowrap overflow-hidden text-ellipsis ${
                             headerTheme === 'dark' ? 'text-white' : 'text-slate-900'
                           }`}
                           style={{
                             fontSize:
                               school.schoolName.length > 50
-                                ? '10px'
+                                ? '12px'
                                 : school.schoolName.length > 35
-                                ? '11.5px'
+                                ? '13.5px'
                                 : school.schoolName.length > 24
-                                ? '12.5px'
-                                : '14px',
-                            letterSpacing: school.schoolName.length > 40 ? '-0.2px' : '0.1px',
+                                ? '15px'
+                                : '16.5px',
+                            letterSpacing: school.schoolName.length > 40 ? '-0.15px' : '0.1px',
                           }}
                           title={school.schoolName}
                         >
@@ -1098,51 +1173,76 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
                   </div>
 
                   <div className="p-3 flex gap-3 items-center">
-                    <div className="flex flex-col items-center shrink-0 gap-1">
-                      <div className="w-18 h-22 rounded-xl bg-amber-950/40 border-2 border-amber-700/50 flex flex-col items-center justify-center shrink-0 shadow-inner">
-                        <span className="text-2xl font-black text-amber-300">
-                          {stf.fullName.charAt(0) || 'T'}
-                        </span>
-                        <span className="text-[8px] text-amber-200/70 font-bold mt-0.5 tracking-wider">PHOTO</span>
+                    <div className="flex flex-col items-center shrink-0 gap-1 w-20">
+                      <div className="w-18 h-22 rounded-xl bg-amber-950/40 border-2 border-amber-700/50 overflow-hidden flex flex-col items-center justify-center shrink-0 shadow-inner">
+                        {stf.photoUrl ? (
+                          <img
+                            src={stf.photoUrl}
+                            alt={stf.fullName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <>
+                            <span className="text-2xl font-black text-amber-300">
+                              {stf.fullName.charAt(0) || 'T'}
+                            </span>
+                            <span className="text-[8px] text-amber-200/70 font-bold mt-0.5 tracking-wider">PHOTO</span>
+                          </>
+                        )}
                       </div>
                       {stf.bloodGroup && (
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-center w-full">
                           {stf.bloodGroup}
                         </span>
                       )}
+                      <div className="w-full text-center mt-0.5 border-t border-dashed border-amber-600/40 pt-1">
+                        <span className="text-[8px] font-bold text-amber-200/90 tracking-tight">શિક્ષકની સહી</span>
+                      </div>
                     </div>
 
-                    <div className="flex-1 min-w-0 space-y-1 text-xs">
+                    <div className="flex-1 min-w-0 space-y-1.5 text-xs">
                       <div
-                        className="whitespace-nowrap overflow-hidden leading-tight font-black text-[#fde68a] text-sm bg-white/5 px-2.5 py-1 rounded-lg border-l-3 border-amber-400"
+                        className="whitespace-nowrap overflow-hidden leading-[1.45] font-black text-[#fde68a] text-sm bg-white/5 px-2.5 py-1.5 rounded-lg border-l-3 border-amber-400"
                         title={stf.fullName}
                       >
                         {stf.fullName}
                       </div>
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
-                        <div className="col-span-2">
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] leading-[1.45]">
+                        <div>
                           <span className="text-[#a99f91]">હોદ્દો: </span>
-                          <strong className="text-amber-300 font-bold">{stf.designation}</strong>
+                          <strong className="text-amber-300 font-bold">{stf.designation || 'શિક્ષક'}</strong>
                         </div>
                         <div>
                           <span className="text-[#a99f91]">વિષય: </span>
                           <span className="text-white font-medium">{stf.subject || '-'}</span>
                         </div>
                         <div>
-                          <span className="text-[#a99f91]">લાયકાત: </span>
-                          <span className="text-slate-200">{stf.qualification || '-'}</span>
+                          <span className="text-[#a99f91]">શિક્ષક કોડ: </span>
+                          <span className="text-amber-200 font-mono font-bold">{stf.teacherCode || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#a99f91]">HRPN નં: </span>
+                          <span className="text-cyan-300 font-mono font-bold">{stf.hrpnNumber || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#a99f91]">જન્મ તારીખ: </span>
+                          <span className="text-white font-medium">{formatDateGuj(stf.dob)}</span>
                         </div>
                         <div>
                           <span className="text-[#a99f91]">મોબાઈલ: </span>
                           <span className="text-white font-mono">{stf.mobile || '-'}</span>
                         </div>
                         <div>
-                          <span className="text-[#a99f91]">જોડાવાની તારીખ: </span>
-                          <span className="text-sky-300 font-mono text-[10px]">{stf.joiningDate || '-'}</span>
+                          <span className="text-[#a99f91]">ખાતામાં દાખલ: </span>
+                          <span className="text-sky-300 font-mono text-[10px] font-semibold">{formatDateGuj(stf.serviceJoiningDate || stf.joiningDate)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#a99f91]">શાળામાં દાખલ: </span>
+                          <span className="text-teal-300 font-mono text-[10px] font-semibold">{formatDateGuj(stf.schoolJoiningDate || stf.joiningDate)}</span>
                         </div>
                         <div className="col-span-2">
                           <span className="text-[#a99f91]">સરનામું: </span>
-                          <span className="text-slate-400 text-[10px] truncate">
+                          <span className="text-slate-300 text-[10px] truncate" title={stf.address || school.district || '-'}>
                             {stf.address || school.district || '-'}
                           </span>
                         </div>

@@ -6,6 +6,7 @@ import {
   getDocs,
   updateDoc,
   onSnapshot,
+  addDoc,
 } from 'firebase/firestore';
 import { signInWithEmailAndPassword, User, signOut as fbSignOut } from 'firebase/auth';
 import {
@@ -14,7 +15,7 @@ import {
   projectId,
   FIRESTORE_DATABASE_ID,
 } from '../firebase/config';
-import { School, SchoolStatus, AdminRecord } from '../types';
+import { School, SchoolStatus, AdminRecord, PasswordResetRequest } from '../types';
 
 export interface DatabaseCheckDiagnostic {
   databaseId: string;
@@ -262,3 +263,65 @@ export async function updateSchoolStatus(
     updatedAt: new Date().toISOString(),
   });
 }
+
+/**
+ * Submit a Password Reset Request (Called by school user when password is forgotten)
+ */
+export async function submitPasswordResetRequest(params: {
+  diseCode: string;
+  schoolName?: string;
+  contactNumber?: string;
+}): Promise<string> {
+  const colRef = collection(db, 'password_reset_requests');
+  const docRef = await addDoc(colRef, {
+    diseCode: params.diseCode.trim(),
+    schoolName: (params.schoolName || '').trim(),
+    contactNumber: (params.contactNumber || '').trim(),
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  });
+  return docRef.id;
+}
+
+/**
+ * Real-time subscription to Password Reset Requests (Admin Only)
+ */
+export function subscribeToPasswordResetRequests(
+  callback: (requests: PasswordResetRequest[]) => void
+): () => void {
+  const colRef = collection(db, 'password_reset_requests');
+  return onSnapshot(
+    colRef,
+    (snapshot) => {
+      const list: PasswordResetRequest[] = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<PasswordResetRequest, 'id'>),
+      }));
+      list.sort(
+        (a, b) =>
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      );
+      callback(list);
+    },
+    (err) => {
+      console.error('Error in subscribeToPasswordResetRequests:', err);
+    }
+  );
+}
+
+/**
+ * Update the status of a Password Reset Request (Admin Only)
+ */
+export async function updatePasswordResetRequestStatus(
+  requestId: string,
+  status: 'resolved' | 'rejected',
+  adminNotes?: string
+): Promise<void> {
+  const docRef = doc(db, 'password_reset_requests', requestId);
+  await updateDoc(docRef, {
+    status,
+    resolvedAt: new Date().toISOString(),
+    ...(adminNotes ? { adminNotes } : {}),
+  });
+}
+

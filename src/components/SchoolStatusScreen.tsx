@@ -13,6 +13,10 @@ import {
   Database,
   CheckCircle2,
   AlertTriangle,
+  MessageSquare,
+  Send,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   getLatestAdminDiagnostic,
@@ -20,6 +24,7 @@ import {
   AdminDiagnosticReport,
 } from '../services/adminService';
 import { projectId, FIRESTORE_DATABASE_ID } from '../firebase/config';
+import { getSchoolApprovalWhatsApp, ADMIN_WHATSAPP_LINK } from '../utils/whatsappUtils';
 
 interface SchoolStatusScreenProps {
   school: School | null;
@@ -42,6 +47,24 @@ export const SchoolStatusScreen: React.FC<SchoolStatusScreenProps> = ({
 }) => {
   const [diagnostic, setDiagnostic] = useState<AdminDiagnosticReport | null>(null);
   const [checking, setChecking] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const approvalData = school
+    ? getSchoolApprovalWhatsApp({
+        schoolName: school.schoolName,
+        diseCode: school.diseCode,
+        district: school.district,
+        principalName: school.principalName,
+        contactNumber: school.contactPhone || school.principalPhone,
+      })
+    : null;
+
+  const handleCopyMessage = () => {
+    if (!approvalData) return;
+    navigator.clipboard.writeText(approvalData.message);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
 
   useEffect(() => {
     if (status === 'unrecognized' && userUid) {
@@ -266,6 +289,73 @@ export const SchoolStatusScreen: React.FC<SchoolStatusScreenProps> = ({
                 </div>
                 <span>જિલ્લો: <strong className="text-slate-200">{school.district}</strong></span>
               </div>
+            </div>
+          )}
+
+          {/* WhatsApp Admin Approval Box (For Pending Schools) */}
+          {status === 'pending' && school && approvalData && (
+            <div className="bg-gradient-to-b from-emerald-950/60 to-slate-900/90 border border-emerald-500/40 rounded-2xl p-4 sm:p-5 text-left space-y-3 shadow-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-white">એડમિન મંજૂરી વિનંતી (WhatsApp)</h3>
+                    <p className="text-[10px] text-emerald-400/90 font-medium">તૈયાર મેસેજ સાથે તુરંત સંપર્ક કરો</p>
+                  </div>
+                </div>
+                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  ઝડપી મંજૂરી
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                નીચેના બટન પર ક્લિક કરવાથી એડમિનનું WhatsApp ખુલશે જેમાં તમારી શાળાનું નામ, DISE કોડ અને મંજૂરીની વિનંતી આપોઆપ લખાઈ જશે.
+              </p>
+
+              {/* Pre-typed message preview box */}
+              <div className="bg-slate-950/80 rounded-xl p-3 border border-emerald-950 text-[10px] text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">
+                {approvalData.message}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <a
+                  id="btn-whatsapp-approval"
+                  href={approvalData.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-900/40"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>WhatsApp પર એડમિનને મેસેજ મોકલો</span>
+                </a>
+                <button
+                  type="button"
+                  id="btn-copy-approval-msg"
+                  onClick={handleCopyMessage}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium border border-slate-700 transition-colors"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                  <span>{copied ? 'કોપી થઈ ગયો!' : 'મેસેજ કોપી કરો'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* WhatsApp Contact for Rejected / Inactive */}
+          {(status === 'rejected' || status === 'inactive') && (
+            <div className="pt-1">
+              <a
+                id="btn-whatsapp-contact-admin"
+                href={ADMIN_WHATSAPP_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600/90 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>સહાય માટે એડમિનનો WhatsApp પર સંપર્ક કરો</span>
+              </a>
             </div>
           )}
 

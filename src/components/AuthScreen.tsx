@@ -23,7 +23,19 @@ import {
   Upload,
   Image as ImageIcon,
   X,
+  MessageSquare,
+  Send,
+  Copy,
+  Check,
+  KeyRound,
+  HelpCircle,
 } from 'lucide-react';
+import { submitPasswordResetRequest } from '../services/adminService';
+import {
+  getSchoolApprovalWhatsApp,
+  getForgotPasswordWhatsApp,
+  ADMIN_WHATSAPP_LINK,
+} from '../utils/whatsappUtils';
 
 const GUJARAT_DISTRICTS = [
   'Ahmedabad', 'Amreli', 'Anand', 'Aravalli', 'Banaskantha', 'Bharuch',
@@ -90,6 +102,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [adminIdentifier, setAdminIdentifier] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
+  // Forgot Password Modal states
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [resetDise, setResetDise] = useState('');
+  const [resetSchoolName, setResetSchoolName] = useState('');
+  const [resetContact, setResetContact] = useState('');
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetCopied, setResetCopied] = useState(false);
+
+  // Post-Registration Approval Modal states
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [registeredSchoolForApproval, setRegisteredSchoolForApproval] = useState<School | null>(null);
+  const [approvalCopied, setApprovalCopied] = useState(false);
+
   // Handle School Login
   const handleSchoolLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,14 +181,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         logoUrl: schoolLogo || undefined,
       });
 
+      setRegisteredSchoolForApproval(school);
+      setShowApprovalModal(true);
       setSuccessMessage(
-        'School registration submitted successfully! Your account status is now Pending Admin approval.'
+        'શાળા નોંધણી સફળતાપૂર્વક સબમિટ થઈ ગઈ છે! કૃપા કરીને એડમિનને WhatsApp પર મેસેજ કરીને મંજૂરી મેળવો.'
       );
-      if (onSchoolAuthSuccess) {
-        setTimeout(() => {
-          onSchoolAuthSuccess(school);
-        }, 800);
-      }
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please check details and try again.');
     } finally {
@@ -463,6 +486,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         placeholder="••••••••"
                         className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60"
                       />
+                    </div>
+                    <div className="flex justify-end mt-1.5">
+                      <button
+                        type="button"
+                        id="btn-forgot-password"
+                        onClick={() => {
+                          setResetDise(diseCode);
+                          setForgotPasswordOpen(true);
+                          setResetSuccess(false);
+                        }}
+                        className="text-xs text-amber-400 hover:text-amber-300 font-medium transition-colors flex items-center gap-1"
+                      >
+                        <KeyRound className="w-3 h-3" />
+                        <span>પાસવર્ડ ભૂલી ગયા છો? (Forgot Password?)</span>
+                      </button>
                     </div>
                   </div>
 
@@ -888,6 +926,328 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           </div>
         </div>
       </div>
+
+      {/* MODAL 1: Forgot Password Assistant */}
+      {forgotPasswordOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0f172a] border border-slate-700 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-5 text-left relative max-h-[92vh] overflow-y-auto">
+            <button
+              type="button"
+              id="btn-close-forgot-password"
+              onClick={() => {
+                setForgotPasswordOpen(false);
+                setResetSuccess(false);
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-slate-800/60 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <KeyRound className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white">પાસવર્ડ સહાય / રીસેટ</h3>
+                <p className="text-xs text-slate-400">એડમિનનો સંપર્ક કરી પાસવર્ડ બદલવાની વ્યવસ્થા</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              જો તમે તમારી શાળાનો પાસવર્ડ ભૂલી ગયા હોવ, તો નીચે તમારી શાળાની વિગતો ભરીને <strong>WhatsApp દ્વારા એડમિનનો સીધો સંપર્ક</strong> કરી શકો છો અથવા સિસ્ટમમાં વિનંતી નોંધાવી શકો છો.
+            </p>
+
+            {resetSuccess ? (
+              <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-2xl p-4 text-center space-y-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+                  <Check className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-bold text-white">વિનંતી સફળતાપૂર્વક નોંધાઈ ગઈ!</h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  તમારી પાસવર્ડ રીસેટ વિનંતી એડમિન પોર્ટલમાં સબમિટ થઈ ગઈ છે. ઝડપી પ્રક્રિયા માટે કૃપા કરીને નીચે આપેલ બટનથી એડમિનને WhatsApp પર પણ મેસેજ કરો.
+                </p>
+                <a
+                  href={
+                    getForgotPasswordWhatsApp({
+                      diseCode: resetDise,
+                      schoolName: resetSchoolName,
+                      contactNumber: resetContact,
+                    }).url
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>WhatsApp પર એડમિનને મેસેજ કરો</span>
+                </a>
+              </div>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!resetDise.trim()) {
+                    alert('કૃપા કરીને 11-અંકનો શાળા DISE કોડ દાખલ કરો.');
+                    return;
+                  }
+                  setResetSubmitting(true);
+                  try {
+                    await submitPasswordResetRequest({
+                      diseCode: resetDise.trim(),
+                      schoolName: resetSchoolName.trim(),
+                      contactNumber: resetContact.trim(),
+                    });
+                    setResetSuccess(true);
+                  } catch (err: any) {
+                    alert(err.message || 'વિનંતી સબમિટ કરવામાં ભૂલ આવી.');
+                  } finally {
+                    setResetSubmitting(false);
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    શાળાનો 11-અંકનો DISE કોડ <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    id="input-reset-dise"
+                    type="text"
+                    required
+                    value={resetDise}
+                    onChange={(e) => setResetDise(e.target.value)}
+                    placeholder="દા.ત. 24070500101"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white font-mono placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    શાળાનું નામ (School Name)
+                  </label>
+                  <input
+                    id="input-reset-school-name"
+                    type="text"
+                    value={resetSchoolName}
+                    onChange={(e) => setResetSchoolName(e.target.value)}
+                    placeholder="તમારી શાળાનું નામ"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    સંપર્ક મોબાઈલ નંબર (Contact Number)
+                  </label>
+                  <input
+                    id="input-reset-contact"
+                    type="text"
+                    value={resetContact}
+                    onChange={(e) => setResetContact(e.target.value)}
+                    placeholder="દા.ત. 9876543210"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white font-mono placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                {/* Direct WhatsApp Action Box */}
+                <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-3.5 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-bold text-emerald-300">
+                    <span className="flex items-center gap-1.5">
+                      <MessageSquare className="w-4 h-4 text-emerald-400" />
+                      ઝડપી પાસવર્ડ સહાય (WhatsApp Direct)
+                    </span>
+                    <span className="text-[10px] text-emerald-400 bg-emerald-900/60 px-2 py-0.5 rounded-full">
+                      તુરંત રીસેટ
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    નીચેના બટન પર ટેપ કરવાથી એડમિનનું WhatsApp ખુલશે જેમાં તમારો DISE કોડ અને પાસવર્ડ રીસેટ કરવાની વિનંતી આપોઆપ લખેલી હશે:
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <a
+                      id="btn-whatsapp-forgot-password"
+                      href={
+                        getForgotPasswordWhatsApp({
+                          diseCode: resetDise || 'DISE CODE',
+                          schoolName: resetSchoolName,
+                          contactNumber: resetContact,
+                        }).url
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span>WhatsApp પર એડમિનનો સંપર્ક કરો</span>
+                    </a>
+
+                    <button
+                      type="button"
+                      id="btn-copy-reset-msg"
+                      onClick={() => {
+                        const { message } = getForgotPasswordWhatsApp({
+                          diseCode: resetDise || 'DISE CODE',
+                          schoolName: resetSchoolName,
+                          contactNumber: resetContact,
+                        });
+                        navigator.clipboard.writeText(message);
+                        setResetCopied(true);
+                        setTimeout(() => setResetCopied(false), 2500);
+                      }}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium border border-slate-700 transition-colors"
+                    >
+                      {resetCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                      <span>{resetCopied ? 'કોપી થયું!' : 'મેસેજ કોપી'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setForgotPasswordOpen(false)}
+                    className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-xl transition-colors"
+                  >
+                    રદ કરો (Cancel)
+                  </button>
+                  <button
+                    id="btn-submit-reset-db"
+                    type="submit"
+                    disabled={resetSubmitting}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                  >
+                    {resetSubmitting ? (
+                      <span>સબમિટ થઈ રહ્યું છે...</span>
+                    ) : (
+                      <>
+                        <KeyRound className="w-3.5 h-3.5" />
+                        <span>સિસ્ટમમાં રીસેટ વિનંતી નોંધાવો</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: Post-Registration Admin Approval Request via WhatsApp */}
+      {showApprovalModal && registeredSchoolForApproval && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0f172a] border border-emerald-500/40 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-5 text-left relative max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white">શાળા નોંધણી સફળ થઈ છે!</h3>
+                <p className="text-xs text-emerald-400 font-medium">Approval માટે એડમિનનો સંપર્ક કરો</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/90 rounded-2xl p-4 border border-slate-700/80 space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-white font-bold">
+                <Building2 className="w-4 h-4 text-emerald-400" />
+                <span>{registeredSchoolForApproval.schoolName}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-400 pt-1 border-t border-slate-800">
+                <span>DISE: <strong className="text-emerald-400 font-mono">{registeredSchoolForApproval.diseCode}</strong></span>
+                <span>જિલ્લો: <strong className="text-slate-200">{registeredSchoolForApproval.district}</strong></span>
+              </div>
+            </div>
+
+            <div className="bg-emerald-950/50 border border-emerald-500/40 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-emerald-300">
+                <span className="flex items-center gap-1.5">
+                  <MessageSquare className="w-4 h-4 text-emerald-400" />
+                  એડમિનને WhatsApp પર મેસેજ મોકલો
+                </span>
+                <span className="text-[10px] text-emerald-400 bg-emerald-900/60 px-2 py-0.5 rounded-full">
+                  ઝડપી Approval
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                તમારી શાળાની નોંધણી સબમિટ થઈ ગઈ છે. એકાઉન્ટને ઝડપથી મંજૂર (Approve) કરાવવા માટે નીચેના બટન પર ટેપ કરો, જેથી એડમિનના WhatsApp માં તમારી શાળાની વિગતો સાથેનો તૈયાર મેસેજ આપોઆપ ખુલી જશે.
+              </p>
+
+              {/* Pre-typed message preview */}
+              <div className="bg-slate-950/90 rounded-xl p-3 border border-emerald-950 text-[10px] text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">
+                {
+                  getSchoolApprovalWhatsApp({
+                    schoolName: registeredSchoolForApproval.schoolName,
+                    diseCode: registeredSchoolForApproval.diseCode,
+                    district: registeredSchoolForApproval.district,
+                    principalName: registeredSchoolForApproval.principalName,
+                    contactNumber: registeredSchoolForApproval.contactPhone || registeredSchoolForApproval.principalPhone,
+                  }).message
+                }
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <a
+                  id="btn-whatsapp-register-approval"
+                  href={
+                    getSchoolApprovalWhatsApp({
+                      schoolName: registeredSchoolForApproval.schoolName,
+                      diseCode: registeredSchoolForApproval.diseCode,
+                      district: registeredSchoolForApproval.district,
+                      principalName: registeredSchoolForApproval.principalName,
+                      contactNumber: registeredSchoolForApproval.contactPhone || registeredSchoolForApproval.principalPhone,
+                    }).url
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-950/40"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>WhatsApp પર મંજૂરી મેસેજ મોકલો</span>
+                </a>
+
+                <button
+                  type="button"
+                  id="btn-copy-approval-register-msg"
+                  onClick={() => {
+                    const { message } = getSchoolApprovalWhatsApp({
+                      schoolName: registeredSchoolForApproval.schoolName,
+                      diseCode: registeredSchoolForApproval.diseCode,
+                      district: registeredSchoolForApproval.district,
+                      principalName: registeredSchoolForApproval.principalName,
+                      contactNumber: registeredSchoolForApproval.contactPhone || registeredSchoolForApproval.principalPhone,
+                    });
+                    navigator.clipboard.writeText(message);
+                    setApprovalCopied(true);
+                    setTimeout(() => setApprovalCopied(false), 2500);
+                  }}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium border border-slate-700 transition-colors"
+                >
+                  {approvalCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                  <span>{approvalCopied ? 'કોપી થયો!' : 'મેસેજ કોપી કરો'}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                id="btn-continue-to-portal"
+                onClick={() => {
+                  setShowApprovalModal(false);
+                  if (onSchoolAuthSuccess) {
+                    onSchoolAuthSuccess(registeredSchoolForApproval);
+                  }
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-colors"
+              >
+                પોર્ટલ પર આગળ વધો (Continue to Portal) &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

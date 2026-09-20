@@ -37,6 +37,12 @@ service cloud.firestore {
       allow read: if true;
     }
 
+    // Password Reset Requests: allows schools to submit a reset request; admins manage them
+    match /password_reset_requests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
     // School profile document: /schools/{schoolId}
     match /schools/{schoolId} {
       // Public directory read: enables students and public to verify school by 11-digit DISE code

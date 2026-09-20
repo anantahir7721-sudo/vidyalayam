@@ -168,5 +168,16 @@ export interface AuthState {
   error: string | null;
 }
 
+export interface PasswordResetRequest {
+  id?: string;
+  diseCode: string;
+  schoolName?: string;
+  contactNumber?: string;
+  status: 'pending' | 'resolved' | 'rejected';
+  createdAt: string;
+  resolvedAt?: string;
+  adminNotes?: string;
+}
+
 export * from './onlineExam';
 

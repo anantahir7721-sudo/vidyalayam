@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { School, SchoolStatus } from '../types';
+import { School, SchoolStatus, PasswordResetRequest } from '../types';
 import {
   subscribeToSchools,
   updateSchoolStatus,
   getAllSchools,
+  subscribeToPasswordResetRequests,
+  updatePasswordResetRequestStatus,
 } from '../services/adminService';
 import { logoutSchool } from '../services/authService';
 import {
@@ -29,6 +31,10 @@ import {
   PowerOff,
   Power,
   ChevronRight,
+  KeyRound,
+  MessageSquare,
+  Phone,
+  ExternalLink,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -56,6 +62,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | SchoolStatus>('all');
 
+  // Password Reset Requests
+  const [resetRequests, setResetRequests] = useState<PasswordResetRequest[]>([]);
+  const [resetFilter, setResetFilter] = useState<'all' | 'pending' | 'resolved'>('pending');
+
   // Confirmation Modal
   const [confirmModal, setConfirmModal] = useState<ConfirmActionModalState>({
     isOpen: false,
@@ -74,16 +84,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return adminEmail;
   }, [adminEmail]);
 
-  // Real-time synchronization of all schools
+  // Real-time synchronization of all schools & password reset requests
   useEffect(() => {
     setLoading(true);
-    const unsubscribe = subscribeToSchools((updatedSchools) => {
+    const unsubscribeSchools = subscribeToSchools((updatedSchools) => {
       setSchools(updatedSchools);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    const unsubscribeResetRequests = subscribeToPasswordResetRequests((requests) => {
+      setResetRequests(requests);
+    });
+
+    return () => {
+      unsubscribeSchools();
+      unsubscribeResetRequests();
+    };
   }, []);
+
+  const handleResolveResetRequest = async (requestId: string, currentStatus: string) => {
+    try {
+      const nextStatus = currentStatus === 'pending' ? 'resolved' : 'pending';
+      await updatePasswordResetRequestStatus(requestId, nextStatus as any);
+      setFeedback({
+        type: 'success',
+        message: `Password reset request marked as ${nextStatus}.`,
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Failed to update reset request.',
+      });
+    }
+  };
 
   const handleManualRefresh = async () => {
     setLoading(true);
@@ -106,6 +139,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const inactive = schools.filter((s) => s.status === 'inactive').length;
     return { total, pending, approved, rejected, inactive };
   }, [schools]);
+
+  const pendingResetsCount = useMemo(() => {
+    return resetRequests.filter((r) => r.status === 'pending').length;
+  }, [resetRequests]);
+
+  const filteredResetRequests = useMemo(() => {
+    return resetRequests.filter((r) => {
+      if (resetFilter !== 'all' && r.status !== resetFilter) return false;
+      return true;
+    });
+  }, [resetRequests, resetFilter]);
 
   // Pending schools list
   const pendingSchools = useMemo(() => {
@@ -265,7 +309,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* 1. Summary Cards */}
         <section aria-label="School Registration Metrics">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {/* Total Schools */}
             <div
               id="card-total-schools"
@@ -333,7 +377,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {/* Inactive Schools */}
             <div
               id="card-inactive-schools"
-              className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-sm col-span-2 sm:col-span-1"
+              className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-sm"
             >
               <div className="flex items-center justify-between text-slate-400 mb-2">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -344,7 +388,182 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="text-2xl sm:text-3xl font-black text-slate-300">{metrics.inactive}</div>
               <div className="text-[11px] text-slate-400 mt-1">Temporarily suspended</div>
             </div>
+
+            {/* Password Reset Requests */}
+            <div
+              id="card-reset-requests"
+              className={`rounded-2xl p-4 shadow-sm border transition-all ${
+                pendingResetsCount > 0
+                  ? 'bg-purple-950/40 border-purple-500/60 ring-1 ring-purple-500/40'
+                  : 'bg-slate-800/90 border-slate-700/80'
+              }`}
+            >
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-purple-300">
+                  Password Resets
+                </span>
+                <KeyRound className="w-4 h-4 text-purple-400" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-purple-400">{pendingResetsCount}</div>
+              <div className="text-[11px] text-purple-300/80 mt-1">
+                {pendingResetsCount > 0 ? `${pendingResetsCount} Pending Request(s)` : 'No active requests'}
+              </div>
+            </div>
           </div>
+        </section>
+
+        {/* PASSWORD RESET ASSISTANCE SECTION */}
+        <section
+          id="section-password-resets"
+          className="bg-slate-800/90 rounded-2xl border border-slate-700/80 p-5 shadow-sm space-y-4"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700">
+            <div className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-purple-400" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wide">
+                    PASSWORD RESET REQUESTS (પાસવર્ડ રીસેટ વિનંતીઓ)
+                  </h2>
+                  {pendingResetsCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                      {pendingResetsCount} Pending
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400">
+                  Manage schools requesting password assistance. Contact via WhatsApp or mark resolved.
+                </p>
+              </div>
+            </div>
+
+            {/* Filter buttons */}
+            <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700 text-xs">
+              {(['pending', 'resolved', 'all'] as const).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setResetFilter(filter)}
+                  className={`px-3 py-1 rounded-md font-semibold transition-colors capitalize ${
+                    resetFilter === filter
+                      ? 'bg-purple-600 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {filteredResetRequests.length === 0 ? (
+            <div className="py-6 text-center text-slate-400 text-xs">
+              {resetFilter === 'pending'
+                ? 'કોઈ પેન્ડિંગ પાસવર્ડ રીસેટ વિનંતી નથી (No pending reset requests).'
+                : 'કોઈ વિનંતી મળી નથી.'}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-950/80 text-slate-400 border-b border-slate-700 font-semibold">
+                    <th className="py-3 px-3">School / DISE Code</th>
+                    <th className="py-3 px-3">Contact Mobile</th>
+                    <th className="py-3 px-3">Requested At</th>
+                    <th className="py-3 px-3">Status</th>
+                    <th className="py-3 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {filteredResetRequests.map((req) => {
+                    const cleanPhone = req.contactNumber ? req.contactNumber.replace(/\D/g, '') : '';
+                    const dateFormatted = req.createdAt
+                      ? new Date(req.createdAt).toLocaleDateString('gu-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : 'N/A';
+
+                    return (
+                      <tr key={req.id} className="hover:bg-slate-700/40 transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-white text-sm">
+                            {req.schoolName || 'Unknown School'}
+                          </div>
+                          <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-mono">
+                            <Hash className="w-3 h-3" />
+                            <span>{req.diseCode}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          {req.contactNumber ? (
+                            <span className="font-mono text-slate-200">{req.contactNumber}</span>
+                          ) : (
+                            <span className="text-slate-500 italic">Not specified</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-slate-400 font-mono text-[11px]">
+                          {dateFormatted}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center gap-1 ${
+                              req.status === 'resolved'
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            }`}
+                          >
+                            {req.status === 'resolved' ? (
+                              <>
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>Resolved</span>
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="w-3 h-3" />
+                                <span>Pending Reset</span>
+                              </>
+                            )}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {cleanPhone && (
+                              <a
+                                href={`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(
+                                  `નમસ્તે, વિદ્યાલયમ પોર્ટલ એડમિન તરફથી આપની શાળા (DISE: ${req.diseCode}) ની પાસવર્ડ રીસેટ વિનંતી અંગે સંપર્ક કરી રહ્યા છીએ.`
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                title="Open WhatsApp Chat with School"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>WhatsApp</span>
+                              </a>
+                            )}
+                            <button
+                              onClick={() => handleResolveResetRequest(req.id, req.status)}
+                              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                                req.status === 'resolved'
+                                  ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                                  : 'bg-purple-600 hover:bg-purple-500 text-white'
+                              }`}
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>{req.status === 'resolved' ? 'Reopen' : 'Mark Resolved'}</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         {/* 2. PENDING SCHOOL REGISTRATIONS */}

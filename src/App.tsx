@@ -314,7 +314,7 @@ export default function App() {
           setActiveTab={setActiveTab}
         />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 lg:pb-6">
           {dataLoading && (
             <div className="mb-4 glass-card border border-white/10 px-4 py-2 rounded-2xl text-xs text-emerald-400 flex items-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -344,6 +344,7 @@ export default function App() {
           {activeTab === 'staff' && (
             <StaffManager
               schoolId={school.id}
+              school={school}
               onBack={() => setActiveTab('overview')}
               onGenerateIdCard={() => setActiveTab('idcards')}
             />

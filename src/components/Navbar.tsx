@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { School } from '../types';
 import {
   School as SchoolIcon,
@@ -17,6 +18,7 @@ import {
   Menu,
   X,
   Sparkles,
+  ClipboardList,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -50,13 +52,39 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const moreMenuRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const moreMenuBtnRef = useRef<HTMLButtonElement>(null);
+  const moreMenuDropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownCoords, setDropdownCoords] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+
+  const updateDropdownCoords = () => {
+    if (moreMenuBtnRef.current) {
+      const rect = moreMenuBtnRef.current.getBoundingClientRect();
+      setDropdownCoords({
+        top: rect.bottom + 8,
+        right: Math.max(16, window.innerWidth - rect.right),
+      });
+    }
+  };
+
+  const handleToggleMoreMenu = () => {
+    if (!moreMenuOpen) {
+      updateDropdownCoords();
+      setMoreMenuOpen(true);
+    } else {
+      setMoreMenuOpen(false);
+    }
+  };
 
   // Close dropdowns on outside click or Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        moreMenuBtnRef.current &&
+        !moreMenuBtnRef.current.contains(target) &&
+        moreMenuDropdownRef.current &&
+        !moreMenuDropdownRef.current.contains(target)
+      ) {
         setMoreMenuOpen(false);
       }
     };
@@ -68,13 +96,23 @@ export const Navbar: React.FC<NavbarProps> = ({
       }
     };
 
+    const handleScrollOrResize = () => {
+      if (moreMenuOpen) {
+        updateDropdownCoords();
+      }
+    };
+
     if (moreMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('resize', handleScrollOrResize);
+      window.addEventListener('scroll', handleScrollOrResize, true);
     }
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [moreMenuOpen]);
@@ -118,7 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="app-header bg-[#121921]/95 backdrop-blur-md border-b border-white/10 text-[#e4ded6] sticky top-0 z-40 shadow-xl transition-colors duration-200">
+    <header className="app-header bg-[#121921] border-b border-white/10 text-[#e4ded6] sticky top-0 z-40 shadow-xl transition-colors duration-200">
       {/* Top institutional strip */}
       <div className="top-strip bg-[#090c10]/95 px-3 sm:px-4 py-1.5 border-b border-white/10 text-xs flex justify-between items-center text-[#a99f91] transition-colors duration-200">
         <div className="flex items-center gap-1.5 sm:gap-2">
@@ -187,10 +225,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 })}
 
                 {/* More Dropdown */}
-                <div ref={moreMenuRef} className="relative inline-block">
+                <div className="relative inline-block">
                   <button
+                    ref={moreMenuBtnRef}
                     type="button"
-                    onClick={() => setMoreMenuOpen((prev) => !prev)}
+                    onClick={handleToggleMoreMenu}
                     aria-expanded={moreMenuOpen}
                     className={`px-2.5 py-2 rounded-xl font-bold transition-all touch-manipulation min-h-[38px] flex items-center gap-1 cursor-pointer ${
                       isMoreActive
@@ -206,33 +245,47 @@ export const Navbar: React.FC<NavbarProps> = ({
                     />
                   </button>
 
-                  {moreMenuOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-60 bg-[#16202c] dark:bg-[#121921] rounded-2xl border border-white/20 p-2 shadow-2xl z-[100] divide-y divide-white/10 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl">
-                      <div className="px-3 py-1.5 text-[11px] font-bold text-[#f59c73] uppercase tracking-wider flex items-center justify-between">
-                        <span>વધુ વિકલ્પો (More Options)</span>
-                        <span className="text-[10px] text-slate-400 font-normal">ESC બંધ કરવા</span>
-                      </div>
-                      <div className="pt-1 space-y-1">
-                        {moreTabs.map((tab) => (
-                          <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => handleSelectTab(tab.id)}
-                            className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 transition-all cursor-pointer ${
-                              activeTab === tab.id
-                                ? 'bg-[#9d512d] text-white shadow-md'
-                                : 'text-[#e4ded6] hover:bg-white/10 hover:text-white'
-                            }`}
-                          >
-                            <span className={`${activeTab === tab.id ? 'text-white' : 'text-[#f59c73]'}`}>
-                              {tab.icon}
-                            </span>
-                            <span className="truncate">{tab.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {moreMenuOpen &&
+                    createPortal(
+                      <div
+                        ref={moreMenuDropdownRef}
+                        style={{
+                          position: 'fixed',
+                          top: `${dropdownCoords.top}px`,
+                          right: `${dropdownCoords.right}px`,
+                          zIndex: 99999,
+                        }}
+                        className="w-64 bg-[#16202c] dark:bg-[#121921] rounded-2xl border border-white/20 p-2 shadow-2xl divide-y divide-white/10 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
+                      >
+                        <div className="px-3 py-1.5 text-[11px] font-bold text-[#f59c73] uppercase tracking-wider flex items-center justify-between">
+                          <span>વધુ વિકલ્પો (More Options)</span>
+                          <span className="text-[10px] text-slate-400 font-normal">ESC બંધ કરવા</span>
+                        </div>
+                        <div className="pt-1 space-y-1">
+                          {moreTabs.map((tab) => (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              onClick={() => {
+                                setMoreMenuOpen(false);
+                                handleSelectTab(tab.id);
+                              }}
+                              className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 transition-all cursor-pointer ${
+                                activeTab === tab.id
+                                  ? 'bg-[#9d512d] text-white shadow-md'
+                                  : 'text-[#e4ded6] hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              <span className={`${activeTab === tab.id ? 'text-white' : 'text-[#f59c73]'}`}>
+                                {tab.icon}
+                              </span>
+                              <span className="truncate">{tab.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>,
+                      document.body
+                    )}
                 </div>
               </nav>
 
@@ -278,126 +331,205 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
       </div>
 
-      {/* Mobile Horizontal Quick-Scroll Bar (For fast 1-tap switching on phones) */}
-      {school && (
-        <div className="lg:hidden border-t border-white/10 bg-[#0c1218]/90 px-2 py-1.5 overflow-x-auto no-scrollbar scroll-smooth">
-          <div ref={scrollContainerRef} className="flex items-center gap-1.5 min-w-max">
-            {allTabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
+      {/* Mobile Full-Screen Navigation Drawer via Portal to document.body */}
+      {school && mobileDrawerOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          className="lg:hidden fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex flex-col justify-end sm:justify-center animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setMobileDrawerOpen(false);
+          }}
+        >
+          <div className="w-full h-full max-h-[100dvh] bg-[#0c1219] text-[#e4ded6] flex flex-col shadow-2xl overflow-hidden">
+            {/* Drawer Header with Close Button */}
+            <div className="bg-[#121921] border-b border-white/15 px-4 py-3 flex items-center justify-between shrink-0 shadow-lg">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-2xl bg-[#9d512d]/20 border border-[#9d512d]/40 flex items-center justify-center text-[#f59c73] shrink-0">
+                  <SchoolIcon className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-white truncate">{school.schoolName}</div>
+                  <div className="text-xs text-[#f59c73] font-mono mt-0.5">
+                    DISE: {school.diseCode} {school.district ? `• ${school.district}` : ''}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileDrawerOpen(false)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer touch-manipulation"
+                aria-label="Close menu"
+              >
+                <X className="w-4 h-4" />
+                <span>બંધ કરો</span>
+              </button>
+            </div>
+
+            {/* Drawer Menu Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-12 bg-[#0c1219]">
+              {/* Quick Profile Access */}
+              <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between">
+                <div className="min-w-0">
+                  <div className="text-xs text-[#a99f91]">સક્રિય શાળા પ્રોફાઇલ</div>
+                  <div className="text-sm font-bold text-white truncate">{school.schoolName}</div>
+                </div>
                 <button
-                  key={tab.id}
-                  onClick={() => handleSelectTab(tab.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all touch-manipulation cursor-pointer border ${
-                    isActive
-                      ? 'bg-[#9d512d] text-white border-[#f59c73]/50 shadow-md scale-[1.02]'
-                      : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
-                  }`}
+                  onClick={() => handleSelectTab('profile')}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#9d512d] hover:bg-[#b55e34] text-xs font-bold text-white shadow-md cursor-pointer"
                 >
-                  <span className={isActive ? 'text-white' : 'text-[#f59c73]'}>{tab.icon}</span>
-                  <span>{tab.label}</span>
+                  પ્રોફાઇલ જુઓ
                 </button>
-              );
-            })}
+              </div>
+
+              {/* Main Tabs Group */}
+              <div>
+                <div className="text-[11px] font-bold text-[#f59c73] uppercase tracking-wider px-1 mb-2">
+                  મુખ્ય વિભાગો (Core Modules)
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {mainTabs.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => handleSelectTab(tab.id)}
+                        className={`w-full px-4 py-3 rounded-2xl text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer min-h-[48px] border ${
+                          isActive
+                            ? 'bg-[#9d512d] text-white border-[#f59c73]/60 shadow-lg'
+                            : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`p-2 rounded-xl ${isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-[#f59c73]'}`}>
+                            {tab.icon}
+                          </span>
+                          <span className="text-sm font-semibold">{tab.label}</span>
+                        </div>
+                        {isActive && <span className="w-2.5 h-2.5 rounded-full bg-white shadow-sm" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* School Tools & Reports Group */}
+              <div>
+                <div className="text-[11px] font-bold text-[#a99f91] uppercase tracking-wider px-1 mb-2">
+                  શાળા સાધનો & અહેવાલો (Tools & Reports)
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {moreTabs.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => handleSelectTab(tab.id)}
+                        className={`w-full px-4 py-3 rounded-2xl text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer min-h-[48px] border ${
+                          isActive
+                            ? 'bg-[#9d512d] text-white border-[#f59c73]/60 shadow-lg'
+                            : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`p-2 rounded-xl ${isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-[#f59c73]'}`}>
+                            {tab.icon}
+                          </span>
+                          <span className="text-sm font-semibold">{tab.label}</span>
+                        </div>
+                        {isActive && <span className="w-2.5 h-2.5 rounded-full bg-white shadow-sm" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Mobile Drawer Logout & Close Actions */}
+              <div className="pt-3 border-t border-white/10 space-y-2">
+                <button
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full py-3 px-4 rounded-2xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[48px]"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>શાળા લોગ આઉટ કરો (Logout)</span>
+                </button>
+
+                <button
+                  onClick={() => setMobileDrawerOpen(false)}
+                  className="w-full py-3 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 border border-white/10 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px]"
+                >
+                  <X className="w-4 h-4" />
+                  <span>મેનુ બંધ કરો (Close)</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Full-Screen Mobile Drawer / Navigation Sheet */}
-      {school && mobileDrawerOpen && (
-        <div className="lg:hidden fixed inset-0 top-[88px] z-50 bg-black/80 backdrop-blur-xl flex flex-col animate-in fade-in duration-200">
-          <div className="flex-1 bg-[#101720] border-t border-white/15 overflow-y-auto p-4 space-y-4">
-            {/* School Profile Card */}
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-between">
-              <div className="min-w-0">
-                <div className="text-sm font-bold text-white truncate">{school.schoolName}</div>
-                <div className="text-xs text-[#f59c73] font-mono mt-0.5">DISE: {school.diseCode}</div>
-              </div>
-              <button
-                onClick={() => handleSelectTab('profile')}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-white border border-white/15 cursor-pointer"
-              >
-                પ્રોફાઇલ
-              </button>
+      {/* Mobile Convenient Bottom Navigation Bar via Portal to document.body */}
+      {school && !mobileDrawerOpen && typeof document !== 'undefined' && createPortal(
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-[9998] bg-[#0e141c]/95 backdrop-blur-lg border-t border-white/10 py-1.5 px-3 flex items-center justify-around shadow-2xl safe-area-pb">
+          <button
+            onClick={() => handleSelectTab('overview')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'overview' ? 'text-white font-bold' : 'text-[#a99f91] hover:text-white'
+            }`}
+          >
+            <div className={`p-1 rounded-lg ${activeTab === 'overview' ? 'bg-[#9d512d] text-white shadow-sm' : ''}`}>
+              <SchoolIcon className="w-4 h-4" />
             </div>
+            <span className="text-[10px]">ડેશબોર્ડ</span>
+          </button>
 
-            {/* Main Tabs Group */}
-            <div>
-              <div className="text-[11px] font-bold text-[#f59c73] uppercase tracking-wider px-1 mb-2">
-                મુખ્ય વિભાગો (Core Sections)
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {mainTabs.map((tab) => {
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => handleSelectTab(tab.id)}
-                      className={`w-full px-3.5 py-3 rounded-2xl text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer min-h-[46px] border ${
-                        isActive
-                          ? 'bg-[#9d512d] text-white border-[#f59c73]/60 shadow-lg'
-                          : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/10'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={`p-1.5 rounded-xl ${isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-[#f59c73]'}`}>
-                          {tab.icon}
-                        </span>
-                        <span className="text-sm font-semibold">{tab.label}</span>
-                      </div>
-                      {isActive && <span className="w-2 h-2 rounded-full bg-white shadow-sm" />}
-                    </button>
-                  );
-                })}
-              </div>
+          <button
+            onClick={() => handleSelectTab('students')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'students' ? 'text-white font-bold' : 'text-[#a99f91] hover:text-white'
+            }`}
+          >
+            <div className={`p-1 rounded-lg ${activeTab === 'students' ? 'bg-[#9d512d] text-white shadow-sm' : ''}`}>
+              <Users className="w-4 h-4" />
             </div>
+            <span className="text-[10px]">વિદ્યાર્થીઓ</span>
+          </button>
 
-            {/* School Tools & Reports Group */}
-            <div>
-              <div className="text-[11px] font-bold text-[#a99f91] uppercase tracking-wider px-1 mb-2">
-                શાળા સાધનો & અહેવાલો (Tools & Reports)
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {moreTabs.map((tab) => {
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => handleSelectTab(tab.id)}
-                      className={`w-full px-3.5 py-3 rounded-2xl text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer min-h-[46px] border ${
-                        isActive
-                          ? 'bg-[#9d512d] text-white border-[#f59c73]/60 shadow-lg'
-                          : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/10'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={`p-1.5 rounded-xl ${isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-[#f59c73]'}`}>
-                          {tab.icon}
-                        </span>
-                        <span className="text-sm font-semibold">{tab.label}</span>
-                      </div>
-                      {isActive && <span className="w-2 h-2 rounded-full bg-white shadow-sm" />}
-                    </button>
-                  );
-                })}
-              </div>
+          <button
+            onClick={() => handleSelectTab('staff')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'staff' ? 'text-white font-bold' : 'text-[#a99f91] hover:text-white'
+            }`}
+          >
+            <div className={`p-1 rounded-lg ${activeTab === 'staff' ? 'bg-[#9d512d] text-white shadow-sm' : ''}`}>
+              <UserCheck className="w-4 h-4" />
             </div>
+            <span className="text-[10px]">સ્ટાફ</span>
+          </button>
 
-            {/* Mobile Drawer Logout */}
-            <div className="pt-2 border-t border-white/10">
-              <button
-                onClick={() => {
-                  setMobileDrawerOpen(false);
-                  onLogout();
-                }}
-                className="w-full py-3 px-4 rounded-2xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[46px]"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>શાળા લોગ આઉટ કરો (Logout)</span>
-              </button>
+          <button
+            onClick={() => handleSelectTab('exams')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'exams' ? 'text-white font-bold' : 'text-[#a99f91] hover:text-white'
+            }`}
+          >
+            <div className={`p-1 rounded-lg ${activeTab === 'exams' ? 'bg-[#9d512d] text-white shadow-sm' : ''}`}>
+              <ClipboardList className="w-4 h-4" />
             </div>
-          </div>
-        </div>
+            <span className="text-[10px]">પરીક્ષા</span>
+          </button>
+
+          <button
+            onClick={() => setMobileDrawerOpen(true)}
+            className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[#f59c73] hover:text-white transition-all cursor-pointer"
+          >
+            <div className="p-1 rounded-lg bg-white/5 border border-white/10">
+              <Menu className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-semibold">મેનુ</span>
+          </button>
+        </div>,
+        document.body
       )}
     </header>
   );

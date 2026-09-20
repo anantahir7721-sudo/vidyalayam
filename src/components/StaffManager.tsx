@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Staff } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { School, Staff } from '../types';
 import {
   subscribeToStaff,
   addStaff,
@@ -27,16 +27,22 @@ import {
   Landmark,
   ShieldCheck,
   Building,
+  Camera,
+  Loader2,
 } from 'lucide-react';
+import { StaffProfileModal } from './StaffProfileModal';
+import { compressStudentPhoto } from '../utils/imageUtils';
 
 interface StaffManagerProps {
   schoolId: string;
+  school?: School | null;
   onBack: () => void;
   onGenerateIdCard?: (staffMember: Staff) => void;
 }
 
 export const StaffManager: React.FC<StaffManagerProps> = ({
   schoolId,
+  school,
   onBack,
   onGenerateIdCard,
 }) => {
@@ -48,12 +54,16 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [viewingStaffProfile, setViewingStaffProfile] = useState<Staff | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const addPhotoInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const initialForm = {
     fullName: '',
+    photoUrl: '',
     designation: 'શિક્ષણ સહાયક',
     category: 'teaching' as 'teaching' | 'non_teaching',
     subject: '',
@@ -102,6 +112,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     setEditingStaff(staff);
     setFormData({
       fullName: staff.fullName || '',
+      photoUrl: staff.photoUrl || '',
       designation: staff.designation || 'શિક્ષણ સહાયક',
       category: staff.category || 'teaching',
       subject: staff.subject || '',
@@ -123,6 +134,22 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
       bankBranch: staff.bankBranch || '',
     });
     setIsModalOpen(true);
+  };
+
+  const handleFormPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setPhotoProcessing(true);
+      const compressed = await compressStudentPhoto(file, 320, 400, 0.82);
+      setFormData((prev) => ({ ...prev, photoUrl: compressed }));
+      showToast('success', 'ફોટો તૈયાર થઈ ગયો.');
+    } catch (err: any) {
+      alert(err.message || 'ઇમેજ પ્રોસેસ કરવામાં ભૂલ આવી.');
+    } finally {
+      setPhotoProcessing(false);
+      if (addPhotoInputRef.current) addPhotoInputRef.current.value = '';
+    }
   };
 
   const handleDelete = async (staff: Staff) => {
@@ -355,11 +382,33 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-[#9d512d]/25 border border-[#9d512d]/40 flex items-center justify-center text-[#f59c73] font-bold text-base shadow shrink-0">
-                      {staff.fullName.charAt(0) || 'S'}
+                    <div
+                      onClick={() => setViewingStaffProfile(staff)}
+                      className="relative cursor-pointer group/avatar shrink-0"
+                      title="પ્રોફાઇલ અને ફોટો જુઓ"
+                    >
+                      {staff.photoUrl ? (
+                        <img
+                          src={staff.photoUrl}
+                          alt={staff.fullName}
+                          className="w-12 h-12 rounded-2xl object-cover border-2 border-[#9d512d]/50 shadow bg-slate-900 group-hover/avatar:border-[#f59c73] transition-colors"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-2xl bg-[#9d512d]/25 border border-[#9d512d]/40 flex items-center justify-center text-[#f59c73] font-bold text-base shadow group-hover/avatar:border-[#f59c73] transition-colors">
+                          {staff.fullName.charAt(0) || 'S'}
+                        </div>
+                      )}
+                      <span className="absolute -bottom-1 -right-1 p-0.5 bg-[#9d512d] text-white rounded-full border border-white/20 shadow">
+                        <Camera className="w-2.5 h-2.5" />
+                      </span>
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-[#e4ded6] leading-tight">{staff.fullName}</h4>
+                      <h4
+                        onClick={() => setViewingStaffProfile(staff)}
+                        className="font-bold text-sm text-[#e4ded6] leading-tight hover:text-white cursor-pointer transition-colors"
+                      >
+                        {staff.fullName}
+                      </h4>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
                         <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25">
                           {staff.designation}
@@ -474,20 +523,30 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                 </div>
               </div>
 
-              {/* ID Card Action */}
-              <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
-                <span className="text-[11px] text-[#a99f91]">
-                  {staff.bloodGroup ? `Blood: ${staff.bloodGroup}` : ''}
-                </span>
-                {onGenerateIdCard && (
-                  <button
-                    onClick={() => onGenerateIdCard(staff)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-[#f59c73] transition-colors cursor-pointer"
-                  >
-                    <CreditCard className="w-3.5 h-3.5" />
-                    <span>ID Card જુઓ</span>
-                  </button>
-                )}
+              {/* Profile & ID Card Actions */}
+              <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                <button
+                  onClick={() => setViewingStaffProfile(staff)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-[#e4ded6] hover:text-white transition-colors cursor-pointer"
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-[#f59c73]" />
+                  <span>પ્રોફાઇલ જુઓ</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-[#a99f91] hidden sm:inline">
+                    {staff.bloodGroup ? `Blood: ${staff.bloodGroup}` : ''}
+                  </span>
+                  {onGenerateIdCard && (
+                    <button
+                      onClick={() => onGenerateIdCard(staff)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#9d512d]/20 hover:bg-[#9d512d]/30 text-xs font-bold text-[#f59c73] border border-[#9d512d]/30 transition-colors cursor-pointer"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>ID Card જુઓ</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -551,6 +610,81 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                   >
                     બિન-શૈક્ષણિક સ્ટાફ (Non-Teaching)
                   </button>
+                </div>
+              </div>
+
+              {/* Staff Photo Upload Block */}
+              <div className="bg-black/30 p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row items-center gap-4">
+                <div className="relative group shrink-0">
+                  <div className="w-24 h-28 rounded-2xl border-2 border-dashed border-[#9d512d]/60 bg-black/50 overflow-hidden flex items-center justify-center shadow-inner">
+                    {photoProcessing ? (
+                      <div className="flex flex-col items-center gap-1 text-[11px] text-[#f59c73]">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>કમ્પ્રેસિંગ...</span>
+                      </div>
+                    ) : formData.photoUrl ? (
+                      <img
+                        src={formData.photoUrl}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-[#8e8579]">
+                        <Camera className="w-7 h-7 text-[#f59c73]" />
+                        <span className="text-[10px] font-medium">ફોટો નથી</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {formData.photoUrl && !photoProcessing && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, photoUrl: '' }))}
+                      className="absolute -top-2 -right-2 p-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full shadow-md cursor-pointer transition-transform hover:scale-110"
+                      title="ફોટો દૂર કરો"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex-1 text-center sm:text-left space-y-2">
+                  <div>
+                    <div className="text-xs font-bold text-[#e4ded6]">સ્ટાફ પાસપોર્ટ સાઇઝ ફોટો (Staff Photo)</div>
+                    <div className="text-[11px] text-[#8e8579]">
+                      શિક્ષક આઈડી કાર્ડ અને પ્રોફાઇલમાં છાપવા માટે (ઓટો-કમ્પ્રેસ થશે &lt; 50KB)
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                    <input
+                      type="file"
+                      ref={addPhotoInputRef}
+                      onChange={handleFormPhotoChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => addPhotoInputRef.current?.click()}
+                      disabled={photoProcessing}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#9d512d] hover:bg-[#b55e34] text-white text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition-all disabled:opacity-50"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{formData.photoUrl ? 'ફોટો બદલો' : 'ફોટો પસંદ કરો'}</span>
+                    </button>
+
+                    {formData.photoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, photoUrl: '' }))}
+                        className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-rose-950/40 text-rose-300 border border-white/10 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>દૂર કરો</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -884,6 +1018,27 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Staff Profile Modal */}
+      {viewingStaffProfile && (
+        <StaffProfileModal
+          staff={viewingStaffProfile}
+          schoolId={schoolId}
+          school={school}
+          isOpen={!!viewingStaffProfile}
+          onClose={() => setViewingStaffProfile(null)}
+          onStaffUpdated={(updatedStaff) => {
+            setStaffList((prev) =>
+              prev.map((s) => (s.id === updatedStaff.id ? updatedStaff : s))
+            );
+            setViewingStaffProfile(updatedStaff);
+          }}
+          onEditStaff={(stf) => {
+            handleOpenEdit(stf);
+          }}
+          onGenerateIdCard={onGenerateIdCard}
+        />
       )}
     </div>
   );

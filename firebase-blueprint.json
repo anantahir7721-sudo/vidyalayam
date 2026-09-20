@@ -116,9 +116,28 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["schoolId", "fullName", "designation"]
+    },
+    "PasswordResetRequest": {
+      "title": "PasswordResetRequest",
+      "description": "Password reset request submitted by a school for admin assistance",
+      "type": "object",
+      "properties": {
+        "diseCode": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "contactNumber": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "resolved", "rejected"] },
+        "createdAt": { "type": "string" },
+        "resolvedAt": { "type": "string" },
+        "adminNotes": { "type": "string" }
+      },
+      "required": ["diseCode", "status", "createdAt"]
     }
   },
   "firestore": {
+    "/password_reset_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/PasswordResetRequest" },
+      "description": "Password reset requests submitted by schools"
+    },
     "/admins/{adminUid}": {
       "schema": { "$ref": "#/entities/Admin" },
       "description": "Admin directory records"
