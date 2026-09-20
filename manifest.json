@@ -1,0 +1,26 @@
+{
+  "background_color": "#ffffff",
+  "description": "Vidyalayam (વિદ્યાલયમ) — General School Management System &amp; એકમ કસોટી ગુણપત્રક • Created by NR Chad",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Vidyalayam",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "site--vidyalayam--8d9s2k6rjfqz.code",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://site--vidyalayam--8d9s2k6rjfqz.code.run/favicon.ico",
+      "type": "image/x-icon",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ]
+}
