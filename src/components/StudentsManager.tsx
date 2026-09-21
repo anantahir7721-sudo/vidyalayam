@@ -1331,10 +1331,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL 1: ADD STUDENT MODAL (Complete Master Information) */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto text-white flex flex-col animate-fadeIn my-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[86dvh] sm:max-h-[90dvh] text-white flex flex-col animate-fadeIn my-auto overflow-hidden">
             {/* Header */}
-            <div className="sticky top-0 z-10 px-6 py-4 bg-slate-900/95 border-b border-white/10 flex items-center justify-between">
+            <div className="shrink-0 px-6 py-4 bg-slate-900 border-b border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-terracotta flex items-center justify-center text-white">
                   <UserPlus className="w-4 h-4" />
@@ -1344,13 +1344,13 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   <p className="text-xs text-slate-400">વિદ્યાર્થી માસ્ટર ઇન્ફોર્મેશન રેકોર્ડ અને આઈડી કાર્ડ ડેટા</p>
                 </div>
               </div>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white p-1 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Content Form */}
-            <form onSubmit={handleSubmitAddStudent} className="p-6 space-y-6">
+            <form onSubmit={handleSubmitAddStudent} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 flex flex-col justify-between">
               {addError && (
                 <div className="p-3 bg-red-950/70 border border-red-800 rounded-xl text-xs text-red-200 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
@@ -1632,19 +1632,19 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 </div>
               </div>
 
-              {/* Bottom Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              {/* Bottom Buttons (Sticky at bottom of form) */}
+              <div className="shrink-0 sticky bottom-0 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 px-4 sm:px-6 py-3 bg-slate-900 border-t border-white/10 flex items-center justify-end gap-3 z-10">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
                 >
                   રદ કરો
                 </button>
                 <button
                   type="submit"
                   disabled={addSubmitting}
-                  className="px-6 py-2.5 rounded-xl bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold shadow-lg shadow-terracotta/20 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-xl bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold shadow-lg shadow-terracotta/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {addSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                   <span>વિદ્યાર્થી ઉમેરો (Save Record)</span>
@@ -1657,8 +1657,8 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL 2: ID CARD GENERATION MODAL */}
       {isIdCardModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full p-6 text-white animate-fadeIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full max-h-[88dvh] overflow-y-auto p-5 sm:p-6 text-white animate-fadeIn my-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-terracotta flex items-center justify-center text-white">
@@ -1666,7 +1666,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 </div>
                 <h3 className="text-base font-bold">વિદ્યાર્થી ઓળખપત્ર (Student ID Cards) જનરેટ કરો</h3>
               </div>
-              <button onClick={() => setIsIdCardModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setIsIdCardModalOpen(false)} className="text-slate-400 hover:text-white p-1 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1689,7 +1689,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       handleGenerateIdCards(target);
                       setIsIdCardModalOpen(false);
                     }}
-                    className="px-3.5 py-2 rounded-lg bg-terracotta hover:bg-terracotta-hover text-white font-bold"
+                    className="px-3.5 py-2 rounded-lg bg-terracotta hover:bg-terracotta-hover text-white font-bold cursor-pointer"
                   >
                     પ્રિન્ટ કરો
                   </button>
@@ -1720,7 +1720,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                         handleGenerateIdCards(target);
                         setIsIdCardModalOpen(false);
                       }}
-                      className="p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-terracotta text-left flex justify-between items-center transition-colors"
+                      className="p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-terracotta text-left flex justify-between items-center transition-colors cursor-pointer"
                     >
                       <span className="font-bold text-white">{opt.label}</span>
                       <span className="text-[11px] font-mono text-amber-300">({opt.count})</span>
@@ -1733,7 +1733,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             <div className="mt-5 pt-3 border-t border-white/10 flex justify-end">
               <button
                 onClick={() => setIsIdCardModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 cursor-pointer"
               >
                 બંધ કરો
               </button>
@@ -1744,10 +1744,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL 3: EXCEL IMPORT PREVIEW */}
       {previewModalOpen && parseResult && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col text-white my-auto animate-fadeIn">
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm">
+          <div className="bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl max-w-3xl w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-white my-auto animate-fadeIn overflow-hidden">
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-700/80 flex items-center justify-between gap-3">
+            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-700/80 flex items-center justify-between gap-3 bg-slate-900">
               <div>
                 <h3 className="text-base sm:text-lg font-bold flex items-center gap-2">
                   <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
@@ -1757,44 +1757,44 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   ફાઇલ: {excelFile?.name} • કુલ {parseResult.totalRows} પંક્તિઓ મળી
                 </p>
               </div>
-              <button onClick={() => setPreviewModalOpen(false)} className="text-slate-400 hover:text-white p-2 rounded-lg">
+              <button onClick={() => setPreviewModalOpen(false)} className="text-slate-400 hover:text-white p-2 rounded-lg cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Summary Statistics */}
-            <div className="p-4 bg-slate-850 border-b border-slate-800 grid grid-cols-4 gap-2 text-center text-xs">
-              <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-2.5">
-                <div className="text-emerald-400 font-bold text-lg font-mono">
+            <div className="shrink-0 p-3 sm:p-4 bg-slate-850 border-b border-slate-800 grid grid-cols-4 gap-2 text-center text-xs">
+              <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-2 sm:p-2.5">
+                <div className="text-emerald-400 font-bold text-base sm:text-lg font-mono">
                   {parseResult.validRows.length - parseResult.existingUpdateRows.length}
                 </div>
-                <div className="text-emerald-300 text-[11px] font-medium">નવા વિદ્યાર્થીઓ</div>
+                <div className="text-emerald-300 text-[10px] sm:text-[11px] font-medium">નવા વિદ્યાર્થીઓ</div>
               </div>
 
-              <div className="bg-blue-950/60 border border-blue-800/80 rounded-xl p-2.5">
-                <div className="text-blue-400 font-bold text-lg font-mono">
+              <div className="bg-blue-950/60 border border-blue-800/80 rounded-xl p-2 sm:p-2.5">
+                <div className="text-blue-400 font-bold text-base sm:text-lg font-mono">
                   {parseResult.existingUpdateRows.length}
                 </div>
-                <div className="text-blue-300 text-[11px] font-medium">અપડેટ થશે (Preserve ID)</div>
+                <div className="text-blue-300 text-[10px] sm:text-[11px] font-medium">અપડેટ થશે (Preserve ID)</div>
               </div>
 
-              <div className="bg-amber-950/60 border border-amber-800/80 rounded-xl p-2.5">
-                <div className="text-amber-400 font-bold text-lg font-mono">
+              <div className="bg-amber-950/60 border border-amber-800/80 rounded-xl p-2 sm:p-2.5">
+                <div className="text-amber-400 font-bold text-base sm:text-lg font-mono">
                   {parseResult.duplicateInFileRows.length}
                 </div>
-                <div className="text-amber-300 text-[11px] font-medium">ફાઈલમાં ડુપ્લિકેટ</div>
+                <div className="text-amber-300 text-[10px] sm:text-[11px] font-medium">ફાઈલમાં ડુપ્લિકેટ</div>
               </div>
 
-              <div className="bg-red-950/60 border border-red-800/80 rounded-xl p-2.5">
-                <div className="text-red-400 font-bold text-lg font-mono">
+              <div className="bg-red-950/60 border border-red-800/80 rounded-xl p-2 sm:p-2.5">
+                <div className="text-red-400 font-bold text-base sm:text-lg font-mono">
                   {parseResult.invalidRows.length}
                 </div>
-                <div className="text-red-300 text-[11px] font-medium">અમાન્ય પંક્તિઓ</div>
+                <div className="text-red-300 text-[10px] sm:text-[11px] font-medium">અમાન્ય પંક્તિઓ</div>
               </div>
             </div>
 
             {/* Tab selection */}
-            <div className="flex border-b border-slate-800 px-4 pt-2 gap-2 text-xs">
+            <div className="shrink-0 flex border-b border-slate-800 px-4 pt-2 gap-2 text-xs bg-slate-900">
               {[
                 { id: 'all', label: `બધા (${parseResult.allRows.length})` },
                 { id: 'valid', label: `માન્ય / નવા (${parseResult.validRows.length})` },
@@ -1883,15 +1883,17 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             </div>
 
             {/* Bottom Actions */}
-            <div className="p-4 border-t border-slate-800 flex items-center justify-between">
+            <div className="shrink-0 p-4 border-t border-slate-800 bg-slate-900 flex items-center justify-between">
               <button
+                type="button"
                 onClick={() => setPreviewModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 cursor-pointer"
               >
                 રદ કરો
               </button>
 
               <button
+                type="button"
                 disabled={isImporting || parseResult.validRows.length === 0}
                 onClick={() => {
                   setIsConfirmModalOpen(true);
@@ -1909,10 +1911,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL 3.5: DUAL-FILE (CTS + UDISE+) SMART IMPORT MODAL */}
       {isDualImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-          <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col text-white my-auto animate-fadeIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md">
+          <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-white my-auto animate-fadeIn overflow-hidden">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-800 flex items-start justify-between gap-4 bg-gradient-to-r from-emerald-950/50 to-slate-900 rounded-t-2xl">
+            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-800 flex items-start justify-between gap-4 bg-gradient-to-r from-emerald-950/50 to-slate-900">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
@@ -1944,7 +1946,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             </div>
 
             {/* Template Download Help Bar */}
-            <div className="px-5 py-2.5 bg-slate-950/70 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="shrink-0 px-5 py-2.5 bg-slate-950/70 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
               <span className="text-slate-400 flex items-center gap-1.5">
                 <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
                 નમૂનારૂપ એક્સેલ ફાઇલ ટેમ્પ્લેટ્સ:
@@ -1953,7 +1955,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => downloadCtsTemplate(school.diseCode, school.schoolName)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 font-medium transition-colors cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>CTS નમૂનો (GR &amp; AadhaarUID)</span>
@@ -1961,7 +1963,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => downloadUdisePlusTemplate(school.diseCode, school.schoolName)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 font-medium transition-colors cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>UDISE+ નમૂનો (Col 1 to 61)</span>
@@ -1969,8 +1971,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               </div>
             </div>
 
-            {/* Two File Upload Cards */}
-            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-800 bg-slate-900/40">
+            {/* Scrollable Modal Body */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Two File Upload Cards */}
+              <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-800 bg-slate-900/40">
               {/* File 1: CTS File */}
               <div className={`p-4 rounded-xl border transition-all ${
                 ctsFile
@@ -2283,9 +2287,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 </div>
               </div>
             )}
+            </div>
 
             {/* Modal Bottom Actions */}
-            <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-3 bg-slate-950/60 rounded-b-2xl">
+            <div className="shrink-0 p-4 border-t border-slate-800 flex items-center justify-between gap-3 bg-slate-950/90">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -2293,7 +2298,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     setIsDualImportModalOpen(false);
                     setDualParseResult(null);
                   }}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-colors"
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-colors cursor-pointer"
                 >
                   બંધ કરો
                 </button>
@@ -2360,25 +2365,25 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL 4: QUICK EDIT MODAL */}
       {editingStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-5 text-white animate-fadeIn">
-            <div className="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col p-5 text-white animate-fadeIn my-auto overflow-hidden">
+            <div className="shrink-0 flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
               <h3 className="text-base font-bold flex items-center gap-2">
                 <Edit3 className="w-4 h-4 text-blue-400" />
                 <span>ઝડપી સુધારો (Quick Edit)</span>
               </h3>
-              <button onClick={() => setEditingStudent(null)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setEditingStudent(null)} className="text-slate-400 hover:text-white p-1 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {editError && (
-              <div className="mb-3 p-2.5 bg-red-950/70 border border-red-800 rounded-lg text-xs text-red-200">
+              <div className="shrink-0 mb-3 p-2.5 bg-red-950/70 border border-red-800 rounded-lg text-xs text-red-200">
                 {editError}
               </div>
             )}
 
-            <form onSubmit={handleSaveQuickEdit} className="space-y-3 text-xs sm:text-sm">
+            <form onSubmit={handleSaveQuickEdit} className="flex-1 overflow-y-auto space-y-3 text-xs sm:text-sm pr-1">
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">વિદ્યાર્થીનું નામ (Name as in GR) *</label>
                 <input
@@ -2466,18 +2471,18 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+              <div className="shrink-0 pt-3 border-t border-slate-800 flex justify-end gap-2 sticky bottom-0 bg-slate-900">
                 <button
                   type="button"
                   onClick={() => setEditingStudent(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 cursor-pointer"
                 >
                   રદ કરો
                 </button>
                 <button
                   type="submit"
                   disabled={editSubmitting}
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer disabled:opacity-50"
                 >
                   {editSubmitting ? 'સાચવી રહ્યું છે...' : 'સાચવો'}
                 </button>
@@ -2489,8 +2494,8 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL 5: DELETE CONFIRMATION MODAL */}
       {deletingStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-red-900/60 rounded-2xl shadow-2xl max-w-sm w-full p-5 text-white animate-fadeIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-red-900/60 rounded-2xl shadow-2xl max-w-sm w-full max-h-[88dvh] overflow-y-auto p-5 text-white animate-fadeIn my-auto">
             <div className="w-12 h-12 rounded-2xl bg-red-950/80 border border-red-800 text-red-400 flex items-center justify-center mx-auto mb-3">
               <Trash2 className="w-6 h-6" />
             </div>
@@ -2524,10 +2529,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL 5.5: BULK / DELETE ALL CONFIRMATION MODAL */}
       {isDeleteAllModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-          <div className="bg-slate-900 border border-red-800/80 rounded-2xl shadow-2xl max-w-lg w-full p-5 sm:p-6 text-white my-auto animate-fadeIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
+          <div className="bg-slate-900 border border-red-800/80 rounded-2xl shadow-2xl max-w-lg w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col p-5 sm:p-6 text-white my-auto animate-fadeIn overflow-hidden">
             {/* Header */}
-            <div className="flex items-start gap-3.5 mb-4">
+            <div className="shrink-0 flex items-start gap-3.5 mb-4 pb-3 border-b border-slate-800">
               <div className="w-12 h-12 rounded-2xl bg-red-950/90 border border-red-700/80 text-red-400 flex items-center justify-center shrink-0 shadow-lg">
                 <AlertTriangle className="w-6 h-6" />
               </div>
@@ -2543,7 +2548,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                         setDeleteAllConfirmInput('');
                       }
                     }}
-                    className="text-slate-400 hover:text-white p-1"
+                    className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -2554,8 +2559,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               </div>
             </div>
 
-            {/* Scope Selection */}
-            <div className="space-y-2 mb-4">
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto pr-1">
+              {/* Scope Selection */}
+              <div className="space-y-2 mb-4">
               <label className="block text-xs font-semibold text-slate-300">
                 કાઢી નાખવાનો વ્યાપ પસંદ કરો (Select Scope):
               </label>
@@ -2662,9 +2669,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 className="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2 text-white font-mono text-sm focus:outline-none uppercase placeholder-slate-600"
               />
             </div>
+            </div>
 
             {/* Action buttons */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="shrink-0 flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
               <button
                 type="button"
                 disabled={isDeletingAll}
@@ -2706,10 +2714,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL: FIX ALL BLOOD GROUPS MODAL */}
       {isFixBloodModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-          <div className="bg-slate-900 border border-red-800/60 rounded-2xl shadow-2xl max-w-2xl w-full p-5 sm:p-6 text-white my-auto animate-fadeIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
+          <div className="bg-slate-900 border border-red-800/60 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col p-5 sm:p-6 text-white my-auto animate-fadeIn overflow-hidden">
             {/* Header */}
-            <div className="flex items-start gap-3.5 mb-4">
+            <div className="shrink-0 flex items-start gap-3.5 mb-4 pb-3 border-b border-slate-800">
               <div className="w-11 h-11 rounded-2xl bg-red-950/90 border border-red-700/80 text-red-400 flex items-center justify-center shrink-0 shadow-lg">
                 <Heart className="w-6 h-6 fill-red-400 text-red-400" />
               </div>
@@ -2725,7 +2733,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                         setFixBloodResult(null);
                       }
                     }}
-                    className="text-slate-400 hover:text-white p-1 cursor-pointer"
+                    className="text-slate-400 hover:text-white p-1 cursor-pointer rounded-lg"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -2741,56 +2749,58 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
             {/* If Fix Complete Result is Available */}
             {fixBloodResult ? (
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-emerald-950/70 border border-emerald-700/80 text-emerald-200">
-                  <div className="flex items-center gap-2.5 font-bold text-base text-emerald-300">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                    <span>
-                      {fixBloodResult.fixedCount > 0
-                        ? `સફળતાપૂર્વક ${fixBloodResult.fixedCount} વિદ્યાર્થીઓનો ડેટા ફિક્સ કરવામાં આવ્યો!`
-                        : `તમામ વિદ્યાર્થીઓના બ્લડ ગ્રૂપ પહેલેથી જ સાચા છે.`}
-                    </span>
+              <div className="flex-1 flex flex-col justify-between overflow-hidden">
+                <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+                  <div className="p-4 rounded-xl bg-emerald-950/70 border border-emerald-700/80 text-emerald-200">
+                    <div className="flex items-center gap-2.5 font-bold text-base text-emerald-300">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                      <span>
+                        {fixBloodResult.fixedCount > 0
+                          ? `સફળતાપૂર્વક ${fixBloodResult.fixedCount} વિદ્યાર્થીઓનો ડેટા ફિક્સ કરવામાં આવ્યો!`
+                          : `તમામ વિદ્યાર્થીઓના બ્લડ ગ્રૂપ પહેલેથી જ સાચા છે.`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-emerald-300/80 mt-1">
+                      કુલ સ્કેન કરેલ: {fixBloodResult.totalScanned} વિદ્યાર્થીઓ • સુધારેલ એન્ટ્રીઓ: {fixBloodResult.fixedCount}
+                    </p>
                   </div>
-                  <p className="text-xs text-emerald-300/80 mt-1">
-                    કુલ સ્કેન કરેલ: {fixBloodResult.totalScanned} વિદ્યાર્થીઓ • સુધારેલ એન્ટ્રીઓ: {fixBloodResult.fixedCount}
-                  </p>
+
+                  {fixBloodResult.details.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-semibold text-slate-300 flex justify-between">
+                        <span>સુધારેલા વિદ્યાર્થીઓની યાદી:</span>
+                        <span className="font-mono text-emerald-400 font-bold">{fixBloodResult.details.length} એન્ટ્રીઓ</span>
+                      </div>
+                      <div className="max-h-60 overflow-y-auto p-2 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-xs">
+                        {fixBloodResult.details.map((d) => (
+                          <div
+                            key={d.id}
+                            className="p-2.5 rounded-lg bg-slate-900 border border-slate-800/80 space-y-1"
+                          >
+                            <div className="flex items-center justify-between font-medium text-white">
+                              <span>{d.studentName}</span>
+                              <span className="font-mono text-slate-400 text-[11px]">
+                                ધો. {d.standard} {d.grNumber ? `| GR: ${d.grNumber}` : ''}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px]">
+                              <span className="text-red-400 font-mono line-through bg-red-950/60 px-1.5 py-0.5 rounded border border-red-900/60">
+                                {d.oldBloodGroup || '(ખાલી)'}
+                              </span>
+                              <span className="text-slate-400">➔</span>
+                              <span className="text-emerald-400 font-mono font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-900/60">
+                                {d.newBloodGroup || '(બ્લડ ગ્રૂપ સાફ કર્યું)'}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 italic">{d.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {fixBloodResult.details.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="text-xs font-semibold text-slate-300 flex justify-between">
-                      <span>સુધારેલા વિદ્યાર્થીઓની યાદી:</span>
-                      <span className="font-mono text-emerald-400 font-bold">{fixBloodResult.details.length} એન્ટ્રીઓ</span>
-                    </div>
-                    <div className="max-h-60 overflow-y-auto p-2 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-xs">
-                      {fixBloodResult.details.map((d) => (
-                        <div
-                          key={d.id}
-                          className="p-2.5 rounded-lg bg-slate-900 border border-slate-800/80 space-y-1"
-                        >
-                          <div className="flex items-center justify-between font-medium text-white">
-                            <span>{d.studentName}</span>
-                            <span className="font-mono text-slate-400 text-[11px]">
-                              ધો. {d.standard} {d.grNumber ? `| GR: ${d.grNumber}` : ''}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-[11px]">
-                            <span className="text-red-400 font-mono line-through bg-red-950/60 px-1.5 py-0.5 rounded border border-red-900/60">
-                              {d.oldBloodGroup || '(ખાલી)'}
-                            </span>
-                            <span className="text-slate-400">➔</span>
-                            <span className="text-emerald-400 font-mono font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-900/60">
-                              {d.newBloodGroup || '(બ્લડ ગ્રૂપ સાફ કર્યું)'}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-slate-400 italic">{d.description}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-end pt-3 border-t border-slate-800">
+                <div className="shrink-0 flex justify-end pt-3 border-t border-slate-800 mt-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -2805,7 +2815,8 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               </div>
             ) : (
               /* Pre-Fix Diagnosis and Action */
-              <div className="space-y-4">
+              <div className="flex-1 flex flex-col justify-between overflow-hidden">
+                <div className="flex-1 overflow-y-auto pr-1 space-y-4">
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
                   <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl">
@@ -2890,9 +2901,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     <span>શાળાના તમામ વિદ્યાર્થીઓનું બ્લડ ગ્રૂપ યોગ્ય છે! કોઈ અયોગ્ય એન્ટ્રી નથી.</span>
                   </div>
                 )}
+                </div>
 
                 {/* Footer Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <div className="shrink-0 flex items-center justify-end gap-3 pt-3 border-t border-slate-800 mt-3">
                   <button
                     type="button"
                     disabled={isFixingBlood}

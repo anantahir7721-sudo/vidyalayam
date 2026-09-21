@@ -555,21 +555,22 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
 
       {/* Add / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="glass-panel w-full max-w-xl rounded-3xl border border-white/20 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm">
+          <div className="glass-panel w-full max-w-xl rounded-3xl border border-white/20 p-5 sm:p-6 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
+            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-base font-bold text-[#e4ded6]">
                 {editingStaff ? 'સ્ટાફ વિગત સુધારો' : 'નવા સ્ટાફ સભ્ય ઉમેરો'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg text-[#a99f91] hover:text-white hover:bg-white/10"
+                className="p-1 rounded-lg text-[#a99f91] hover:text-white hover:bg-white/10 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-4 space-y-5">
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between overflow-hidden mt-3">
+              <div className="flex-1 overflow-y-auto pr-1 space-y-5">
               {/* Category selector */}
               <div>
                 <label className="block text-xs font-semibold text-[#a99f91] mb-1.5">
@@ -998,19 +999,20 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                   </div>
                 </div>
               </div>
+              </div>
 
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-white/10">
+              <div className="shrink-0 pt-3 flex items-center justify-end gap-3 border-t border-white/10 mt-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#a99f91] hover:text-white"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#a99f91] hover:text-white cursor-pointer"
                 >
                   રદ કરો
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-[#9d512d] hover:bg-[#b55e34] text-white text-xs font-bold shadow-lg transition-all disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#9d512d] hover:bg-[#b55e34] text-white text-xs font-bold shadow-lg transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? 'સાચવી રહ્યું છે...' : editingStaff ? 'સુધારો સાચવો' : 'સ્ટાફ ઉમેરો'}
                 </button>

@@ -95,10 +95,10 @@ export const ImportConfirmationModal: React.FC<ImportConfirmationModalProps> = (
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm overflow-y-auto animate-fadeIn">
-      <div className="bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col text-white my-auto overflow-hidden">
+    <div className="fixed inset-0 z-[105] bg-black/85 flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl max-w-4xl w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-white my-auto overflow-hidden">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-700 bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 flex items-start justify-between gap-3">
+        <div className="shrink-0 p-4 sm:p-5 border-b border-slate-700 bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1.5">
@@ -391,7 +391,7 @@ export const ImportConfirmationModal: React.FC<ImportConfirmationModalProps> = (
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="shrink-0 p-4 border-t border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-slate-400 text-center sm:text-left">
             કુલ <strong className="text-white">{newEntries.length + updatedEntries.length}</strong> માન્ય વિદ્યાર્થીઓ ({newEntries.length} નવી એન્ટ્રી + {updatedEntries.length} અપડેટ).
           </div>

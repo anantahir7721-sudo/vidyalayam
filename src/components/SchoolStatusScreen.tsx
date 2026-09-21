@@ -17,6 +17,7 @@ import {
   Send,
   Copy,
   Check,
+  ExternalLink,
 } from 'lucide-react';
 import {
   getLatestAdminDiagnostic,
@@ -66,6 +67,20 @@ export const SchoolStatusScreen: React.FC<SchoolStatusScreenProps> = ({
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const handleSendWhatsApp = (e: React.MouseEvent) => {
+    if (!approvalData) return;
+    // Auto-copy to clipboard as a reliable backup
+    try {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(approvalData.message);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      }
+    } catch (err) {
+      console.warn('Clipboard write error:', err);
+    }
+  };
+
   useEffect(() => {
     if (status === 'unrecognized' && userUid) {
       const diag = getLatestAdminDiagnostic();
@@ -94,22 +109,22 @@ export const SchoolStatusScreen: React.FC<SchoolStatusScreenProps> = ({
     }
   };
   return (
-    <div className="min-h-[calc(100vh-60px)] bg-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-60px)] bg-[#f8f6f2] dark:bg-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 transition-colors">
       <div className="sm:mx-auto sm:w-full sm:max-w-lg">
-        <div className="bg-slate-800/95 border border-slate-700/80 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6 text-center">
+        <div className="bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-6 text-center">
           {/* Status Icon & Title */}
           {status === 'pending' && (
             <div className="space-y-3">
-              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto shadow-inner">
+              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 dark:text-amber-400 mx-auto shadow-inner">
                 <Clock className="w-8 h-8 animate-pulse" />
               </div>
-              <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wide">
+              <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 uppercase tracking-wide">
                 Pending Approval (પ્રક્રિયા હેઠળ)
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
                 તમારી School ID Admin approval માટે pending છે.
               </h2>
-              <p className="text-xs text-slate-300 max-w-sm mx-auto">
+              <p className="text-xs text-slate-600 dark:text-slate-300 max-w-sm mx-auto leading-relaxed">
                 તમારી શાળાની નોંધણીની વિગતો સફળતાપૂર્વક સિસ્ટમમાં સબમિટ થઈ ગઈ છે. રાજ્ય એડમિનિસ્ટ્રેટર દ્વારા મંજૂરી મળતાં જ ગુણાંકન પોર્ટલ આપોઆપ સક્રિય થઈ જશે.
               </p>
             </div>
@@ -117,16 +132,16 @@ export const SchoolStatusScreen: React.FC<SchoolStatusScreenProps> = ({
 
           {status === 'rejected' && (
             <div className="space-y-3">
-              <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mx-auto shadow-inner">
+              <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 dark:text-red-400 mx-auto shadow-inner">
                 <XCircle className="w-8 h-8" />
               </div>
-              <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-300 border border-red-500/40 uppercase tracking-wide">
+              <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-500/40 uppercase tracking-wide">
                 Registration Rejected (અસ્વીકાર)
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-red-400 tracking-tight leading-snug">
+              <h2 className="text-xl sm:text-2xl font-black text-red-600 dark:text-red-400 tracking-tight leading-snug">
                 તમારી School registration reject કરવામાં આવી છે. Admin નો સંપર્ક કરો.
               </h2>
-              <p className="text-xs text-slate-300 max-w-sm mx-auto">
+              <p className="text-xs text-slate-600 dark:text-slate-300 max-w-sm mx-auto">
                 આ શાળા આઈડીની નોંધણી એડમિનિસ્ટ્રેટર દ્વારા રદ કરવામાં આવી છે. વધુ માહિતી કે પુનઃમંજૂરી માટે એડમિનનો સંપર્ક કરો.
               </p>
             </div>
@@ -134,16 +149,16 @@ export const SchoolStatusScreen: React.FC<SchoolStatusScreenProps> = ({
 
           {status === 'inactive' && (
             <div className="space-y-3">
-              <div className="w-16 h-16 rounded-2xl bg-slate-700/60 border border-slate-600 flex items-center justify-center text-slate-300 mx-auto shadow-inner">
+              <div className="w-16 h-16 rounded-2xl bg-slate-200 dark:bg-slate-700/60 border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-700 dark:text-slate-300 mx-auto shadow-inner">
                 <PowerOff className="w-8 h-8" />
               </div>
-              <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600 uppercase tracking-wide">
+              <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-600 uppercase tracking-wide">
                 Account Inactive (નિષ્ક્રિય)
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
                 તમારી School ID હાલમાં inactive છે. Admin નો સંપર્ક કરો.
               </h2>
-              <p className="text-xs text-slate-300 max-w-sm mx-auto">
+              <p className="text-xs text-slate-600 dark:text-slate-300 max-w-sm mx-auto">
                 આ શાળાનું એકાઉન્ટ એડમિન દ્વારા કામચલાઉ ધોરણે સ્થગિત (inactive) કરવામાં આવ્યું છે. એકાઉન્ટ પુનઃ શરૂ કરવા માટે એડમિનનો સંપર્ક કરો.
               </p>
             </div>
@@ -277,55 +292,63 @@ export const SchoolStatusScreen: React.FC<SchoolStatusScreenProps> = ({
 
           {/* School Details Card (if available) */}
           {school && (
-            <div className="bg-slate-900/90 rounded-xl p-4 border border-slate-700/80 text-left text-xs space-y-2">
-              <div className="flex items-center gap-2 text-slate-400">
-                <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="font-semibold text-white truncate">{school.schoolName}</span>
+            <div className="bg-slate-50 dark:bg-slate-900/90 rounded-2xl p-4 border border-slate-200 dark:border-slate-700/80 text-left text-xs space-y-2 shadow-sm">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-400">
+                <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="font-bold text-slate-900 dark:text-white truncate">{school.schoolName}</span>
               </div>
-              <div className="flex items-center justify-between text-slate-400 pt-1 border-t border-slate-800">
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-1.5 font-mono">
-                  <Hash className="w-3.5 h-3.5 text-slate-500" />
-                  <span>DISE: <strong className="text-emerald-400">{school.diseCode}</strong></span>
+                  <Hash className="w-3.5 h-3.5 text-slate-400" />
+                  <span>DISE: <strong className="text-emerald-600 dark:text-emerald-400">{school.diseCode}</strong></span>
                 </div>
-                <span>જિલ્લો: <strong className="text-slate-200">{school.district}</strong></span>
+                <span>જિલ્લો: <strong className="text-slate-800 dark:text-slate-200">{school.district}</strong></span>
               </div>
             </div>
           )}
 
           {/* WhatsApp Admin Approval Box (For Pending Schools) */}
           {status === 'pending' && school && approvalData && (
-            <div className="bg-gradient-to-b from-emerald-950/60 to-slate-900/90 border border-emerald-500/40 rounded-2xl p-4 sm:p-5 text-left space-y-3 shadow-xl">
+            <div className="bg-emerald-50/90 dark:bg-gradient-to-b dark:from-emerald-950/60 dark:to-slate-900/90 border border-emerald-300 dark:border-emerald-500/40 rounded-2xl p-4 sm:p-5 text-left space-y-3 shadow-md dark:shadow-xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                     <MessageSquare className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-bold text-white">એડમિન મંજૂરી વિનંતી (WhatsApp)</h3>
-                    <p className="text-[10px] text-emerald-400/90 font-medium">તૈયાર મેસેજ સાથે તુરંત સંપર્ક કરો</p>
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white">એડમિન મંજૂરી વિનંતી (WhatsApp)</h3>
+                    <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">મેસેજ આપોઆપ ટાઈપ થઈ જશે</p>
                   </div>
                 </div>
-                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30">
                   ઝડપી મંજૂરી
                 </span>
               </div>
 
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                નીચેના બટન પર ક્લિક કરવાથી એડમિનનું WhatsApp ખુલશે જેમાં તમારી શાળાનું નામ, DISE કોડ અને મંજૂરીની વિનંતી આપોઆપ લખાઈ જશે.
+              <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                નીચે આપેલા લીલા બટન પર ક્લિક કરવાથી WhatsApp ખુલશે અને તેમાં તમારી શાળાનો DISE કોડ, નામ અને મંજૂરીની વિનંતીનો મેસેજ <strong>આપોઆપ લખાઈને તૈયાર આવશે</strong>.
               </p>
 
               {/* Pre-typed message preview box */}
-              <div className="bg-slate-950/80 rounded-xl p-3 border border-emerald-950 text-[10px] text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">
+              <div className="bg-white dark:bg-slate-950/80 rounded-xl p-3.5 border border-emerald-200 dark:border-emerald-950 text-[10px] text-slate-800 dark:text-slate-300 font-mono whitespace-pre-wrap leading-relaxed shadow-sm">
                 {approvalData.message}
               </div>
+
+              {copied && (
+                <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold flex items-center gap-1.5 animate-fadeIn">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>મેસેજ ક્લિપબોર્ડમાં કોપી થઈ ગયો છે! (જો WhatsApp માં જરૂર પડે તો Paste કરી શકો છો)</span>
+                </div>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-2 pt-1">
                 <a
                   id="btn-whatsapp-approval"
                   href={approvalData.url}
+                  onClick={handleSendWhatsApp}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-900/40"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-900/20 cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   <span>WhatsApp પર એડમિનને મેસેજ મોકલો</span>
@@ -334,28 +357,70 @@ export const SchoolStatusScreen: React.FC<SchoolStatusScreenProps> = ({
                   type="button"
                   id="btn-copy-approval-msg"
                   onClick={handleCopyMessage}
-                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium border border-slate-700 transition-colors"
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />}
                   <span>{copied ? 'કોપી થઈ ગયો!' : 'મેસેજ કોપી કરો'}</span>
                 </button>
+              </div>
+
+              {/* Direct Links alternative */}
+              <div className="pt-1 flex flex-wrap items-center justify-center gap-3 text-[11px]">
+                <a
+                  href={approvalData.webUrl}
+                  onClick={handleSendWhatsApp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 font-medium"
+                >
+                  <span>WhatsApp Web પર ખોલો</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <a
+                  href={approvalData.qrUrl}
+                  onClick={handleSendWhatsApp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 font-medium"
+                >
+                  <span>એડમિન QR પ્રોફાઇલ લિંક</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
             </div>
           )}
 
           {/* WhatsApp Contact for Rejected / Inactive */}
           {(status === 'rejected' || status === 'inactive') && (
-            <div className="pt-1">
-              <a
-                id="btn-whatsapp-contact-admin"
-                href={ADMIN_WHATSAPP_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600/90 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>સહાય માટે એડમિનનો WhatsApp પર સંપર્ક કરો</span>
-              </a>
+            <div className="pt-1 space-y-2">
+              {(() => {
+                const contactMsg = school
+                  ? `નમસ્તે એડમિન શ્રી,\nવિદ્યાલયમ પોર્ટલ પર અમારી શાળા:\n• શાળા: ${school.schoolName}\n• DISE કોડ: ${school.diseCode}\n• જિલ્લો: ${school.district || 'ગુજરાત'}\nનું સ્ટેટસ હાલમાં "${status === 'rejected' ? 'Rejected (અસ્વીકાર)' : 'Inactive (નિષ્ક્રિય)'}" બતાવી રહ્યું છે. કૃપા કરીને આ બાબતે સહાય કરવા વિનંતી છે.`
+                  : `નમસ્તે એડમિન શ્રી, વિદ્યાલયમ પોર્ટલ અંગે સહાયની જરૂર છે.`;
+                const encodedContact = encodeURIComponent(contactMsg);
+                const contactUrl = `https://wa.me/?text=${encodedContact}`;
+
+                return (
+                  <a
+                    id="btn-whatsapp-contact-admin"
+                    href={contactUrl}
+                    onClick={() => {
+                      try {
+                        if (navigator.clipboard) {
+                          navigator.clipboard.writeText(contactMsg);
+                        }
+                      } catch {}
+                    }}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>સહાય માટે એડમિનનો WhatsApp પર સંપર્ક કરો</span>
+                  </a>
+                );
+              })()}
             </div>
           )}
 
@@ -366,7 +431,7 @@ export const SchoolStatusScreen: React.FC<SchoolStatusScreenProps> = ({
                 id="btn-check-status-refresh"
                 onClick={onRefresh}
                 disabled={refreshing}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
                 <span>મંજૂરી ચકાસો (Check Approval)</span>
@@ -376,7 +441,7 @@ export const SchoolStatusScreen: React.FC<SchoolStatusScreenProps> = ({
             <button
               id="btn-status-logout"
               onClick={onLogout}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-bold transition-colors border border-slate-600"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors border border-slate-300 dark:border-slate-600 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>લોગ આઉટ (Log Out)</span>

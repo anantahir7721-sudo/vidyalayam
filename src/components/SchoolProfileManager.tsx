@@ -43,8 +43,8 @@ export const SchoolProfileManager: React.FC<SchoolProfileManagerProps> = ({
     medium: school.medium || 'ગુજરાતી',
     principalName: school.principalName || '',
     principalPhone: school.principalPhone || '',
-    contactEmail: school.contactEmail || '',
-    contactPhone: school.contactPhone || '',
+    contactEmail: school.contactEmail || (school as any).email || '',
+    contactPhone: school.contactPhone || (school as any).contactNumber || '',
     establishedYear: school.establishedYear || '',
     logoUrl: school.logoUrl || '',
   });
@@ -111,10 +111,15 @@ export const SchoolProfileManager: React.FC<SchoolProfileManagerProps> = ({
     setErrorMsg(null);
 
     try {
-      await updateSchoolProfile(school.id, formData);
+      const dataToSave = {
+        ...formData,
+        contactNumber: formData.contactPhone,
+        email: formData.contactEmail,
+      };
+      await updateSchoolProfile(school.id, dataToSave as any);
       setSuccessMsg('શાળા પ્રોફાઇલ સફળતાપૂર્વક સાચવવામાં આવી છે! (School profile updated successfully)');
       if (onProfileUpdated) {
-        onProfileUpdated(formData);
+        onProfileUpdated(dataToSave as any);
       }
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {

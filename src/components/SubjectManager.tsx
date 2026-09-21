@@ -436,23 +436,24 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school }) => {
 
       {/* ADD SUBJECT MODAL (iOS Style Glass Dialog) */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md overflow-y-auto">
-          <div className="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-7 border border-white/15 shadow-2xl relative my-8">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md">
+          <div className="glass-panel w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-white/15 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
+            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-white/10">
               <div>
-                <h3 className="text-lg font-bold text-white">ધોરણ {selectedStandard} માં નવો વિષય ઉમેરો</h3>
+                <h3 className="text-base sm:text-lg font-bold text-white">ધોરણ {selectedStandard} માં નવો વિષય ઉમેરો</h3>
                 <p className="text-xs text-slate-400">વિષયનું નામ અને વિભાગો (Sections) દાખલ કરો</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveNewSubject} className="mt-4 space-y-4">
+            <form onSubmit={handleSaveNewSubject} className="flex-1 flex flex-col justify-between overflow-hidden mt-3">
+              <div className="flex-1 overflow-y-auto pr-1 space-y-4">
               {errorMessage && (
                 <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -561,20 +562,21 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school }) => {
                   ))}
                 </div>
               </div>
+              </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-3">
+              <div className="shrink-0 pt-3 border-t border-white/10 flex items-center justify-end gap-3 mt-3">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs transition-colors min-h-[44px]"
+                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs transition-colors min-h-[44px] cursor-pointer"
                 >
                   રદ કરો (Cancel)
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold text-xs shadow-md active:scale-[0.98] transition-all min-h-[44px] disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold text-xs shadow-md active:scale-[0.98] transition-all min-h-[44px] disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? 'સેવ થઈ રહ્યું છે...' : 'વિષય સેવ કરો (Save Subject)'}
                 </button>
@@ -586,23 +588,24 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school }) => {
 
       {/* EDIT SUBJECT MODAL */}
       {isEditModalOpen && editingSubject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md overflow-y-auto">
-          <div className="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-7 border border-white/15 shadow-2xl relative my-8">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md">
+          <div className="glass-panel w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-white/15 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
+            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-white/10">
               <div>
-                <h3 className="text-lg font-bold text-white">વિષય & વિભાગ ગુણ એડિટ કરો</h3>
+                <h3 className="text-base sm:text-lg font-bold text-white">વિષય & વિભાગ ગુણ એડિટ કરો</h3>
                 <p className="text-xs text-slate-400">ધોરણ {selectedStandard} — {editingSubject.subjectName}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsEditModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateSubject} className="mt-4 space-y-4">
+            <form onSubmit={handleUpdateSubject} className="flex-1 flex flex-col justify-between overflow-hidden mt-3">
+              <div className="flex-1 overflow-y-auto pr-1 space-y-4">
               {errorMessage && (
                 <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -690,19 +693,20 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school }) => {
                   ))}
                 </div>
               </div>
+              </div>
 
-              <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-3">
+              <div className="shrink-0 pt-3 border-t border-white/10 flex items-center justify-end gap-3 mt-3">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs min-h-[44px]"
+                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs min-h-[44px] cursor-pointer"
                 >
                   રદ કરો
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md min-h-[44px] disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md min-h-[44px] disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? 'અપડેટ થઈ રહ્યું છે...' : 'અપડેટ કરો'}
                 </button>
@@ -714,8 +718,8 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school }) => {
 
       {/* DELETE CONFIRMATION MODAL */}
       {isDeleteModalOpen && deletingSubject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-          <div className="glass-panel w-full max-w-md rounded-3xl p-6 border border-white/15 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md">
+          <div className="glass-panel w-full max-w-md rounded-3xl p-5 sm:p-6 border border-white/15 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto animate-fadeIn">
             <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>

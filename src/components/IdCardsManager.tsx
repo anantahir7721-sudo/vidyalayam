@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { School, Student, Staff, AllowedStandard } from '../types';
+import { getStudentDiseCode, getStudentDiseInlineStyle } from '../utils/idCardPdf';
 import {
   CreditCard,
   Printer,
@@ -138,11 +139,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
       cardType === 'students'
         ? studentsToPrint
             .map((st) => {
-              const studentDise =
-                (st.diseCode && st.diseCode.trim()) ||
-                (st.studentStateCode && st.studentStateCode.trim()) ||
-                (st.studentId && st.studentId.trim()) ||
-                '-';
+              const studentDise = getStudentDiseCode(st);
 
               const parentName =
                 st.fatherName && st.fatherName.trim()
@@ -202,7 +199,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
                 </div>
                 <div class="field-row">
                   <span class="lbl">વિદ્યાર્થી DISE:</span>
-                  <span class="val mono-dise">${studentDise}</span>
+                  <span class="val mono-dise" style="${getStudentDiseInlineStyle(studentDise)}">${studentDise}</span>
                 </div>
                 <div class="field-row">
                   <span class="lbl">જન્મ તારીખ:</span>
@@ -634,10 +631,15 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             font-weight: 700;
           }
           .field-row .val.mono-dise {
-            font-family: monospace;
-            font-weight: 800;
-            color: #0369a1;
-            letter-spacing: 0.2px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+            font-weight: 800 !important;
+            color: #0369a1 !important;
+            letter-spacing: -0.35px !important;
+            font-size: 5.7pt !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            white-space: nowrap !important;
+            max-width: 100% !important;
           }
           .field-row .val.val-doa {
             white-space: nowrap;
@@ -1046,8 +1048,8 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
                           </div>
                           <div className="col-span-2">
                             <span className="text-[#a99f91]">વિદ્યાર્થી DISE: </span>
-                            <span className="text-cyan-300 font-mono font-bold tracking-tight">
-                              {st.diseCode || st.studentStateCode || st.studentId || '-'}
+                            <span className="text-cyan-300 font-mono font-bold tracking-tight text-[10.5px]">
+                              {getStudentDiseCode(st)}
                             </span>
                           </div>
                           <div>

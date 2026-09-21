@@ -221,10 +221,10 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-[#141b2b] border border-white/15 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
+      <div className="relative w-full max-w-lg bg-[#141b2b] border border-white/15 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[86dvh] sm:max-h-[90dvh] my-auto animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+        <div className="shrink-0 px-5 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#f59c73]/20 border border-[#f59c73]/40 flex items-center justify-center text-[#f59c73]">
               <Crop className="w-4 h-4" />
@@ -240,14 +240,14 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body Content */}
-        <div className="p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Crop Viewport */}
           <div className="flex flex-col items-center">
             <div
@@ -438,11 +438,11 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
         </div>
 
         {/* Footer Buttons */}
-        <div className="px-5 py-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-2.5 bg-white/[0.02]">
+        <div className="shrink-0 px-5 py-3.5 border-t border-white/10 flex flex-wrap items-center justify-between gap-2.5 bg-white/[0.02]">
           <button
             type="button"
             onClick={handleUseOriginal}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors cursor-pointer"
             title="ક્રોપ વગર આખો લોગો જેમ છે તેમ વાપરો"
           >
             ક્રોપ વિના સીધો રાખો (Full Logo)
@@ -451,14 +451,14 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             >
               રદ કરો (Cancel)
             </button>
             <button
               type="button"
               onClick={handleApply}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
             >
               <Check className="w-4 h-4" />
               <span>લોગો સાચવો અને અપલોડ કરો (Crop & Save Logo)</span>

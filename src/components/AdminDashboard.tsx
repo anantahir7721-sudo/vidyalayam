@@ -903,9 +903,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {confirmModal.isOpen && confirmModal.school && (
         <div
           id="modal-confirm-action"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto my-auto">
             <div className="flex items-center gap-3">
               <div
                 className={`w-12 h-12 rounded-xl flex items-center justify-center ${

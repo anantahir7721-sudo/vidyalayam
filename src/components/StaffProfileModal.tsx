@@ -368,16 +368,16 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="glass-panel w-full max-w-2xl rounded-3xl border border-white/20 p-5 sm:p-7 shadow-2xl my-auto text-[#e4ded6] space-y-5 max-h-[92vh] overflow-y-auto">
+      <div className="glass-panel w-full max-w-2xl rounded-3xl border border-white/20 shadow-2xl my-auto text-[#e4ded6] max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="shrink-0 flex items-center justify-between border-b border-white/10 p-4 sm:p-6 bg-slate-900/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#9d512d]/25 border border-[#9d512d]/40 flex items-center justify-center text-[#f59c73]">
+            <div className="w-10 h-10 rounded-2xl bg-[#9d512d]/25 border border-[#9d512d]/40 flex items-center justify-center text-[#f59c73] shrink-0">
               <Briefcase className="w-5 h-5" />
             </div>
             <div>
@@ -395,19 +395,21 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
           </button>
         </div>
 
-        {/* Notifications */}
-        {error && (
-          <div className="p-3 rounded-2xl bg-rose-950/60 border border-rose-800/60 text-xs text-rose-300 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-        {success && (
-          <div className="p-3 rounded-2xl bg-emerald-950/60 border border-emerald-800/60 text-xs text-emerald-300 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{success}</span>
-          </div>
-        )}
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+          {/* Notifications */}
+          {error && (
+            <div className="p-3 rounded-2xl bg-rose-950/60 border border-rose-800/60 text-xs text-rose-300 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+          {success && (
+            <div className="p-3 rounded-2xl bg-emerald-950/60 border border-emerald-800/60 text-xs text-emerald-300 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{success}</span>
+            </div>
+          )}
 
         {/* Hero Card: Photo & Key Badges */}
         <div className="bg-black/35 rounded-2xl border border-white/10 p-4 sm:p-5 flex flex-col sm:flex-row items-center sm:items-start gap-5">
@@ -629,9 +631,10 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             </div>
           )}
         </div>
+        </div>
 
-        {/* Modal Actions Footer */}
-        <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+        {/* Modal Actions Footer (Pinned at bottom) */}
+        <div className="shrink-0 p-4 sm:p-5 border-t border-white/10 bg-slate-900/90 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"

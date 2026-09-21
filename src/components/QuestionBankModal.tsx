@@ -136,33 +136,33 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#121921] border border-white/10 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col text-[#e4ded6]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm">
+      <div className="relative w-full max-w-4xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-slate-800 dark:text-[#e4ded6] animate-fadeIn">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+        <div className="shrink-0 p-4 sm:p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-400">
+            <div className="w-10 h-10 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-600 dark:text-teal-400">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-wide">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-wide">
                 📚 પ્રશ્ન બેંક (Reusable Question Bank)
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 ધોરણ અને વિષય મુજબ તૈયાર પ્રશ્નો સાચવો અને કોઈપણ નવી પરીક્ષામાં સીધા વાપરો
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Filter bar & Actions */}
-        <div className="p-4 border-b border-white/10 bg-slate-900/60 flex flex-wrap items-center justify-between gap-3">
+        <div className="shrink-0 p-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-slate-900/60 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
             {/* Search */}
             <div className="relative flex-1 min-w-[160px]">
@@ -172,7 +172,7 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="પ્રશ્ન શોધો..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500"
+                className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-teal-500"
               />
             </div>
 
@@ -180,7 +180,7 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
             <select
               value={selectedStandard}
               onChange={(e) => setSelectedStandard(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-xs text-white focus:outline-none"
+              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white focus:outline-none"
             >
               <option value="all">બધા ધોરણ</option>
               <option value="9">ધોરણ 9</option>
@@ -193,7 +193,7 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-xs text-white focus:outline-none"
+              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white focus:outline-none"
             >
               <option value="all">બધા વિષય</option>
               <option value="Computer">કમ્પ્યુટર (Computer)</option>
@@ -210,7 +210,7 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
               type="button"
               onClick={handleSaveCurrentQuestionsToBank}
               disabled={isSavingToBank}
-              className="px-3 py-1.5 rounded-lg bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 text-xs font-semibold flex items-center gap-1.5 transition-all"
+              className="px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-500/20 hover:bg-teal-100 dark:hover:bg-teal-500/30 border border-teal-300 dark:border-teal-500/40 text-teal-700 dark:text-teal-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
             >
               <Sparkles className="w-3.5 h-3.5" />
               ચાલુ પેપરના પ્રશ્નો બેંકમાં સેવ કરો ({currentExamQuestions.length})
@@ -219,9 +219,9 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
         </div>
 
         {bankNotice && (
-          <div className="mx-4 mt-3 p-2.5 rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs flex items-center justify-between">
+          <div className="mx-4 mt-3 p-2.5 rounded-lg bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/30 text-teal-800 dark:text-teal-300 text-xs flex items-center justify-between">
             <span>{bankNotice}</span>
-            <button onClick={() => setBankNotice(null)}>
+            <button onClick={() => setBankNotice(null)} className="cursor-pointer">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -230,17 +230,17 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
         {/* Content List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {loading ? (
-            <div className="text-center py-12 text-slate-400 text-xs">પ્રશ્ન બેંક લોડ થઈ રહી છે...</div>
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-xs">પ્રશ્ન બેંક લોડ થઈ રહી છે...</div>
           ) : filteredItems.length === 0 ? (
             <div className="text-center py-12 text-slate-500 text-xs space-y-2">
               <BookOpen className="w-10 h-10 mx-auto opacity-30" />
               <div>હજુ સુધી આ વિષય/ધોરણ માટે પ્રશ્ન બેંકમાં કોઈ પ્રશ્નો સેવ નથી.</div>
-              <div className="text-slate-400">
+              <div className="text-slate-500 dark:text-slate-400">
                 પરીક્ષા બનાવતી વખતે પ્રશ્નો ઉમેરીને "બેંકમાં સેવ કરો" બટન દબાવો.
               </div>
             </div>
           ) : (
-            filteredItems.map((item, idx) => {
+            filteredItems.map((item) => {
               const isChecked = selectedIds.has(item.id);
               return (
                 <div
@@ -248,8 +248,8 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
                   onClick={() => toggleSelect(item.id)}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                     isChecked
-                      ? 'bg-teal-950/30 border-teal-500/60 ring-1 ring-teal-500/40'
-                      : 'bg-slate-900/60 border-white/10 hover:border-white/20'
+                      ? 'bg-teal-50 dark:bg-teal-950/30 border-teal-500 ring-1 ring-teal-500/40'
+                      : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-sm'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
@@ -257,34 +257,34 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
                       <div
                         className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
                           isChecked
-                            ? 'bg-teal-500 border-teal-500 text-slate-950'
-                            : 'border-white/20 bg-slate-800'
+                            ? 'bg-teal-600 border-teal-600 text-white'
+                            : 'border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-slate-800'
                         }`}
                       >
                         {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                       </div>
                       <div>
-                        <div className="font-semibold text-xs text-white leading-relaxed">
+                        <div className="font-semibold text-xs text-slate-900 dark:text-white leading-relaxed">
                           {item.questionText}
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-slate-300">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
                             ધો. {item.standard}
                           </span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/20 text-teal-300">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 dark:bg-teal-500/20 text-teal-800 dark:text-teal-300">
                             {item.subject}
                           </span>
                           {item.topic && (
-                            <span className="text-[10px] text-slate-400">વિષયાંગ: {item.topic}</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">વિષયાંગ: {item.topic}</span>
                           )}
-                          <span className="text-[10px] text-slate-400">ગુણ: {item.marks}</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">ગુણ: {item.marks}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Options */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] mt-2 pt-2 border-t border-white/5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] mt-2 pt-2 border-t border-slate-100 dark:border-white/5">
                     {(['A', 'B', 'C', 'D'] as const).map((opt) => {
                       const isAns = item.correctAnswer === opt;
                       const val = item[`option${opt}` as keyof QuestionBankItem];
@@ -293,8 +293,8 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
                           key={opt}
                           className={`px-2 py-1 rounded truncate ${
                             isAns
-                              ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30'
-                              : 'text-slate-400 bg-white/[0.02]'
+                              ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-500/30'
+                              : 'text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-white/[0.02]'
                           }`}
                         >
                           <span className="font-bold mr-1">({opt})</span> {val}
@@ -309,15 +309,15 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10 bg-slate-900/90 flex items-center justify-between gap-3">
-          <div className="text-xs text-slate-400">
-            પસંદ કરેલ પ્રશ્નો: <strong className="text-teal-400 font-bold">{selectedIds.size}</strong>
+        <div className="shrink-0 p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/90 flex items-center justify-between gap-3">
+          <div className="text-xs text-slate-600 dark:text-slate-400">
+            પસંદ કરેલ પ્રશ્નો: <strong className="text-teal-600 dark:text-teal-400 font-bold">{selectedIds.size}</strong>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold"
+              className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
             >
               બંધ કરો
             </button>
@@ -325,7 +325,7 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
               type="button"
               onClick={handleImportSelected}
               disabled={selectedIds.size === 0}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 text-white text-xs font-bold shadow-lg disabled:opacity-40 flex items-center gap-1.5"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:brightness-110 text-white text-xs font-bold shadow-md disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               પરીક્ષામાં ઉમેરો ({selectedIds.size})

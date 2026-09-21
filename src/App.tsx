@@ -292,7 +292,7 @@ export default function App() {
               refreshing={statusRefreshing}
             />
           </main>
-          <footer className="bg-slate-950/90 border-t border-white/10 py-4 text-center text-xs text-slate-400 space-y-1">
+          <footer className="bg-slate-950/90 border-t border-white/10 pt-4 pb-24 lg:pb-4 text-center text-xs text-slate-400 space-y-1">
             <div className="font-bold text-white tracking-wide">
               Vidyalayam (વિદ્યાલયમ)
             </div>
@@ -314,7 +314,7 @@ export default function App() {
           setActiveTab={setActiveTab}
         />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 lg:pb-6">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 lg:pb-8">
           {dataLoading && (
             <div className="mb-4 glass-card border border-white/10 px-4 py-2 rounded-2xl text-xs text-emerald-400 flex items-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -438,7 +438,7 @@ export default function App() {
           )}
         </main>
 
-        <footer className="bg-[#0e141b]/90 border-t border-white/10 py-5 text-center text-xs text-slate-400 space-y-1">
+        <footer className="bg-[#0e141b]/90 border-t border-white/10 pt-5 pb-24 lg:pb-6 text-center text-xs text-slate-400 space-y-1">
           <div className="font-bold text-white tracking-wide">
             Vidyalayam (વિદ્યાલયમ)
           </div>
@@ -479,7 +479,7 @@ export default function App() {
           }}
         />
       </main>
-      <footer className="bg-slate-950/90 border-t border-white/10 py-4 text-center text-xs text-slate-400 space-y-1">
+      <footer className="bg-slate-950/90 border-t border-white/10 pt-4 pb-24 lg:pb-4 text-center text-xs text-slate-400 space-y-1">
         <div className="font-bold text-white tracking-wide">
           Vidyalayam (વિદ્યાલયમ)
         </div>

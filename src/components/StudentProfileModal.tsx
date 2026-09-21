@@ -304,16 +304,16 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto bg-slate-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col text-slate-100">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+      <div className="relative w-full max-w-4xl max-h-[86dvh] sm:max-h-[90dvh] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col text-slate-100 overflow-hidden">
         {/* Top Header Bar */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-slate-900/95 border-b border-white/10 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 to-terracotta flex items-center justify-center font-bold text-white shadow-md shadow-terracotta/20">
+        <div className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-3.5 bg-slate-900 border-b border-white/10">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-600 to-terracotta flex items-center justify-center font-bold text-white shadow-md shadow-terracotta/20 shrink-0">
               <User className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 flex-wrap">
                 <span>{student.studentName}</span>
                 {student.grNumber && (
                   <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-amber-300">
@@ -321,14 +321,14 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-400">
                 ધોરણ {student.standard} {student.section ? `• વર્ગ ${student.section}` : ''} • DISE:{' '}
                 {student.diseCode || school.diseCode || '-'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => {
                 if (onGenerateIdCard) {
@@ -337,37 +337,38 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   printStudentIdCards(school, [student]);
                 }
               }}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-terracotta/20 border border-terracotta/40 text-amber-200 hover:bg-terracotta/30 transition-all flex items-center gap-1.5 shadow-sm"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-terracotta/20 border border-terracotta/40 text-amber-200 hover:bg-terracotta/30 transition-all flex items-center gap-1.5 shadow-sm"
               title="Generate Student ID Card"
             >
               <CreditCard className="w-3.5 h-3.5 text-amber-400" />
-              <span>આઈડી કાર્ડ</span>
+              <span className="hidden sm:inline">આઈડી કાર્ડ</span>
             </button>
 
             <button
               onClick={handlePrintSlip}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition-all flex items-center gap-1.5"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition-all flex items-center gap-1.5"
               title="Print Profile Slip"
             >
               <Printer className="w-3.5 h-3.5 text-slate-300" />
-              <span>સ્લિપ પ્રિન્ટ</span>
+              <span className="hidden sm:inline">સ્લિપ પ્રિન્ટ</span>
             </button>
 
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 isEditing
                   ? 'bg-amber-600 text-white'
                   : 'bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700'
               }`}
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>{isEditing ? 'રદ કરો (Cancel)' : 'સુધારો (Edit)'}</span>
+              <span>{isEditing ? 'રદ કરો' : 'સુધારો'}</span>
             </button>
 
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>
@@ -376,20 +377,20 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
         {/* Status Alerts */}
         {error && (
-          <div className="mx-6 mt-4 p-3 rounded-lg bg-red-950/60 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
+          <div className="mx-4 sm:mx-6 mt-3 p-3 rounded-lg bg-red-950/60 border border-red-500/40 text-red-200 text-xs flex items-center gap-2 shrink-0">
             <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
             <span>{error}</span>
           </div>
         )}
         {successMsg && (
-          <div className="mx-6 mt-4 p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-2">
+          <div className="mx-4 sm:mx-6 mt-3 p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-2 shrink-0">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
             <span>{successMsg}</span>
           </div>
         )}
 
         {/* Main Content Body */}
-        <div className="p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           {/* Top Hero: Photo + Quick Summary */}
           <div className="bg-slate-800/60 border border-white/5 rounded-xl p-5 flex flex-col sm:flex-row items-center sm:items-start gap-6">
             {/* Student Photo Section */}
@@ -977,12 +978,15 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="sticky bottom-0 z-10 px-6 py-3 bg-slate-900/95 border-t border-white/10 flex justify-between items-center text-xs text-slate-400">
-          <div>વિદ્યાર્થી ID: {student.id}</div>
+        {/* Modal Footer (Always visible at bottom) */}
+        <div className="shrink-0 px-4 sm:px-6 py-3 bg-slate-900 border-t border-white/10 flex justify-between items-center text-xs text-slate-400">
+          <div className="truncate max-w-[200px] sm:max-w-xs font-mono text-[11px] text-slate-400">
+            વિદ્યાર્થી ID: {student.id}
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition-colors"
+            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition-colors cursor-pointer border border-white/10 shadow-sm"
           >
             બંધ કરો (Close)
           </button>
@@ -992,7 +996,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
       {/* Full Photo Modal Preview */}
       {showFullPhoto && photoPreview && (
         <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 cursor-pointer"
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 cursor-pointer"
           onClick={() => setShowFullPhoto(false)}
         >
           <div className="relative max-w-sm max-h-[80vh] rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl">

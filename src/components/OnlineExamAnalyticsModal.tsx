@@ -218,24 +218,24 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-5xl bg-[#121921] border border-white/10 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col text-[#e4ded6]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/60 dark:bg-black/80 backdrop-blur-md">
+      <div className="relative w-full max-w-5xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-slate-800 dark:text-[#e4ded6] animate-fadeIn">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+        <div className="shrink-0 p-4 sm:p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
               <BarChart3 className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-white tracking-wide">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-wide">
                   📊 પરીક્ષા પરિણામ અને એનાલિટિક્સ (Results & Analytics)
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300">
                   {exam.title}
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 ધોરણ: {exam.standard} • વિષય: {exam.subject} • કુલ ગુણ: {exam.totalMarks} • પ્રશ્નો: {exam.questionsCount}
               </p>
             </div>
@@ -244,14 +244,14 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
             <button
               onClick={handleExportExcel}
               disabled={attempts.length === 0}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40"
+              className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 border border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer"
             >
               <FileSpreadsheet className="w-4 h-4" />
               Excel Export
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -259,42 +259,42 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
         </div>
 
         {/* Overview Stat Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 p-4 bg-slate-900/60 border-b border-white/10 text-xs">
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-            <div className="text-slate-400 text-[11px] mb-1">કુલ પાત્ર વિદ્યાર્થી</div>
-            <div className="text-lg font-bold text-white">{stats.totalEligible}</div>
+        <div className="shrink-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 p-4 bg-slate-100/70 dark:bg-slate-900/60 border-b border-slate-200 dark:border-white/10 text-xs">
+          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
+            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">કુલ પાત્ર વિદ્યાર્થી</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-white">{stats.totalEligible}</div>
           </div>
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-            <div className="text-slate-400 text-[11px] mb-1">પરીક્ષા આપી (Attempted)</div>
-            <div className="text-lg font-bold text-emerald-400">{stats.attemptedCount}</div>
+          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
+            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">પરીક્ષા આપી (Attempted)</div>
+            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{stats.attemptedCount}</div>
           </div>
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-            <div className="text-slate-400 text-[11px] mb-1">બાકી (Not Attempted)</div>
-            <div className="text-lg font-bold text-amber-400">{stats.notAttemptedCount}</div>
+          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
+            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">બાકી (Not Attempted)</div>
+            <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{stats.notAttemptedCount}</div>
           </div>
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-            <div className="text-slate-400 text-[11px] mb-1">સૌથી વધુ ગુણ (Highest)</div>
-            <div className="text-lg font-bold text-teal-300">{stats.highestScore} / {exam.totalMarks}</div>
+          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
+            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">સૌથી વધુ ગુણ (Highest)</div>
+            <div className="text-lg font-bold text-teal-700 dark:text-teal-300">{stats.highestScore} / {exam.totalMarks}</div>
           </div>
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-            <div className="text-slate-400 text-[11px] mb-1">સરેરાશ ગુણ (Average)</div>
-            <div className="text-lg font-bold text-blue-300">{stats.avgScore} ({stats.avgPercentage}%)</div>
+          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
+            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">સરેરાશ ગુણ (Average)</div>
+            <div className="text-lg font-bold text-blue-700 dark:text-blue-300">{stats.avgScore} ({stats.avgPercentage}%)</div>
           </div>
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-            <div className="text-slate-400 text-[11px] mb-1">પાસ ટકાવારી (Pass %)</div>
-            <div className="text-lg font-bold text-emerald-400">{stats.passPct}%</div>
+          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
+            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">પાસ ટકાવારી (Pass %)</div>
+            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{stats.passPct}%</div>
           </div>
         </div>
 
         {/* Tab Toggle */}
-        <div className="p-4 border-b border-white/10 bg-slate-900/40 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex rounded-xl bg-slate-800 p-1 border border-white/10">
+        <div className="shrink-0 p-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/40 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex rounded-xl bg-slate-200 dark:bg-slate-800 p-1 border border-slate-300 dark:border-white/10">
             <button
               onClick={() => setActiveTab('students')}
-              className={`py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              className={`py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 activeTab === 'students'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
@@ -302,10 +302,10 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
             </button>
             <button
               onClick={() => setActiveTab('questions')}
-              className={`py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              className={`py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 activeTab === 'questions'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5" />
@@ -322,13 +322,13 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="નામ / રોલ નં શોધો..."
-                  className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none"
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
                 />
               </div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-xs text-white focus:outline-none"
+                className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer"
               >
                 <option value="ALL">બધા</option>
                 <option value="PASS">માત્ર પાસ</option>
@@ -341,7 +341,7 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="text-center py-12 text-slate-400 text-xs">ડેટા લોડ થઈ રહ્યો છે...</div>
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-xs">ડેટા લોડ થઈ રહ્યો છે...</div>
           ) : activeTab === 'students' ? (
             /* Student-wise Table */
             filteredAttempts.length === 0 ? (
@@ -349,10 +349,10 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                 હજુ સુધી કોઈ વિદ્યાર્થીએ આ પરીક્ષા સબમિટ કરી નથી.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-white/10">
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-900 text-slate-400 border-b border-white/10 text-[11px]">
+                    <tr className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-white/10 text-[11px]">
                       <th className="p-3">#</th>
                       <th className="p-3">વિદ્યાર્થીનું નામ</th>
                       <th className="p-3">રોલ નં / GR</th>
@@ -363,32 +363,32 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                       <th className="p-3">સબમિશન સમય</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                     {filteredAttempts.map((at, idx) => {
                       const passingMarks = exam.passingMarks || Math.ceil(exam.totalMarks * 0.35);
                       const isPass = (at.score || 0) >= passingMarks;
 
                       return (
-                        <tr key={at.id} className="hover:bg-white/[0.02] transition-colors">
+                        <tr key={at.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
                           <td className="p-3 text-slate-500">{idx + 1}</td>
-                          <td className="p-3 font-semibold text-white">{at.studentName}</td>
-                          <td className="p-3 text-slate-400">
+                          <td className="p-3 font-semibold text-slate-900 dark:text-white">{at.studentName}</td>
+                          <td className="p-3 text-slate-500 dark:text-slate-400">
                             {at.rollNumber ? `રોલ: ${at.rollNumber}` : ''} {at.grNumber ? `(GR: ${at.grNumber})` : ''}
                           </td>
-                          <td className="p-3 font-bold text-white">
-                            <span className="text-emerald-400 text-sm">{at.score}</span> / {exam.totalMarks}
+                          <td className="p-3 font-bold text-slate-900 dark:text-white">
+                            <span className="text-emerald-600 dark:text-emerald-400 text-sm">{at.score}</span> / {exam.totalMarks}
                           </td>
-                          <td className="p-3 font-semibold text-slate-300">{at.percentage || 0}%</td>
+                          <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">{at.percentage || 0}%</td>
                           <td className="p-3">
-                            <span className="text-emerald-400 font-bold">{at.correctCount}</span> સાચા •{' '}
-                            <span className="text-rose-400 font-bold">{at.incorrectCount}</span> ખોટા
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">{at.correctCount}</span> સાચા •{' '}
+                            <span className="text-rose-600 dark:text-rose-400 font-bold">{at.incorrectCount}</span> ખોટા
                           </td>
                           <td className="p-3">
                             <span
                               className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                                 isPass
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                  ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30'
+                                  : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30'
                               }`}
                             >
                               {isPass ? 'પાસ (PASS)' : 'સુધારણા જરૂરી'}
@@ -411,29 +411,29 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                 return (
                   <div
                     key={qa.questionNumber}
-                    className="p-4 rounded-xl border border-white/10 bg-slate-900/60"
+                    className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
                       <div className="flex items-start gap-2">
-                        <span className="w-6 h-6 rounded-md bg-white/10 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                        <span className="w-6 h-6 rounded-md bg-slate-200 dark:bg-white/10 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center shrink-0">
                           {qa.questionNumber}
                         </span>
                         <div>
-                          <div className="font-semibold text-xs text-white">{qa.questionText}</div>
-                          <div className="text-[11px] text-emerald-400 font-bold mt-1">
+                          <div className="font-semibold text-xs text-slate-900 dark:text-white">{qa.questionText}</div>
+                          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
                             સાચો જવાબ: ({qa.correctAnswer}) • ગુણ: {qa.marks}
                           </div>
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <div className="text-sm font-bold text-white">{qa.correctPct}%</div>
-                        <div className="text-[10px] text-slate-400">સાચો જવાબ આપનાર વિદ્યાર્થીઓ</div>
+                        <div className="text-sm font-bold text-slate-900 dark:text-white">{qa.correctPct}%</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">સાચો જવાબ આપનાર વિદ્યાર્થીઓ</div>
                       </div>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mb-3">
+                    <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mb-3">
                       <div
                         className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all"
                         style={{ width: `${qa.correctPct}%` }}
@@ -450,8 +450,8 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                             key={opt}
                             className={`p-2 rounded-lg border ${
                               isCorrect
-                                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 font-bold'
-                                : 'bg-black/20 border-white/5 text-slate-400'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-bold'
+                                : 'bg-white dark:bg-black/20 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400'
                             }`}
                           >
                             <div className="flex justify-between items-center">
@@ -470,11 +470,11 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10 bg-slate-900/90 flex justify-end">
+        <div className="shrink-0 p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/90 flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold"
+            className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/15 text-slate-800 dark:text-white text-xs font-semibold cursor-pointer"
           >
             બંધ કરો
           </button>

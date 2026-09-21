@@ -222,7 +222,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 <Phone className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="text-[#a99f91] block text-[10px] uppercase font-bold">સંપર્ક / મોબાઈલ</span>
-                  <span className="font-mono">{school.contactNumber || 'ઉપલબ્ધ નથી'}</span>
+                  {school.contactPhone || school.principalPhone || (school as any).contactNumber ? (
+                    <span className="font-mono text-[#e4ded6] font-semibold">
+                      {school.contactPhone || school.principalPhone || (school as any).contactNumber}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('profile')}
+                      className="text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1.5 font-medium hover:underline cursor-pointer group"
+                      title="શાળા પ્રોફાઇલમાં સંપર્ક નંબર ઉમેરો"
+                    >
+                      <span className="text-slate-400">ઉપલબ્ધ નથી</span>
+                      <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full font-bold group-hover:bg-emerald-500/30">
+                        + ઉમેરો
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -230,7 +246,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 <Mail className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="text-[#a99f91] block text-[10px] uppercase font-bold">સત્તાવાર ઈમેલ</span>
-                  <span className="font-mono truncate">{school.email || 'ઉપલબ્ધ નથી'}</span>
+                  {school.contactEmail || (school as any).email ? (
+                    <span className="font-mono text-[#e4ded6] font-semibold truncate block max-w-[200px]">
+                      {school.contactEmail || (school as any).email}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('profile')}
+                      className="text-purple-400 hover:text-purple-300 inline-flex items-center gap-1.5 font-medium hover:underline cursor-pointer group"
+                      title="શાળા પ્રોફાઇલમાં ઈમેલ ઉમેરો"
+                    >
+                      <span className="text-slate-400">ઉપલબ્ધ નથી</span>
+                      <span className="text-[10px] px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-full font-bold group-hover:bg-purple-500/30">
+                        + ઉમેરો
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
 

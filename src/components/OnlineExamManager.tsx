@@ -256,25 +256,25 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner & Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-white/10 shadow-xl backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-2xl bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border border-slate-200 dark:border-white/10 shadow-md dark:shadow-xl">
         <div className="flex items-center gap-3.5">
           <button
             type="button"
             onClick={onBack}
-            className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+            className="p-2.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-white tracking-wide">
+                <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-wide">
                   📝 ઓનલાઇન MCQ પરીક્ષા વ્યવસ્થાપન (Online Exam Management)
                 </h1>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   શાળાકીય અને વધારાની MCQ પરીક્ષાઓનું આયોજન, પ્રશ્ન બેંક, AI આયાત અને પરિણામ એનાલિટિક્સ
                 </p>
               </div>
@@ -286,7 +286,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
           <button
             type="button"
             onClick={() => setShowQuestionBank(true)}
-            className="px-4 py-2.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
+            className="px-4 py-2.5 rounded-xl bg-teal-50 dark:bg-teal-500/20 hover:bg-teal-100 dark:hover:bg-teal-500/30 border border-teal-300 dark:border-teal-500/40 text-teal-700 dark:text-teal-300 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer"
           >
             <BookOpen className="w-4 h-4" />
             પ્રશ્ન બેંક (Question Bank)
@@ -295,7 +295,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-emerald-950/50 flex items-center gap-2 transition-all cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-md shadow-emerald-900/20 flex items-center gap-2 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             નવી પરીક્ષા બનાવો (Create Exam)
@@ -304,22 +304,22 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
       </div>
 
       {/* Main Tabs: School Exams vs Extra Exams */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-[#121921] border border-white/10">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm">
         {/* Segmented Tab Controls */}
-        <div className="flex rounded-xl bg-slate-900 p-1 border border-white/10">
+        <div className="flex rounded-xl bg-slate-100 dark:bg-slate-900 p-1 border border-slate-200 dark:border-white/10">
           <button
             type="button"
             onClick={() => setActiveTab('school_exam')}
-            className={`py-2 px-4 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
+            className={`py-2 px-4 rounded-lg text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'school_exam'
                 ? 'bg-emerald-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             🏫 શાળાકીય પરીક્ષાઓ (School Exams)
             <span
               className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                activeTab === 'school_exam' ? 'bg-black/30 text-white' : 'bg-white/10 text-slate-400'
+                activeTab === 'school_exam' ? 'bg-black/30 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
               }`}
             >
               {exams.filter((e) => e.examType === 'school_exam').length}
@@ -329,16 +329,16 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('extra_exam')}
-            className={`py-2 px-4 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
+            className={`py-2 px-4 rounded-lg text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'extra_exam'
                 ? 'bg-amber-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             🎯 એક્સ્ટ્રા / ક્વિઝ (Extra Exams & Quizzes)
             <span
               className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                activeTab === 'extra_exam' ? 'bg-black/30 text-white' : 'bg-white/10 text-slate-400'
+                activeTab === 'extra_exam' ? 'bg-black/30 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
               }`}
             >
               {exams.filter((e) => e.examType === 'extra_exam').length}
@@ -356,7 +356,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="પરીક્ષા શોધો..."
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
             />
           </div>
 
@@ -364,7 +364,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
           <select
             value={selectedStandard}
             onChange={(e) => setSelectedStandard(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-slate-900 border border-white/10 text-xs text-white focus:outline-none"
+            className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white focus:outline-none"
           >
             <option value="all">બધા ધોરણ</option>
             <option value="9">ધોરણ 9</option>
@@ -377,7 +377,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-slate-900 border border-white/10 text-xs text-white focus:outline-none"
+            className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white focus:outline-none"
           >
             <option value="all">બધી સ્થિતિ</option>
             <option value="live">લાઈવ (Live)</option>
@@ -400,17 +400,17 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
 
       {/* Exams Grid */}
       {loading ? (
-        <div className="text-center py-16 text-slate-400 text-xs flex flex-col items-center gap-3">
-          <RefreshCw className="w-6 h-6 animate-spin text-emerald-400" />
+        <div className="text-center py-16 text-slate-500 dark:text-slate-400 text-xs flex flex-col items-center gap-3">
+          <RefreshCw className="w-6 h-6 animate-spin text-emerald-500" />
           <span>ઓનલાઇન પરીક્ષાઓ લોડ થઈ રહી છે...</span>
         </div>
       ) : filteredExams.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-[#121921] border border-white/10 space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-slate-500">
+        <div className="p-12 text-center rounded-2xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500">
             <FileText className="w-7 h-7" />
           </div>
-          <h3 className="text-sm font-bold text-white">કોઈ પરીક્ષા મળી નથી</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">કોઈ પરીક્ષા મળી નથી</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
             {activeTab === 'school_exam'
               ? 'કમ્પ્યુટર, પી.ટી., ચિત્રકામ કે ઉદ્યોગ વિષયો માટે નવી MCQ પરીક્ષા બનાવો.'
               : 'સામાન્ય જ્ઞાન કે ક્વિઝ સ્પર્ધા માટે નવી એક્સ્ટ્રા પરીક્ષા બનાવો.'}
@@ -422,7 +422,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
               setEditingQuestions([]);
               setIsEditing(true);
             }}
-            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-2 cursor-pointer shadow-sm"
           >
             <Plus className="w-4 h-4" />
             હમણાં જ બનાવો
@@ -440,39 +440,39 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
             return (
               <div
                 key={exam.id}
-                className="p-5 rounded-2xl bg-[#121921] border border-white/10 shadow-lg flex flex-col justify-between transition-all hover:border-white/20 group"
+                className="p-5 rounded-2xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-lg flex flex-col justify-between transition-all hover:border-emerald-500/40 group"
               >
                 {/* Header: Subject badge & Status badge */}
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white/10 text-slate-200 border border-white/10">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10">
                       ધોરણ {exam.standard} • {exam.subject}
                     </span>
 
                     {/* Status Badge */}
                     {isLive ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 animate-pulse">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1.5 animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                         લાઈવ (Live)
                       </span>
                     ) : exam.status === 'scheduled' ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-500/30 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         શેડ્યૂલ
                       </span>
                     ) : exam.status === 'completed' ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-500/30">
                         પૂર્ણ (Completed)
                       </span>
                     ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/20 text-slate-300 border border-slate-500/30">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-500/20 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-500/30">
                         ડ્રાફ્ટ (Draft)
                       </span>
                     )}
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-sm font-bold text-white leading-snug mb-2 group-hover:text-emerald-300 transition-colors">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
                     {exam.title}
                   </h3>
 
@@ -480,37 +480,37 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                   {exam.status === 'scheduled' &&
                     exam.scheduledStartTimestamp &&
                     serverTime < exam.scheduledStartTimestamp && (
-                      <div className="mb-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-300 flex items-center gap-1.5">
+                      <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-[11px] text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
                         <Timer className="w-3.5 h-3.5 shrink-0" />
                         <span>શરૂ થવામાં: <strong>{formatCountdown(exam.scheduledStartTimestamp)}</strong></span>
                       </div>
                     )}
 
                   {/* Details: Date, Time, Duration, Questions */}
-                  <div className="space-y-1.5 text-xs text-slate-400 mb-4 pt-1">
+                  <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400 mb-4 pt-1">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                      <span>તારીખ: <strong className="text-slate-300">{exam.scheduledDate}</strong></span>
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      <span>તારીખ: <strong className="text-slate-800 dark:text-slate-300">{exam.scheduledDate}</strong></span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>સમય: <strong className="text-slate-300">{exam.scheduledStartTime}</strong> ({exam.durationMinutes} મિનિટ)</span>
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>સમય: <strong className="text-slate-800 dark:text-slate-300">{exam.scheduledStartTime}</strong> ({exam.durationMinutes} મિનિટ)</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Award className="w-3.5 h-3.5 text-slate-500" />
-                      <span>પ્રશ્નો: <strong className="text-slate-300">{exam.questionsCount}</strong> • કુલ ગુણ: <strong className="text-emerald-400">{exam.totalMarks}</strong></span>
+                      <Award className="w-3.5 h-3.5 text-slate-400" />
+                      <span>પ્રશ્નો: <strong className="text-slate-800 dark:text-slate-300">{exam.questionsCount}</strong> • કુલ ગુણ: <strong className="text-emerald-600 dark:text-emerald-400">{exam.totalMarks}</strong></span>
                     </div>
                   </div>
                 </div>
 
                 {/* Card Action Buttons */}
-                <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     {/* Results / Analytics */}
                     <button
                       type="button"
                       onClick={() => setAnalyticsExam(exam)}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                       title="વિદ્યાર્થી પરિણામ અને પ્રશ્નવાર એનાલિટિક્સ"
                     >
                       <BarChart3 className="w-3.5 h-3.5" />
@@ -522,7 +522,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                       <button
                         type="button"
                         onClick={() => handleOpenRetakeNew(exam)}
-                        className="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-500/15 dark:hover:bg-cyan-500/25 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                         title="આ પરીક્ષા ફરીથી લેવા માટે નવી એન્ટ્રી બનાવો (અગાઉનું પરિણામ સુરક્ષિત રહેશે)"
                       >
                         <Copy className="w-3.5 h-3.5" />
@@ -532,7 +532,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(exam)}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/5 transition-colors cursor-pointer"
                         title="પરીક્ષા સુધારો"
                       >
                         <Edit3 className="w-4 h-4" />
@@ -544,7 +544,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                   <button
                     type="button"
                     onClick={() => setDeleteTargetExam(exam)}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 dark:bg-white/5 dark:hover:bg-rose-500/20 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-white/5 transition-colors cursor-pointer"
                     title="પરીક્ષા કાઢી નાખો"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -579,8 +579,8 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
 
       {/* Delete Confirmation Modal */}
       {deleteTargetExam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-[#121921] border border-white/10 rounded-2xl p-6 space-y-4 shadow-2xl text-[#e4ded6]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-[#121921] border border-white/10 rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl text-[#e4ded6] max-h-[88dvh] overflow-y-auto my-auto animate-fadeIn">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto">
               <AlertTriangle className="w-6 h-6" />
             </div>

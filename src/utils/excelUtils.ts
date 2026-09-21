@@ -929,14 +929,41 @@ export function normalizeStandard(val: any): AllowedStandard | null {
 }
 
 /**
- * Normalizes Student Unique DISE / State Code (handles leading apostrophes, spaces, quotes)
+ * Normalizes Student Unique DISE / State Code (handles leading apostrophes, spaces, quotes, scientific notation)
  */
 export function normalizeDiseCode(val: any): string {
   if (val === undefined || val === null) return '';
-  return String(val)
+  let str = String(val)
     .trim()
     .replace(/^['"`\s]+|['"`\s]+$/g, '')
     .trim();
+
+  if (!str) return '';
+
+  // Handle scientific notation e.g. 2.4010401504151e+20 or 2.40104015041510001001E+20
+  if (/^[+-]?\d+(?:\.\d+)?[eE][+-]?\d+$/i.test(str)) {
+    try {
+      const [base, expStr] = str.toLowerCase().split('e');
+      const exp = parseInt(expStr, 10);
+      const [intPart, fracPart = ''] = base.split('.');
+      if (exp >= 0) {
+        if (exp >= fracPart.length) {
+          str = intPart + fracPart + '0'.repeat(exp - fracPart.length);
+        } else {
+          str = intPart + fracPart.slice(0, exp) + '.' + fracPart.slice(exp);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // Remove trailing .0 or .00 if Excel stored integer as float
+  if (/\.0+$/.test(str)) {
+    str = str.replace(/\.0+$/, '');
+  }
+
+  return str.trim();
 }
 
 /**
@@ -1191,12 +1218,33 @@ export async function parseStudentsExcelFile(
     for (const key of Object.keys(row)) {
       const cleanKey = key.trim().toLowerCase().replace(/[\._\-]/g, ' ').replace(/\s+/g, ' ');
 
-      // DISE Code
+      // DISE Code / Child UID / State Code
       if (
         cleanKey === 'dise code' ||
         cleanKey === 'disecode' ||
         cleanKey === 'dise' ||
-        cleanKey.includes('ડાયસ')
+        cleanKey === 'student dise' ||
+        cleanKey === 'student dise code' ||
+        cleanKey === 'studentdise' ||
+        cleanKey === 'student state code' ||
+        cleanKey === 'studentstatecode' ||
+        cleanKey === 'state code' ||
+        cleanKey === 'statecode' ||
+        cleanKey === 'child uid' ||
+        cleanKey === 'child unique id' ||
+        cleanKey === 'childuid' ||
+        cleanKey === 'child id' ||
+        cleanKey === 'aadhaaruid' ||
+        cleanKey === 'aadhaar uid' ||
+        cleanKey === 'aadhar uid' ||
+        cleanKey === 'aadharuid' ||
+        cleanKey === 'udise' ||
+        cleanKey === 'udise code' ||
+        cleanKey === 'student udise' ||
+        cleanKey.includes('ડાયસ') ||
+        cleanKey.includes('સ્ટેટ કોડ') ||
+        cleanKey.includes('યુઆઈડી') ||
+        cleanKey.includes('ચાઈલ્ડ')
       ) {
         rawDise = row[key];
       }
@@ -1361,10 +1409,25 @@ export async function parseStudentsExcelFile(
       }
     }
 
+    if (!rawDise) {
+      for (const k of Object.keys(row)) {
+        const val = row[k];
+        if (val !== undefined && val !== null && val !== '') {
+          const norm = normalizeDiseCode(val);
+          if (/^\d{18,22}$/.test(norm)) {
+            rawDise = norm;
+            break;
+          }
+        }
+      }
+    }
+
     const trimmedName = rawName !== undefined ? String(rawName).trim() : '';
     const normalizedStd = normalizeStandard(rawStd);
     const grNumber = rawGr !== undefined && String(rawGr).trim() !== '' ? String(rawGr).trim() : undefined;
-    const diseCode = rawDise !== undefined && String(rawDise).trim() !== '' ? String(rawDise).trim() : schoolDiseCode?.trim();
+    const normalizedRawDise = rawDise !== undefined && String(rawDise).trim() !== '' ? normalizeDiseCode(rawDise) : undefined;
+    const diseCode = normalizedRawDise || schoolDiseCode?.trim();
+    const studentStateCode = normalizedRawDise && normalizedRawDise.replace(/\D/g, '').length >= 18 ? normalizedRawDise : undefined;
     const section = rawSec !== undefined && String(rawSec).trim() !== '' ? String(rawSec).trim() : undefined;
     const dob = normalizeDate(rawDob);
     const doa = normalizeDate(rawDoa);
@@ -1448,6 +1511,7 @@ export async function parseStudentsExcelFile(
             name: trimmedName,
             standard: normalizedStd || String(rawStd || ''),
             diseCode,
+            studentStateCode,
             grNumber,
             section,
             dob,
@@ -1472,6 +1536,7 @@ export async function parseStudentsExcelFile(
       name: trimmedName,
       standard: normalizedStd || String(rawStd || ''),
       diseCode,
+      studentStateCode,
       grNumber,
       section,
       dob,
@@ -2003,8 +2068,12 @@ export async function parseDualFiles(
         '';
     }
     if (!rawStateCode) {
-      // Search row for any 18-digit code
-      const found = row.find((c) => typeof c === 'string' && /^\d{18}$/.test(c.trim()));
+      // Search row for any 18-22 digit code (handles numbers, scientific notation, and strings)
+      const found = row.find((c) => {
+        if (c === undefined || c === null || c === '') return false;
+        const norm = normalizeDiseCode(c);
+        return /^\d{18,22}$/.test(norm);
+      });
       if (found) rawStateCode = String(found);
     }
     const stateCode = normalizeDiseCode(rawStateCode);

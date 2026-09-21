@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
 @theme {
   /* Uploaded Palette (5 Swatches):
      1. #202d38 - Deep Petrol Slate
@@ -288,89 +290,265 @@ html.light textarea::placeholder,
   color: #7b7163 !important;
 }
 
-/* Text overrides in Light Mode */
-html.light .text-\[\#e4ded6\],
-[data-theme="light"] .text-\[\#e4ded6\] {
-  color: #141d24 !important;
-}
+/* =========================================================================
+   GLOBAL TEXT CONTRAST OVERRIDES IN LIGHT MODE
+   Prevents invisible white/light text on light backgrounds
+   ========================================================================= */
 
-/* Terracotta crisp accent replacement in Light Mode instead of pale peach */
-html.light .text-\[\#f59c73\],
-[data-theme="light"] .text-\[\#f59c73\] {
-  color: #9d512d !important;
-}
-
-html.light .text-\[\#a99f91\],
-[data-theme="light"] .text-\[\#a99f91\] {
-  color: #5c5243 !important;
-}
-
+/* All light/white text becomes crisp dark text on light backgrounds */
+html.light .text-white,
+html.light .text-slate-50,
 html.light .text-slate-100,
 html.light .text-slate-200,
+html.light .text-gray-50,
+html.light .text-gray-100,
+html.light .text-gray-200,
+html.light .text-zinc-50,
+html.light .text-zinc-100,
+html.light .text-zinc-200,
+html.light .text-\[\#e4ded6\],
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-slate-50,
 [data-theme="light"] .text-slate-100,
-[data-theme="light"] .text-slate-200 {
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-gray-50,
+[data-theme="light"] .text-gray-100,
+[data-theme="light"] .text-gray-200,
+[data-theme="light"] .text-zinc-50,
+[data-theme="light"] .text-zinc-100,
+[data-theme="light"] .text-zinc-200,
+[data-theme="light"] .text-\[\#e4ded6\],
+.theme-light .text-white,
+.theme-light .text-slate-50,
+.theme-light .text-slate-100,
+.theme-light .text-slate-200,
+.theme-light .text-gray-50,
+.theme-light .text-gray-100,
+.theme-light .text-gray-200,
+.theme-light .text-zinc-50,
+.theme-light .text-zinc-100,
+.theme-light .text-zinc-200,
+.theme-light .text-\[\#e4ded6\] {
   color: #141d24 !important;
 }
 
+/* Muted / secondary text in light mode */
 html.light .text-slate-300,
-[data-theme="light"] .text-slate-300 {
-  color: #3d352b !important;
+html.light .text-gray-300,
+html.light .text-zinc-300,
+[data-theme="light"] .text-slate-300,
+[data-theme="light"] .text-gray-300,
+[data-theme="light"] .text-zinc-300,
+.theme-light .text-slate-300,
+.theme-light .text-gray-300,
+.theme-light .text-zinc-300 {
+  color: #2e3b48 !important;
 }
 
 html.light .text-slate-400,
-[data-theme="light"] .text-slate-400 {
-  color: #5c5243 !important;
+html.light .text-gray-400,
+html.light .text-zinc-400,
+[data-theme="light"] .text-slate-400,
+[data-theme="light"] .text-gray-400,
+[data-theme="light"] .text-zinc-400,
+.theme-light .text-slate-400,
+.theme-light .text-gray-400,
+.theme-light .text-zinc-400 {
+  color: #4b5563 !important;
 }
 
 html.light .text-slate-500,
-[data-theme="light"] .text-slate-500 {
-  color: #706555 !important;
+html.light .text-gray-500,
+[data-theme="light"] .text-slate-500,
+[data-theme="light"] .text-gray-500,
+.theme-light .text-slate-500,
+.theme-light .text-gray-500 {
+  color: #64748b !important;
+}
+
+html.light .text-\[\#a99f91\],
+[data-theme="light"] .text-\[\#a99f91\],
+.theme-light .text-\[\#a99f91\] {
+  color: #5c5243 !important;
+}
+
+/* Crisp terracotta accent in light mode instead of washed-out peach */
+html.light .text-\[\#f59c73\],
+[data-theme="light"] .text-\[\#f59c73\],
+.theme-light .text-\[\#f59c73\] {
+  color: #9d512d !important;
+}
+
+/* Pastels made rich & high-contrast in light mode */
+html.light .text-cyan-200,
+html.light .text-cyan-300,
+html.light .text-cyan-400,
+[data-theme="light"] .text-cyan-200,
+[data-theme="light"] .text-cyan-300,
+[data-theme="light"] .text-cyan-400,
+.theme-light .text-cyan-200,
+.theme-light .text-cyan-300,
+.theme-light .text-cyan-400 {
+  color: #0284c7 !important;
+}
+
+html.light .text-sky-200,
+html.light .text-sky-300,
+html.light .text-sky-400,
+[data-theme="light"] .text-sky-200,
+[data-theme="light"] .text-sky-300,
+[data-theme="light"] .text-sky-400,
+.theme-light .text-sky-200,
+.theme-light .text-sky-300,
+.theme-light .text-sky-400 {
+  color: #0369a1 !important;
+}
+
+html.light .text-amber-200,
+html.light .text-amber-300,
+html.light .text-amber-400,
+html.light .text-yellow-300,
+html.light .text-yellow-400,
+[data-theme="light"] .text-amber-200,
+[data-theme="light"] .text-amber-300,
+[data-theme="light"] .text-amber-400,
+[data-theme="light"] .text-yellow-300,
+[data-theme="light"] .text-yellow-400,
+.theme-light .text-amber-200,
+.theme-light .text-amber-300,
+.theme-light .text-amber-400,
+.theme-light .text-yellow-300,
+.theme-light .text-yellow-400 {
+  color: #b45309 !important;
+}
+
+html.light .text-emerald-300,
+html.light .text-emerald-400,
+html.light .text-teal-300,
+html.light .text-teal-400,
+html.light .text-green-300,
+html.light .text-green-400,
+[data-theme="light"] .text-emerald-300,
+[data-theme="light"] .text-emerald-400,
+[data-theme="light"] .text-teal-300,
+[data-theme="light"] .text-teal-400,
+[data-theme="light"] .text-green-300,
+[data-theme="light"] .text-green-400,
+.theme-light .text-emerald-300,
+.theme-light .text-emerald-400,
+.theme-light .text-teal-300,
+.theme-light .text-teal-400,
+.theme-light .text-green-300,
+.theme-light .text-green-400 {
+  color: #047857 !important;
+}
+
+html.light .text-rose-300,
+html.light .text-rose-400,
+html.light .text-red-300,
+html.light .text-red-400,
+[data-theme="light"] .text-rose-300,
+[data-theme="light"] .text-rose-400,
+[data-theme="light"] .text-red-300,
+[data-theme="light"] .text-red-400,
+.theme-light .text-rose-300,
+.theme-light .text-rose-400,
+.theme-light .text-red-300,
+.theme-light .text-red-400 {
+  color: #be123c !important;
+}
+
+html.light .text-indigo-300,
+html.light .text-indigo-400,
+html.light .text-purple-300,
+html.light .text-purple-400,
+[data-theme="light"] .text-indigo-300,
+[data-theme="light"] .text-indigo-400,
+[data-theme="light"] .text-purple-300,
+[data-theme="light"] .text-purple-400,
+.theme-light .text-indigo-300,
+.theme-light .text-indigo-400,
+.theme-light .text-purple-300,
+.theme-light .text-purple-400 {
+  color: #4338ca !important;
 }
 
 /* Ensure background containers in light mode adapt */
 html.light .bg-slate-950,
 html.light .bg-slate-900,
+html.light .bg-slate-850,
 html.light .bg-\[\#080b0f\],
 html.light .bg-\[\#090c10\],
+html.light .bg-\[\#0c1219\],
 html.light .bg-\[\#121921\],
+html.light .bg-\[\#16202c\],
+html.light .bg-\[\#1a232f\],
+html.light .bg-\[\#1f2937\],
 [data-theme="light"] .bg-slate-950,
 [data-theme="light"] .bg-slate-900,
+[data-theme="light"] .bg-slate-850,
 [data-theme="light"] .bg-\[\#080b0f\],
 [data-theme="light"] .bg-\[\#090c10\],
-[data-theme="light"] .bg-\[\#121921\] {
-  background-color: #f7f5f0 !important;
+[data-theme="light"] .bg-\[\#0c1219\],
+[data-theme="light"] .bg-\[\#121921\],
+[data-theme="light"] .bg-\[\#16202c\],
+[data-theme="light"] .bg-\[\#1a232f\],
+[data-theme="light"] .bg-\[\#1f2937\],
+.theme-light .bg-slate-950,
+.theme-light .bg-slate-900,
+.theme-light .bg-slate-850,
+.theme-light .bg-\[\#080b0f\],
+.theme-light .bg-\[\#090c10\],
+.theme-light .bg-\[\#0c1219\],
+.theme-light .bg-\[\#121921\],
+.theme-light .bg-\[\#16202c\],
+.theme-light .bg-\[\#1a232f\],
+.theme-light .bg-\[\#1f2937\] {
+  background-color: #ffffff !important;
+  color: #141d24 !important;
 }
 
 html.light .bg-slate-800,
 html.light .bg-\[\#202d38\],
 [data-theme="light"] .bg-slate-800,
-[data-theme="light"] .bg-\[\#202d38\] {
+[data-theme="light"] .bg-\[\#202d38\],
+.theme-light .bg-slate-800,
+.theme-light .bg-\[\#202d38\] {
   background-color: #ede7df !important;
+  color: #141d24 !important;
 }
 
 /* Semi-transparent tint adapters in light mode */
-html.light .bg-white\/5,
-[data-theme="light"] .bg-white\/5 {
+html.light [class*="bg-white\/"],
+[data-theme="light"] [class*="bg-white\/"],
+.theme-light [class*="bg-white\/"] {
   background-color: rgba(32, 45, 56, 0.05) !important;
 }
 
-html.light .bg-white\/10,
-[data-theme="light"] .bg-white\/10 {
-  background-color: rgba(32, 45, 56, 0.09) !important;
+html.light [class*="bg-slate-900\/"]:not(.fixed):not(.absolute),
+html.light [class*="bg-slate-950\/"]:not(.fixed):not(.absolute),
+html.light [class*="bg-slate-800\/"]:not(.fixed):not(.absolute),
+html.light [class*="bg-black\/"]:not(.fixed):not(.absolute),
+[data-theme="light"] [class*="bg-slate-900\/"]:not(.fixed):not(.absolute),
+[data-theme="light"] [class*="bg-slate-950\/"]:not(.fixed):not(.absolute),
+[data-theme="light"] [class*="bg-slate-800\/"]:not(.fixed):not(.absolute),
+[data-theme="light"] [class*="bg-black\/"]:not(.fixed):not(.absolute),
+.theme-light [class*="bg-slate-900\/"]:not(.fixed):not(.absolute),
+.theme-light [class*="bg-slate-950\/"]:not(.fixed):not(.absolute),
+.theme-light [class*="bg-slate-800\/"]:not(.fixed):not(.absolute),
+.theme-light [class*="bg-black\/"]:not(.fixed):not(.absolute) {
+  background-color: rgba(32, 45, 56, 0.05) !important;
 }
 
-html.light .border-white\/5,
-html.light .border-white\/10,
-html.light .border-white\/15,
-html.light .border-white\/20,
+html.light [class*="border-white\/"],
 html.light .border-slate-800,
 html.light .border-slate-700,
-[data-theme="light"] .border-white\/5,
-[data-theme="light"] .border-white\/10,
-[data-theme="light"] .border-white\/15,
-[data-theme="light"] .border-white\/20,
+[data-theme="light"] [class*="border-white\/"],
 [data-theme="light"] .border-slate-800,
-[data-theme="light"] .border-slate-700 {
+[data-theme="light"] .border-slate-700,
+.theme-light [class*="border-white\/"],
+.theme-light .border-slate-800,
+.theme-light .border-slate-700 {
   border-color: rgba(169, 159, 145, 0.35) !important;
 }
 
@@ -379,26 +557,84 @@ html.light .btn-terracotta,
 html.light .btn-terracotta *,
 html.light .bg-\[\#9d512d\],
 html.light .bg-\[\#9d512d\] *,
+html.light .bg-\[\#b55f37\],
+html.light .bg-\[\#b55f37\] *,
 html.light [class*="bg-emerald-600"],
 html.light [class*="bg-emerald-600"] *,
+html.light [class*="bg-emerald-700"],
+html.light [class*="bg-emerald-700"] *,
 html.light [class*="bg-blue-600"],
 html.light [class*="bg-blue-600"] *,
+html.light [class*="bg-blue-700"],
+html.light [class*="bg-blue-700"] *,
 html.light [class*="bg-rose-600"],
 html.light [class*="bg-rose-600"] *,
+html.light [class*="bg-rose-700"],
+html.light [class*="bg-rose-700"] *,
 html.light [class*="bg-red-600"],
 html.light [class*="bg-red-600"] *,
+html.light [class*="bg-red-700"],
+html.light [class*="bg-red-700"] *,
+html.light [class*="bg-amber-600"],
+html.light [class*="bg-amber-600"] *,
+html.light [class*="bg-amber-700"],
+html.light [class*="bg-amber-700"] *,
+html.light [class*="bg-indigo-600"],
+html.light [class*="bg-indigo-600"] *,
+html.light [class*="bg-purple-600"],
+html.light [class*="bg-purple-600"] *,
+html.light button[type="submit"],
+html.light button[type="submit"] *,
 [data-theme="light"] .btn-terracotta,
 [data-theme="light"] .btn-terracotta *,
 [data-theme="light"] .bg-\[\#9d512d\],
 [data-theme="light"] .bg-\[\#9d512d\] *,
+[data-theme="light"] .bg-\[\#b55f37\],
+[data-theme="light"] .bg-\[\#b55f37\] *,
 [data-theme="light"] [class*="bg-emerald-600"],
 [data-theme="light"] [class*="bg-emerald-600"] *,
+[data-theme="light"] [class*="bg-emerald-700"],
+[data-theme="light"] [class*="bg-emerald-700"] *,
 [data-theme="light"] [class*="bg-blue-600"],
 [data-theme="light"] [class*="bg-blue-600"] *,
+[data-theme="light"] [class*="bg-blue-700"],
+[data-theme="light"] [class*="bg-blue-700"] *,
 [data-theme="light"] [class*="bg-rose-600"],
 [data-theme="light"] [class*="bg-rose-600"] *,
+[data-theme="light"] [class*="bg-rose-700"],
+[data-theme="light"] [class*="bg-rose-700"] *,
 [data-theme="light"] [class*="bg-red-600"],
-[data-theme="light"] [class*="bg-red-600"] * {
+[data-theme="light"] [class*="bg-red-600"] *,
+[data-theme="light"] [class*="bg-red-700"],
+[data-theme="light"] [class*="bg-red-700"] *,
+[data-theme="light"] [class*="bg-amber-600"],
+[data-theme="light"] [class*="bg-amber-600"] *,
+[data-theme="light"] [class*="bg-amber-700"],
+[data-theme="light"] [class*="bg-amber-700"] *,
+[data-theme="light"] [class*="bg-indigo-600"],
+[data-theme="light"] [class*="bg-indigo-600"] *,
+[data-theme="light"] [class*="bg-purple-600"],
+[data-theme="light"] [class*="bg-purple-600"] *,
+[data-theme="light"] button[type="submit"],
+[data-theme="light"] button[type="submit"] *,
+.theme-light .btn-terracotta,
+.theme-light .btn-terracotta *,
+.theme-light .bg-\[\#9d512d\],
+.theme-light .bg-\[\#9d512d\] *,
+.theme-light [class*="bg-emerald-600"],
+.theme-light [class*="bg-emerald-600"] *,
+.theme-light [class*="bg-blue-600"],
+.theme-light [class*="bg-blue-600"] *,
+.theme-light [class*="bg-rose-600"],
+.theme-light [class*="bg-rose-600"] *,
+.theme-light [class*="bg-red-600"],
+.theme-light [class*="bg-red-600"] *,
+.theme-light [class*="bg-amber-600"],
+.theme-light [class*="bg-amber-600"] *,
+.theme-light [class*="bg-indigo-600"],
+.theme-light [class*="bg-indigo-600"] *,
+.theme-light button[type="submit"],
+.theme-light button[type="submit"] * {
   color: #ffffff !important;
 }
 

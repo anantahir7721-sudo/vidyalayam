@@ -61,6 +61,71 @@ function getSchoolNameInlineStyle(name: string): string {
 }
 
 /**
+ * Resolves the student's unique DISE code / Child UID (typically 18-21 digits in Gujarat),
+ * inspecting across all possible fields (diseCode, studentStateCode, studentId, aadhaarNo).
+ */
+export function getStudentDiseCode(student: Partial<Student>): string {
+  if (!student) return '-';
+
+  // Priority 1: Check if any candidate has 18 or more digits (like 21-digit Gujarat Child UID)
+  const candidateList = [
+    student.studentStateCode,
+    student.diseCode,
+    student.studentId,
+    (student as any).childUid,
+    (student as any).studentDiseCode,
+    (student as any).studentDise,
+    student.aadhaarNo,
+  ];
+
+  for (const item of candidateList) {
+    if (item && typeof item === 'string') {
+      const clean = item.trim().replace(/^['"`\s]+|['"`\s]+$/g, '');
+      const digitsOnly = clean.replace(/\D/g, '');
+      if (digitsOnly.length >= 18) {
+        return clean;
+      }
+    }
+  }
+
+  // Priority 2: studentStateCode if non-empty
+  if (student.studentStateCode && student.studentStateCode.trim()) {
+    return student.studentStateCode.trim().replace(/^['"`\s]+|['"`\s]+$/g, '');
+  }
+
+  // Priority 3: diseCode if non-empty
+  if (student.diseCode && student.diseCode.trim()) {
+    return student.diseCode.trim().replace(/^['"`\s]+|['"`\s]+$/g, '');
+  }
+
+  // Priority 4: studentId if non-empty
+  if (student.studentId && student.studentId.trim()) {
+    return student.studentId.trim().replace(/^['"`\s]+|['"`\s]+$/g, '');
+  }
+
+  return '-';
+}
+
+/**
+ * Returns dynamic typography styles for the student's DISE / State Code.
+ * Ensures that 21-digit codes fit entirely on a single crisp line without
+ * any truncation, ellipsis, or line breaking.
+ */
+export function getStudentDiseInlineStyle(code: string): string {
+  const clean = (code || '').trim();
+  const len = clean.length;
+  if (len >= 20) {
+    return 'font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 7.0px; font-weight: 800; color: #0369a1; letter-spacing: -0.35px; white-space: nowrap; overflow: visible; display: inline-block;';
+  } else if (len >= 16) {
+    return 'font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 7.6px; font-weight: 800; color: #0369a1; letter-spacing: -0.2px; white-space: nowrap; overflow: visible; display: inline-block;';
+  } else if (len >= 12) {
+    return 'font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 8.2px; font-weight: 800; color: #0369a1; letter-spacing: -0.1px; white-space: nowrap; overflow: visible; display: inline-block;';
+  } else {
+    return 'font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 8.8px; font-weight: 800; color: #0369a1; letter-spacing: 0.1px; white-space: nowrap; overflow: visible; display: inline-block;';
+  }
+}
+
+/**
  * Generates and triggers high-resolution, print-ready PDF printing of Student ID Cards.
  * Formats multiple cards per A4 page with crisp borders, accurate margins,
  * properly embedded Anek Gujarati font, and professional school badge aesthetics.
@@ -88,11 +153,7 @@ export function printStudentIdCards(school: School, students: Student[]) {
       const dobDisplay = st.dob || '-';
       const doaDisplay = st.doa || '-';
       const bloodDisplay = st.bloodGroup || '-';
-      const studentDise =
-        (st.diseCode && st.diseCode.trim()) ||
-        (st.studentStateCode && st.studentStateCode.trim()) ||
-        (st.studentId && st.studentId.trim()) ||
-        '-';
+      const studentDise = getStudentDiseCode(st);
       const parentName =
         st.fatherName && st.fatherName.trim()
           ? st.fatherName.trim()
@@ -161,7 +222,7 @@ export function printStudentIdCards(school: School, students: Student[]) {
                   </tr>
                   <tr>
                     <td class="lbl">વિદ્યાર્થી DISE:</td>
-                    <td class="val mono-dise" colspan="3" style="font-family: monospace; font-weight: 800; color: #0369a1; letter-spacing: 0.2px;">${studentDise}</td>
+                    <td class="val mono-dise" colspan="3" style="${getStudentDiseInlineStyle(studentDise)}">${studentDise}</td>
                   </tr>
                   <tr>
                     <td class="lbl">જન્મ:</td>
@@ -510,6 +571,15 @@ export function printStudentIdCards(school: School, students: Student[]) {
           color: #9d512d;
           font-size: 9.5px;
           font-weight: 800;
+        }
+
+        .details-table .val.mono-dise {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
+          font-weight: 800 !important;
+          color: #0369a1 !important;
+          white-space: nowrap !important;
+          overflow: visible !important;
+          text-overflow: clip !important;
         }
 
         .details-table .val-dob {

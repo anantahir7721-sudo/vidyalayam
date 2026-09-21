@@ -307,24 +307,24 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
   return (
     <div className="space-y-6">
       {/* Top action header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/80 border border-white/10 backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 backdrop-blur-md shadow-md">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-white tracking-wide">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-wide">
               {isCloneAsNew
                 ? '📋 નવી પરીક્ષા એન્ટ્રી (New Exam Entry Mode)'
                 : existingExam
                 ? '✏️ પરીક્ષા સંપાદન (Edit Online Exam)'
                 : '📝 નવી ઓનલાઇન પરીક્ષા બનાવો (Create Exam)'}
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {isCloneAsNew
                 ? 'અગાઉની પરીક્ષાનું પરિણામ સુરક્ષિત રહેશે — નવી એન્ટ્રી તરીકે સંગ્રહ થશે'
                 : 'MCQ પ્રશ્નો, સમયપત્રક અને પરિણામ નિયમો ગોઠવો'}
@@ -336,9 +336,9 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
           <button
             type="button"
             onClick={() => setShowPreviewModal(true)}
-            className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold flex items-center gap-1.5 transition-all"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-800 dark:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            <Eye className="w-4 h-4 text-amber-400" />
+            <Eye className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             પૂર્વાવલોકન (Preview)
           </button>
 
@@ -346,7 +346,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
             type="button"
             onClick={() => validateAndSubmit('draft')}
             disabled={isSaving}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             ડ્રાફ્ટ સાચવો (Draft)
@@ -356,7 +356,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
             type="button"
             onClick={() => validateAndSubmit()}
             disabled={isSaving}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold shadow-lg shadow-emerald-950/50 hover:brightness-110 flex items-center gap-2 transition-all disabled:opacity-50"
+            className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold shadow-lg shadow-emerald-950/20 hover:brightness-110 flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
             {isSaving
@@ -370,11 +370,11 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
 
       {/* Notice for New Entry Mode */}
       {isCloneAsNew && (
-        <div className="p-4 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 text-cyan-200 text-xs flex items-start gap-3 shadow-lg">
-          <Copy className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+        <div className="p-4 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-300 dark:border-cyan-500/40 text-cyan-900 dark:text-cyan-200 text-xs flex items-start gap-3 shadow-sm">
+          <Copy className="w-5 h-5 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <div className="font-bold text-white text-sm">૧ પરીક્ષા = ૧ જ પરિણામ (સુરક્ષિત આર્કાઇવ)</div>
-            <p className="leading-relaxed text-cyan-300">
+            <div className="font-bold text-slate-900 dark:text-white text-sm">૧ પરીક્ષા = ૧ જ પરિણામ (સુરક્ષિત આર્કાઇવ)</div>
+            <p className="leading-relaxed text-cyan-800 dark:text-cyan-300">
               અગાઉ પૂર્ણ થયેલી પરીક્ષા અને તેના તમામ વિદ્યાર્થીઓના ગુણ તેમજ પરિણામો ૧૦૦% સુરક્ષિત રાખવામાં આવ્યા છે. આ પરીક્ષા <strong>સંપૂર્ણપણે નવી એન્ટ્રી તરીકે</strong> સાચવવામાં આવશે જેથી ભવિષ્યમાં પરિણામો ઓવરરાઈટ (ગૂંચવાડો) ન થાય.
             </p>
           </div>
@@ -382,7 +382,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
       )}
 
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-3">
+        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-3">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <span>{error}</span>
         </div>
@@ -393,28 +393,28 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
         {/* Left Column: Exam Details & Schedule (4 cols) */}
         <div className="lg:col-span-4 space-y-5">
           {/* Card 1: Exam Type & Basic Info */}
-          <div className="p-5 rounded-2xl bg-[#121921] border border-white/10 space-y-4">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <Settings className="w-4 h-4 text-emerald-400" />
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <Settings className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               પરીક્ષા પ્રકાર અને વિગતો
             </h3>
 
             {/* Exam Type Segmented Switch */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 પરીક્ષા પ્રકાર (Exam Type):
               </label>
-              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-900 border border-white/10">
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => {
                     setExamType('school_exam');
                     setSubject('Computer');
                   }}
-                  className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     examType === 'school_exam'
                       ? 'bg-emerald-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   🏫 શાળા સ્તર (School Exam)
@@ -425,10 +425,10 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                     setExamType('extra_exam');
                     setSubject('GK (સામાન્ય જ્ઞાન)');
                   }}
-                  className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     examType === 'extra_exam'
                       ? 'bg-amber-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   🎯 એક્સ્ટ્રા / ક્વિઝ (Extra)
@@ -443,13 +443,13 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
 
             {/* Standard */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 ધોરણ (Standard):
               </label>
               <select
                 value={standard}
                 onChange={(e) => setStandard(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-emerald-500"
               >
                 <option value="9">ધોરણ 9</option>
                 <option value="10">ધોરણ 10</option>
@@ -461,13 +461,13 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
 
             {/* Subject */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 વિષય (Subject):
               </label>
               <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-emerald-500 mb-2"
+                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-emerald-500 mb-2"
               >
                 {(examType === 'school_exam' ? schoolExamSubjects : extraExamSubjects).map(
                   (s) => (
@@ -483,14 +483,14 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                   value={customSubject}
                   onChange={(e) => setCustomSubject(e.target.value)}
                   placeholder="કસ્ટમ વિષયનું નામ લખો..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
                 />
               )}
             </div>
 
             {/* Title */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 પરીક્ષાનું નામ (Exam Name):
               </label>
               <input
@@ -498,42 +498,42 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="દા.ત. ધોરણ ૯ કમ્પ્યુટર પ્રથમ સત્ર કસોટી"
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             {/* Instructions */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 પરીક્ષા સૂચનાઓ (Instructions):
               </label>
               <textarea
                 rows={3}
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
 
           {/* Card 2: Schedule & Timing */}
-          <div className="p-5 rounded-2xl bg-[#121921] border border-white/10 space-y-4">
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                <Clock className="w-4 h-4 text-teal-400" />
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                 સમયપત્રક અને અવધિ (Timing & Schedule)
               </h3>
             </div>
 
             {/* Live Conflict Alert Banner */}
             {activeConflict && (
-              <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs flex items-start gap-2.5 animate-pulse">
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-500/15 border border-rose-300 dark:border-rose-500/40 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5 animate-pulse">
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-bold text-rose-300">
+                  <div className="font-bold text-rose-900 dark:text-rose-300">
                     ⚠️ સમય સંઘર્ષ (Time Conflict Detected)
                   </div>
-                  <div className="text-[11px] text-rose-200/90 mt-0.5">
+                  <div className="text-[11px] text-rose-800 dark:text-rose-200/90 mt-0.5">
                     આ સમયે (તારીખ: {activeConflict.scheduledDate}, સમય: {activeConflict.scheduledStartTime}) પહેલેથી જ ધોરણ {activeConflict.standard} માટે <strong>'{activeConflict.title}'</strong> પરીક્ષા સેટ થયેલ છે. શાળા દ્વારા એક જ સમયે બે પરીક્ષાઓ રાખી શકાતી નથી.
                   </div>
                 </div>
@@ -542,29 +542,29 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
 
             {/* Date */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-teal-400" />
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                 પરીક્ષા તારીખ (Date):
               </label>
               <input
                 type="date"
                 value={scheduledDate}
                 onChange={(e) => setScheduledDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-teal-500"
+                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-teal-500"
               />
             </div>
 
             {/* Start Time */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-teal-400" />
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                 શરૂ થવાનો ચોક્કસ સમય (Exact Start Time):
               </label>
               <input
                 type="time"
                 value={scheduledStartTime}
                 onChange={(e) => setScheduledStartTime(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-teal-500"
+                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-teal-500"
               />
               <p className="text-[11px] text-slate-500 mt-1">
                 આ સમય પહેલાં વિદ્યાર્થીઓને લાઈવ કાઉન્ટડાઉન દેખાશે, અને સમય થતાં જ પરીક્ષા આપમેળે શરૂ થશે.
@@ -573,7 +573,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
 
             {/* Duration */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 સમયગાળો મિનિટમાં (Duration):
               </label>
               <div className="flex items-center gap-2">
@@ -584,22 +584,22 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                   step={5}
                   value={durationMinutes}
                   onChange={(e) => setDurationMinutes(parseInt(e.target.value) || 30)}
-                  className="w-24 px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold text-center focus:outline-none focus:border-teal-500"
+                  className="w-24 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-bold text-center focus:outline-none focus:border-teal-500"
                 />
-                <span className="text-xs text-slate-400">મિનિટ ({durationMinutes} Min)</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">મિનિટ ({durationMinutes} Min)</span>
               </div>
             </div>
 
             {/* Status & Result Visibility */}
-            <div className="pt-2 border-t border-white/10 space-y-3">
+            <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   પરીક્ષા સ્થિતિ (Status):
                 </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-teal-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-teal-500 cursor-pointer"
                 >
                   <option value="scheduled">શેડ્યૂલ કરેલ (Scheduled)</option>
                   <option value="live">લાઈવ (Live Now)</option>
@@ -610,13 +610,13 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   પરિણામ પ્રદર્શન (Result Visibility):
                 </label>
                 <select
                   value={resultVisibility}
                   onChange={(e) => setResultVisibility(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-teal-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-teal-500 cursor-pointer"
                 >
                   <option value="immediate">તરત જ દર્શાવો (Show Immediately on Submit)</option>
                   <option value="later">શાળા જાહેર કરે ત્યારે (Publish Later)</option>
@@ -629,9 +629,9 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                   id="randQ"
                   checked={randomizeQuestions}
                   onChange={(e) => setRandomizeQuestions(e.target.checked)}
-                  className="w-4 h-4 rounded text-teal-600 bg-slate-900 border-white/10"
+                  className="w-4 h-4 rounded text-teal-600 bg-white dark:bg-slate-900 border-slate-300 dark:border-white/10 cursor-pointer"
                 />
-                <label htmlFor="randQ" className="text-xs text-slate-300 cursor-pointer">
+                <label htmlFor="randQ" className="text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
                   દરેક વિદ્યાર્થી માટે પ્રશ્નોનો ક્રમ બદલો (Randomize Questions)
                 </label>
               </div>
@@ -642,14 +642,14 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
         {/* Right Column: Questions Builder (8 cols) */}
         <div className="lg:col-span-8 space-y-4">
           {/* Action Ribbon: Total Marks, Add Question, AI Import, Question Bank */}
-          <div className="p-4 rounded-2xl bg-[#121921] border border-white/10 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+          <div className="p-4 rounded-2xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 shadow-sm">
             <div className="flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold text-sm flex items-center justify-center border border-emerald-500/30">
+              <span className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold text-sm flex items-center justify-center border border-emerald-300 dark:border-emerald-500/30">
                 {questions.length}
               </span>
               <div>
-                <div className="text-xs font-bold text-white">કુલ પ્રશ્નો: {questions.length}</div>
-                <div className="text-[11px] text-slate-400">કુલ ગુણ: <strong className="text-emerald-400 font-bold">{totalMarks}</strong></div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">કુલ પ્રશ્નો: {questions.length}</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">કુલ ગુણ: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{totalMarks}</strong></div>
               </div>
             </div>
 
@@ -657,16 +657,16 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
               <button
                 type="button"
                 onClick={() => setShowAiModal(true)}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-600/20 hover:from-amber-500/30 hover:to-orange-600/30 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-gradient-to-r dark:from-amber-500/20 dark:to-orange-600/20 dark:hover:from-amber-500/30 dark:hover:to-orange-600/30 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 animate-pulse" />
                 🤖 AI પ્રશ્ન આયાત (AI Import)
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowQuestionBankModal(true)}
-                className="px-3 py-2 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                className="px-3 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-500/20 dark:hover:bg-teal-500/30 border border-teal-300 dark:border-teal-500/40 text-teal-800 dark:text-teal-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 પ્રશ્ન બેંક (Question Bank)
@@ -675,7 +675,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
               <button
                 type="button"
                 onClick={handleAddQuestion}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow"
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 પ્રશ્ન ઉમેરો
@@ -689,20 +689,20 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
               return (
                 <div
                   key={q.id || idx}
-                  className="p-5 rounded-2xl bg-[#121921] border border-white/10 shadow-md transition-all hover:border-white/20"
+                  className="p-5 rounded-2xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm transition-all hover:border-slate-300 dark:hover:border-white/20"
                 >
                   {/* Top Bar of question card */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-white/10">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-200 dark:border-white/10">
                     <div className="flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center justify-center">
+                      <span className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 font-bold text-xs flex items-center justify-center">
                         {idx + 1}
                       </span>
-                      <span className="text-xs font-bold text-white">પ્રશ્ન {idx + 1}</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">પ્રશ્ન {idx + 1}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       {/* Marks */}
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400 mr-2">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mr-2">
                         <span>ગુણ:</span>
                         <input
                           type="number"
@@ -712,7 +712,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                           onChange={(e) =>
                             handleUpdateQuestion(idx, 'marks', parseInt(e.target.value) || 1)
                           }
-                          className="w-12 px-2 py-1 bg-slate-900 rounded-lg border border-white/10 text-center font-bold text-white text-xs"
+                          className="w-12 px-2 py-1 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-white/10 text-center font-bold text-slate-900 dark:text-white text-xs"
                         />
                       </div>
 
@@ -721,7 +721,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                         type="button"
                         onClick={() => handleMoveQuestion(idx, 'up')}
                         disabled={idx === 0}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white disabled:opacity-30 cursor-pointer"
                         title="ઉપર ખસેડો"
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
@@ -730,7 +730,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                         type="button"
                         onClick={() => handleMoveQuestion(idx, 'down')}
                         disabled={idx === questions.length - 1}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white disabled:opacity-30 cursor-pointer"
                         title="નીચે ખસેડો"
                       >
                         <ArrowDown className="w-3.5 h-3.5" />
@@ -740,7 +740,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                       <button
                         type="button"
                         onClick={() => handleDuplicateQuestion(idx)}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white cursor-pointer"
                         title="ડુપ્લિકેટ કરો"
                       >
                         <Copy className="w-3.5 h-3.5" />
@@ -750,7 +750,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                       <button
                         type="button"
                         onClick={() => handleDeleteQuestion(idx)}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400"
+                        className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-white/5 dark:hover:bg-rose-500/20 text-rose-600 hover:text-rose-700 dark:text-slate-400 dark:hover:text-rose-400 cursor-pointer"
                         title="કાઢી નાખો"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -760,7 +760,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
 
                   {/* Question Text */}
                   <div className="mb-3">
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
                       પ્રશ્ન લખાણ (Question):
                     </label>
                     <textarea
@@ -768,13 +768,13 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                       value={q.questionText}
                       onChange={(e) => handleUpdateQuestion(idx, 'questionText', e.target.value)}
                       placeholder="પ્રશ્નનું લખાણ લખો..."
-                      className="w-full p-3 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                      className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-emerald-500"
                     />
                   </div>
 
                   {/* Options A, B, C, D */}
                   <div className="space-y-2 mb-3">
-                    <label className="block text-[11px] font-semibold text-slate-400">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">
                       વિકલ્પો અને સાચો જવાબ પસંદ કરો (Options & Correct Answer):
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -787,17 +787,17 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                             key={opt}
                             className={`flex items-center gap-2 p-1.5 rounded-xl border transition-all ${
                               isCorrect
-                                ? 'bg-emerald-950/40 border-emerald-500/60 ring-1 ring-emerald-500/50'
-                                : 'bg-slate-900 border-white/10'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 dark:border-emerald-500/60 ring-1 ring-emerald-500/30'
+                                : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-white/10'
                             }`}
                           >
                             <button
                               type="button"
                               onClick={() => handleUpdateQuestion(idx, 'correctAnswer', opt)}
-                              className={`w-8 h-8 rounded-lg font-bold text-xs shrink-0 flex items-center justify-center transition-all ${
+                              className={`w-8 h-8 rounded-lg font-bold text-xs shrink-0 flex items-center justify-center transition-all cursor-pointer ${
                                 isCorrect
-                                  ? 'bg-emerald-500 text-slate-950 shadow-md font-extrabold'
-                                  : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                                  ? 'bg-emerald-600 text-white shadow-md font-extrabold'
+                                  : 'bg-slate-200 hover:bg-slate-300 dark:bg-white/10 text-slate-700 dark:text-slate-300 dark:hover:bg-white/20'
                               }`}
                               title={`વિકલ્પ (${opt}) ને સાચો જવાબ તરીકે પસંદ કરો`}
                             >
@@ -808,10 +808,10 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                               value={(q[optKey] as string) || ''}
                               onChange={(e) => handleUpdateQuestion(idx, optKey, e.target.value)}
                               placeholder={`વિકલ્પ (${opt})`}
-                              className="flex-1 bg-transparent border-none text-xs text-white focus:outline-none placeholder:text-slate-600"
+                              className="flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
                             />
                             {isCorrect && (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mr-1" />
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mr-1" />
                             )}
                           </div>
                         );
@@ -828,9 +828,9 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
             <button
               type="button"
               onClick={handleAddQuestion}
-              className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold inline-flex items-center gap-2 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-xs font-bold inline-flex items-center gap-2 transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4 text-emerald-400" />
+              <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               નવો પ્રશ્ન ઉમેરો (Add Question)
             </button>
           </div>
@@ -859,22 +859,22 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
 
       {/* Interactive Exam Preview Modal */}
       {showPreviewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-3xl bg-[#121921] border border-white/10 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col text-[#e4ded6]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/60 dark:bg-black/85 backdrop-blur-md">
+          <div className="relative w-full max-w-3xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-slate-800 dark:text-[#e4ded6] animate-fadeIn">
             {/* Header */}
-            <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-slate-900">
+            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-slate-900">
               <div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300">
                   વિદ્યાર્થી પૂર્વાવલોકન (Student Preview)
                 </span>
-                <h3 className="text-base font-bold text-white mt-1">{title || 'પરીક્ષાનું નામ'}</h3>
-                <p className="text-xs text-slate-400">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1">{title || 'પરીક્ષાનું નામ'}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   ધોરણ: {standard} • વિષય: {subject} • સમય: {durationMinutes} મિનિટ • કુલ ગુણ: {totalMarks}
                 </p>
               </div>
               <button
                 onClick={() => setShowPreviewModal(false)}
-                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -883,8 +883,8 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
             {/* Questions preview */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {questions.map((q, idx) => (
-                <div key={idx} className="p-4 rounded-xl bg-slate-900/60 border border-white/10">
-                  <div className="text-xs font-bold text-white mb-2">
+                <div key={idx} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white mb-2">
                     પ્રશ્ન {idx + 1}. {q.questionText || 'પ્રશ્ન લખાણ...'}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -893,8 +893,8 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                         key={opt}
                         className={`p-2 rounded-lg border ${
                           q.correctAnswer === opt
-                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 font-semibold'
-                            : 'bg-black/20 border-white/5 text-slate-300'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-semibold'
+                            : 'bg-white dark:bg-black/20 border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300'
                         }`}
                       >
                         <span className="font-bold mr-1.5">({opt})</span>
@@ -907,11 +907,11 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
             </div>
 
             {/* Preview Footer */}
-            <div className="p-4 border-t border-white/10 bg-slate-900 flex justify-between items-center">
+            <div className="shrink-0 p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 flex justify-between items-center">
               <button
                 type="button"
                 onClick={() => setShowPreviewModal(false)}
-                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-slate-300 text-xs font-semibold cursor-pointer"
               >
                 સંપાદન ચાલુ રાખો (Edit Exam)
               </button>
@@ -921,7 +921,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                   setShowPreviewModal(false);
                   validateAndSubmit();
                 }}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold shadow-lg flex items-center gap-2"
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold shadow-lg flex items-center gap-2 cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 પરીક્ષા પબ્લિશ કરો (Publish Exam)
