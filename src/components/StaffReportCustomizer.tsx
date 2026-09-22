@@ -76,6 +76,14 @@ const ALL_STAFF_COLUMNS: StaffColumnDef[] = [
     align: 'left',
   },
   {
+    id: 'section',
+    label: 'વિભાગ (Section)',
+    getValue: (st) => st.section || st.vibhag || 'માધ્યમિક',
+    defaultSelected: true,
+    minWidth: '75px',
+    align: 'center',
+  },
+  {
     id: 'teacherCode',
     label: 'શિક્ષક કોડ (Teacher Code)',
     getValue: (st) => st.teacherCode || '-',
@@ -231,6 +239,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
 
   // Filters
   const [filterDesignation, setFilterDesignation] = useState<string>('all');
+  const [filterSection, setFilterSection] = useState<string>('all');
   const [staffSearchQuery, setStaffSearchQuery] = useState<string>('');
   const [reportTitle, setReportTitle] = useState<string>('શાળા સ્ટાફ પત્રક (Staff Master Register)');
   const [paperOrientation, setPaperOrientation] = useState<'portrait' | 'landscape'>('auto');
@@ -244,7 +253,8 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
     return Array.from(set).sort();
   }, [staffList]);
 
-  // 1. Sort staff: Earliest joiners in this school first (as requested)
+  // 1. Sort staff: Earliest joiners in this school first.
+  // CRITICAL REQUIREMENT: If school joining date is identical, check DOB (older age / earlier birth date comes first!)
   const sortedStaff = useMemo(() => {
     const list = [...staffList];
     list.sort((a, b) => {
@@ -253,21 +263,32 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
       const timeA = parseDateForSort(dateA);
       const timeB = parseDateForSort(dateB);
       if (timeA !== timeB) return timeA - timeB;
-      // Tie-break by name
+
+      // Tie-breaker: Same joining date -> sort by DOB (Date of Birth).
+      // Older person has an earlier DOB (smaller epoch timestamp), so timeDobA - timeDobB places older staff first!
+      const timeDobA = parseDateForSort(a.dob);
+      const timeDobB = parseDateForSort(b.dob);
+      if (timeDobA !== timeDobB) return timeDobA - timeDobB;
+
+      // Fallback tie-break by Gujarati alphabetical name
       return (a.fullName || '').localeCompare(b.fullName || '', 'gu');
     });
     return list;
   }, [staffList]);
 
-  // 2. Filtered staff list by designation
+  // 2. Filtered staff list by designation and vibhag (section)
   const filteredStaff = useMemo(() => {
     return sortedStaff.filter((s) => {
       if (filterDesignation !== 'all' && s.designation !== filterDesignation) {
         return false;
       }
+      if (filterSection !== 'all') {
+        const staffSec = s.section || s.vibhag || 'માધ્યમિક';
+        if (staffSec !== filterSection) return false;
+      }
       return true;
     });
-  }, [sortedStaff, filterDesignation]);
+  }, [sortedStaff, filterDesignation, filterSection]);
 
   // 3. Search filtered staff list for the selector UI
   const displayStaffList = useMemo(() => {
@@ -279,6 +300,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
         (s.designation || '').toLowerCase().includes(q) ||
         (s.subject || '').toLowerCase().includes(q) ||
         (s.teacherCode || '').toLowerCase().includes(q) ||
+        (s.section || s.vibhag || '').toLowerCase().includes(q) ||
         (s.mobile || '').includes(q)
     );
   }, [filteredStaff, staffSearchQuery]);
@@ -755,7 +777,23 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
       </div>
 
       {/* Filter Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-[#ede8e0]/60 dark:bg-white/[0.02] p-3.5 rounded-2xl border border-[#d8d0c5] dark:border-white/5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#ede8e0]/60 dark:bg-white/[0.02] p-3.5 rounded-2xl border border-[#d8d0c5] dark:border-white/5">
+        <div>
+          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-amber-300 mb-1 flex items-center gap-1">
+            <Filter className="w-3 h-3" />
+            <span>વિભાગ (Section / Vibhag):</span>
+          </label>
+          <select
+            value={filterSection}
+            onChange={(e) => setFilterSection(e.target.value)}
+            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
+          >
+            <option value="all">તમામ વિભાગ (All Sections)</option>
+            <option value="માધ્યમિક">માધ્યમિક (Secondary)</option>
+            <option value="ઉચ્ચતર માધ્યમિક">ઉચ્ચતર માધ્યમિક (Higher Secondary)</option>
+          </select>
+        </div>
+
         <div>
           <label className="block text-[11px] font-bold text-[#9d512d] dark:text-amber-300 mb-1 flex items-center gap-1">
             <Filter className="w-3 h-3" />
@@ -766,7 +804,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
             onChange={(e) => setFilterDesignation(e.target.value)}
             className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
           >
-            <option value="all">તમામ સ્ટાફ (All Staff Members)</option>
+            <option value="all">તમામ હોદ્દા (All Designations)</option>
             {availableDesignations.map((desig) => (
               <option key={desig} value={desig}>
                 {desig}
@@ -806,7 +844,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
           <div className="flex items-center gap-2 text-xs font-bold text-[#141d24] dark:text-white">
             <Users className="w-4 h-4 text-[#9d512d] dark:text-amber-400" />
             <span>PDF માં સમાવિષ્ટ સ્ટાફ સભ્યો પસંદ કરો (Select Staff for PDF):</span>
-            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-[#9d512d]/15 text-[#9d512d] dark:bg-amber-500/20 dark:text-amber-300 font-bold">
+            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-950 dark:bg-amber-500/20 dark:text-amber-200 border border-amber-300/80 dark:border-amber-500/30 font-bold shadow-xs">
               {staffToPrint.length} / {filteredStaff.length} પસંદ
             </span>
           </div>
@@ -837,7 +875,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
             type="text"
             value={staffSearchQuery}
             onChange={(e) => setStaffSearchQuery(e.target.value)}
-            placeholder="સ્ટાફનું નામ, વિષય, હોદ્દો અથવા મોબાઇલ નંબર શોધો..."
+            placeholder="સ્ટાફનું નામ, વિષય, હોદ્દો, વિભાગ અથવા મોબાઇલ નંબર શોધો..."
             className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl pl-8 pr-3 py-1.5 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
           />
         </div>
@@ -847,6 +885,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
           {displayStaffList.map((st, idx) => {
             const isSelected = selectedStaffIds.includes(st.id);
             const joinDate = st.schoolJoiningDate || st.joiningDate || st.serviceJoiningDate || '';
+            const staffSection = st.section || st.vibhag || 'માધ્યમિક';
             return (
               <button
                 key={st.id || idx}
@@ -878,7 +917,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
                           e.stopPropagation();
                           const clean = st.mobile!.replace(/\D/g, '');
                           const norm = clean.length === 10 ? `91${clean}` : clean;
-                          const msg = `નમસ્તે ${st.fullName} સર/મેડમ,\nશાળા: ${school.schoolName}\nહોદ્દો: ${st.designation || 'સ્ટાફ'}\nશાળા હાજર તારીખ: ${joinDate || '-'}\n\nવિદ્યાલયમ શાળા પોર્ટલ સ્ટાફ પત્રક માહિતી ચકાસણી બાબત.`;
+                          const msg = `નમસ્તે ${st.fullName} સર/મેડમ,\nશાળા: ${school.schoolName}\nહોદ્દો: ${st.designation || 'સ્ટાફ'}\nવિભાગ: ${staffSection}\nશાળા હાજર તારીખ: ${joinDate || '-'}\n\nવિદ્યાલયમ શાળા પોર્ટલ સ્ટાફ પત્રક માહિતી ચકાસણી બાબત.`;
                           window.open(`https://wa.me/${norm}?text=${encodeURIComponent(msg)}`, '_blank');
                         }}
                         className="shrink-0 p-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:scale-110 transition-transform cursor-pointer"
@@ -887,9 +926,11 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
                       </span>
                     ) : null}
                   </div>
-                  <div className="text-[11px] text-[#635848] dark:text-[#a99f91] truncate flex items-center justify-between">
-                    <span>{st.designation || 'શિક્ષક'}</span>
-                    {st.subject ? <span className="opacity-75">• {st.subject}</span> : null}
+                  <div className="text-[11px] text-[#635848] dark:text-[#a99f91] truncate flex items-center justify-between gap-1 mt-0.5">
+                    <span className="truncate">{st.designation || 'શિક્ષક'}</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30 shrink-0">
+                      {staffSection}
+                    </span>
                   </div>
                   {joinDate ? (
                     <div className="text-[10px] text-[#9d512d] dark:text-amber-300/90 font-mono mt-0.5 flex items-center gap-1">
@@ -915,7 +956,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
           <div className="flex items-center gap-1.5 text-xs font-bold text-[#141d24] dark:text-white">
             <SlidersHorizontal className="w-3.5 h-3.5 text-[#9d512d] dark:text-amber-300" />
             <span>સ્ટાફ પત્રકમાં સમાવિષ્ટ કોલમો (Select Staff Columns):</span>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#9d512d]/15 text-[#9d512d] dark:bg-amber-500/20 dark:text-amber-300 ml-1 font-bold">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-950 dark:bg-amber-500/20 dark:text-amber-200 border border-amber-300/80 dark:border-amber-500/30 ml-1 font-bold shadow-xs">
               {selectedColumnIds.length} / {ALL_STAFF_COLUMNS.length} પસંદ
             </span>
           </div>

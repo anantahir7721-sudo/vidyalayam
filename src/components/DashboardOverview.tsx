@@ -183,45 +183,45 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           {/* Main Info */}
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/25 text-[#f59c73] border border-[#9d512d]/40 inline-flex items-center gap-1.5">
-                <Building className="w-3.5 h-3.5" />
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/15 text-[#7a3b1a] border border-[#9d512d]/30 dark:bg-[#9d512d]/25 dark:text-[#f59c73] dark:border-[#9d512d]/40 inline-flex items-center gap-1.5 shadow-xs">
+                <Building className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
                 <span>શાળાની મૂળભૂત માહિતી (School Basic Info)</span>
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-white/5 border border-white/10 text-[#e4ded6]">
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-stone-100 text-stone-800 border border-stone-200 dark:bg-white/5 dark:border-white/10 dark:text-[#e4ded6]">
                 DISE: {school.diseCode}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 shadow-xs">
                 માન્ય શાળા • સક્રિય
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-[#e4ded6] tracking-tight leading-snug">
+            <h1 className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-[#e4ded6] tracking-tight leading-snug">
               {school.schoolName}
             </h1>
 
             {/* Address & Meta details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs pt-1">
-              <div className="flex items-start gap-2 text-slate-300">
-                <MapPin className="w-4 h-4 text-[#f59c73] shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 text-stone-700 dark:text-slate-300">
+                <MapPin className="w-4 h-4 text-[#9d512d] dark:text-[#f59c73] shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-[#a99f91] block text-[10px] uppercase font-bold">સરનામું & જિલ્લો</span>
+                  <span className="text-stone-500 dark:text-[#a99f91] block text-[10px] uppercase font-bold">સરનામું & જિલ્લો</span>
                   <span>{school.address || `${school.district} જિલ્લો, ગુજરાત`}</span>
                   {school.pincode && <span className="font-mono ml-1">({school.pincode})</span>}
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 text-slate-300">
-                <UserCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 text-stone-700 dark:text-slate-300">
+                <UserCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-[#a99f91] block text-[10px] uppercase font-bold">આચાર્યશ્રી</span>
-                  <span className="font-bold text-[#e4ded6]">{school.principalName || 'નોંધાયેલ નથી'}</span>
+                  <span className="text-stone-500 dark:text-[#a99f91] block text-[10px] uppercase font-bold">આચાર્યશ્રી</span>
+                  <span className="font-bold text-stone-900 dark:text-[#e4ded6]">{school.principalName || 'નોંધાયેલ નથી'}</span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 text-slate-300">
-                <Phone className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 text-stone-700 dark:text-slate-300">
+                <Phone className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-[#a99f91] block text-[10px] uppercase font-bold">સંપર્ક / મોબાઈલ</span>
+                  <span className="text-stone-500 dark:text-[#a99f91] block text-[10px] uppercase font-bold">સંપર્ક / મોબાઈલ</span>
                   {school.contactPhone || school.principalPhone || (school as any).contactNumber ? (
                     <span className="font-mono text-[#e4ded6] font-semibold">
                       {school.contactPhone || school.principalPhone || (school as any).contactNumber}

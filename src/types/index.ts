@@ -72,6 +72,8 @@ export interface Staff {
   fullName: string;
   designation: string; // e.g. 'આચાર્ય (વર્ગ–2)', 'આચાર્ય (ઇન્ચાર્જ)', 'શિક્ષણ સહાયક', 'મદદનીશ શિક્ષક', 'Gyan Sahayak', 'Para Teacher', 'પટાવાળા', 'ક્લાર્ક', 'સફાઈ કર્મચારી', 'ચોકીદાર', 'Others'
   category?: 'teaching' | 'non_teaching'; // શૈક્ષણિક અથવા બિન-શૈક્ષણિક સ્ટાફ
+  section?: 'માધ્યમિક' | 'ઉચ્ચતર માધ્યમિક' | string; // વિભાગ (Section / Department)
+  vibhag?: 'માધ્યમિક' | 'ઉચ્ચતર માધ્યમિક' | string; // Alias for section (વિભાગ)
   subject?: string;
   qualification?: string;
   dob?: string;

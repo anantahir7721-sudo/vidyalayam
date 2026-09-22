@@ -485,10 +485,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setMobileDrawerOpen(false);
                     onLogout();
                   }}
-                  className="w-full py-3 px-4 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[48px]"
+                  className="w-full py-3 px-4 rounded-2xl bg-rose-100/80 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-800 dark:text-rose-300 border border-rose-300/80 dark:border-rose-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[48px] shadow-xs"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span>શાળા લોગ આઉટ કરો (Logout)</span>
+                  <LogOut className="w-4 h-4 text-rose-700 dark:text-rose-300 shrink-0" />
+                  <span className="text-rose-800 dark:text-rose-300">શાળા લોગ આઉટ કરો (Logout)</span>
                 </button>
 
                 <button

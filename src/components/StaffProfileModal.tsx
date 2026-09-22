@@ -267,6 +267,10 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
                   <td>${staff.designation} (${staff.category === 'non_teaching' ? 'બિન-શૈક્ષણિક' : 'શૈક્ષણિક'})</td>
                 </tr>
                 <tr>
+                  <th>વિભાગ (Section)</th>
+                  <td><strong>${staff.section || staff.vibhag || 'માધ્યમિક'}</strong></td>
+                </tr>
+                <tr>
                   <th>શિક્ષક કોડ (Teacher Code)</th>
                   <td><strong>${staff.teacherCode || '-'}</strong></td>
                 </tr>
@@ -477,6 +481,9 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#9d512d]/30 text-[#f59c73] border border-[#9d512d]/50">
                   {staff.designation}
                 </span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  વિભાગ: {staff.section || staff.vibhag || 'માધ્યમિક'}
+                </span>
                 <span
                   className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
                     staff.category === 'non_teaching'
@@ -569,6 +576,10 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             </h4>
 
             <div className="space-y-2 text-xs divide-y divide-white/5">
+              <div className="flex justify-between py-1">
+                <span className="text-[#8e8579]">વિભાગ (Section):</span>
+                <span className="text-white font-bold text-amber-300">{staff.section || staff.vibhag || 'માધ્યમિક'}</span>
+              </div>
               <div className="flex justify-between py-1">
                 <span className="text-[#8e8579]">મુખ્ય વિષય:</span>
                 <span className="text-white font-medium">{staff.subject || '-'}</span>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { School, Staff } from '../types';
 import {
   subscribeToStaff,
@@ -51,6 +51,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [designationFilter, setDesignationFilter] = useState('ALL');
+  const [sectionFilter, setSectionFilter] = useState<string>('ALL');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,6 +67,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     fullName: '',
     photoUrl: '',
     designation: 'શિક્ષણ સહાયક',
+    section: 'માધ્યમિક' as 'માધ્યમિક' | 'ઉચ્ચતર માધ્યમિક',
     category: 'teaching' as 'teaching' | 'non_teaching',
     subject: '',
     qualification: '',
@@ -115,6 +117,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
       fullName: staff.fullName || '',
       photoUrl: staff.photoUrl || '',
       designation: staff.designation || 'શિક્ષણ સહાયક',
+      section: (staff.section || staff.vibhag || 'માધ્યમિક') as 'માધ્યમિક' | 'ઉચ્ચતર માધ્યમિક',
       category: staff.category || 'teaching',
       subject: staff.subject || '',
       qualification: staff.qualification || '',
@@ -181,6 +184,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     try {
       const payload = {
         ...formData,
+        section: formData.section || 'માધ્યમિક',
+        vibhag: formData.section || 'માધ્યમિક',
         teacherCode: formData.teacherCode?.trim() || '',
         hrpnNumber: formData.hrpnNumber?.trim() || '',
         aadhaarNumber: formData.aadhaarNumber.replace(/\s|-/g, ''),
@@ -204,6 +209,21 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     }
   };
 
+  // Helper for sorting dates (epoch timestamp)
+  const parseDateForSort = (str?: string): number => {
+    if (!str || !str.trim()) return 9999999999999;
+    const clean = str.trim().replace(/\//g, '-');
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        return new Date(`${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`).getTime() || 9999999999999;
+      }
+      return new Date(`${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`).getTime() || 9999999999999;
+    }
+    const t = new Date(clean).getTime();
+    return isNaN(t) ? 9999999999999 : t;
+  };
+
   // Export to Excel
   const handleExportExcel = () => {
     if (staffList.length === 0) {
@@ -215,6 +235,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
       'ક્રમ': idx + 1,
       'પૂરું નામ': s.fullName,
       'હોદ્દો / પદ': s.designation,
+      'વિભાગ (Section)': s.section || s.vibhag || 'માધ્યમિક',
       'સ્ટાફ પ્રકાર': s.category === 'non_teaching' ? 'બિન-શૈક્ષણિક' : 'શૈક્ષણિક',
       'શિક્ષક કોડ': s.teacherCode || '-',
       'HRPN નંબર': s.hrpnNumber || '-',
@@ -241,26 +262,53 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     XLSX.writeFile(workbook, `School_Staff_List_${new Date().getFullYear()}.xlsx`);
   };
 
-  // Filtered staff
-  const filteredStaff = staffList.filter((s) => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      s.fullName.toLowerCase().includes(q) ||
-      (s.subject && s.subject.toLowerCase().includes(q)) ||
-      (s.teacherCode && s.teacherCode.toLowerCase().includes(q)) ||
-      (s.hrpnNumber && s.hrpnNumber.toLowerCase().includes(q)) ||
-      (s.mobile && s.mobile.includes(q)) ||
-      (s.aadhaarNumber && s.aadhaarNumber.includes(q)) ||
-      (s.bankAccountNo && s.bankAccountNo.includes(q));
+  // Filtered and sorted staff
+  // CRITICAL REQUIREMENT:
+  // Primary sort: Earliest joiners in this school first.
+  // Secondary sort (tie-breaker): If joining dates are the same, check DOB (older in age / earlier DOB comes first).
+  const filteredStaff = useMemo(() => {
+    const list = staffList.filter((s) => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch =
+        s.fullName.toLowerCase().includes(q) ||
+        (s.subject && s.subject.toLowerCase().includes(q)) ||
+        (s.teacherCode && s.teacherCode.toLowerCase().includes(q)) ||
+        (s.hrpnNumber && s.hrpnNumber.toLowerCase().includes(q)) ||
+        (s.section && s.section.toLowerCase().includes(q)) ||
+        (s.vibhag && s.vibhag.toLowerCase().includes(q)) ||
+        (s.mobile && s.mobile.includes(q)) ||
+        (s.aadhaarNumber && s.aadhaarNumber.includes(q)) ||
+        (s.bankAccountNo && s.bankAccountNo.includes(q));
 
-    const matchesDesignation =
-      designationFilter === 'ALL' ||
-      (designationFilter === 'TEACHING' && s.category !== 'non_teaching') ||
-      (designationFilter === 'NON_TEACHING' && s.category === 'non_teaching') ||
-      s.designation.toLowerCase().includes(designationFilter.toLowerCase());
+      const matchesDesignation =
+        designationFilter === 'ALL' ||
+        (designationFilter === 'TEACHING' && s.category !== 'non_teaching') ||
+        (designationFilter === 'NON_TEACHING' && s.category === 'non_teaching') ||
+        s.designation.toLowerCase().includes(designationFilter.toLowerCase());
 
-    return matchesSearch && matchesDesignation;
-  });
+      const sSec = s.section || s.vibhag || 'માધ્યમિક';
+      const matchesSection = sectionFilter === 'ALL' || sSec === sectionFilter;
+
+      return matchesSearch && matchesDesignation && matchesSection;
+    });
+
+    list.sort((a, b) => {
+      const dateA = a.schoolJoiningDate || a.joiningDate || a.serviceJoiningDate || '';
+      const dateB = b.schoolJoiningDate || b.joiningDate || b.serviceJoiningDate || '';
+      const timeA = parseDateForSort(dateA);
+      const timeB = parseDateForSort(dateB);
+      if (timeA !== timeB) return timeA - timeB;
+
+      // Tie-breaker: older person first by DOB (earlier DOB = lower timestamp)
+      const timeDobA = parseDateForSort(a.dob);
+      const timeDobB = parseDateForSort(b.dob);
+      if (timeDobA !== timeDobB) return timeDobA - timeDobB;
+
+      return (a.fullName || '').localeCompare(b.fullName || '', 'gu');
+    });
+
+    return list;
+  }, [staffList, searchQuery, designationFilter, sectionFilter]);
 
   return (
     <div className="space-y-6">
@@ -325,30 +373,45 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
             />
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <label className="text-xs text-[#a99f91] font-semibold whitespace-nowrap">હોદ્દો:</label>
-            <select
-              value={designationFilter}
-              onChange={(e) => setDesignationFilter(e.target.value)}
-              className="w-full sm:w-64 px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
-            >
-              <option value="ALL">તમામ સ્ટાફ (All)</option>
-              <optgroup label="શૈક્ષણિક સ્ટાફ (Teaching Staff)">
-                <option value="આચાર્ય (વર્ગ–2)">આચાર્ય (વર્ગ–2)</option>
-                <option value="આચાર્ય (ઇન્ચાર્જ)">આચાર્ય (ઇન્ચાર્જ)</option>
-                <option value="શિક્ષણ સહાયક">શિક્ષણ સહાયક</option>
-                <option value="મદદનીશ શિક્ષક">મદદનીશ શિક્ષક</option>
-                <option value="Gyan Sahayak">Gyan Sahayak (જ્ઞાન સહાયક)</option>
-                <option value="Para Teacher">Para Teacher (પેરા ટીચર)</option>
-              </optgroup>
-              <optgroup label="બિન-શૈક્ષણિક સ્ટાફ (Non-Teaching Staff)">
-                <option value="ક્લાર્ક">ક્લાર્ક (Clerk)</option>
-                <option value="પટાવાળા">પટાવાળા (Peon)</option>
-                <option value="સફાઈ કર્મચારી">સફાઈ કર્મચારી (Sweeper)</option>
-                <option value="ચોકીદાર">ચોકીદાર (Watchman/Guard)</option>
-              </optgroup>
-              <option value="Others">અન્ય (Others)</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-[#a99f91] font-semibold whitespace-nowrap">વિભાગ:</label>
+              <select
+                value={sectionFilter}
+                onChange={(e) => setSectionFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+              >
+                <option value="ALL">બધા વિભાગ (All)</option>
+                <option value="માધ્યમિક">માધ્યમિક (Secondary)</option>
+                <option value="ઉચ્ચતર માધ્યમિક">ઉચ્ચતર માધ્યમિક (Higher Secondary)</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-[#a99f91] font-semibold whitespace-nowrap">હોદ્દો:</label>
+              <select
+                value={designationFilter}
+                onChange={(e) => setDesignationFilter(e.target.value)}
+                className="w-full sm:w-56 px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+              >
+                <option value="ALL">તમામ સ્ટાફ (All)</option>
+                <optgroup label="શૈક્ષણિક સ્ટાફ (Teaching Staff)">
+                  <option value="આચાર્ય (વર્ગ–2)">આચાર્ય (વર્ગ–2)</option>
+                  <option value="આચાર્ય (ઇન્ચાર્જ)">આચાર્ય (ઇન્ચાર્જ)</option>
+                  <option value="શિક્ષણ સહાયક">શિક્ષણ સહાયક</option>
+                  <option value="મદદનીશ શિક્ષક">મદદનીશ શિક્ષક</option>
+                  <option value="Gyan Sahayak">Gyan Sahayak (જ્ઞાન સહાયક)</option>
+                  <option value="Para Teacher">Para Teacher (પેરા ટીચર)</option>
+                </optgroup>
+                <optgroup label="બિન-શૈક્ષણિક સ્ટાફ (Non-Teaching Staff)">
+                  <option value="ક્લાર્ક">ક્લાર્ક (Clerk)</option>
+                  <option value="પટાવાળા">પટાવાળા (Peon)</option>
+                  <option value="સફાઈ કર્મચારી">સફાઈ કર્મચારી (Sweeper)</option>
+                  <option value="ચોકીદાર">ચોકીદાર (Watchman/Guard)</option>
+                </optgroup>
+                <option value="Others">અન્ય (Others)</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -411,6 +474,9 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                         {staff.fullName}
                       </h4>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#9d512d]/30 text-[#f59c73] border border-[#9d512d]/45">
+                          {staff.section || staff.vibhag || 'માધ્યમિક'}
+                        </span>
                         <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25">
                           {staff.designation}
                         </span>
@@ -756,6 +822,21 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                         </>
                       )}
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                      વિભાગ (Section / Vibhag) *
+                    </label>
+                    <select
+                      value={formData.section}
+                      onChange={(e) => setFormData({ ...formData, section: e.target.value as 'માધ્યમિક' | 'ઉચ્ચતર માધ્યમિક' })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                    >
+                      <option value="માધ્યમિક">માધ્યમિક (Secondary)</option>
+                      <option value="ઉચ્ચતર માધ્યમિક">ઉચ્ચતર માધ્યમિક (Higher Secondary)</option>
+                    </select>
+                    <span className="text-[10px] text-[#8e8579] mt-0.5 block">માધ્યમિક અથવા ઉચ્ચતર માધ્યમિક વિભાગ</span>
                   </div>
 
                   <div>

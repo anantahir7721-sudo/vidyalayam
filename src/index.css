@@ -553,52 +553,122 @@ html.light [class*="bg-black\/"]:not(.fixed):not(.absolute),
   background-color: rgba(32, 45, 56, 0.04) !important;
 }
 
-/* Specific colored -950 badges and stat card backgrounds in Light Mode */
+/* Specific colored -900 and -950 badges, alerts and stat card backgrounds in Light Mode */
 html.light [class*="bg-emerald-950"],
+html.light [class*="bg-emerald-900"],
 [data-theme="light"] [class*="bg-emerald-950"],
-.theme-light [class*="bg-emerald-950"] {
+[data-theme="light"] [class*="bg-emerald-900"],
+.theme-light [class*="bg-emerald-950"],
+.theme-light [class*="bg-emerald-900"] {
   background-color: #ecfdf5 !important;
   border-color: #a7f3d0 !important;
   color: #065f46 !important;
 }
 
+html.light [class*="bg-emerald-950"] *,
+html.light [class*="bg-emerald-900"] *,
+[data-theme="light"] [class*="bg-emerald-950"] *,
+[data-theme="light"] [class*="bg-emerald-900"] * {
+  color: #065f46 !important;
+}
+
 html.light [class*="bg-cyan-950"],
+html.light [class*="bg-cyan-900"],
 [data-theme="light"] [class*="bg-cyan-950"],
-.theme-light [class*="bg-cyan-950"] {
+[data-theme="light"] [class*="bg-cyan-900"],
+.theme-light [class*="bg-cyan-950"],
+.theme-light [class*="bg-cyan-900"] {
   background-color: #ecfeff !important;
   border-color: #a5f3fc !important;
   color: #155e75 !important;
 }
 
+html.light [class*="bg-cyan-950"] *,
+html.light [class*="bg-cyan-900"] *,
+[data-theme="light"] [class*="bg-cyan-950"] *,
+[data-theme="light"] [class*="bg-cyan-900"] * {
+  color: #155e75 !important;
+}
+
 html.light [class*="bg-blue-950"],
+html.light [class*="bg-blue-900"],
 [data-theme="light"] [class*="bg-blue-950"],
-.theme-light [class*="bg-blue-950"] {
+[data-theme="light"] [class*="bg-blue-900"],
+.theme-light [class*="bg-blue-950"],
+.theme-light [class*="bg-blue-900"] {
   background-color: #eff6ff !important;
   border-color: #bfdbfe !important;
   color: #1e40af !important;
 }
 
+html.light [class*="bg-blue-950"] *,
+html.light [class*="bg-blue-900"] *,
+[data-theme="light"] [class*="bg-blue-950"] *,
+[data-theme="light"] [class*="bg-blue-900"] * {
+  color: #1e40af !important;
+}
+
 html.light [class*="bg-amber-950"],
+html.light [class*="bg-amber-900"],
 [data-theme="light"] [class*="bg-amber-950"],
-.theme-light [class*="bg-amber-950"] {
+[data-theme="light"] [class*="bg-amber-900"],
+.theme-light [class*="bg-amber-950"],
+.theme-light [class*="bg-amber-900"] {
   background-color: #fffbeb !important;
   border-color: #fde68a !important;
   color: #92400e !important;
 }
 
+html.light [class*="bg-amber-950"] *,
+html.light [class*="bg-amber-900"] *,
+[data-theme="light"] [class*="bg-amber-950"] *,
+[data-theme="light"] [class*="bg-amber-900"] * {
+  color: #92400e !important;
+}
+
 html.light [class*="bg-red-950"],
+html.light [class*="bg-red-900"],
+html.light [class*="bg-rose-950"],
+html.light [class*="bg-rose-900"],
 [data-theme="light"] [class*="bg-red-950"],
-.theme-light [class*="bg-red-950"] {
+[data-theme="light"] [class*="bg-red-900"],
+[data-theme="light"] [class*="bg-rose-950"],
+[data-theme="light"] [class*="bg-rose-900"],
+.theme-light [class*="bg-red-950"],
+.theme-light [class*="bg-red-900"],
+.theme-light [class*="bg-rose-950"],
+.theme-light [class*="bg-rose-900"] {
   background-color: #fef2f2 !important;
   border-color: #fecaca !important;
   color: #991b1b !important;
 }
 
+html.light [class*="bg-red-950"] *,
+html.light [class*="bg-red-900"] *,
+html.light [class*="bg-rose-950"] *,
+html.light [class*="bg-rose-900"] *,
+[data-theme="light"] [class*="bg-red-950"] *,
+[data-theme="light"] [class*="bg-red-900"] *,
+[data-theme="light"] [class*="bg-rose-950"] *,
+[data-theme="light"] [class*="bg-rose-900"] * {
+  color: #991b1b !important;
+}
+
 html.light [class*="bg-purple-950"],
+html.light [class*="bg-purple-900"],
 [data-theme="light"] [class*="bg-purple-950"],
-.theme-light [class*="bg-purple-950"] {
+[data-theme="light"] [class*="bg-purple-900"],
+.theme-light [class*="bg-purple-950"],
+.theme-light [class*="bg-purple-900"] {
   background-color: #faf5ff !important;
   border-color: #e9d5ff !important;
+  color: #6b21a8 !important;
+}
+
+html.light [class*="bg-purple-950"] *,
+html.light [class*="bg-purple-900"] *,
+[data-theme="light"] [class*="bg-purple-950"] *,
+[data-theme="light"] [class*="bg-purple-900"] * {
   color: #6b21a8 !important;
 }
 
@@ -676,143 +746,225 @@ html.light .border-slate-700,
 }
 
 /* Button & Badge text preservation in Light Mode (CRITICAL FIX) */
+/* Only solid background buttons should have white text; opacity/translucent badges must NOT be overridden */
 html.light .btn-terracotta,
 html.light .btn-terracotta *,
-html.light .bg-\[\#9d512d\],
-html.light .bg-\[\#9d512d\] *,
-html.light .bg-\[\#b55f37\],
-html.light .bg-\[\#b55f37\] *,
-html.light [class*="bg-emerald-600"],
-html.light [class*="bg-emerald-600"] *,
-html.light [class*="bg-emerald-700"],
-html.light [class*="bg-emerald-700"] *,
-html.light [class*="bg-emerald-500"],
-html.light [class*="bg-emerald-500"] *,
+html.light .bg-\[\#9d512d\]:not([class*="\/"]),
+html.light .bg-\[\#9d512d\]:not([class*="\/"]) *,
+html.light .bg-\[\#b55f37\]:not([class*="\/"]),
+html.light .bg-\[\#b55f37\]:not([class*="\/"]) *,
+html.light [class*="bg-emerald-600"]:not([class*="\/"]),
+html.light [class*="bg-emerald-600"]:not([class*="\/"]) *,
+html.light [class*="bg-emerald-700"]:not([class*="\/"]),
+html.light [class*="bg-emerald-700"]:not([class*="\/"]) *,
 html.light [class*="from-emerald-600"],
 html.light [class*="from-emerald-600"] *,
 html.light [class*="from-teal-600"],
 html.light [class*="from-teal-600"] *,
-html.light [class*="bg-blue-600"],
-html.light [class*="bg-blue-600"] *,
-html.light [class*="bg-blue-700"],
-html.light [class*="bg-blue-700"] *,
-html.light [class*="bg-blue-500"],
-html.light [class*="bg-blue-500"] *,
+html.light [class*="bg-blue-600"]:not([class*="\/"]),
+html.light [class*="bg-blue-600"]:not([class*="\/"]) *,
+html.light [class*="bg-blue-700"]:not([class*="\/"]),
+html.light [class*="bg-blue-700"]:not([class*="\/"]) *,
 html.light [class*="from-blue-600"],
 html.light [class*="from-blue-600"] *,
 html.light [class*="from-cyan-600"],
 html.light [class*="from-cyan-600"] *,
-html.light [class*="bg-rose-600"],
-html.light [class*="bg-rose-600"] *,
-html.light [class*="bg-rose-700"],
-html.light [class*="bg-rose-700"] *,
-html.light [class*="bg-rose-500"],
-html.light [class*="bg-rose-500"] *,
+html.light [class*="bg-rose-600"]:not([class*="\/"]),
+html.light [class*="bg-rose-600"]:not([class*="\/"]) *,
+html.light [class*="bg-rose-700"]:not([class*="\/"]),
+html.light [class*="bg-rose-700"]:not([class*="\/"]) *,
 html.light [class*="from-rose-600"],
 html.light [class*="from-rose-600"] *,
-html.light [class*="bg-red-600"],
-html.light [class*="bg-red-600"] *,
-html.light [class*="bg-red-700"],
-html.light [class*="bg-red-700"] *,
-html.light [class*="bg-red-500"],
-html.light [class*="bg-red-500"] *,
+html.light [class*="bg-red-600"]:not([class*="\/"]),
+html.light [class*="bg-red-600"]:not([class*="\/"]) *,
+html.light [class*="bg-red-700"]:not([class*="\/"]),
+html.light [class*="bg-red-700"]:not([class*="\/"]) *,
 html.light [class*="from-red-600"],
 html.light [class*="from-red-600"] *,
-html.light [class*="bg-amber-600"],
-html.light [class*="bg-amber-600"] *,
-html.light [class*="bg-amber-700"],
-html.light [class*="bg-amber-700"] *,
-html.light [class*="bg-amber-500"],
-html.light [class*="bg-amber-500"] *,
-html.light [class*="bg-indigo-600"],
-html.light [class*="bg-indigo-600"] *,
-html.light [class*="bg-purple-600"],
-html.light [class*="bg-purple-600"] *,
-html.light button[type="submit"],
-html.light button[type="submit"] *,
+html.light [class*="bg-amber-600"]:not([class*="\/"]),
+html.light [class*="bg-amber-600"]:not([class*="\/"]) *,
+html.light [class*="bg-amber-700"]:not([class*="\/"]),
+html.light [class*="bg-amber-700"]:not([class*="\/"]) *,
+html.light [class*="bg-indigo-600"]:not([class*="\/"]),
+html.light [class*="bg-indigo-600"]:not([class*="\/"]) *,
+html.light [class*="bg-purple-600"]:not([class*="\/"]),
+html.light [class*="bg-purple-600"]:not([class*="\/"]) *,
+html.light button[type="submit"]:not([class*="bg-white"]):not([class*="bg-slate"]):not([class*="\/"]),
+html.light button[type="submit"]:not([class*="bg-white"]):not([class*="bg-slate"]):not([class*="\/"]) *,
 [data-theme="light"] .btn-terracotta,
 [data-theme="light"] .btn-terracotta *,
-[data-theme="light"] .bg-\[\#9d512d\],
-[data-theme="light"] .bg-\[\#9d512d\] *,
-[data-theme="light"] .bg-\[\#b55f37\],
-[data-theme="light"] .bg-\[\#b55f37\] *,
-[data-theme="light"] [class*="bg-emerald-600"],
-[data-theme="light"] [class*="bg-emerald-600"] *,
-[data-theme="light"] [class*="bg-emerald-700"],
-[data-theme="light"] [class*="bg-emerald-700"] *,
-[data-theme="light"] [class*="bg-emerald-500"],
-[data-theme="light"] [class*="bg-emerald-500"] *,
+[data-theme="light"] .bg-\[\#9d512d\]:not([class*="\/"]),
+[data-theme="light"] .bg-\[\#9d512d\]:not([class*="\/"]) *,
+[data-theme="light"] .bg-\[\#b55f37\]:not([class*="\/"]),
+[data-theme="light"] .bg-\[\#b55f37\]:not([class*="\/"]) *,
+[data-theme="light"] [class*="bg-emerald-600"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-emerald-600"]:not([class*="\/"]) *,
+[data-theme="light"] [class*="bg-emerald-700"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-emerald-700"]:not([class*="\/"]) *,
 [data-theme="light"] [class*="from-emerald-600"],
 [data-theme="light"] [class*="from-emerald-600"] *,
 [data-theme="light"] [class*="from-teal-600"],
 [data-theme="light"] [class*="from-teal-600"] *,
-[data-theme="light"] [class*="bg-blue-600"],
-[data-theme="light"] [class*="bg-blue-600"] *,
-[data-theme="light"] [class*="bg-blue-700"],
-[data-theme="light"] [class*="bg-blue-700"] *,
-[data-theme="light"] [class*="bg-blue-500"],
-[data-theme="light"] [class*="bg-blue-500"] *,
+[data-theme="light"] [class*="bg-blue-600"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-blue-600"]:not([class*="\/"]) *,
+[data-theme="light"] [class*="bg-blue-700"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-blue-700"]:not([class*="\/"]) *,
 [data-theme="light"] [class*="from-blue-600"],
 [data-theme="light"] [class*="from-blue-600"] *,
 [data-theme="light"] [class*="from-cyan-600"],
 [data-theme="light"] [class*="from-cyan-600"] *,
-[data-theme="light"] [class*="bg-rose-600"],
-[data-theme="light"] [class*="bg-rose-600"] *,
-[data-theme="light"] [class*="bg-rose-700"],
-[data-theme="light"] [class*="bg-rose-700"] *,
-[data-theme="light"] [class*="bg-rose-500"],
-[data-theme="light"] [class*="bg-rose-500"] *,
+[data-theme="light"] [class*="bg-rose-600"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-rose-600"]:not([class*="\/"]) *,
+[data-theme="light"] [class*="bg-rose-700"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-rose-700"]:not([class*="\/"]) *,
 [data-theme="light"] [class*="from-rose-600"],
 [data-theme="light"] [class*="from-rose-600"] *,
-[data-theme="light"] [class*="bg-red-600"],
-[data-theme="light"] [class*="bg-red-600"] *,
-[data-theme="light"] [class*="bg-red-700"],
-[data-theme="light"] [class*="bg-red-700"] *,
-[data-theme="light"] [class*="bg-red-500"],
-[data-theme="light"] [class*="bg-red-500"] *,
+[data-theme="light"] [class*="bg-red-600"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-red-600"]:not([class*="\/"]) *,
+[data-theme="light"] [class*="bg-red-700"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-red-700"]:not([class*="\/"]) *,
 [data-theme="light"] [class*="from-red-600"],
 [data-theme="light"] [class*="from-red-600"] *,
-[data-theme="light"] [class*="bg-amber-600"],
-[data-theme="light"] [class*="bg-amber-600"] *,
-[data-theme="light"] [class*="bg-amber-700"],
-[data-theme="light"] [class*="bg-amber-700"] *,
-[data-theme="light"] [class*="bg-amber-500"],
-[data-theme="light"] [class*="bg-amber-500"] *,
-[data-theme="light"] [class*="bg-indigo-600"],
-[data-theme="light"] [class*="bg-indigo-600"] *,
-[data-theme="light"] [class*="bg-purple-600"],
-[data-theme="light"] [class*="bg-purple-600"] *,
-[data-theme="light"] button[type="submit"],
-[data-theme="light"] button[type="submit"] *,
+[data-theme="light"] [class*="bg-amber-600"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-amber-600"]:not([class*="\/"]) *,
+[data-theme="light"] [class*="bg-amber-700"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-amber-700"]:not([class*="\/"]) *,
+[data-theme="light"] [class*="bg-indigo-600"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-indigo-600"]:not([class*="\/"]) *,
+[data-theme="light"] [class*="bg-purple-600"]:not([class*="\/"]),
+[data-theme="light"] [class*="bg-purple-600"]:not([class*="\/"]) *,
+[data-theme="light"] button[type="submit"]:not([class*="bg-white"]):not([class*="bg-slate"]):not([class*="\/"]),
+[data-theme="light"] button[type="submit"]:not([class*="bg-white"]):not([class*="bg-slate"]):not([class*="\/"]) *,
 .theme-light .btn-terracotta,
 .theme-light .btn-terracotta *,
-.theme-light .bg-\[\#9d512d\],
-.theme-light .bg-\[\#9d512d\] *,
-.theme-light [class*="bg-emerald-600"],
-.theme-light [class*="bg-emerald-600"] *,
+.theme-light .bg-\[\#9d512d\]:not([class*="\/"]),
+.theme-light .bg-\[\#9d512d\]:not([class*="\/"]) *,
+.theme-light [class*="bg-emerald-600"]:not([class*="\/"]),
+.theme-light [class*="bg-emerald-600"]:not([class*="\/"]) *,
 .theme-light [class*="from-emerald-600"],
 .theme-light [class*="from-emerald-600"] *,
 .theme-light [class*="from-teal-600"],
 .theme-light [class*="from-teal-600"] *,
-.theme-light [class*="bg-blue-600"],
-.theme-light [class*="bg-blue-600"] *,
+.theme-light [class*="bg-blue-600"]:not([class*="\/"]),
+.theme-light [class*="bg-blue-600"]:not([class*="\/"]) *,
 .theme-light [class*="from-blue-600"],
 .theme-light [class*="from-blue-600"] *,
 .theme-light [class*="from-cyan-600"],
 .theme-light [class*="from-cyan-600"] *,
-.theme-light [class*="bg-rose-600"],
-.theme-light [class*="bg-rose-600"] *,
-.theme-light [class*="bg-red-600"],
-.theme-light [class*="bg-red-600"] *,
+.theme-light [class*="bg-rose-600"]:not([class*="\/"]),
+.theme-light [class*="bg-rose-600"]:not([class*="\/"]) *,
+.theme-light [class*="bg-red-600"]:not([class*="\/"]),
+.theme-light [class*="bg-red-600"]:not([class*="\/"]) *,
 .theme-light [class*="from-red-600"],
 .theme-light [class*="from-red-600"] *,
-.theme-light [class*="bg-amber-600"],
-.theme-light [class*="bg-amber-600"] *,
-.theme-light [class*="bg-indigo-600"],
-.theme-light [class*="bg-indigo-600"] *,
-.theme-light button[type="submit"],
-.theme-light button[type="submit"] * {
+.theme-light [class*="bg-amber-600"]:not([class*="\/"]),
+.theme-light [class*="bg-amber-600"]:not([class*="\/"]) *,
+.theme-light [class*="bg-indigo-600"]:not([class*="\/"]),
+.theme-light [class*="bg-indigo-600"]:not([class*="\/"]) *,
+.theme-light button[type="submit"]:not([class*="bg-white"]):not([class*="bg-slate"]):not([class*="\/"]),
+.theme-light button[type="submit"]:not([class*="bg-white"]):not([class*="bg-slate"]):not([class*="\/"]) * {
   color: #ffffff !important;
+}
+
+/* High-contrast colored text for badges & alerts in light mode */
+html.light [class*="text-rose-"],
+[data-theme="light"] [class*="text-rose-"],
+html.light [class*="text-red-"],
+[data-theme="light"] [class*="text-red-"] {
+  color: #be123c !important;
+}
+
+html.light [class*="text-emerald-"],
+[data-theme="light"] [class*="text-emerald-"],
+html.light [class*="text-green-"],
+[data-theme="light"] [class*="text-green-"] {
+  color: #047857 !important;
+}
+
+html.light [class*="text-amber-"],
+[data-theme="light"] [class*="text-amber-"],
+html.light [class*="text-yellow-"],
+[data-theme="light"] [class*="text-yellow-"] {
+  color: #b45309 !important;
+}
+
+html.light [class*="text-blue-"],
+[data-theme="light"] [class*="text-blue-"],
+html.light [class*="text-sky-"],
+[data-theme="light"] [class*="text-sky-"] {
+  color: #1e40af !important;
+}
+
+html.light [class*="text-cyan-"],
+[data-theme="light"] [class*="text-cyan-"],
+html.light [class*="text-teal-"],
+[data-theme="light"] [class*="text-teal-"] {
+  color: #0e7490 !important;
+}
+
+html.light [class*="text-purple-"],
+[data-theme="light"] [class*="text-purple-"],
+html.light [class*="text-indigo-"],
+[data-theme="light"] [class*="text-indigo-"] {
+  color: #4338ca !important;
+}
+
+/* Ensure solid action buttons have crisp white text on colored/dark backgrounds */
+html.light button[class*="bg-emerald"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+html.light button[class*="bg-emerald"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+html.light button[class*="bg-blue"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+html.light button[class*="bg-blue"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+html.light button[class*="bg-rose"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+html.light button[class*="bg-rose"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+html.light button[class*="bg-red"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+html.light button[class*="bg-red"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+html.light button[class*="bg-purple"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+html.light button[class*="bg-purple"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+html.light button[class*="bg-indigo"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+html.light button[class*="bg-indigo"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+html.light button[class*="bg-amber-6"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+html.light button[class*="bg-amber-6"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+html.light button[class*="bg-slate-8"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+html.light button[class*="bg-slate-8"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+html.light button[class*="bg-slate-9"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+html.light button[class*="bg-slate-9"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+html.light button[class*="9d512d"],
+html.light button[class*="9d512d"] *,
+html.light button[class*="b55e34"],
+html.light button[class*="b55e34"] *,
+html.light button[class*="e27d4e"],
+html.light button[class*="e27d4e"] *,
+[data-theme="light"] button[class*="bg-emerald"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+[data-theme="light"] button[class*="bg-emerald"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+[data-theme="light"] button[class*="bg-blue"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+[data-theme="light"] button[class*="bg-blue"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+[data-theme="light"] button[class*="bg-rose"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+[data-theme="light"] button[class*="bg-rose"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+[data-theme="light"] button[class*="bg-red"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]),
+[data-theme="light"] button[class*="bg-red"]:not([class*="\/1"]):not([class*="\/2"]):not([class*="\/3"]) *,
+[data-theme="light"] button[class*="9d512d"],
+[data-theme="light"] button[class*="9d512d"] *,
+[data-theme="light"] button[class*="b55e34"],
+[data-theme="light"] button[class*="b55e34"] *,
+[data-theme="light"] button[class*="e27d4e"],
+[data-theme="light"] button[class*="e27d4e"] * {
+  color: #ffffff !important;
+}
+
+/* Native select options in light mode */
+html.light select option,
+[data-theme="light"] select option,
+.theme-light select option {
+  background-color: #ffffff !important;
+  color: #141d24 !important;
+}
+
+html.light select optgroup,
+[data-theme="light"] select optgroup,
+.theme-light select optgroup {
+  background-color: #ede7df !important;
+  color: #5c5243 !important;
+  font-weight: 700 !important;
 }
 
 /* Light mode table styling */
