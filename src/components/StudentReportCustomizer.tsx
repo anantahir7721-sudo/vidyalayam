@@ -629,15 +629,15 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
   };
 
   return (
-    <div className="glass-panel rounded-3xl border border-white/10 p-5 sm:p-6 shadow-xl space-y-6">
+    <div className="glass-panel rounded-3xl border border-stone-200 dark:border-white/10 p-5 sm:p-6 shadow-xl space-y-6">
       {/* Header & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#d8d0c5] dark:border-white/10">
         <div>
-          <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-            <Users className="w-5 h-5 text-[#f59c73]" />
+          <h3 className="text-base sm:text-lg font-bold text-[#141d24] dark:text-white flex items-center gap-2">
+            <Users className="w-5 h-5 text-[#9d512d] dark:text-[#f59c73]" />
             <span>૧. કસ્ટમ વિદ્યાર્થી યાદી પત્રક (Custom Student List PDF)</span>
           </h3>
-          <p className="text-xs text-[#a99f91] mt-1">
+          <p className="text-xs text-[#5c5243] dark:text-[#a99f91] mt-1">
             તમને જોઈતી ચોક્કસ કોલમ પસંદ કરો, ધોરણ/જાતિ ફિલ્ટર કરો અને A4 પેજમાં ફિટ થાય તેવી પરફેક્ટ PDF ડાઉનલોડ કરો.
           </p>
         </div>
@@ -655,16 +655,16 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
       </div>
 
       {/* Filter Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-white/[0.02] p-3.5 rounded-2xl border border-white/5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#ede8e0]/60 dark:bg-white/[0.02] p-3.5 rounded-2xl border border-[#d8d0c5] dark:border-white/5">
         <div>
-          <label className="block text-[11px] font-bold text-[#f59c73] mb-1 flex items-center gap-1">
+          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-[#f59c73] mb-1 flex items-center gap-1">
             <Filter className="w-3 h-3" />
             <span>ધોરણ ફિલ્ટર:</span>
           </label>
           <select
             value={filterStandard}
             onChange={(e) => setFilterStandard(e.target.value)}
-            className="w-full bg-[#121921] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59c73]"
+            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
           >
             <option value="all">તમામ ધોરણ (All Standards)</option>
             <option value="9">ધોરણ ૯ (Standard 9)</option>
@@ -675,11 +675,11 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
         </div>
 
         <div>
-          <label className="block text-[11px] font-bold text-[#f59c73] mb-1">વર્ગ / સેક્શન:</label>
+          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-[#f59c73] mb-1">વર્ગ / સેક્શન:</label>
           <select
             value={filterSection}
             onChange={(e) => setFilterSection(e.target.value)}
-            className="w-full bg-[#121921] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59c73]"
+            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
           >
             <option value="all">તમામ વર્ગ (All Sections)</option>
             {availableSections.map((sec) => (
@@ -691,11 +691,11 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
         </div>
 
         <div>
-          <label className="block text-[11px] font-bold text-[#f59c73] mb-1">જાતિ (Gender):</label>
+          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-[#f59c73] mb-1">જાતિ (Gender):</label>
           <select
             value={filterGender}
             onChange={(e) => setFilterGender(e.target.value)}
-            className="w-full bg-[#121921] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59c73]"
+            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
           >
             <option value="all">બધા (Boys & Girls)</option>
             <option value="Boy">માત્ર કુમાર (Boys)</option>
@@ -704,11 +704,11 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
         </div>
 
         <div>
-          <label className="block text-[11px] font-bold text-[#f59c73] mb-1">પેપર ઓરિએન્ટેશન:</label>
+          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-[#f59c73] mb-1">પેપર ઓરિએન્ટેશન:</label>
           <select
             value={paperOrientation}
             onChange={(e) => setPaperOrientation(e.target.value as any)}
-            className="w-full bg-[#121921] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59c73]"
+            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
           >
             <option value="auto">ઓટોમેટિક ({calculatedOrientation === 'landscape' ? 'લેન્ડસ્કેપ' : 'પોર્ટ્રેટ'})</option>
             <option value="portrait">પોર્ટ્રેટ (Portrait - ઊભું)</option>
@@ -720,10 +720,10 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
       {/* Column Selection Checklist */}
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-white">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#f59c73]" />
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#141d24] dark:text-white">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
             <span>PDF માં દર્શાવવા માટે કોલમ પસંદ કરો (Select Columns to Include):</span>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 ml-1">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-500/30 ml-1 font-bold shadow-xs">
               {selectedColumnIds.length} / {ALL_STUDENT_COLUMNS.length} પસંદ
             </span>
           </div>
@@ -732,15 +732,15 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
             <button
               type="button"
               onClick={selectAllColumns}
-              className="text-[#f59c73] hover:underline font-semibold"
+              className="text-[#9d512d] dark:text-[#f59c73] hover:underline font-semibold cursor-pointer"
             >
               બધી પસંદ કરો
             </button>
-            <span className="text-white/20">•</span>
+            <span className="text-stone-400 dark:text-white/20">•</span>
             <button
               type="button"
               onClick={selectEssentialColumns}
-              className="text-[#a99f91] hover:text-white font-semibold"
+              className="text-[#5c5243] dark:text-[#a99f91] hover:text-[#141d24] dark:hover:text-white font-semibold cursor-pointer"
             >
               મૂળભૂત (Default)
             </button>
@@ -757,53 +757,53 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
                 onClick={() => toggleColumn(col.id)}
                 className={`flex items-center gap-2 p-2 rounded-xl text-xs font-medium border text-left transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-[#9d512d]/25 border-[#f59c73]/60 text-white'
-                    : 'bg-white/[0.02] border-white/10 text-[#a99f91] hover:border-white/20'
+                    ? 'bg-[#9d512d]/10 dark:bg-[#9d512d]/25 border-[#9d512d]/50 dark:border-[#f59c73]/60 text-[#141d24] dark:text-white shadow-xs font-semibold'
+                    : 'bg-white/80 dark:bg-white/[0.02] border-[#d8d0c5] dark:border-white/10 text-[#5c5243] dark:text-[#a99f91] hover:border-[#9d512d]/30'
                 }`}
               >
                 {isSelected ? (
-                  <CheckSquare className="w-4 h-4 text-[#f59c73] shrink-0" />
+                  <CheckSquare className="w-4 h-4 text-[#9d512d] dark:text-[#f59c73] shrink-0" />
                 ) : (
-                  <Square className="w-4 h-4 text-white/30 shrink-0" />
+                  <Square className="w-4 h-4 text-stone-400 dark:text-white/30 shrink-0" />
                 )}
                 <span className="truncate">{col.label}</span>
               </button>
             );
           })}
         </div>
-        <p className="text-[11px] text-[#a99f91] mt-2">
+        <p className="text-[11px] text-[#5c5243] dark:text-[#a99f91] mt-2">
           💡 <strong>નોંધ:</strong> ગમે તેટલી કોલમ પસંદ કરશો તો પણ PDF પેજના સેન્ટરમાં ટેબલ એકસરખી રીતે ફિટ થશે, અને વધુ વિદ્યાર્થીઓ હશે તો આપોઆપ પેજ વધતા જશે.
         </p>
       </div>
 
       {/* Live Table Preview */}
-      <div className="pt-2 border-t border-white/10">
+      <div className="pt-2 border-t border-[#d8d0c5] dark:border-white/10">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#e4ded6]">
-            <Eye className="w-3.5 h-3.5 text-[#f59c73]" />
+          <div className="flex items-center gap-2 text-xs font-bold text-[#141d24] dark:text-[#e4ded6]">
+            <Eye className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
             <span>PDF પ્રિવ્યુ (પહેલા ૫ વિદ્યાર્થીઓ):</span>
           </div>
-          <span className="text-[11px] text-[#a99f91]">
+          <span className="text-[11px] text-[#5c5243] dark:text-[#a99f91]">
             કુલ {filteredStudents.length} વિદ્યાર્થીઓ પ્રિન્ટ થશે
           </span>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/60 max-h-56">
+        <div className="overflow-x-auto rounded-2xl border border-[#d8d0c5] dark:border-white/10 bg-white/90 dark:bg-slate-950/60 max-h-56 shadow-xs">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-[#16202c] sticky top-0 text-[#f59c73] font-bold">
+            <thead className="bg-[#ede8e0] dark:bg-[#16202c] sticky top-0 text-[#9d512d] dark:text-[#f59c73] font-bold">
               <tr>
                 {activeColumns.map((col) => (
-                  <th key={col.id} className="p-2 border-b border-white/10 whitespace-nowrap">
+                  <th key={col.id} className="p-2 border-b border-[#d8d0c5] dark:border-white/10 whitespace-nowrap">
                     {col.label}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 text-[#e4ded6]">
+            <tbody className="divide-y divide-[#d8d0c5]/40 dark:divide-white/5 text-[#141d24] dark:text-[#e4ded6]">
               {filteredStudents.slice(0, 5).map((st, idx) => (
-                <tr key={st.id || idx} className="hover:bg-white/[0.02]">
+                <tr key={st.id || idx} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
                   {activeColumns.map((col) => (
-                    <td key={col.id} className="p-2 whitespace-nowrap text-slate-300">
+                    <td key={col.id} className="p-2 whitespace-nowrap text-[#141d24] dark:text-slate-300">
                       {col.getValue(st, school, idx)}
                     </td>
                   ))}
@@ -813,7 +813,7 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
                 <tr>
                   <td
                     colSpan={activeColumns.length}
-                    className="p-4 text-center text-slate-400"
+                    className="p-4 text-center text-slate-500 dark:text-slate-400"
                   >
                     પસંદ કરેલ ફિલ્ટર મુજબ કોઈ વિદ્યાર્થી ઉપલબ્ધ નથી.
                   </td>
