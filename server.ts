@@ -523,30 +523,62 @@ Schema per question:
 
       contents.push(userText);
 
-      // Model priority: modern gemini-3.8-flash, followed by gemini-3.6-flash
-      const candidateModels = ['gemini-3.8-flash', 'gemini-3.6-flash'];
+      // Model priority with robust fallbacks:
+      const candidateModels = [
+        'gemini-3.8-flash',
+        'gemini-2.5-flash',
+        'gemini-3.1-flash-lite',
+        'gemini-flash-latest',
+      ];
       let response: any = null;
       let lastModelError: any = null;
 
+      const waitDelay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
       for (const modelName of candidateModels) {
-        try {
-          response = await ai.models.generateContent({
-            model: modelName,
-            contents,
-            config: {
-              systemInstruction: systemPrompt,
-              responseMimeType: 'application/json',
-              temperature: 0.1,
-            },
-          });
-          if (response) break;
-        } catch (mErr: any) {
-          console.warn(`Model ${modelName} attempt error:`, mErr?.message || mErr);
-          lastModelError = mErr;
+        let attemptsForThisModel = 0;
+        const maxAttemptsPerModel = 2;
+
+        while (attemptsForThisModel < maxAttemptsPerModel) {
+          attemptsForThisModel++;
+          try {
+            response = await ai.models.generateContent({
+              model: modelName,
+              contents,
+              config: {
+                systemInstruction: systemPrompt,
+                responseMimeType: 'application/json',
+                temperature: 0.1,
+              },
+            });
+            if (response && response.text) break;
+          } catch (mErr: any) {
+            const errStr = String(mErr?.message || mErr || '');
+            const isTransient =
+              errStr.includes('503') ||
+              errStr.includes('high demand') ||
+              errStr.includes('UNAVAILABLE') ||
+              errStr.includes('overloaded') ||
+              errStr.includes('429') ||
+              errStr.includes('RESOURCE_EXHAUSTED');
+
+            console.warn(
+              `Model ${modelName} (attempt ${attemptsForThisModel}/${maxAttemptsPerModel}) error:`,
+              errStr
+            );
+            lastModelError = mErr;
+
+            if (isTransient && attemptsForThisModel < maxAttemptsPerModel) {
+              await waitDelay(1500);
+            } else {
+              break;
+            }
+          }
         }
+        if (response && response.text) break;
       }
 
-      if (!response) {
+      if (!response || !response.text) {
         throw lastModelError || new Error('Failed to generate response using Gemini models.');
       }
 
@@ -597,8 +629,32 @@ Schema per question:
       });
     } catch (err: any) {
       console.error('AI extraction error:', err);
+      let rawMsg = String(err?.message || err || '');
+      try {
+        const parsed = JSON.parse(rawMsg);
+        if (parsed?.error?.message) {
+          rawMsg = parsed.error.message;
+        }
+      } catch (_) {}
+
+      let userFriendlyMsg = 'AI પ્રશ્ન એક્સટ્રેક્શનમાં ખામી આવી છે. કૃપા કરીને ફરી પ્રયાસ કરો.';
+      if (
+        rawMsg.includes('503') ||
+        rawMsg.includes('high demand') ||
+        rawMsg.includes('UNAVAILABLE') ||
+        rawMsg.includes('overloaded') ||
+        rawMsg.includes('429') ||
+        rawMsg.includes('RESOURCE_EXHAUSTED')
+      ) {
+        userFriendlyMsg =
+          'Google AI સર્વર પર હાલમાં ખૂબ જ ભારે ટ્રાફિક (High Demand) છે. કૃપા કરીને થોડી સેકન્ડ પછી "🔄 ફરી પ્રયાસ કરો" બટન દબાવો.';
+      } else if (rawMsg.includes('API_KEY') || rawMsg.includes('apiKey')) {
+        userFriendlyMsg = 'Google AI કન્ફિગરેશન ચકાસો. કૃપા કરીને ફરી પ્રયાસ કરો.';
+      }
+
       return res.status(500).json({
-        error: err.message || 'AI પ્રશ્ન એક્સટ્રેક્શનમાં ખામી આવી છે. કૃપા કરીને ફરી પ્રયાસ કરો.',
+        error: userFriendlyMsg,
+        rawMessage: rawMsg,
       });
     }
   });

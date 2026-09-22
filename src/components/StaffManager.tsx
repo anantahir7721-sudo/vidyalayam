@@ -29,6 +29,7 @@ import {
   Building,
   Camera,
   Loader2,
+  MessageSquare,
 } from 'lucide-react';
 import { StaffProfileModal } from './StaffProfileModal';
 import { compressStudentPhoto } from '../utils/imageUtils';
@@ -470,14 +471,32 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       <span>લાયકાત: <span className="text-[#e4ded6]">{staff.qualification}</span></span>
                     </div>
                   )}
-                  {staff.mobile && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-[#f59c73] shrink-0" />
-                      <a href={`tel:${staff.mobile}`} className="text-[#e4ded6] hover:underline">
-                        {staff.mobile}
-                      </a>
-                    </div>
-                  )}
+                  {staff.mobile && (() => {
+                    const cleanMobile = staff.mobile.replace(/\D/g, '');
+                    const normalizedMobile = cleanMobile.length === 10 ? `91${cleanMobile}` : cleanMobile;
+                    const staffMsg = `નમસ્તે ${staff.fullName} સર/મેડમ,\nશાળા: ${school?.schoolName || 'શાળા'}\nહોદ્દો: ${staff.designation || 'સ્ટાફ'}\nવિદ્યાલયમ (Vidyalayam) પોર્ટલ પરથી આપનો સંપર્ક કરવામાં આવ્યો છે.`;
+                    const waUrl = `https://wa.me/${normalizedMobile}?text=${encodeURIComponent(staffMsg)}`;
+                    return (
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3.5 h-3.5 text-[#f59c73] shrink-0" />
+                          <a href={`tel:${staff.mobile}`} className="text-[#e4ded6] hover:underline">
+                            {staff.mobile}
+                          </a>
+                        </div>
+                        <a
+                          href={waUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="WhatsApp પર ઓટો-ટાઈપ મેસેજ સાથે ચેટ શરૂ કરો"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          <span>WhatsApp</span>
+                        </a>
+                      </div>
+                    );
+                  })()}
                   {staff.email && (
                     <div className="flex items-center gap-2">
                       <Mail className="w-3.5 h-3.5 text-[#f59c73] shrink-0" />

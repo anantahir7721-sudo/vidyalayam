@@ -394,22 +394,72 @@ export async function bulkAddToQuestionBank(
 // =========================================================================
 // AI Multimodal Question Extractor Client Call
 // =========================================================================
-export async function extractQuestionsWithAI(params: {
-  text?: string;
-  fileBase64?: string;
-  mimeType?: string;
-}): Promise<{ success: boolean; count: number; questions: MCQQuestion[]; error?: string }> {
-  const res = await fetch('/api/ai/extract-questions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
+export async function extractQuestionsWithAI(
+  params: {
+    text?: string;
+    fileBase64?: string;
+    mimeType?: string;
+  },
+  onStatusUpdate?: (statusMsg: string) => void
+): Promise<{ success: boolean; count: number; questions: MCQQuestion[]; error?: string }> {
+  const maxAttempts = 2;
+  let lastError: Error | null = null;
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || 'Failed to extract questions');
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      if (attempt > 1 && onStatusUpdate) {
+        onStatusUpdate('Google AI સર્વર વ્યસ્ત હતું, ફરી પ્રયાસ થઈ રહ્યો છે...');
+      }
+
+      const res = await fetch('/api/ai/extract-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        return data;
+      }
+
+      // Format error
+      let errorMsg = data.error || 'Failed to extract questions';
+      try {
+        if (typeof errorMsg === 'string' && errorMsg.startsWith('{') && errorMsg.includes('"message"')) {
+          const parsed = JSON.parse(errorMsg);
+          if (parsed?.error?.message) {
+            errorMsg = parsed.error.message;
+          }
+        }
+      } catch (_) {}
+
+      if (
+        errorMsg.includes('503') ||
+        errorMsg.includes('high demand') ||
+        errorMsg.includes('UNAVAILABLE') ||
+        errorMsg.includes('overloaded')
+      ) {
+        errorMsg =
+          'Google AI સર્વર પર હાલમાં ભારે ટ્રાફિક (High Demand) છે. કૃપા કરીને થોડી સેકન્ડ પછી "🔄 ફરી પ્રયાસ કરો" બટન દબાવો.';
+      }
+
+      const isTransient = res.status === 503 || res.status === 429 || errorMsg.includes('High Demand') || errorMsg.includes('503');
+      if (isTransient && attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        continue;
+      }
+
+      throw new Error(errorMsg);
+    } catch (err: any) {
+      lastError = err;
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        continue;
+      }
+    }
   }
-  return data;
+
+  throw lastError || new Error('AI પ્રશ્ન એક્સટ્રેક્શન નિષ્ફળ રહ્યું. કૃપા કરીને ફરી પ્રયાસ કરો.');
 }
 
 // =========================================================================
@@ -925,15 +975,22 @@ export async function startStudentExam(token: string, examId: string) {
     throw new Error('પરીક્ષા હજુ શરૂ થઈ નથી. સત્તાવાર સમય પર જ શરૂ થશે. (મોબાઇલની તારીખ કે સમય બદલવાથી પરીક્ષા વહેલી શરૂ થશે નહીં.)');
   }
 
-  // Late entry prevention rule:
-  // If student attempts to start 10 minutes past exam completion time, reject start.
-  if (examData.scheduledStartTimestamp && examData.durationMinutes) {
-    const durationMs = Number(examData.durationMinutes) * 60 * 1000;
-    const examOfficialEndTime = examData.scheduledStartTimestamp + durationMs;
-    const cutoffTime = examOfficialEndTime + 10 * 60 * 1000; // 10 minutes past exam completion
+  // Late entry & dynamic duration rules:
+  // If exam has a scheduled start time and duration:
+  // - Students joining within 5 minutes of scheduled start get full exam duration.
+  // - Students joining after 5 minutes lose 1 minute of exam duration for every minute past the 5-minute grace.
+  // - Example: 20 min exam. If 3 min late: gets full 20 mins. If 6 min late: gets 19 mins.
+  // - Once scheduled start + duration + 5 minutes grace is passed, the exam window is permanently closed.
+  const durationMinutes = Number(examData.durationMinutes) || 30;
+  const durationMs = durationMinutes * 60 * 1000;
+  const gracePeriodMs = 5 * 60 * 1000; // 5 minutes grace
 
-    if (now > cutoffTime) {
-      throw new Error('પરીક્ષા પૂર્ણ થઈ ગઈ છે. પરીક્ષાનો સમય સમાપ્ત થઈ ગયેલ હોવાથી હવે પરીક્ષા શરૂ કરી શકાશે નહીં.');
+  if (examData.scheduledStartTimestamp) {
+    const scheduledStart = Number(examData.scheduledStartTimestamp);
+    const examWindowEnd = scheduledStart + durationMs + gracePeriodMs;
+
+    if (now > examWindowEnd) {
+      throw new Error('પરીક્ષા પૂર્ણ થઈ ગઈ છે. પરીક્ષાનો સત્તાવાર સમય અને 5 મિનિટનો વધારાનો પ્રવેશ સમય સમાપ્ત થઈ ગયેલ હોવાથી હવે પરીક્ષા શરૂ કરી શકાશે નહીં.');
     }
   }
 
@@ -948,11 +1005,23 @@ export async function startStudentExam(token: string, examId: string) {
       throw new Error('તમે આ પરીક્ષા પહેલેથી જ આપી દીધી છે. પુનઃપ્રયાસ કરવાની મંજૂરી નથી.');
     }
   } else {
-    const durationMs = (Number(examData.durationMinutes) || 30) * 60 * 1000;
     let calculatedExpiry = now + durationMs;
+
     if (examData.scheduledStartTimestamp) {
-      const hardCutoff = examData.scheduledStartTimestamp + durationMs + 10 * 60 * 1000;
-      calculatedExpiry = Math.min(calculatedExpiry, hardCutoff);
+      const scheduledStart = Number(examData.scheduledStartTimestamp);
+      const examWindowEnd = scheduledStart + durationMs + gracePeriodMs;
+      const lateMs = Math.max(0, now - scheduledStart);
+
+      if (lateMs <= gracePeriodMs) {
+        // Late <= 5 minutes: gets full duration, bounded by hard exam window end
+        calculatedExpiry = Math.min(now + durationMs, examWindowEnd);
+      } else {
+        // Late > 5 minutes: penalty for every minute beyond grace period
+        // E.g. 6 min late -> 1 min penalty -> gets (20 - 1) = 19 minutes
+        const excessLateMs = lateMs - gracePeriodMs;
+        const remainingAllowedMs = Math.max(60 * 1000, durationMs - excessLateMs);
+        calculatedExpiry = Math.min(now + remainingAllowedMs, examWindowEnd);
+      }
     }
 
     const newAttemptData = {

@@ -1,0 +1,68 @@
+{
+  "id": "/",
+  "name": "Vidyalayam (વિદ્યાલયમ) - School Management System",
+  "short_name": "Vidyalayam",
+  "description": "General School Management System & એકમ કસોટી ગુણપત્રક for Gujarat Schools • Created by NR Chad",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#080b0f",
+  "theme_color": "#9d512d",
+  "lang": "gu",
+  "dir": "ltr",
+  "categories": [
+    "education",
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Students (વિદ્યાર્થીઓ)",
+      "short_name": "Students",
+      "description": "Manage school students",
+      "url": "/?tab=students",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Staff (સ્ટાફ પત્રક)",
+      "short_name": "Staff",
+      "description": "Staff management & reports",
+      "url": "/?tab=staff",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Exams & Marks (પરીક્ષા ગુણ)",
+      "short_name": "Exams",
+      "description": "Marks entry and reports",
+      "url": "/?tab=marks",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

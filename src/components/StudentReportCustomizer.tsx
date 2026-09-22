@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { School, Student } from '../types';
+import { getStudentDiseCode } from '../utils/idCardPdf';
 import {
   FileText,
   Printer,
@@ -114,13 +115,7 @@ const ALL_STUDENT_COLUMNS: StudentColumnDef[] = [
   {
     id: 'studentDise',
     label: 'વિદ્યાર્થી DISE / Child ID',
-    getValue: (s, sch) => {
-      if (s.studentStateCode) return s.studentStateCode;
-      if (s.studentId) return s.studentId;
-      const dise = s.diseCode || sch.diseCode || '';
-      const roll = String(s.rollNumber || '1').padStart(3, '0');
-      return dise ? `${dise}${roll}` : '-';
-    },
+    getValue: (s) => getStudentDiseCode(s),
     defaultSelected: false,
     minWidth: '85px',
     align: 'center',

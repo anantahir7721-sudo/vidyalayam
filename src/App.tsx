@@ -292,11 +292,11 @@ export default function App() {
               refreshing={statusRefreshing}
             />
           </main>
-          <footer className="bg-slate-950/90 border-t border-white/10 pt-4 pb-24 lg:pb-4 text-center text-xs text-slate-400 space-y-1">
-            <div className="font-bold text-white tracking-wide">
+          <footer className="bg-white/90 dark:bg-slate-950/90 border-t border-slate-200 dark:border-white/10 pt-4 pb-24 lg:pb-4 text-center text-xs text-slate-600 dark:text-slate-400 space-y-1">
+            <div className="font-bold text-slate-900 dark:text-white tracking-wide">
               Vidyalayam (વિદ્યાલયમ)
             </div>
-            <div className="text-emerald-400 font-medium">
+            <div className="text-emerald-600 dark:text-emerald-400 font-medium">
               Created by NR Chad
             </div>
           </footer>
@@ -438,14 +438,14 @@ export default function App() {
           )}
         </main>
 
-        <footer className="bg-[#0e141b]/90 border-t border-white/10 pt-5 pb-24 lg:pb-6 text-center text-xs text-slate-400 space-y-1">
-          <div className="font-bold text-white tracking-wide">
+        <footer className="bg-white/90 dark:bg-[#0e141b]/90 border-t border-slate-200 dark:border-white/10 pt-5 pb-24 lg:pb-6 text-center text-xs text-slate-600 dark:text-slate-400 space-y-1">
+          <div className="font-bold text-slate-900 dark:text-white tracking-wide">
             Vidyalayam (વિદ્યાલયમ)
           </div>
-          <div className="text-emerald-400 font-medium">
+          <div className="text-emerald-600 dark:text-emerald-400 font-medium">
             Created by NR Chad
           </div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
             General School Management System • Gujarat Education Department Reference Standard
           </div>
         </footer>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { School, Staff } from '../types';
 import {
   FileText,
@@ -10,7 +10,36 @@ import {
   UserCheck,
   Building2,
   Eye,
+  Users,
+  Search,
+  Calendar,
+  MessageSquare,
 } from 'lucide-react';
+
+function parseDateForSort(dateStr?: string): number {
+  if (!dateStr || !dateStr.trim()) return 9999999999999;
+  const clean = dateStr.trim();
+  // Check DD-MM-YYYY or DD/MM/YYYY
+  const dmy = clean.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+  if (dmy) {
+    const day = parseInt(dmy[1], 10);
+    const month = parseInt(dmy[2], 10) - 1;
+    const year = parseInt(dmy[3], 10);
+    const t = new Date(year, month, day).getTime();
+    return isNaN(t) ? 9999999999999 : t;
+  }
+  // Check YYYY-MM-DD
+  const ymd = clean.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (ymd) {
+    const year = parseInt(ymd[1], 10);
+    const month = parseInt(ymd[2], 10) - 1;
+    const day = parseInt(ymd[3], 10);
+    const t = new Date(year, month, day).getTime();
+    return isNaN(t) ? 9999999999999 : t;
+  }
+  const t = new Date(clean).getTime();
+  return isNaN(t) ? 9999999999999 : t;
+}
 
 interface StaffColumnDef {
   id: string;
@@ -190,8 +219,19 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
     ALL_STAFF_COLUMNS.filter((col) => col.defaultSelected).map((col) => col.id)
   );
 
+  // Staff members selection state - by default all staff are selected
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>(() =>
+    staffList.map((s) => s.id)
+  );
+
+  // Update selection when staffList changes
+  useEffect(() => {
+    setSelectedStaffIds(staffList.map((s) => s.id));
+  }, [staffList]);
+
   // Filters
   const [filterDesignation, setFilterDesignation] = useState<string>('all');
+  const [staffSearchQuery, setStaffSearchQuery] = useState<string>('');
   const [reportTitle, setReportTitle] = useState<string>('શાળા સ્ટાફ પત્રક (Staff Master Register)');
   const [paperOrientation, setPaperOrientation] = useState<'portrait' | 'landscape'>('auto');
 
@@ -204,15 +244,68 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
     return Array.from(set).sort();
   }, [staffList]);
 
-  // Filtered staff list
+  // 1. Sort staff: Earliest joiners in this school first (as requested)
+  const sortedStaff = useMemo(() => {
+    const list = [...staffList];
+    list.sort((a, b) => {
+      const dateA = a.schoolJoiningDate || a.joiningDate || a.serviceJoiningDate || '';
+      const dateB = b.schoolJoiningDate || b.joiningDate || b.serviceJoiningDate || '';
+      const timeA = parseDateForSort(dateA);
+      const timeB = parseDateForSort(dateB);
+      if (timeA !== timeB) return timeA - timeB;
+      // Tie-break by name
+      return (a.fullName || '').localeCompare(b.fullName || '', 'gu');
+    });
+    return list;
+  }, [staffList]);
+
+  // 2. Filtered staff list by designation
   const filteredStaff = useMemo(() => {
-    return staffList.filter((s) => {
+    return sortedStaff.filter((s) => {
       if (filterDesignation !== 'all' && s.designation !== filterDesignation) {
         return false;
       }
       return true;
     });
-  }, [staffList, filterDesignation]);
+  }, [sortedStaff, filterDesignation]);
+
+  // 3. Search filtered staff list for the selector UI
+  const displayStaffList = useMemo(() => {
+    if (!staffSearchQuery.trim()) return filteredStaff;
+    const q = staffSearchQuery.trim().toLowerCase();
+    return filteredStaff.filter(
+      (s) =>
+        (s.fullName || '').toLowerCase().includes(q) ||
+        (s.designation || '').toLowerCase().includes(q) ||
+        (s.subject || '').toLowerCase().includes(q) ||
+        (s.teacherCode || '').toLowerCase().includes(q) ||
+        (s.mobile || '').includes(q)
+    );
+  }, [filteredStaff, staffSearchQuery]);
+
+  // 4. Final staff members to be printed in PDF / preview (only selected ones)
+  const staffToPrint = useMemo(() => {
+    return filteredStaff.filter((s) => selectedStaffIds.includes(s.id));
+  }, [filteredStaff, selectedStaffIds]);
+
+  // Toggle single staff selection
+  const toggleStaffSelection = (id: string) => {
+    setSelectedStaffIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  // Select all visible filtered staff
+  const selectAllStaff = () => {
+    const visibleIds = filteredStaff.map((s) => s.id);
+    setSelectedStaffIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+  };
+
+  // Deselect all visible filtered staff
+  const deselectAllStaff = () => {
+    const visibleIds = new Set(filteredStaff.map((s) => s.id));
+    setSelectedStaffIds((prev) => prev.filter((id) => !visibleIds.has(id)));
+  };
 
   // Toggle column selection
   const toggleColumn = (id: string) => {
@@ -250,8 +343,8 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
 
   // Print / PDF generation
   const handlePrintPDF = () => {
-    if (filteredStaff.length === 0) {
-      alert('પસંદ કરેલ ફિલ્ટર મુજબ કોઈ સ્ટાફ સભ્યો મળ્યા નથી.');
+    if (staffToPrint.length === 0) {
+      alert('કૃપા કરીને સ્ટાફ પત્રક PDF માટે ઓછામાં ઓછો ૧ સ્ટાફ સભ્ય પસંદ કરો.');
       return;
     }
 
@@ -314,7 +407,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
       </thead>
     `;
 
-    const tableRowsHtml = filteredStaff
+    const tableRowsHtml = staffToPrint
       .map((staff, idx) => {
         const isEven = idx % 2 === 1;
         return `
@@ -570,7 +663,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
 
             <div class="report-bar">
               <span class="report-main-title">${reportTitle}</span>
-              <span>કુલ સ્ટાફ: ${filteredStaff.length}</span>
+              <span>કુલ સ્ટાફ: ${staffToPrint.length}</span>
               <span>તારીખ: ${new Date().toLocaleDateString('gu-IN')}</span>
             </div>
           </div>
@@ -613,42 +706,65 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
   };
 
   return (
-    <div className="glass-panel rounded-3xl border border-white/10 p-5 sm:p-6 shadow-xl space-y-6">
+    <div className="glass-panel rounded-3xl border border-[#d8d0c5] dark:border-white/10 p-5 sm:p-6 shadow-xl space-y-6">
       {/* Header & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#d8d0c5] dark:border-white/10">
         <div>
-          <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-amber-400" />
+          <h3 className="text-base sm:text-lg font-bold text-[#141d24] dark:text-white flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-[#9d512d] dark:text-amber-400" />
             <span>૨. શાળા સ્ટાફ પત્રક PDF (Staff Master Register PDF)</span>
           </h3>
-          <p className="text-xs text-[#a99f91] mt-1">
-            શિક્ષકો અને વહીવટી કર્મચારીઓની તમામ વિગતો સાથેનું સત્તાવાર સ્ટાફ પત્રક PDF માં ડાઉનલોડ કરો.
+          <p className="text-xs text-[#635848] dark:text-[#a99f91] mt-1">
+            શિક્ષકો અને વહીવટી કર્મચારીઓની તમામ વિગતો સાથેનું સત્તાવાર સ્ટાફ પત્રક PDF માં ડાઉનલોડ કરો. (હાજર તારીખ મુજબ ક્રમબદ્ધ)
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {staffToPrint.some((s) => s.mobile) && (
+            <button
+              type="button"
+              onClick={() => {
+                const withMobile = staffToPrint.filter((s) => s.mobile && s.mobile.replace(/\D/g, ''));
+                if (withMobile.length === 0) {
+                  alert('પસંદ કરેલા સ્ટાફમાંથી કોઈનો મોબાઇલ નંબર નથી.');
+                  return;
+                }
+                const st = withMobile[0];
+                const clean = st.mobile!.replace(/\D/g, '');
+                const norm = clean.length === 10 ? `91${clean}` : clean;
+                const joinDate = st.schoolJoiningDate || st.joiningDate || st.serviceJoiningDate || '';
+                const msg = `નમસ્તે ${st.fullName} સર/મેડમ,\nશાળા: ${school.schoolName}\nહોદ્દો: ${st.designation || 'સ્ટાફ'}\nશાળા હાજર તારીખ: ${joinDate || '-'}\n\nવિદ્યાલયમ શાળા પોર્ટલ સ્ટાફ પત્રક માહિતી ચકાસણી બાબત.`;
+                window.open(`https://wa.me/${norm}?text=${encodeURIComponent(msg)}`, '_blank');
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-950/20 transition-all cursor-pointer"
+              title="પસંદ કરેલ સ્ટાફને WhatsApp પર ઓટો-ટાઈપ કરેલ મેસેજ મોકલો"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>WhatsApp મેસેજ ({staffToPrint.filter((s) => s.mobile).length})</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={handlePrintPDF}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-amber-950/40 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#9d512d] to-amber-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-amber-950/20 transition-all cursor-pointer touch-manipulation"
           >
             <Printer className="w-4 h-4" />
-            <span>સ્ટાફ પત્રક PDF ડાઉનલોડ ({filteredStaff.length})</span>
+            <span>સ્ટાફ પત્રક PDF ડાઉનલોડ ({staffToPrint.length})</span>
           </button>
         </div>
       </div>
 
       {/* Filter Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-white/[0.02] p-3.5 rounded-2xl border border-white/5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-[#ede8e0]/60 dark:bg-white/[0.02] p-3.5 rounded-2xl border border-[#d8d0c5] dark:border-white/5">
         <div>
-          <label className="block text-[11px] font-bold text-amber-300 mb-1 flex items-center gap-1">
+          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-amber-300 mb-1 flex items-center gap-1">
             <Filter className="w-3 h-3" />
             <span>હોદ્દો (Designation) ફિલ્ટર:</span>
           </label>
           <select
             value={filterDesignation}
             onChange={(e) => setFilterDesignation(e.target.value)}
-            className="w-full bg-[#121921] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
           >
             <option value="all">તમામ સ્ટાફ (All Staff Members)</option>
             {availableDesignations.map((desig) => (
@@ -660,22 +776,22 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
         </div>
 
         <div>
-          <label className="block text-[11px] font-bold text-amber-300 mb-1">પત્રકનું શીર્ષક:</label>
+          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-amber-300 mb-1">પત્રકનું શીર્ષક:</label>
           <input
             type="text"
             value={reportTitle}
             onChange={(e) => setReportTitle(e.target.value)}
-            className="w-full bg-[#121921] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
             placeholder="દા.ત. શાળા સ્ટાફ પત્રક ૨૦૨૬-૨૭"
           />
         </div>
 
         <div>
-          <label className="block text-[11px] font-bold text-amber-300 mb-1">પેપર ઓરિએન્ટેશન:</label>
+          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-amber-300 mb-1">પેપર ઓરિએન્ટેશન:</label>
           <select
             value={paperOrientation}
             onChange={(e) => setPaperOrientation(e.target.value as any)}
-            className="w-full bg-[#121921] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
           >
             <option value="auto">ઓટોમેટિક ({calculatedOrientation === 'landscape' ? 'લેન્ડસ્કેપ' : 'પોર્ટ્રેટ'})</option>
             <option value="portrait">પોર્ટ્રેટ (Portrait - ઊભું)</option>
@@ -684,13 +800,122 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
         </div>
       </div>
 
+      {/* Staff Selection Section (Who to include in PDF) */}
+      <div className="bg-[#ede8e0]/40 dark:bg-white/[0.02] p-4 rounded-2xl border border-[#d8d0c5] dark:border-white/5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#141d24] dark:text-white">
+            <Users className="w-4 h-4 text-[#9d512d] dark:text-amber-400" />
+            <span>PDF માં સમાવિષ્ટ સ્ટાફ સભ્યો પસંદ કરો (Select Staff for PDF):</span>
+            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-[#9d512d]/15 text-[#9d512d] dark:bg-amber-500/20 dark:text-amber-300 font-bold">
+              {staffToPrint.length} / {filteredStaff.length} પસંદ
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs">
+            <button
+              type="button"
+              onClick={selectAllStaff}
+              className="text-[#9d512d] dark:text-amber-400 hover:underline font-semibold cursor-pointer"
+            >
+              બધા પસંદ કરો
+            </button>
+            <span className="text-stone-400 dark:text-white/20">•</span>
+            <button
+              type="button"
+              onClick={deselectAllStaff}
+              className="text-[#635848] dark:text-[#a99f91] hover:text-[#141d24] dark:hover:text-white font-semibold cursor-pointer"
+            >
+              બધા રદ કરો
+            </button>
+          </div>
+        </div>
+
+        {/* Staff Quick Search Filter */}
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+          <input
+            type="text"
+            value={staffSearchQuery}
+            onChange={(e) => setStaffSearchQuery(e.target.value)}
+            placeholder="સ્ટાફનું નામ, વિષય, હોદ્દો અથવા મોબાઇલ નંબર શોધો..."
+            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl pl-8 pr-3 py-1.5 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
+          />
+        </div>
+
+        {/* Staff Selection Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
+          {displayStaffList.map((st, idx) => {
+            const isSelected = selectedStaffIds.includes(st.id);
+            const joinDate = st.schoolJoiningDate || st.joiningDate || st.serviceJoiningDate || '';
+            return (
+              <button
+                key={st.id || idx}
+                type="button"
+                onClick={() => toggleStaffSelection(st.id)}
+                className={`flex items-start gap-2.5 p-2 rounded-xl text-xs font-medium border text-left transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#9d512d]/10 dark:bg-amber-950/40 border-[#9d512d]/50 dark:border-amber-500/60 text-[#141d24] dark:text-white shadow-sm'
+                    : 'bg-white/80 dark:bg-white/[0.02] border-[#d8d0c5] dark:border-white/10 text-[#635848] dark:text-[#a99f91] hover:border-[#9d512d]/40'
+                }`}
+              >
+                <div className="mt-0.5 shrink-0">
+                  {isSelected ? (
+                    <CheckSquare className="w-4 h-4 text-[#9d512d] dark:text-amber-400" />
+                  ) : (
+                    <Square className="w-4 h-4 text-stone-400 dark:text-white/30" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <div className="font-bold truncate text-[#141d24] dark:text-white">
+                      {idx + 1}. {st.fullName || 'નામ ઉપલબ્ધ નથી'}
+                    </div>
+                    {st.mobile ? (
+                      <span
+                        role="button"
+                        title={`${st.fullName} ને WhatsApp ઓટો-મેસેજ મોકલો`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const clean = st.mobile!.replace(/\D/g, '');
+                          const norm = clean.length === 10 ? `91${clean}` : clean;
+                          const msg = `નમસ્તે ${st.fullName} સર/મેડમ,\nશાળા: ${school.schoolName}\nહોદ્દો: ${st.designation || 'સ્ટાફ'}\nશાળા હાજર તારીખ: ${joinDate || '-'}\n\nવિદ્યાલયમ શાળા પોર્ટલ સ્ટાફ પત્રક માહિતી ચકાસણી બાબત.`;
+                          window.open(`https://wa.me/${norm}?text=${encodeURIComponent(msg)}`, '_blank');
+                        }}
+                        className="shrink-0 p-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:scale-110 transition-transform cursor-pointer"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="text-[11px] text-[#635848] dark:text-[#a99f91] truncate flex items-center justify-between">
+                    <span>{st.designation || 'શિક્ષક'}</span>
+                    {st.subject ? <span className="opacity-75">• {st.subject}</span> : null}
+                  </div>
+                  {joinDate ? (
+                    <div className="text-[10px] text-[#9d512d] dark:text-amber-300/90 font-mono mt-0.5 flex items-center gap-1">
+                      <Calendar className="w-2.5 h-2.5 shrink-0" />
+                      <span>હાજર: {joinDate}</span>
+                    </div>
+                  ) : null}
+                </div>
+              </button>
+            );
+          })}
+          {displayStaffList.length === 0 && (
+            <div className="col-span-full py-4 text-center text-xs text-[#635848] dark:text-stone-400">
+              કોઈ સ્ટાફ સભ્ય મળ્યા નથી.
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Column Selection */}
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-white">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-amber-300" />
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#141d24] dark:text-white">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#9d512d] dark:text-amber-300" />
             <span>સ્ટાફ પત્રકમાં સમાવિષ્ટ કોલમો (Select Staff Columns):</span>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 ml-1">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#9d512d]/15 text-[#9d512d] dark:bg-amber-500/20 dark:text-amber-300 ml-1 font-bold">
               {selectedColumnIds.length} / {ALL_STAFF_COLUMNS.length} પસંદ
             </span>
           </div>
@@ -699,15 +924,15 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
             <button
               type="button"
               onClick={selectAllColumns}
-              className="text-amber-400 hover:underline font-semibold"
+              className="text-[#9d512d] dark:text-amber-400 hover:underline font-semibold cursor-pointer"
             >
               બધી પસંદ કરો
             </button>
-            <span className="text-white/20">•</span>
+            <span className="text-stone-400 dark:text-white/20">•</span>
             <button
               type="button"
               onClick={selectDefaultColumns}
-              className="text-[#a99f91] hover:text-white font-semibold"
+              className="text-[#635848] dark:text-[#a99f91] hover:text-[#141d24] dark:hover:text-white font-semibold cursor-pointer"
             >
               મૂળભૂત (Default)
             </button>
@@ -724,65 +949,65 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
                 onClick={() => toggleColumn(col.id)}
                 className={`flex items-center gap-2 p-2 rounded-xl text-xs font-medium border text-left transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-amber-950/40 border-amber-500/60 text-white'
-                    : 'bg-white/[0.02] border-white/10 text-[#a99f91] hover:border-white/20'
+                    ? 'bg-[#9d512d]/10 dark:bg-amber-950/40 border-[#9d512d]/50 dark:border-amber-500/60 text-[#141d24] dark:text-white shadow-sm'
+                    : 'bg-white/80 dark:bg-white/[0.02] border-[#d8d0c5] dark:border-white/10 text-[#635848] dark:text-[#a99f91] hover:border-[#9d512d]/40'
                 }`}
               >
                 {isSelected ? (
-                  <CheckSquare className="w-4 h-4 text-amber-400 shrink-0" />
+                  <CheckSquare className="w-4 h-4 text-[#9d512d] dark:text-amber-400 shrink-0" />
                 ) : (
-                  <Square className="w-4 h-4 text-white/30 shrink-0" />
+                  <Square className="w-4 h-4 text-stone-400 dark:text-white/30 shrink-0" />
                 )}
                 <span className="truncate">{col.label}</span>
               </button>
             );
           })}
         </div>
-        <p className="text-[11px] text-[#a99f91] mt-2">
-          💡 <strong>નોંધ:</strong> શાળાનું નામ, સરનામું અને DISE કોડ હેડરમાં આપોઆપ આવી જશે અને સેન્ટર-અલાઈન્ડ ટેબલમાં દરેક કોલમ એક પેજની પહોળાઈમાં વ્યવસ્થિત ગોઠવાશે.
+        <p className="text-[11px] text-[#635848] dark:text-[#a99f91] mt-2">
+          💡 <strong>નોંધ:</strong> શાળામાં વહેલા હાજર થયેલા શિક્ષકો પ્રથમ ક્રમે આપોઆપ સોર્ટ થઈ જશે. શાળાનું નામ, સરનામું અને DISE કોડ હેડરમાં આપોઆપ આવી જશે.
         </p>
       </div>
 
       {/* Preview */}
-      <div className="pt-2 border-t border-white/10">
+      <div className="pt-2 border-t border-[#d8d0c5] dark:border-white/10">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#e4ded6]">
-            <Eye className="w-3.5 h-3.5 text-amber-400" />
-            <span>સ્ટાફ પત્રક પ્રિવ્યુ (પહેલા ૫ કર્મચારીઓ):</span>
+          <div className="flex items-center gap-2 text-xs font-bold text-[#141d24] dark:text-[#e4ded6]">
+            <Eye className="w-3.5 h-3.5 text-[#9d512d] dark:text-amber-400" />
+            <span>સ્ટાફ પત્રક પ્રિવ્યુ (પહેલા ૫ પસંદ કરેલ કર્મચારીઓ):</span>
           </div>
-          <span className="text-[11px] text-[#a99f91]">
-            કુલ {filteredStaff.length} કર્મચારીઓ પ્રિન્ટ થશે
+          <span className="text-[11px] text-[#635848] dark:text-[#a99f91]">
+            કુલ {staffToPrint.length} કર્મચારીઓ પ્રિન્ટ થશે
           </span>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/60 max-h-56">
+        <div className="overflow-x-auto rounded-2xl border border-[#d8d0c5] dark:border-white/10 bg-white dark:bg-slate-950/60 max-h-56 shadow-inner">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-[#16202c] sticky top-0 text-amber-400 font-bold">
+            <thead className="bg-[#ede8e0] dark:bg-[#16202c] sticky top-0 text-[#9d512d] dark:text-amber-400 font-bold border-b border-[#d8d0c5] dark:border-white/10">
               <tr>
                 {activeColumns.map((col) => (
-                  <th key={col.id} className="p-2 border-b border-white/10 whitespace-nowrap">
+                  <th key={col.id} className="p-2 border-b border-[#d8d0c5] dark:border-white/10 whitespace-nowrap">
                     {col.label}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 text-[#e4ded6]">
-              {filteredStaff.slice(0, 5).map((st, idx) => (
-                <tr key={st.id || idx} className="hover:bg-white/[0.02]">
+            <tbody className="divide-y divide-[#d8d0c5]/50 dark:divide-white/5 text-[#141d24] dark:text-[#e4ded6]">
+              {staffToPrint.slice(0, 5).map((st, idx) => (
+                <tr key={st.id || idx} className="hover:bg-black/5 dark:hover:bg-white/[0.02]">
                   {activeColumns.map((col) => (
-                    <td key={col.id} className="p-2 whitespace-nowrap text-slate-300">
+                    <td key={col.id} className="p-2 whitespace-nowrap text-[#141d24] dark:text-slate-300">
                       {col.getValue(st, school, idx)}
                     </td>
                   ))}
                 </tr>
               ))}
-              {filteredStaff.length === 0 && (
+              {staffToPrint.length === 0 && (
                 <tr>
                   <td
                     colSpan={activeColumns.length}
-                    className="p-4 text-center text-slate-400"
+                    className="p-4 text-center text-stone-500 dark:text-slate-400"
                   >
-                    કોઈ સ્ટાફ સભ્યો મળ્યા નથી.
+                    કોઈ સ્ટાફ સભ્ય પસંદ કરેલ નથી. ઉપરથી સ્ટાફ સભ્યો પસંદ કરો.
                   </td>
                 </tr>
               )}

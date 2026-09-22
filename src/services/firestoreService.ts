@@ -261,7 +261,7 @@ export async function bulkUpsertStudents(
         if (item.motherOccupation !== undefined) updateData.motherOccupation = item.motherOccupation.trim();
         if (item.placeOfBirth !== undefined) updateData.placeOfBirth = item.placeOfBirth.trim();
         if (item.aadhaarNo !== undefined) updateData.aadhaarNo = item.aadhaarNo.trim();
-        if (item.photoUrl !== undefined) updateData.photoUrl = item.photoUrl.trim();
+        if (item.photoUrl !== undefined && item.photoUrl.trim() !== '') updateData.photoUrl = item.photoUrl.trim();
         if (item.studentStateCode !== undefined) updateData.studentStateCode = item.studentStateCode.trim();
         if (item.cwsnDisability !== undefined) updateData.cwsnDisability = item.cwsnDisability.trim();
         if (item.medium !== undefined) updateData.medium = item.medium.trim();

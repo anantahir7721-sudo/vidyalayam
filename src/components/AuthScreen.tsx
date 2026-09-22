@@ -34,6 +34,7 @@ import { submitPasswordResetRequest } from '../services/adminService';
 import {
   getSchoolApprovalWhatsApp,
   getForgotPasswordWhatsApp,
+  getAdminPasswordResetWhatsApp,
   ADMIN_WHATSAPP_LINK,
 } from '../utils/whatsappUtils';
 
@@ -110,6 +111,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [resetCopied, setResetCopied] = useState(false);
+
+  // Admin Forgot Password Modal states
+  const [adminResetOpen, setAdminResetOpen] = useState(false);
+  const [adminResetIdentifier, setAdminResetIdentifier] = useState('');
+  const [adminResetName, setAdminResetName] = useState('');
+  const [adminResetContact, setAdminResetContact] = useState('');
+  const [adminResetSubmitting, setAdminResetSubmitting] = useState(false);
+  const [adminResetSuccess, setAdminResetSuccess] = useState(false);
+  const [adminResetCopied, setAdminResetCopied] = useState(false);
 
   // Post-Registration Approval Modal states
   const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -872,9 +882,24 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-[#e4ded6] mb-1.5">
-                  Admin Password
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#e4ded6]">
+                    Admin Password
+                  </label>
+                  <button
+                    id="btn-admin-forgot-password"
+                    type="button"
+                    onClick={() => {
+                      setAdminResetIdentifier(adminIdentifier);
+                      setAdminResetSuccess(false);
+                      setAdminResetOpen(true);
+                    }}
+                    className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>પાસવર્ડ ભૂલી ગયા? (Forgot?)</span>
+                  </button>
+                </div>
                 <div className="relative rounded-xl shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#a99f91]">
                     <Lock className="w-4 h-4" />
@@ -1138,6 +1163,238 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       <>
                         <KeyRound className="w-3.5 h-3.5" />
                         <span>સિસ્ટમમાં રીસેટ વિનંતી નોંધાવો</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1B: Admin Forgot Password Assistant */}
+      {adminResetOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#0f172a] border border-rose-300 dark:border-rose-500/30 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left relative max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Admin Password Reset</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">એડમિન પાસવર્ડ પુનઃપ્રાપ્તિ સહાયક</p>
+                </div>
+              </div>
+              <button
+                id="btn-close-admin-forgot-password"
+                type="button"
+                onClick={() => {
+                  setAdminResetOpen(false);
+                  setAdminResetSuccess(false);
+                }}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {adminResetSuccess ? (
+              <div className="space-y-4 py-2">
+                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-600/40 text-emerald-800 dark:text-emerald-300 text-xs space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>રીસેટ વિનંતી સફળતાપૂર્વક સબમિટ થઈ ગઈ છે!</span>
+                  </div>
+                  <p>
+                    આપની એડમિન પાસવર્ડ રીસેટ વિનંતી સુરક્ષિત રીતે સિસ્ટમમાં નોંધવામાં આવી છે. ત્વરિત સહાય માટે નીચે આપેલ WhatsApp બટન દ્વારા સીધો સંપર્ક પણ કરી શકો છો.
+                  </p>
+                </div>
+
+                <div className="pt-2 flex flex-col gap-2">
+                  <a
+                    href={
+                      getAdminPasswordResetWhatsApp({
+                        adminIdentifier: adminResetIdentifier,
+                        adminName: adminResetName,
+                        contactNumber: adminResetContact,
+                      }).url
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>WhatsApp પર ઓટો-ટાઈપ મેસેજ ખોલો</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminResetOpen(false);
+                      setAdminResetSuccess(false);
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    બંધ કરો (Close)
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!adminResetIdentifier.trim()) {
+                    setError('કૃપા કરીને એડમિન Mobile / ID દાખલ કરો.');
+                    return;
+                  }
+                  setAdminResetSubmitting(true);
+                  try {
+                    await submitPasswordResetRequest({
+                      diseCode: adminResetIdentifier.trim(),
+                      schoolName: `[ADMIN RESET] ${adminResetName.trim() || 'Admin User'}`,
+                      contactNumber: adminResetContact.trim() || adminResetIdentifier.trim(),
+                    });
+                    setAdminResetSuccess(true);
+                  } catch (err: any) {
+                    console.error('Admin reset submit error:', err);
+                    // Even if DB fails, allow WhatsApp recovery
+                    setAdminResetSuccess(true);
+                  } finally {
+                    setAdminResetSubmitting(false);
+                  }
+                }}
+                className="space-y-3.5"
+              >
+                <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                  <p className="font-semibold">⚠️ એડમિન સુરક્ષા માહિતી:</p>
+                  <p className="text-[11px] opacity-90">
+                    એડમિન એકાઉન્ટનો પાસવર્ડ સુરક્ષા કારણોસર સુપર એડમિન અથવા ઓથોરાઈઝ્ડ વહીવટકર્તા દ્વારા ચકાસીને રીસેટ કરવામાં આવે છે.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#e4ded6] mb-1">
+                    એડમિન Mobile અથવા Admin ID *
+                  </label>
+                  <input
+                    id="input-admin-reset-identifier"
+                    type="text"
+                    required
+                    value={adminResetIdentifier}
+                    onChange={(e) => setAdminResetIdentifier(e.target.value)}
+                    placeholder="દા.ત. 9876543210 અથવા superadmin"
+                    className="glass-input block w-full px-3 py-2 rounded-xl text-xs placeholder-slate-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#e4ded6] mb-1">
+                    એડમિનનું નામ (વૈકલ્પિક)
+                  </label>
+                  <input
+                    id="input-admin-reset-name"
+                    type="text"
+                    value={adminResetName}
+                    onChange={(e) => setAdminResetName(e.target.value)}
+                    placeholder="આપનું નામ દાખલ કરો"
+                    className="glass-input block w-full px-3 py-2 rounded-xl text-xs placeholder-slate-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#e4ded6] mb-1">
+                    સંપર્ક મોબાઇલ નંબર (WhatsApp નંબર)
+                  </label>
+                  <input
+                    id="input-admin-reset-contact"
+                    type="tel"
+                    value={adminResetContact}
+                    onChange={(e) => setAdminResetContact(e.target.value)}
+                    placeholder="10 અંકનો મોબાઈલ નંબર"
+                    className="glass-input block w-full px-3 py-2 rounded-xl text-xs placeholder-slate-400"
+                  />
+                </div>
+
+                {/* Instant WhatsApp Quick Send option */}
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                    ત્વરિત વેરિફિકેશન માટે WhatsApp દ્વારા ઓટો-ટાઈપ મેસેજ મોકલો:
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      id="btn-whatsapp-admin-forgot-password"
+                      href={
+                        getAdminPasswordResetWhatsApp({
+                          adminIdentifier: adminResetIdentifier || 'ADMIN_ID',
+                          adminName: adminResetName,
+                          contactNumber: adminResetContact,
+                        }).url
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => {
+                        const { message } = getAdminPasswordResetWhatsApp({
+                          adminIdentifier: adminResetIdentifier || 'ADMIN_ID',
+                          adminName: adminResetName,
+                          contactNumber: adminResetContact,
+                        });
+                        try {
+                          if (navigator.clipboard?.writeText) {
+                            navigator.clipboard.writeText(message);
+                            setAdminResetCopied(true);
+                            setTimeout(() => setAdminResetCopied(false), 3000);
+                          }
+                        } catch {}
+                      }}
+                      className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shadow-sm"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>WhatsApp મેસેજ</span>
+                    </a>
+                    <button
+                      type="button"
+                      id="btn-copy-admin-reset-msg"
+                      onClick={() => {
+                        const { message } = getAdminPasswordResetWhatsApp({
+                          adminIdentifier: adminResetIdentifier || 'ADMIN_ID',
+                          adminName: adminResetName,
+                          contactNumber: adminResetContact,
+                        });
+                        if (navigator.clipboard?.writeText) {
+                          navigator.clipboard.writeText(message);
+                          setAdminResetCopied(true);
+                          setTimeout(() => setAdminResetCopied(false), 2500);
+                        }
+                      }}
+                      className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-colors"
+                    >
+                      {adminResetCopied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />}
+                      <span>{adminResetCopied ? 'કોપી થયું!' : 'મેસેજ કોપી'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setAdminResetOpen(false)}
+                    className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-xl transition-colors cursor-pointer"
+                  >
+                    રદ કરો (Cancel)
+                  </button>
+                  <button
+                    id="btn-submit-admin-reset-db"
+                    type="submit"
+                    disabled={adminResetSubmitting}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-colors shadow-sm cursor-pointer"
+                  >
+                    {adminResetSubmitting ? (
+                      <span>સબમિટ થઈ રહ્યું છે...</span>
+                    ) : (
+                      <>
+                        <KeyRound className="w-3.5 h-3.5" />
+                        <span>વિનંતી સબમિટ કરો</span>
                       </>
                     )}
                   </button>

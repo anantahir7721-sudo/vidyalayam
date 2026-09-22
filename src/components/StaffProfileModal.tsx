@@ -519,26 +519,33 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
 
             {/* Quick Contact buttons */}
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
-              {staff.mobile && (
-                <>
-                  <a
-                    href={`tel:${staff.mobile}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#e4ded6] border border-white/10"
-                  >
-                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{staff.mobile}</span>
-                  </a>
-                  <a
-                    href={`https://wa.me/91${staff.mobile.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>WhatsApp</span>
-                  </a>
-                </>
-              )}
+              {staff.mobile && (() => {
+                const cleanMobile = staff.mobile.replace(/\D/g, '');
+                const normalizedMobile = cleanMobile.length === 10 ? `91${cleanMobile}` : cleanMobile;
+                const staffMsg = `નમસ્તે ${staff.fullName} સર/મેડમ,\nશાળા: ${school?.schoolName || 'શાળા'}\nહોદ્દો: ${staff.designation || 'સ્ટાફ'}\nવિદ્યાલયમ (Vidyalayam) પોર્ટલ પરથી આપનો સંપર્ક કરવામાં આવ્યો છે.`;
+                const waUrl = `https://wa.me/${normalizedMobile}?text=${encodeURIComponent(staffMsg)}`;
+                return (
+                  <>
+                    <a
+                      href={`tel:${staff.mobile}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#e4ded6] border border-white/10"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{staff.mobile}</span>
+                    </a>
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold"
+                      title="WhatsApp પર ઓટો-ટાઈપ મેસેજ સાથે ચેટ શરૂ કરો"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>WhatsApp મેસેજ</span>
+                    </a>
+                  </>
+                );
+              })()}
               {staff.email && (
                 <a
                   href={`mailto:${staff.email}`}

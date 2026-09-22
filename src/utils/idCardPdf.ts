@@ -61,46 +61,64 @@ function getSchoolNameInlineStyle(name: string): string {
 }
 
 /**
- * Resolves the student's unique DISE code / Child UID (typically 18-21 digits in Gujarat),
- * inspecting across all possible fields (diseCode, studentStateCode, studentId, aadhaarNo).
+ * Resolves the student's unique DISE code / Child UID in Gujarat.
+ *
+ * Official standard:
+ * - Gujarat Student Child UID (વિદ્યાર્થી આધાર ડાયસ / ચાઇલ્ડ UID) is strictly 18 numeric digits.
+ * - If 21 digits are stored (e.g., when roll number or extra digits were concatenated),
+ *   it trims to the standard 18-digit Child UID.
+ * - Rejects any internal alphanumeric database IDs (e.g. 20-21 letter Firestore document IDs)
+ *   so they are never printed in student PDFs or ID cards.
  */
 export function getStudentDiseCode(student: Partial<Student>): string {
   if (!student) return '-';
 
-  // Priority 1: Check if any candidate has 18 or more digits (like 21-digit Gujarat Child UID)
   const candidateList = [
     student.studentStateCode,
     student.diseCode,
-    student.studentId,
     (student as any).childUid,
     (student as any).studentDiseCode,
     (student as any).studentDise,
-    student.aadhaarNo,
+    student.studentId,
   ];
 
   for (const item of candidateList) {
     if (item && typeof item === 'string') {
       const clean = item.trim().replace(/^['"`\s]+|['"`\s]+$/g, '');
+      if (!clean) continue;
+
+      // Reject internal Firestore document IDs / tokens containing letters (e.g. 'a7K9mXq2vLp1zR0tYwU4')
+      if (/[a-zA-Z]/.test(clean)) {
+        continue;
+      }
+
       const digitsOnly = clean.replace(/\D/g, '');
-      if (digitsOnly.length >= 18) {
-        return clean;
+
+      // Standard Gujarat Child UID is 18 digits
+      if (digitsOnly.length === 18) {
+        return digitsOnly;
+      }
+
+      // If 21 digits (due to 18-digit UID + 3-digit roll, or 11 + 10 digits), restore base 18-digit UID
+      if (digitsOnly.length === 21) {
+        return digitsOnly.slice(0, 18);
+      }
+
+      // If more than 18 digits, sanitize to base 18-digit UID
+      if (digitsOnly.length > 18) {
+        return digitsOnly.slice(0, 18);
+      }
+
+      // Valid 11-digit school DISE code (or legacy student code)
+      if (digitsOnly.length === 11) {
+        return digitsOnly;
+      }
+
+      // If between 12 and 17 digits, return the digits
+      if (digitsOnly.length >= 10 && digitsOnly.length < 18) {
+        return digitsOnly;
       }
     }
-  }
-
-  // Priority 2: studentStateCode if non-empty
-  if (student.studentStateCode && student.studentStateCode.trim()) {
-    return student.studentStateCode.trim().replace(/^['"`\s]+|['"`\s]+$/g, '');
-  }
-
-  // Priority 3: diseCode if non-empty
-  if (student.diseCode && student.diseCode.trim()) {
-    return student.diseCode.trim().replace(/^['"`\s]+|['"`\s]+$/g, '');
-  }
-
-  // Priority 4: studentId if non-empty
-  if (student.studentId && student.studentId.trim()) {
-    return student.studentId.trim().replace(/^['"`\s]+|['"`\s]+$/g, '');
   }
 
   return '-';

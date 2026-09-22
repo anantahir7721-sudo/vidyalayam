@@ -28,6 +28,63 @@ interface AiQuestionImporterModalProps {
   subject: string;
 }
 
+// Client-side image compression for mobile camera photos
+async function optimizeImageForAi(file: File): Promise<{ base64: string; mimeType: string }> {
+  if (file.type === 'application/pdf') {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ base64: reader.result as string, mimeType: file.type });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDimension = 1800;
+        let { width, height } = img;
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve({ base64: e.target?.result as string, mimeType: file.type });
+          return;
+        }
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        resolve({ base64: compressedDataUrl, mimeType: 'image/jpeg' });
+      };
+      img.onerror = () => {
+        resolve({ base64: e.target?.result as string, mimeType: file.type });
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => {
+      resolve({ base64: '', mimeType: file.type });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export const AiQuestionImporterModal: React.FC<AiQuestionImporterModalProps> = ({
   isOpen,
   onClose,
@@ -39,7 +96,9 @@ export const AiQuestionImporterModal: React.FC<AiQuestionImporterModalProps> = (
   const [inputText, setInputText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
+  const [optimizedPayload, setOptimizedPayload] = useState<{ base64: string; mimeType: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
   // Review step state
@@ -51,7 +110,7 @@ export const AiQuestionImporterModal: React.FC<AiQuestionImporterModalProps> = (
 
   if (!isOpen) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -61,19 +120,27 @@ export const AiQuestionImporterModal: React.FC<AiQuestionImporterModalProps> = (
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      setError('ફાઇલ સાઇઝ 15MB કરતાં વધુ ન હોવી જોઈએ.');
+    if (file.size > 20 * 1024 * 1024) {
+      setError('ફાઇલ સાઇઝ 20MB કરતાં વધુ ન હોવી જોઈએ.');
       return;
     }
 
     setError(null);
     setSelectedFile(file);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setPreviewDataUrl(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const opt = await optimizeImageForAi(file);
+      setPreviewDataUrl(opt.base64);
+      setOptimizedPayload(opt);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const res = event.target?.result as string;
+        setPreviewDataUrl(res);
+        setOptimizedPayload({ base64: res, mimeType: file.type });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleStartExtraction = async () => {
@@ -88,17 +155,23 @@ export const AiQuestionImporterModal: React.FC<AiQuestionImporterModalProps> = (
     }
 
     setIsProcessing(true);
+    setStatusMessage('AI દ્વારા પ્રશ્નો વાંચવામાં આવી રહ્યા છે...');
     try {
       const payload: { text?: string; fileBase64?: string; mimeType?: string } = {};
 
       if (activeInputTab === 'paste') {
         payload.text = inputText.trim();
+      } else if (optimizedPayload) {
+        payload.fileBase64 = optimizedPayload.base64;
+        payload.mimeType = optimizedPayload.mimeType;
       } else if (previewDataUrl && selectedFile) {
         payload.fileBase64 = previewDataUrl;
         payload.mimeType = selectedFile.type;
       }
 
-      const res = await extractQuestionsWithAI(payload);
+      const res = await extractQuestionsWithAI(payload, (status) => {
+        setStatusMessage(status);
+      });
 
       if (res.questions && res.questions.length > 0) {
         setExtractedQuestions(res.questions);
@@ -107,9 +180,21 @@ export const AiQuestionImporterModal: React.FC<AiQuestionImporterModalProps> = (
         setError('દસ્તાવેજમાંથી કોઈ MCQ પ્રશ્નો ઓળખી શકાયા નથી. કૃપા કરીને સ્પષ્ટ છબી અથવા ટેક્સ્ટ આપો.');
       }
     } catch (err: any) {
-      setError(err.message || 'AI એક્સટ્રેક્શન નિષ્ફળ રહ્યું.');
+      let msg = err.message || 'AI એક્સટ્રેક્શન નિષ્ફળ રહ્યું.';
+      try {
+        if (typeof msg === 'string' && msg.startsWith('{') && msg.includes('"message"')) {
+          const parsed = JSON.parse(msg);
+          if (parsed?.error?.message) msg = parsed.error.message;
+        }
+      } catch (_) {}
+
+      if (msg.includes('503') || msg.includes('high demand') || msg.includes('UNAVAILABLE')) {
+        msg = 'Google AI સર્વર પર હાલમાં ભારે ટ્રાફિક (High Demand) છે. કૃપા કરીને નીચે આપેલા "🔄 ફરી પ્રયાસ કરો" બટન પર ક્લિક કરો.';
+      }
+      setError(msg);
     } finally {
       setIsProcessing(false);
+      setStatusMessage('');
     }
   };
 
@@ -203,9 +288,32 @@ export const AiQuestionImporterModal: React.FC<AiQuestionImporterModalProps> = (
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {error && (
-            <div className="mb-4 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+            <div className="mb-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-5 h-5 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-[13px] leading-snug">{error}</p>
+                  <p className="text-[11px] text-rose-700/80 dark:text-rose-300/80 mt-1">
+                    ટિપ: જો Google સર્વર પર ભારે ટ્રાફિક હોય, તો થોડી સેકન્ડ પછી અહીંથી સીધું ફરી પ્રયાસ કરી શકો છો.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleStartExtraction}
+                disabled={isProcessing}
+                className="self-start sm:self-auto shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow transition-all cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? 'animate-spin' : ''}`} />
+                <span>🔄 ફરી પ્રયાસ કરો (Retry)</span>
+              </button>
+            </div>
+          )}
+
+          {isProcessing && (
+            <div className="mb-4 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2.5 shadow-sm animate-pulse">
+              <RefreshCw className="w-4 h-4 shrink-0 animate-spin text-amber-600 dark:text-amber-400" />
+              <span className="font-medium">{statusMessage || 'AI દ્વારા પ્રશ્નોનું વિશ્લેષણ થઈ રહ્યું છે...'}</span>
             </div>
           )}
 
@@ -554,7 +662,7 @@ export const AiQuestionImporterModal: React.FC<AiQuestionImporterModalProps> = (
                 {isProcessing ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    AI પ્રશ્નો તારવી રહ્યું છે...
+                    <span>{statusMessage || 'AI પ્રશ્નો તારવી રહ્યું છે...'}</span>
                   </>
                 ) : (
                   <>

@@ -22,6 +22,13 @@ export interface ForgotPasswordDetails {
   adminPhone?: string;
 }
 
+export interface AdminPasswordResetDetails {
+  adminIdentifier: string;
+  adminName?: string;
+  contactNumber?: string;
+  adminPhone?: string;
+}
+
 /**
  * Gets the configured Admin WhatsApp phone number, if any.
  * Checks localStorage first, then optional environment variable.
@@ -136,6 +143,57 @@ ${details.schoolName ? `• શાળાનું નામ: ${details.schoolNam
 વિનંતી તારીખ: ${new Date().toLocaleDateString('gu-IN')}
 
 કૃપા કરીને અમારો નવો પાસવર્ડ સેટ કરી આપવા વિનંતી છે. આભાર!`;
+
+  const encodedMsg = encodeURIComponent(message);
+  const targetPhone = details.adminPhone || getSavedAdminPhone();
+  const cleanPhone = targetPhone ? normalizeWhatsAppNumber(targetPhone) : '';
+
+  let directUrl: string;
+  if (cleanPhone) {
+    directUrl = `https://wa.me/${cleanPhone}?text=${encodedMsg}`;
+  } else {
+    directUrl = `https://wa.me/?text=${encodedMsg}`;
+  }
+
+  const sendUrl = cleanPhone
+    ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`
+    : `https://api.whatsapp.com/send?text=${encodedMsg}`;
+
+  const webUrl = cleanPhone
+    ? `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`
+    : `https://web.whatsapp.com/send?text=${encodedMsg}`;
+
+  const qrUrl = `https://wa.me/qr/4XSTB6RUCXOYI1?text=${encodedMsg}&s=v`;
+
+  return {
+    url: directUrl,
+    sendUrl,
+    qrUrl,
+    webUrl,
+    message,
+    adminPhone: cleanPhone,
+  };
+}
+
+/**
+ * Generates pre-typed admin password reset request message and WhatsApp launch URLs.
+ */
+export function getAdminPasswordResetWhatsApp(details: AdminPasswordResetDetails): {
+  url: string;
+  sendUrl: string;
+  qrUrl: string;
+  webUrl: string;
+  message: string;
+  adminPhone?: string;
+} {
+  const message = `નમસ્તે સુપર એડમિન શ્રી,
+વિદ્યાલયમ (Vidyalayam) પોર્ટલના એડમિન એકાઉન્ટનો પાસવર્ડ ભૂલાઈ ગયો છે. કૃપા કરીને મારો એડમિન પાસવર્ડ રીસેટ કરવા માટે સહાય કરવા વિનંતી છે.
+
+🔐 એડમિન વિગતો:
+• એડમિન Mobile / ID: ${details.adminIdentifier}
+${details.adminName ? `• એડમિન નામ: ${details.adminName}\n` : ''}${details.contactNumber ? `• સંપર્ક નંબર: ${details.contactNumber}\n` : ''}વિનંતી સમય: ${new Date().toLocaleString('gu-IN')}
+
+કૃપા કરીને મારો નવો પાસવર્ડ સેટ કરી આપવા વિનંતી છે. આભાર!`;
 
   const encodedMsg = encodeURIComponent(message);
   const targetPhone = details.adminPhone || getSavedAdminPhone();

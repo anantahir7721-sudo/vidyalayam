@@ -929,7 +929,7 @@ export function normalizeStandard(val: any): AllowedStandard | null {
 }
 
 /**
- * Normalizes Student Unique DISE / State Code (handles leading apostrophes, spaces, quotes, scientific notation)
+ * Normalizes Student Unique DISE / State Code (handles leading apostrophes, spaces, quotes, scientific notation, and 21-digit concatenated codes)
  */
 export function normalizeDiseCode(val: any): string {
   if (val === undefined || val === null) return '';
@@ -939,6 +939,11 @@ export function normalizeDiseCode(val: any): string {
     .trim();
 
   if (!str) return '';
+
+  // Reject internal database IDs containing letters
+  if (/[a-zA-Z]/.test(str)) {
+    return '';
+  }
 
   // Handle scientific notation e.g. 2.4010401504151e+20 or 2.40104015041510001001E+20
   if (/^[+-]?\d+(?:\.\d+)?[eE][+-]?\d+$/i.test(str)) {
@@ -963,7 +968,15 @@ export function normalizeDiseCode(val: any): string {
     str = str.replace(/\.0+$/, '');
   }
 
-  return str.trim();
+  const digits = str.replace(/\D/g, '');
+  // Official Gujarat Student Child UID is strictly 18 digits.
+  // If 21 digits or > 18 digits were entered/exported (e.g. 18-digit UID + 3-digit roll number),
+  // extract the true standard 18-digit Child UID!
+  if (digits.length >= 18) {
+    return digits.slice(0, 18);
+  }
+
+  return digits || str.trim();
 }
 
 /**
@@ -1426,8 +1439,9 @@ export async function parseStudentsExcelFile(
     const normalizedStd = normalizeStandard(rawStd);
     const grNumber = rawGr !== undefined && String(rawGr).trim() !== '' ? String(rawGr).trim() : undefined;
     const normalizedRawDise = rawDise !== undefined && String(rawDise).trim() !== '' ? normalizeDiseCode(rawDise) : undefined;
-    const diseCode = normalizedRawDise || schoolDiseCode?.trim();
-    const studentStateCode = normalizedRawDise && normalizedRawDise.replace(/\D/g, '').length >= 18 ? normalizedRawDise : undefined;
+    const isSchoolCode = normalizedRawDise && schoolDiseCode && normalizedRawDise === schoolDiseCode.replace(/\D/g, '');
+    const diseCode = normalizedRawDise && !isSchoolCode ? normalizedRawDise : undefined;
+    const studentStateCode = normalizedRawDise && !isSchoolCode && normalizedRawDise.replace(/\D/g, '').length >= 18 ? normalizedRawDise : undefined;
     const section = rawSec !== undefined && String(rawSec).trim() !== '' ? String(rawSec).trim() : undefined;
     const dob = normalizeDate(rawDob);
     const doa = normalizeDate(rawDoa);
@@ -2567,7 +2581,7 @@ export async function parseDualFiles(
           studentChanges = computeStudentFieldChanges(matchedStudent, {
             name: studentName,
             standard: normalizedStd,
-            diseCode: diseKey || schoolDiseCode,
+            diseCode: (diseKey && diseKey !== schoolDiseCode) ? diseKey : undefined,
             studentStateCode: diseKey,
             grNumber,
             section,
@@ -2594,7 +2608,7 @@ export async function parseDualFiles(
       rowNumber: rowCounter++,
       name: studentName,
       standard: normalizedStd,
-      diseCode: diseKey || schoolDiseCode,
+      diseCode: (diseKey && diseKey !== schoolDiseCode) ? diseKey : undefined,
       studentStateCode: diseKey,
       grNumber,
       section,

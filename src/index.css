@@ -518,6 +518,19 @@ html.light .bg-\[\#202d38\],
   color: #141d24 !important;
 }
 
+/* Modal dark backdrop in light mode */
+html.light .bg-black\/85,
+html.light .bg-black\/80,
+html.light .bg-black\/75,
+[data-theme="light"] .bg-black\/85,
+[data-theme="light"] .bg-black\/80,
+[data-theme="light"] .bg-black\/75,
+.theme-light .bg-black\/85,
+.theme-light .bg-black\/80,
+.theme-light .bg-black\/75 {
+  background-color: rgba(15, 23, 42, 0.65) !important;
+}
+
 /* Semi-transparent tint adapters in light mode */
 html.light [class*="bg-white\/"],
 [data-theme="light"] [class*="bg-white\/"],
@@ -537,9 +550,119 @@ html.light [class*="bg-black\/"]:not(.fixed):not(.absolute),
 .theme-light [class*="bg-slate-950\/"]:not(.fixed):not(.absolute),
 .theme-light [class*="bg-slate-800\/"]:not(.fixed):not(.absolute),
 .theme-light [class*="bg-black\/"]:not(.fixed):not(.absolute) {
-  background-color: rgba(32, 45, 56, 0.05) !important;
+  background-color: rgba(32, 45, 56, 0.04) !important;
 }
 
+/* Specific colored -950 badges and stat card backgrounds in Light Mode */
+html.light [class*="bg-emerald-950"],
+[data-theme="light"] [class*="bg-emerald-950"],
+.theme-light [class*="bg-emerald-950"] {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #065f46 !important;
+}
+
+html.light [class*="bg-cyan-950"],
+[data-theme="light"] [class*="bg-cyan-950"],
+.theme-light [class*="bg-cyan-950"] {
+  background-color: #ecfeff !important;
+  border-color: #a5f3fc !important;
+  color: #155e75 !important;
+}
+
+html.light [class*="bg-blue-950"],
+[data-theme="light"] [class*="bg-blue-950"],
+.theme-light [class*="bg-blue-950"] {
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1e40af !important;
+}
+
+html.light [class*="bg-amber-950"],
+[data-theme="light"] [class*="bg-amber-950"],
+.theme-light [class*="bg-amber-950"] {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #92400e !important;
+}
+
+html.light [class*="bg-red-950"],
+[data-theme="light"] [class*="bg-red-950"],
+.theme-light [class*="bg-red-950"] {
+  background-color: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #991b1b !important;
+}
+
+html.light [class*="bg-purple-950"],
+[data-theme="light"] [class*="bg-purple-950"],
+.theme-light [class*="bg-purple-950"] {
+  background-color: #faf5ff !important;
+  border-color: #e9d5ff !important;
+  color: #6b21a8 !important;
+}
+
+/* Gradients in Light Mode (replaces dark gradients with clean light tones) */
+html.light [class*="from-emerald-950"],
+[data-theme="light"] [class*="from-emerald-950"],
+.theme-light [class*="from-emerald-950"] {
+  background-image: linear-gradient(to right, #ecfdf5, #f8fafc) !important;
+  color: #065f46 !important;
+}
+
+html.light [class*="from-slate-900"],
+html.light [class*="from-slate-950"],
+[data-theme="light"] [class*="from-slate-900"],
+[data-theme="light"] [class*="from-slate-950"],
+.theme-light [class*="from-slate-900"],
+.theme-light [class*="from-slate-950"] {
+  background-image: none !important;
+  background-color: #f8fafc !important;
+  color: #141d24 !important;
+}
+
+html.light [class*="from-blue-950"],
+[data-theme="light"] [class*="from-blue-950"],
+.theme-light [class*="from-blue-950"] {
+  background-image: linear-gradient(to right, #eff6ff, #f8fafc) !important;
+  color: #1e40af !important;
+}
+
+html.light [class*="from-cyan-950"],
+[data-theme="light"] [class*="from-cyan-950"],
+.theme-light [class*="from-cyan-950"] {
+  background-image: linear-gradient(to right, #ecfeff, #f8fafc) !important;
+  color: #155e75 !important;
+}
+
+/* Hover adaptors for -900/-950 badges in light mode */
+html.light [class*="hover:bg-emerald-900"]:hover,
+[data-theme="light"] [class*="hover:bg-emerald-900"]:hover {
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+html.light [class*="hover:bg-cyan-900"]:hover,
+[data-theme="light"] [class*="hover:bg-cyan-900"]:hover {
+  background-color: #cffafe !important;
+  color: #155e75 !important;
+}
+
+html.light [class*="hover:bg-blue-900"]:hover,
+[data-theme="light"] [class*="hover:bg-blue-900"]:hover {
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+html.light [class*="hover:bg-slate-700"]:hover,
+[data-theme="light"] [class*="hover:bg-slate-700"]:hover,
+html.light [class*="hover:bg-slate-800"]:hover,
+[data-theme="light"] [class*="hover:bg-slate-800"]:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Light mode borders */
 html.light [class*="border-white\/"],
 html.light .border-slate-800,
 html.light .border-slate-700,
@@ -563,22 +686,44 @@ html.light [class*="bg-emerald-600"],
 html.light [class*="bg-emerald-600"] *,
 html.light [class*="bg-emerald-700"],
 html.light [class*="bg-emerald-700"] *,
+html.light [class*="bg-emerald-500"],
+html.light [class*="bg-emerald-500"] *,
+html.light [class*="from-emerald-600"],
+html.light [class*="from-emerald-600"] *,
+html.light [class*="from-teal-600"],
+html.light [class*="from-teal-600"] *,
 html.light [class*="bg-blue-600"],
 html.light [class*="bg-blue-600"] *,
 html.light [class*="bg-blue-700"],
 html.light [class*="bg-blue-700"] *,
+html.light [class*="bg-blue-500"],
+html.light [class*="bg-blue-500"] *,
+html.light [class*="from-blue-600"],
+html.light [class*="from-blue-600"] *,
+html.light [class*="from-cyan-600"],
+html.light [class*="from-cyan-600"] *,
 html.light [class*="bg-rose-600"],
 html.light [class*="bg-rose-600"] *,
 html.light [class*="bg-rose-700"],
 html.light [class*="bg-rose-700"] *,
+html.light [class*="bg-rose-500"],
+html.light [class*="bg-rose-500"] *,
+html.light [class*="from-rose-600"],
+html.light [class*="from-rose-600"] *,
 html.light [class*="bg-red-600"],
 html.light [class*="bg-red-600"] *,
 html.light [class*="bg-red-700"],
 html.light [class*="bg-red-700"] *,
+html.light [class*="bg-red-500"],
+html.light [class*="bg-red-500"] *,
+html.light [class*="from-red-600"],
+html.light [class*="from-red-600"] *,
 html.light [class*="bg-amber-600"],
 html.light [class*="bg-amber-600"] *,
 html.light [class*="bg-amber-700"],
 html.light [class*="bg-amber-700"] *,
+html.light [class*="bg-amber-500"],
+html.light [class*="bg-amber-500"] *,
 html.light [class*="bg-indigo-600"],
 html.light [class*="bg-indigo-600"] *,
 html.light [class*="bg-purple-600"],
@@ -595,22 +740,44 @@ html.light button[type="submit"] *,
 [data-theme="light"] [class*="bg-emerald-600"] *,
 [data-theme="light"] [class*="bg-emerald-700"],
 [data-theme="light"] [class*="bg-emerald-700"] *,
+[data-theme="light"] [class*="bg-emerald-500"],
+[data-theme="light"] [class*="bg-emerald-500"] *,
+[data-theme="light"] [class*="from-emerald-600"],
+[data-theme="light"] [class*="from-emerald-600"] *,
+[data-theme="light"] [class*="from-teal-600"],
+[data-theme="light"] [class*="from-teal-600"] *,
 [data-theme="light"] [class*="bg-blue-600"],
 [data-theme="light"] [class*="bg-blue-600"] *,
 [data-theme="light"] [class*="bg-blue-700"],
 [data-theme="light"] [class*="bg-blue-700"] *,
+[data-theme="light"] [class*="bg-blue-500"],
+[data-theme="light"] [class*="bg-blue-500"] *,
+[data-theme="light"] [class*="from-blue-600"],
+[data-theme="light"] [class*="from-blue-600"] *,
+[data-theme="light"] [class*="from-cyan-600"],
+[data-theme="light"] [class*="from-cyan-600"] *,
 [data-theme="light"] [class*="bg-rose-600"],
 [data-theme="light"] [class*="bg-rose-600"] *,
 [data-theme="light"] [class*="bg-rose-700"],
 [data-theme="light"] [class*="bg-rose-700"] *,
+[data-theme="light"] [class*="bg-rose-500"],
+[data-theme="light"] [class*="bg-rose-500"] *,
+[data-theme="light"] [class*="from-rose-600"],
+[data-theme="light"] [class*="from-rose-600"] *,
 [data-theme="light"] [class*="bg-red-600"],
 [data-theme="light"] [class*="bg-red-600"] *,
 [data-theme="light"] [class*="bg-red-700"],
 [data-theme="light"] [class*="bg-red-700"] *,
+[data-theme="light"] [class*="bg-red-500"],
+[data-theme="light"] [class*="bg-red-500"] *,
+[data-theme="light"] [class*="from-red-600"],
+[data-theme="light"] [class*="from-red-600"] *,
 [data-theme="light"] [class*="bg-amber-600"],
 [data-theme="light"] [class*="bg-amber-600"] *,
 [data-theme="light"] [class*="bg-amber-700"],
 [data-theme="light"] [class*="bg-amber-700"] *,
+[data-theme="light"] [class*="bg-amber-500"],
+[data-theme="light"] [class*="bg-amber-500"] *,
 [data-theme="light"] [class*="bg-indigo-600"],
 [data-theme="light"] [class*="bg-indigo-600"] *,
 [data-theme="light"] [class*="bg-purple-600"],
@@ -623,12 +790,22 @@ html.light button[type="submit"] *,
 .theme-light .bg-\[\#9d512d\] *,
 .theme-light [class*="bg-emerald-600"],
 .theme-light [class*="bg-emerald-600"] *,
+.theme-light [class*="from-emerald-600"],
+.theme-light [class*="from-emerald-600"] *,
+.theme-light [class*="from-teal-600"],
+.theme-light [class*="from-teal-600"] *,
 .theme-light [class*="bg-blue-600"],
 .theme-light [class*="bg-blue-600"] *,
+.theme-light [class*="from-blue-600"],
+.theme-light [class*="from-blue-600"] *,
+.theme-light [class*="from-cyan-600"],
+.theme-light [class*="from-cyan-600"] *,
 .theme-light [class*="bg-rose-600"],
 .theme-light [class*="bg-rose-600"] *,
 .theme-light [class*="bg-red-600"],
 .theme-light [class*="bg-red-600"] *,
+.theme-light [class*="from-red-600"],
+.theme-light [class*="from-red-600"] *,
 .theme-light [class*="bg-amber-600"],
 .theme-light [class*="bg-amber-600"] *,
 .theme-light [class*="bg-indigo-600"],

@@ -36,6 +36,7 @@ import {
 } from '../services/onlineExamService';
 import { StudentExamScreen } from './StudentExamScreen';
 import { calculateClassResults } from '../utils/resultFormulaUtils';
+import { getStudentDiseCode } from '../utils/idCardPdf';
 
 interface StudentPortalProps {
   session: StudentSession;
@@ -890,7 +891,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">વિદ્યાર્થી DISE કોડ:</span>
                     <strong className="text-blue-600 dark:text-cyan-300 font-mono font-bold">
-                      {student.diseCode || student.studentStateCode || student.studentId || '-'}
+                      {getStudentDiseCode(student)}
                     </strong>
                   </div>
                   <div className="flex justify-between">

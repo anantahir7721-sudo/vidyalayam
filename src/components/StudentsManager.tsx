@@ -113,7 +113,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
     placeOfBirth: '',
     aadhaarNo: '',
     photoUrl: '',
-    diseCode: school.diseCode || '',
+    diseCode: '',
   });
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -164,34 +164,6 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
   const [deleteAllScope, setDeleteAllScope] = useState<'all' | 'filtered' | 'selected'>('all');
   const [deleteAllConfirmInput, setDeleteAllConfirmInput] = useState('');
   const [isDeletingAll, setIsDeletingAll] = useState(false);
-
-  // Blood Group Fix Modal & State
-  const [isFixBloodModalOpen, setIsFixBloodModalOpen] = useState(false);
-  const [isFixingBlood, setIsFixingBlood] = useState(false);
-  const [fixBloodResult, setFixBloodResult] = useState<{
-    totalScanned: number;
-    fixedCount: number;
-    details: Array<{
-      id: string;
-      studentName: string;
-      grNumber?: string;
-      standard: string;
-      oldBloodGroup?: string;
-      newBloodGroup?: string;
-      action: string;
-      description: string;
-    }>;
-  } | null>(null);
-
-  // Compute live list of students having invalid or misplaced blood groups
-  const bloodGroupIssues = useMemo(() => {
-    return students
-      .map((st) => ({ student: st, diagnosis: diagnoseStudentBloodGroup(st) }))
-      .filter(
-        ({ diagnosis }) =>
-          diagnosis.status !== 'valid' && diagnosis.status !== 'empty'
-      );
-  }, [students]);
 
   // Derive unique sections for filtering
   const availableSections = useMemo(() => {
@@ -318,13 +290,56 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
     setAddError(null);
     setAddSuccess(null);
 
+    // 1. વિદ્યાર્થીનું નામ (Name) - ફરજિયાત
     const name = addForm.studentName.trim();
     if (!name) {
-      setAddError('વિદ્યાર્થીનું નામ (Name as in GR) જરૂરી છે.');
+      setAddError('વિદ્યાર્થીનું નામ (Name as in GR) ફરજિયાત છે.');
       return;
     }
 
-    // Check duplicate GR if entered
+    // 2. વિદ્યાર્થી Child UID (DISE કોડ) - ૧૮ અંક ફરજિયાત
+    const rawAddDise = addForm.diseCode.trim();
+    const digitsAddDise = rawAddDise.replace(/\D/g, '');
+    if (!rawAddDise) {
+      setAddError('વિદ્યાર્થીનો ૧૮ અંકનો Child UID (DISE કોડ) ફરજિયાત છે.');
+      return;
+    }
+    if (digitsAddDise.length < 18) {
+      setAddError(`Child UID ઓછામાં ઓછો ૧૮ અંકનો હોવો જરૂરી છે (હાલ ${digitsAddDise.length} અંક છે).`);
+      return;
+    }
+    const cleanAddDise = digitsAddDise.slice(0, 18);
+
+    // Check duplicate Child UID
+    const dupUid = students.some((s) => {
+      const sUid = (s.studentStateCode || s.diseCode || '').replace(/\D/g, '');
+      return sUid && sUid.length >= 18 && sUid.slice(0, 18) === cleanAddDise;
+    });
+    if (dupUid) {
+      setAddError(`આ Child UID (${cleanAddDise}) અન્ય વિદ્યાર્થી માટે પહેલેથી નોંધાયેલ છે.`);
+      return;
+    }
+
+    // 3. ધોરણ (Standard) - ફરજિયાત
+    if (!addForm.standard) {
+      setAddError('ધોરણ (Standard) પસંદ કરવું ફરજિયાત છે.');
+      return;
+    }
+
+    // 4. જાતિ (Gender: કુમાર / કન્યા) - ફરજિયાત
+    if (!addForm.gender) {
+      setAddError('જાતિ (Gender: કુમાર / કન્યા) પસંદ કરવી ફરજિયાત છે.');
+      return;
+    }
+
+    // 5. જન્મ તારીખ (DOB) - ફરજિયાત
+    const dob = addForm.dob.trim();
+    if (!dob) {
+      setAddError('જન્મ તારીખ (DOB) દાખલ કરવી ફરજિયાત છે.');
+      return;
+    }
+
+    // Check duplicate GR if entered (optional)
     if (addForm.grNumber.trim()) {
       const dupGr = students.some(
         (s) => s.grNumber && s.grNumber.trim().toLowerCase() === addForm.grNumber.trim().toLowerCase()
@@ -351,15 +366,16 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       await addStudent(schoolId, {
         studentName: name,
         standard: addForm.standard,
-        diseCode: addForm.diseCode.trim() || school.diseCode || undefined,
+        diseCode: cleanAddDise,
+        studentStateCode: cleanAddDise,
         grNumber: addForm.grNumber.trim() || undefined,
         section: addForm.section.trim() || undefined,
         division: addForm.section.trim() || undefined,
         rollNumber: addForm.rollNumber.trim() || undefined,
-        dob: addForm.dob.trim() || undefined,
+        dob: dob,
         doa: addForm.doa.trim() || undefined,
         gender: addForm.gender,
-        bloodGroup: addForm.bloodGroup.trim() || undefined,
+        bloodGroup: cleanAndNormalizeBloodGroup(addForm.bloodGroup) || undefined,
         caste: addForm.caste.trim() || undefined,
         contactNumber: addForm.contactNumber.trim() || undefined,
         fatherName: addForm.fatherName.trim() || undefined,
@@ -394,7 +410,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
         placeOfBirth: '',
         aadhaarNo: '',
         photoUrl: '',
-        diseCode: school.diseCode || '',
+        diseCode: '',
       });
       onRefresh();
       setTimeout(() => {
@@ -422,9 +438,19 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
     setEditSubmitting(true);
     try {
+      const rawEditDise = (editForm.diseCode || editForm.studentStateCode || '').trim();
+      const digitsEditDise = rawEditDise.replace(/\D/g, '');
+      let cleanEditDise: string | undefined = undefined;
+      // Reject internal Firestore document IDs (contain letters)
+      if (rawEditDise && !/[a-zA-Z]/.test(rawEditDise)) {
+        cleanEditDise = digitsEditDise.length >= 18 ? digitsEditDise.slice(0, 18) : (rawEditDise || undefined);
+      }
+
       await updateStudent(schoolId, editingStudent.id, {
         ...editForm,
         studentName: trimmedName,
+        diseCode: cleanEditDise || '',
+        studentStateCode: cleanEditDise || '',
       });
       onRefresh();
       setEditingStudent(null);
@@ -489,26 +515,6 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       alert(err.message || 'વિદ્યાર્થીઓ કાઢી નાખવામાં ભૂલ આવી.');
     } finally {
       setIsDeletingAll(false);
-    }
-  };
-
-  // Handle Fix All Blood Groups (Entries Fix All)
-  const handleFixAllBloodGroups = async () => {
-    try {
-      setIsFixingBlood(true);
-      const res = await fixSchoolStudentsBloodGroups(schoolId, students);
-      setFixBloodResult(res);
-      onRefresh();
-      setImportStatusMessage(
-        res.fixedCount > 0
-          ? `સફળતાપૂર્વક ${res.fixedCount} વિદ્યાર્થીઓના બ્લડ ગ્રૂપ ડેટા ફિક્સ કરવામાં આવ્યા!`
-          : `તમામ વિદ્યાર્થીઓના બ્લડ ગ્રૂપ પહેલેથી જ માન્ય છે (કોઈ સુધારાની જરૂર નથી).`
-      );
-      setTimeout(() => setImportStatusMessage(null), 8000);
-    } catch (err: any) {
-      alert(`બ્લડ ગ્રૂપ ફિક્સ કરવામાં ભૂલ આવી: ${err.message || 'અજ્ઞાત ભૂલ'}`);
-    } finally {
-      setIsFixingBlood(false);
     }
   };
 
@@ -812,29 +818,6 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               </button>
             </div>
 
-            {/* Fix All Blood Groups Button */}
-            <button
-              onClick={() => {
-                setFixBloodResult(null);
-                setIsFixBloodModalOpen(true);
-              }}
-              disabled={students.length === 0}
-              className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed min-h-[44px] ${
-                bloodGroupIssues.length > 0
-                  ? 'bg-amber-950/80 hover:bg-amber-900 text-amber-200 border border-amber-500/80 ring-2 ring-amber-500/30'
-                  : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700'
-              }`}
-              title="બ્લડ ગ્રૂપની અયોગ્ય એન્ટ્રીઓ સુધારો (Fix Blood Group Column Entries)"
-            >
-              <Heart className={`w-4 h-4 ${bloodGroupIssues.length > 0 ? 'text-amber-400 fill-amber-400' : 'text-red-400'}`} />
-              <span>બ્લડ ગ્રૂપ ફિક્સ</span>
-              {bloodGroupIssues.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">
-                  {bloodGroupIssues.length}
-                </span>
-              )}
-            </button>
-
             {/* Delete All Students Button */}
             <button
               onClick={() => {
@@ -874,33 +857,6 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               className="text-emerald-400 hover:text-white p-1"
             >
               <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {/* Blood Group Issues Alert Banner */}
-        {bloodGroupIssues.length > 0 && (
-          <div className="mt-4 bg-amber-950/70 border border-amber-600/80 text-amber-200 rounded-xl p-3.5 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
-            <div className="flex items-center gap-2.5">
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-              <div>
-                <span className="font-bold">
-                  {bloodGroupIssues.length} વિદ્યાર્થીઓના બ્લડ ગ્રૂપમાં અયોગ્ય અથવા આડાઅવળી એન્ટ્રી છે!
-                </span>
-                <span className="text-amber-300/80 block sm:inline sm:ml-1.5 text-xs">
-                  (બ્લડ ગ્રૂપ કોલમમાં માત્ર માન્ય બ્લડ ગ્રૂપ જ લખાવું જોઈએ. ગુજરાતી/માધ્યમનો ડેટા સાચા ખાનામાં જશે.)
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setFixBloodResult(null);
-                setIsFixBloodModalOpen(true);
-              }}
-              className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-colors shrink-0 shadow flex items-center gap-1.5 cursor-pointer"
-            >
-              <Heart className="w-3.5 h-3.5 fill-slate-950" />
-              <span>બધા ફિક્સ કરો (Fix All)</span>
             </button>
           </div>
         )}
@@ -1201,26 +1157,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
                       {/* Roll Number */}
                       <td className="px-4 py-3 font-mono text-xs text-slate-300">
-                        {(() => {
-                          const bgInRoll = cleanAndNormalizeBloodGroup(st.rollNumber);
-                          if (bgInRoll) {
-                            return (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFixBloodResult(null);
-                                  setIsFixBloodModalOpen(true);
-                                }}
-                                title="આ રોલ નંબર નથી પણ બ્લડ ગ્રૂપ છે! સાચા ખાનામાં બદલવા માટે 'બધા ફિક્સ કરો' પર ક્લિક કરો."
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950/70 border border-amber-700/80 text-amber-300 hover:bg-amber-900 cursor-pointer"
-                              >
-                                <AlertTriangle className="w-3 h-3 text-amber-400" />
-                                <span>{bgInRoll}</span>
-                              </button>
-                            );
-                          }
-                          return st.rollNumber || '-';
-                        })()}
+                        {st.rollNumber || '-'}
                       </td>
 
                       {/* DOB */}
@@ -1241,18 +1178,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                           }
                           if (st.bloodGroup && st.bloodGroup.trim()) {
                             return (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFixBloodResult(null);
-                                  setIsFixBloodModalOpen(true);
-                                }}
-                                className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 border border-amber-600 text-amber-300 flex items-center gap-1 hover:bg-amber-900 transition-colors"
-                                title={`અયોગ્ય બ્લડ ગ્રૂપ એન્ટ્રી: "${st.bloodGroup}". સુધારવા માટે ક્લિક કરો.`}
+                              <span
+                                className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300"
+                                title={st.bloodGroup}
                               >
-                                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
-                                <span className="line-clamp-1 max-w-[80px]">{st.bloodGroup}</span>
-                              </button>
+                                {st.bloodGroup}
+                              </span>
                             );
                           }
                           return <span className="text-slate-500 text-xs">-</span>;
@@ -1301,6 +1232,9 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                                 dob: st.dob,
                                 bloodGroup: cleanAndNormalizeBloodGroup(st.bloodGroup) || '',
                                 contactNumber: st.contactNumber || st.mobileNumber,
+                                diseCode: st.diseCode || st.studentStateCode || '',
+                                studentStateCode: st.studentStateCode || st.diseCode || '',
+                                aadhaarNo: st.aadhaarNo || '',
                               });
                             }}
                             className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
@@ -1331,20 +1265,20 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL 1: ADD STUDENT MODAL (Complete Master Information) */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[86dvh] sm:max-h-[90dvh] text-white flex flex-col animate-fadeIn my-auto overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/70 dark:bg-black/80 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[86dvh] sm:max-h-[90dvh] text-slate-900 dark:text-white flex flex-col animate-fadeIn my-auto overflow-hidden">
             {/* Header */}
-            <div className="shrink-0 px-6 py-4 bg-slate-900 border-b border-white/10 flex items-center justify-between">
+            <div className="shrink-0 px-6 py-4 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-terracotta flex items-center justify-center text-white">
                   <UserPlus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">નવો વિદ્યાર્થી ઉમેરો (New Student Master Record)</h3>
-                  <p className="text-xs text-slate-400">વિદ્યાર્થી માસ્ટર ઇન્ફોર્મેશન રેકોર્ડ અને આઈડી કાર્ડ ડેટા</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">નવો વિદ્યાર્થી ઉમેરો (New Student Master Record)</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">વિદ્યાર્થી માસ્ટર ઇન્ફોર્મેશન રેકોર્ડ અને આઈડી કાર્ડ ડેટા</p>
                 </div>
               </div>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white p-1 rounded-lg">
+              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1352,26 +1286,26 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             {/* Content Form */}
             <form onSubmit={handleSubmitAddStudent} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 flex flex-col justify-between">
               {addError && (
-                <div className="p-3 bg-red-950/70 border border-red-800 rounded-xl text-xs text-red-200 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <div className="p-3 bg-red-50 border border-red-200 dark:bg-red-950/70 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-200 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0" />
                   <span>{addError}</span>
                 </div>
               )}
               {addSuccess && (
-                <div className="p-3 bg-emerald-950/70 border border-emerald-800 rounded-xl text-xs text-emerald-200 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <div className="p-3 bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/70 dark:border-emerald-800 rounded-xl text-xs text-emerald-700 dark:text-emerald-200 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
                   <span>{addSuccess}</span>
                 </div>
               )}
 
               {/* Photo & Basic Identity */}
-              <div className="bg-slate-800/50 p-4 rounded-xl border border-white/5 flex flex-col sm:flex-row items-center gap-5">
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-white/5 flex flex-col sm:flex-row items-center gap-5">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-24 h-30 rounded-lg border-2 border-dashed border-slate-600 bg-slate-950 overflow-hidden flex items-center justify-center">
+                  <div className="w-24 h-30 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-950 overflow-hidden flex items-center justify-center">
                     {addForm.photoUrl ? (
                       <img src={addForm.photoUrl} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
-                      <Camera className="w-8 h-8 text-slate-600" />
+                      <Camera className="w-8 h-8 text-slate-400 dark:text-slate-600" />
                     )}
                   </div>
                   <input
@@ -1384,7 +1318,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   <button
                     type="button"
                     onClick={() => addPhotoInputRef.current?.click()}
-                    className="text-[11px] px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+                    className="text-[11px] px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-medium cursor-pointer"
                   >
                     {addForm.photoUrl ? 'ફોટો બદલો' : 'ફોટો પસંદ કરો'}
                   </button>
@@ -1392,8 +1326,8 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      વિદ્યાર્થીનું નામ (Name as in GR) *
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      વિદ્યાર્થીનું નામ (Name as in GR) <span className="text-red-500 font-bold">* (ફરજિયાત)</span>
                     </label>
                     <input
                       type="text"
@@ -1401,33 +1335,35 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       placeholder="દા.ત. પટેલ આરવ રમેશચંદ્ર"
                       value={addForm.studentName}
                       onChange={(e) => setAddForm({ ...addForm, studentName: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      G.R. નંબર (GR No.)
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      G.R. નંબર (GR No.) <span className="text-slate-400 font-normal">(મરજિયાત)</span>
                     </label>
                     <input
                       type="text"
                       placeholder="દા.ત. 1042"
                       value={addForm.grNumber}
                       onChange={(e) => setAddForm({ ...addForm, grNumber: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta font-mono"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      વિદ્યાર્થી DISE કોડ (૧૮ આંકડાનો Child UID)
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Child UID (૧૮ અંકનો DISE કોડ) <span className="text-red-500 font-bold">* (ફરજિયાત)</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="૧૮ આંકડાનો વિદ્યાર્થી DISE કોડ"
+                      required
+                      maxLength={18}
+                      placeholder="૧૮ અંકનો Child UID (ફરજિયાત)"
                       value={addForm.diseCode}
                       onChange={(e) => setAddForm({ ...addForm, diseCode: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-cyan-300 focus:outline-none focus:border-terracotta font-mono"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-cyan-600 dark:text-cyan-300 focus:outline-none focus:border-terracotta font-mono"
                     />
                   </div>
                 </div>
@@ -1436,13 +1372,14 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               {/* Academic & Personal Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    ધોરણ (Standard) *
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    ધોરણ (Standard) <span className="text-red-500 font-bold">* (ફરજિયાત)</span>
                   </label>
                   <select
+                    required
                     value={addForm.standard}
                     onChange={(e) => setAddForm({ ...addForm, standard: e.target.value as AllowedStandard })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   >
                     <option value="9">ધોરણ 9</option>
                     <option value="10">ધોરણ 10</option>
@@ -1452,7 +1389,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     વર્ગ / સેક્શન (Section)
                   </label>
                   <input
@@ -1460,12 +1397,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     placeholder="A, B, C..."
                     value={addForm.section}
                     onChange={(e) => setAddForm({ ...addForm, section: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     રોલ નંબર (Roll No.)
                   </label>
                   <input
@@ -1473,30 +1410,32 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     placeholder="દા.ત. 15"
                     value={addForm.rollNumber}
                     onChange={(e) => setAddForm({ ...addForm, rollNumber: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta font-mono"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    જન્મ તારીખ (DOB)
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    જન્મ તારીખ (DOB) <span className="text-red-500 font-bold">* (ફરજિયાત)</span>
                   </label>
                   <input
                     type="date"
+                    required
                     value={addForm.dob}
                     onChange={(e) => setAddForm({ ...addForm, dob: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    જાતિ (Gender)
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    જાતિ (Gender) <span className="text-red-500 font-bold">* (ફરજિયાત)</span>
                   </label>
                   <select
+                    required
                     value={addForm.gender}
                     onChange={(e) => setAddForm({ ...addForm, gender: e.target.value as any })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   >
                     <option value="Boy">કુમાર (Boy)</option>
                     <option value="Girl">કન્યા (Girl)</option>
@@ -1505,13 +1444,13 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     બ્લડ ગ્રૂપ (Blood Group)
                   </label>
                   <select
                     value={addForm.bloodGroup}
                     onChange={(e) => setAddForm({ ...addForm, bloodGroup: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   >
                     <option value="">પસંદ કરો</option>
                     <option value="A+">A+</option>
@@ -1529,19 +1468,19 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               {/* Family & Contact */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     પિતાનું નામ (Father Name)
                   </label>
                   <input
                     type="text"
                     value={addForm.fatherName}
                     onChange={(e) => setAddForm({ ...addForm, fatherName: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     પિતાનો વ્યવસાય (Father Occupation)
                   </label>
                   <input
@@ -1549,24 +1488,24 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     placeholder="ખેતી, વેપાર, નોકરી..."
                     value={addForm.fatherOccupation}
                     onChange={(e) => setAddForm({ ...addForm, fatherOccupation: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     માતાનું નામ (Mother Name)
                   </label>
                   <input
                     type="text"
                     value={addForm.motherName}
                     onChange={(e) => setAddForm({ ...addForm, motherName: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     માતાનો વ્યવસાય (Mother Occupation)
                   </label>
                   <input
@@ -1574,12 +1513,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     placeholder="ગૃહિણી, નોકરી..."
                     value={addForm.motherOccupation}
                     onChange={(e) => setAddForm({ ...addForm, motherOccupation: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     મોબાઈલ નંબર (Parent Contact)
                   </label>
                   <input
@@ -1587,12 +1526,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     placeholder="10 અંકનો મોબાઈલ"
                     value={addForm.contactNumber}
                     onChange={(e) => setAddForm({ ...addForm, contactNumber: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta font-mono"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     જન્મ સ્થળ (Place of Birth)
                   </label>
                   <input
@@ -1600,12 +1539,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     placeholder="ગામ / શહેરનું નામ"
                     value={addForm.placeOfBirth}
                     onChange={(e) => setAddForm({ ...addForm, placeOfBirth: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   />
                 </div>
 
                 <div className="sm:col-span-3">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     આધાર કાર્ડ નંબર (Aadhaar No. - 12 Digits)
                   </label>
                   <input
@@ -1614,12 +1553,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     placeholder="XXXX XXXX XXXX"
                     value={addForm.aadhaarNo}
                     onChange={(e) => setAddForm({ ...addForm, aadhaarNo: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta font-mono"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
                   />
                 </div>
 
                 <div className="sm:col-span-3">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     રહેઠાણનું સરનામું (Address)
                   </label>
                   <input
@@ -1627,17 +1566,17 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     placeholder="ગામ, સોસાયટી, તાલુકો, જિલ્લો..."
                     value={addForm.address}
                     onChange={(e) => setAddForm({ ...addForm, address: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   />
                 </div>
               </div>
 
               {/* Bottom Buttons (Sticky at bottom of form) */}
-              <div className="shrink-0 sticky bottom-0 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 px-4 sm:px-6 py-3 bg-slate-900 border-t border-white/10 flex items-center justify-end gap-3 z-10">
+              <div className="shrink-0 sticky bottom-0 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 px-4 sm:px-6 py-3 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-3 z-10">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold cursor-pointer transition-colors border border-slate-200 dark:border-white/5"
                 >
                   રદ કરો
                 </button>
@@ -1657,31 +1596,31 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL 2: ID CARD GENERATION MODAL */}
       {isIdCardModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full max-h-[88dvh] overflow-y-auto p-5 sm:p-6 text-white animate-fadeIn my-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 dark:bg-black/80 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl max-w-lg w-full max-h-[88dvh] overflow-y-auto p-5 sm:p-6 text-slate-900 dark:text-white animate-fadeIn my-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-3 mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-terracotta flex items-center justify-center text-white">
                   <CreditCard className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-bold">વિદ્યાર્થી ઓળખપત્ર (Student ID Cards) જનરેટ કરો</h3>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">વિદ્યાર્થી ઓળખપત્ર (Student ID Cards) જનરેટ કરો</h3>
               </div>
-              <button onClick={() => setIsIdCardModalOpen(false)} className="text-slate-400 hover:text-white p-1 rounded-lg">
+              <button onClick={() => setIsIdCardModalOpen(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-4 text-xs sm:text-sm">
-              <p className="text-slate-300">
+              <p className="text-slate-600 dark:text-slate-300">
                 આઈડી કાર્ડ પ્રોફેશનલ લેઆઉટમાં A4 સાઈઝ પર યોગ્ય માર્જિન અને Anek Gujarati ફોન્ટ સાથે પ્રિન્ટ થશે.
               </p>
 
               {/* Option 1: Selected students */}
               {selectedStudentIds.size > 0 && (
-                <div className="p-3.5 rounded-xl bg-terracotta/15 border border-terracotta/30 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-terracotta/10 dark:bg-terracotta/15 border border-terracotta/30 flex items-center justify-between">
                   <div>
-                    <div className="font-bold text-white">પસંદ કરેલા વિદ્યાર્થીઓ ({selectedStudentIds.size})</div>
-                    <div className="text-[11px] text-slate-400">ટેબલમાંથી પસંદ કરેલા વિદ્યાર્થીઓના આઈડી કાર્ડ</div>
+                    <div className="font-bold text-slate-900 dark:text-white">પસંદ કરેલા વિદ્યાર્થીઓ ({selectedStudentIds.size})</div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400">ટેબલમાંથી પસંદ કરેલા વિદ્યાર્થીઓના આઈડી કાર્ડ</div>
                   </div>
                   <button
                     onClick={() => {
@@ -1697,8 +1636,8 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               )}
 
               {/* Option 2: Standard-wise generation */}
-              <div className="bg-slate-800/60 p-4 rounded-xl border border-white/5 space-y-3">
-                <label className="block font-semibold text-slate-200">
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-white/5 space-y-3">
+                <label className="block font-semibold text-slate-800 dark:text-slate-200">
                   ધોરણ અનુસાર આઈડી કાર્ડ જનરેટ કરો:
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -1715,25 +1654,25 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       onClick={() => {
                         const target =
                           opt.std === 'ALL'
-                            ? students
+                             ? students
                             : students.filter((s) => String(s.standard).replace(/^class\s*/i, '').trim() === opt.std);
                         handleGenerateIdCards(target);
                         setIsIdCardModalOpen(false);
                       }}
-                      className="p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-terracotta text-left flex justify-between items-center transition-colors cursor-pointer"
+                      className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-terracotta text-left flex justify-between items-center transition-colors cursor-pointer shadow-sm"
                     >
-                      <span className="font-bold text-white">{opt.label}</span>
-                      <span className="text-[11px] font-mono text-amber-300">({opt.count})</span>
+                      <span className="font-bold text-slate-800 dark:text-white">{opt.label}</span>
+                      <span className="text-[11px] font-mono text-amber-600 dark:text-amber-300">({opt.count})</span>
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-white/10 flex justify-end">
+            <div className="mt-5 pt-3 border-t border-slate-200 dark:border-white/10 flex justify-end">
               <button
                 onClick={() => setIsIdCardModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold dark:hover:bg-slate-700 cursor-pointer border border-slate-200 dark:border-transparent transition-colors"
               >
                 બંધ કરો
               </button>
@@ -1744,57 +1683,57 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
       {/* MODAL 3: EXCEL IMPORT PREVIEW */}
       {previewModalOpen && parseResult && (
-        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm">
-          <div className="bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl max-w-3xl w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-white my-auto animate-fadeIn overflow-hidden">
+        <div className="fixed inset-0 z-[100] bg-black/70 dark:bg-black/80 flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-3xl w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-slate-900 dark:text-white my-auto animate-fadeIn overflow-hidden">
             {/* Modal Header */}
-            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-700/80 flex items-center justify-between gap-3 bg-slate-900">
+            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900">
               <div>
-                <h3 className="text-base sm:text-lg font-bold flex items-center gap-2">
-                  <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-base sm:text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                  <FileSpreadsheet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   <span>Excel આયાત પૂર્વાવલોકન (Student Master Preview)</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
                   ફાઇલ: {excelFile?.name} • કુલ {parseResult.totalRows} પંક્તિઓ મળી
                 </p>
               </div>
-              <button onClick={() => setPreviewModalOpen(false)} className="text-slate-400 hover:text-white p-2 rounded-lg cursor-pointer">
+              <button onClick={() => setPreviewModalOpen(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 rounded-lg cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Summary Statistics */}
-            <div className="shrink-0 p-3 sm:p-4 bg-slate-850 border-b border-slate-800 grid grid-cols-4 gap-2 text-center text-xs">
-              <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-2 sm:p-2.5">
-                <div className="text-emerald-400 font-bold text-base sm:text-lg font-mono">
+            <div className="shrink-0 p-3 sm:p-4 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 grid grid-cols-4 gap-2 text-center text-xs">
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/60 dark:border-emerald-800/80 rounded-xl p-2 sm:p-2.5">
+                <div className="text-emerald-700 dark:text-emerald-400 font-bold text-base sm:text-lg font-mono">
                   {parseResult.validRows.length - parseResult.existingUpdateRows.length}
                 </div>
-                <div className="text-emerald-300 text-[10px] sm:text-[11px] font-medium">નવા વિદ્યાર્થીઓ</div>
+                <div className="text-emerald-800 dark:text-emerald-300 text-[10px] sm:text-[11px] font-medium">નવા વિદ્યાર્થીઓ</div>
               </div>
 
-              <div className="bg-blue-950/60 border border-blue-800/80 rounded-xl p-2 sm:p-2.5">
-                <div className="text-blue-400 font-bold text-base sm:text-lg font-mono">
+              <div className="bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-950/60 dark:border-blue-800/80 rounded-xl p-2 sm:p-2.5">
+                <div className="text-blue-700 dark:text-blue-400 font-bold text-base sm:text-lg font-mono">
                   {parseResult.existingUpdateRows.length}
                 </div>
-                <div className="text-blue-300 text-[10px] sm:text-[11px] font-medium">અપડેટ થશે (Preserve ID)</div>
+                <div className="text-blue-800 dark:text-blue-300 text-[10px] sm:text-[11px] font-medium">અપડેટ થશે (Preserve ID)</div>
               </div>
 
-              <div className="bg-amber-950/60 border border-amber-800/80 rounded-xl p-2 sm:p-2.5">
-                <div className="text-amber-400 font-bold text-base sm:text-lg font-mono">
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 dark:bg-amber-950/60 dark:border-amber-800/80 rounded-xl p-2 sm:p-2.5">
+                <div className="text-amber-700 dark:text-amber-400 font-bold text-base sm:text-lg font-mono">
                   {parseResult.duplicateInFileRows.length}
                 </div>
-                <div className="text-amber-300 text-[10px] sm:text-[11px] font-medium">ફાઈલમાં ડુપ્લિકેટ</div>
+                <div className="text-amber-800 dark:text-amber-300 text-[10px] sm:text-[11px] font-medium">ફાઈલમાં ડુપ્લિકેટ</div>
               </div>
 
-              <div className="bg-red-950/60 border border-red-800/80 rounded-xl p-2 sm:p-2.5">
-                <div className="text-red-400 font-bold text-base sm:text-lg font-mono">
+              <div className="bg-red-50 border border-red-200 text-red-800 dark:bg-red-950/60 dark:border-red-800/80 rounded-xl p-2 sm:p-2.5">
+                <div className="text-red-700 dark:text-red-400 font-bold text-base sm:text-lg font-mono">
                   {parseResult.invalidRows.length}
                 </div>
-                <div className="text-red-300 text-[10px] sm:text-[11px] font-medium">અમાન્ય પંક્તિઓ</div>
+                <div className="text-red-800 dark:text-red-300 text-[10px] sm:text-[11px] font-medium">અમાન્ય પંક્તિઓ</div>
               </div>
             </div>
 
             {/* Tab selection */}
-            <div className="shrink-0 flex border-b border-slate-800 px-4 pt-2 gap-2 text-xs bg-slate-900">
+            <div className="shrink-0 flex border-b border-slate-200 dark:border-slate-800 px-4 pt-2 gap-2 text-xs bg-white dark:bg-slate-900">
               {[
                 { id: 'all', label: `બધા (${parseResult.allRows.length})` },
                 { id: 'valid', label: `માન્ય / નવા (${parseResult.validRows.length})` },
@@ -1804,10 +1743,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 <button
                   key={tab.id}
                   onClick={() => setPreviewFilterTab(tab.id as any)}
-                  className={`px-3 py-2 border-b-2 font-medium transition-colors ${
+                  className={`px-3 py-2 border-b-2 font-medium transition-colors cursor-pointer ${
                     previewFilterTab === tab.id
-                      ? 'border-terracotta text-amber-300'
-                      : 'border-transparent text-slate-400 hover:text-slate-200'
+                      ? 'border-terracotta text-terracotta dark:text-amber-300 font-bold'
+                      : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                   }`}
                 >
                   {tab.label}
@@ -1818,7 +1757,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             {/* Rows Table */}
             <div className="flex-1 overflow-y-auto p-4 max-h-80">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] sticky top-0">
+                <thead className="bg-slate-100 text-slate-600 dark:bg-slate-950 dark:text-slate-400 uppercase text-[10px] sticky top-0">
                   <tr>
                     <th className="p-2 w-12">રો નં</th>
                     <th className="p-2">નામ</th>
@@ -1827,7 +1766,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     <th className="p-2">સ્થિતિ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {parseResult.allRows
                     .filter((r) => {
                       if (previewFilterTab === 'valid') return r.isValid;
@@ -1836,16 +1775,16 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       return true;
                     })
                     .map((r) => (
-                      <tr key={r.rowNumber} className="hover:bg-slate-800/40">
-                        <td className="p-2 font-mono text-slate-400">#{r.rowNumber}</td>
-                        <td className="p-2 font-semibold text-white">{r.name || '(ખાલી)'}</td>
-                        <td className="p-2">ધોરણ {r.standard}</td>
-                        <td className="p-2 font-mono">{r.grNumber || '-'}</td>
+                      <tr key={r.rowNumber} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                        <td className="p-2 font-mono text-slate-500 dark:text-slate-400">#{r.rowNumber}</td>
+                        <td className="p-2 font-semibold text-slate-900 dark:text-white">{r.name || '(ખાલી)'}</td>
+                        <td className="p-2 text-slate-700 dark:text-slate-300">ધોરણ {r.standard}</td>
+                        <td className="p-2 font-mono text-slate-700 dark:text-slate-300">{r.grNumber || '-'}</td>
                         <td className="p-2">
                           {r.isValid ? (
                             r.isExistingUpdate ? (
                               <div className="space-y-1">
-                                <span className="text-[11px] px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 font-semibold inline-flex items-center gap-1">
+                                <span className="text-[11px] px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800 font-semibold inline-flex items-center gap-1">
                                   <RefreshCw className="w-2.5 h-2.5" />
                                   અસ્તિત્વમાં છે (અપડેટ થશે)
                                 </span>
@@ -1854,24 +1793,24 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                                     {r.changes.map((ch, cIdx) => (
                                       <span
                                         key={cIdx}
-                                        className="text-[10px] bg-slate-950 text-blue-300 border border-blue-900/60 px-1.5 py-0.2 rounded"
+                                        className="text-[10px] bg-slate-100 text-blue-900 border border-blue-200 dark:bg-slate-950 dark:text-blue-300 dark:border-blue-900/60 px-1.5 py-0.2 rounded"
                                         title={`${ch.fieldLabel}: ${ch.oldValue || '(ખાલી)'} ➔ ${ch.newValue}`}
                                       >
-                                        {ch.fieldLabel}: <strong className="text-emerald-300">{ch.newValue}</strong>
+                                        {ch.fieldLabel}: <strong className="text-emerald-700 dark:text-emerald-300">{ch.newValue}</strong>
                                       </span>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-[10px] text-slate-400 italic">માહિતી સમાન છે</div>
+                                  <div className="text-[10px] text-slate-500 dark:text-slate-400 italic">માહિતી સમાન છે</div>
                                 )}
                               </div>
                             ) : (
-                              <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                              <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 font-semibold">
                                 માન્ય (નવો ઉમેરાશે)
                               </span>
                             )
                           ) : (
-                            <span className="text-[11px] px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-800">
+                            <span className="text-[11px] px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800">
                               {r.errorReason}
                             </span>
                           )}
@@ -1883,11 +1822,11 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             </div>
 
             {/* Bottom Actions */}
-            <div className="shrink-0 p-4 border-t border-slate-800 bg-slate-900 flex items-center justify-between">
+            <div className="shrink-0 p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setPreviewModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold dark:hover:bg-slate-700 cursor-pointer border border-slate-200 dark:border-transparent transition-colors"
               >
                 રદ કરો
               </button>
@@ -2471,6 +2410,38 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    વિદ્યાર્થી Child UID (૧૮ અંક)
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.diseCode || editForm.studentStateCode || ''}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        diseCode: e.target.value,
+                        studentStateCode: e.target.value,
+                      })
+                    }
+                    placeholder="દા.ત. 240104015021720076"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta font-mono text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">આધાર નંબર (Aadhaar No)</label>
+                  <input
+                    type="text"
+                    value={editForm.aadhaarNo || ''}
+                    onChange={(e) => setEditForm({ ...editForm, aadhaarNo: e.target.value })}
+                    placeholder="૧૨ અંકનો આધાર નંબર"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta font-mono text-xs"
+                  />
+                </div>
+              </div>
+
               <div className="shrink-0 pt-3 border-t border-slate-800 flex justify-end gap-2 sticky bottom-0 bg-slate-900">
                 <button
                   type="button"
@@ -2708,237 +2679,6 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 )}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: FIX ALL BLOOD GROUPS MODAL */}
-      {isFixBloodModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
-          <div className="bg-slate-900 border border-red-800/60 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col p-5 sm:p-6 text-white my-auto animate-fadeIn overflow-hidden">
-            {/* Header */}
-            <div className="shrink-0 flex items-start gap-3.5 mb-4 pb-3 border-b border-slate-800">
-              <div className="w-11 h-11 rounded-2xl bg-red-950/90 border border-red-700/80 text-red-400 flex items-center justify-center shrink-0 shadow-lg">
-                <Heart className="w-6 h-6 fill-red-400 text-red-400" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-950 text-red-300 border border-red-800">
-                    ડેટા ક્લીનિંગ અને ઓટોમેશન
-                  </span>
-                  <button
-                    onClick={() => {
-                      if (!isFixingBlood) {
-                        setIsFixBloodModalOpen(false);
-                        setFixBloodResult(null);
-                      }
-                    }}
-                    className="text-slate-400 hover:text-white p-1 cursor-pointer rounded-lg"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-white mt-1">
-                  બ્લડ ગ્રૂપ એન્ટ્રીઝ ફિક્સ કરો (Fix Blood Group Column Entries)
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  બ્લડ ગ્રૂપ કોલમમાં માત્ર સાચું બ્લડ ગ્રૂપ (A+, B+, O+, AB+ વગેરે) જ હોવું જોઈએ.
-                </p>
-              </div>
-            </div>
-
-            {/* If Fix Complete Result is Available */}
-            {fixBloodResult ? (
-              <div className="flex-1 flex flex-col justify-between overflow-hidden">
-                <div className="flex-1 overflow-y-auto pr-1 space-y-4">
-                  <div className="p-4 rounded-xl bg-emerald-950/70 border border-emerald-700/80 text-emerald-200">
-                    <div className="flex items-center gap-2.5 font-bold text-base text-emerald-300">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                      <span>
-                        {fixBloodResult.fixedCount > 0
-                          ? `સફળતાપૂર્વક ${fixBloodResult.fixedCount} વિદ્યાર્થીઓનો ડેટા ફિક્સ કરવામાં આવ્યો!`
-                          : `તમામ વિદ્યાર્થીઓના બ્લડ ગ્રૂપ પહેલેથી જ સાચા છે.`}
-                      </span>
-                    </div>
-                    <p className="text-xs text-emerald-300/80 mt-1">
-                      કુલ સ્કેન કરેલ: {fixBloodResult.totalScanned} વિદ્યાર્થીઓ • સુધારેલ એન્ટ્રીઓ: {fixBloodResult.fixedCount}
-                    </p>
-                  </div>
-
-                  {fixBloodResult.details.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-xs font-semibold text-slate-300 flex justify-between">
-                        <span>સુધારેલા વિદ્યાર્થીઓની યાદી:</span>
-                        <span className="font-mono text-emerald-400 font-bold">{fixBloodResult.details.length} એન્ટ્રીઓ</span>
-                      </div>
-                      <div className="max-h-60 overflow-y-auto p-2 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-xs">
-                        {fixBloodResult.details.map((d) => (
-                          <div
-                            key={d.id}
-                            className="p-2.5 rounded-lg bg-slate-900 border border-slate-800/80 space-y-1"
-                          >
-                            <div className="flex items-center justify-between font-medium text-white">
-                              <span>{d.studentName}</span>
-                              <span className="font-mono text-slate-400 text-[11px]">
-                                ધો. {d.standard} {d.grNumber ? `| GR: ${d.grNumber}` : ''}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-[11px]">
-                              <span className="text-red-400 font-mono line-through bg-red-950/60 px-1.5 py-0.5 rounded border border-red-900/60">
-                                {d.oldBloodGroup || '(ખાલી)'}
-                              </span>
-                              <span className="text-slate-400">➔</span>
-                              <span className="text-emerald-400 font-mono font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-900/60">
-                                {d.newBloodGroup || '(બ્લડ ગ્રૂપ સાફ કર્યું)'}
-                              </span>
-                            </div>
-                            <p className="text-[10px] text-slate-400 italic">{d.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="shrink-0 flex justify-end pt-3 border-t border-slate-800 mt-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsFixBloodModalOpen(false);
-                      setFixBloodResult(null);
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    પૂર્ણ થયું (Done)
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Pre-Fix Diagnosis and Action */
-              <div className="flex-1 flex flex-col justify-between overflow-hidden">
-                <div className="flex-1 overflow-y-auto pr-1 space-y-4">
-                {/* Stats row */}
-                <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
-                  <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl">
-                    <div className="font-mono text-base font-bold text-white">{students.length}</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">કુલ વિદ્યાર્થીઓ</div>
-                  </div>
-                  <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl">
-                    <div className="font-mono text-base font-bold text-emerald-400">
-                      {students.filter((s) => isValidBloodGroup(s.bloodGroup)).length}
-                    </div>
-                    <div className="text-[11px] text-emerald-300 mt-0.5">માન્ય બ્લડ ગ્રૂપ</div>
-                  </div>
-                  <div className={`p-2.5 rounded-xl border ${
-                    bloodGroupIssues.length > 0
-                      ? 'bg-amber-950/60 border-amber-600/80 text-amber-200'
-                      : 'bg-slate-950/80 border-slate-800 text-slate-400'
-                  }`}>
-                    <div className="font-mono text-base font-bold text-amber-400">
-                      {bloodGroupIssues.length}
-                    </div>
-                    <div className="text-[11px] mt-0.5">સુધારવા યોગ્ય એન્ટ્રીઓ</div>
-                  </div>
-                </div>
-
-                {/* Explanation rule */}
-                <div className="p-3 bg-slate-800/50 border border-white/5 rounded-xl text-xs space-y-1 text-slate-300">
-                  <div className="font-bold text-white flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>આ ટૂલ શું સુધારશે?</span>
-                  </div>
-                  <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-300/90 pl-1">
-                    <li>
-                      <strong>ખોટો ડેટા દૂર કરશે:</strong> બ્લડ ગ્રૂપ ખાનામાં લખાયેલ 'Gujarati', 'ગુજરાતી' કે અન્ય માધ્યમનો ડેટા શોધીને તેને આપમેળે સાચા માધ્યમ (Medium) ખાનામાં સેવ કરશે અને બ્લડ ગ્રૂપ ખાલી કરશે.
-                    </li>
-                    <li>
-                      <strong>ફોર્મેટ સ્ટાન્ડર્ડાઈઝેશન:</strong> 'o+', 'b +', 'A POSITIVE' જેવી એન્ટ્રીઓને સાચા ફોર્મેટ ('O+', 'B+', 'A+') માં ફેરવશે.
-                    </li>
-                    <li>
-                      <strong>ડેટાબેઝ સેવિંગ:</strong> બધા સુધારા એક જ ક્લિકમાં Firestore ડેટાબેઝમાં કાયમી સાચવી દેવામાં આવશે.
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Issues List or All Clean Message */}
-                {bloodGroupIssues.length > 0 ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-amber-300">
-                        સુધારવા માટે મળેલ વિદ્યાર્થીઓ ({bloodGroupIssues.length}):
-                      </span>
-                    </div>
-
-                    <div className="max-h-52 overflow-y-auto p-2 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5 text-xs">
-                      {bloodGroupIssues.map(({ student, diagnosis }) => (
-                        <div
-                          key={student.id}
-                          className="p-2 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2"
-                        >
-                          <div className="truncate max-w-[200px] sm:max-w-[260px]">
-                            <div className="font-medium text-white truncate">{student.studentName}</div>
-                            <div className="text-[10px] text-slate-400">
-                              ધો. {String(student.standard).replace(/^class\s*/i, '')} {student.grNumber ? `| GR: ${student.grNumber}` : ''}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950/80 border border-red-800 text-red-300">
-                              {student.bloodGroup || '(ખાલી)'}
-                            </span>
-                            <span className="text-slate-500 text-xs">➔</span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950/80 border border-emerald-800 text-emerald-300">
-                              {diagnosis.newBloodGroup || '(દૂર થશે)'}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 text-xs flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>શાળાના તમામ વિદ્યાર્થીઓનું બ્લડ ગ્રૂપ યોગ્ય છે! કોઈ અયોગ્ય એન્ટ્રી નથી.</span>
-                  </div>
-                )}
-                </div>
-
-                {/* Footer Buttons */}
-                <div className="shrink-0 flex items-center justify-end gap-3 pt-3 border-t border-slate-800 mt-3">
-                  <button
-                    type="button"
-                    disabled={isFixingBlood}
-                    onClick={() => setIsFixBloodModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
-                  >
-                    રદ કરો
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isFixingBlood || students.length === 0}
-                    onClick={handleFixAllBloodGroups}
-                    className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-red-950/50 cursor-pointer"
-                  >
-                    {isFixingBlood ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>ફિક્સ થઈ રહ્યું છે...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Heart className="w-4 h-4 fill-white" />
-                        <span>
-                          {bloodGroupIssues.length > 0
-                            ? `બધા ફિક્સ કરો (Fix All ${bloodGroupIssues.length} Entries)`
-                            : `બધા ફરી ચકાસો (Re-check & Fix All)`}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
