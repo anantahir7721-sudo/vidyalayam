@@ -1,4 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+const { Resvg } = require('@resvg/resvg-js');
+
+// Directory paths
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+const ANDROID_DIR = path.join(PUBLIC_DIR, 'android');
+const IOS_DIR = path.join(PUBLIC_DIR, 'ios');
+const WIN_DIR = path.join(PUBLIC_DIR, 'windows11');
+
+[PUBLIC_DIR, ANDROID_DIR, IOS_DIR, WIN_DIR].forEach((dir) => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
+
+/**
+ * Creates the Vidyalayam AppStore Logo SVG.
+ * Matching the user's uploaded appstore.png:
+ * - Symmetrical schoolhouse with central gable pavilion, flagpole & flag, sun rays, arched doorway, twin arched windows on wings.
+ * - Open book base with layered curved pages and subtle 3D papercraft depth.
+ * - "Vidyalayam" in rich serif typography + "by NRChad" subtitle.
+ */
+function createLogoSvg(maskable = false, includeText = true) {
+  let transform = 'translate(0, 0)';
+  if (maskable) {
+    transform = 'translate(71.68, 71.68) scale(0.72)';
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <!-- Background Gradient (Warm Parchment/Linen Texture) -->
     <radialGradient id="bg-grad" cx="50%" cy="46%" r="65%">
@@ -22,9 +50,9 @@
   <!-- Background Base Canvas -->
   <rect width="512" height="512" rx="104" fill="url(#bg-grad)" />
 
-  <g transform="translate(0, 0)">
+  <g transform="${transform}">
     <!-- EMBLEM GROUP -->
-    <g id="school-emblem" transform="translate(0, 22)">
+    <g id="school-emblem" transform="translate(0, ${includeText ? '-14' : '22'})">
 
       <!-- 1. OPEN BOOK LAYERS (Base) -->
       <!-- Bottom Layer (Deep Terracotta Cover) -->
@@ -101,6 +129,101 @@
       <path d="M 240 254 L 240 210 C 240 200 248 194 256 194 C 264 194 272 200 272 210 L 272 254 Z" fill="#4d210d" />
     </g>
 
-    
+    ${
+      includeText
+        ? `
+    <!-- 7. TYPOGRAPHY "Vidyalayam" & "by NRChad" -->
+    <text x="256" y="394"
+          text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', 'Noto Serif', serif"
+          font-size="44"
+          font-weight="800"
+          letter-spacing="0.5"
+          fill="#3b1d0c">Vidyalayam</text>
+
+    <text x="256" y="432"
+          text-anchor="middle"
+          font-family="system-ui, -apple-system, sans-serif"
+          font-size="24"
+          font-weight="700"
+          letter-spacing="0.8"
+          fill="#9d512d">by NRChad</text>
+    `
+        : ''
+    }
   </g>
-</svg>
+</svg>`;
+}
+
+async function generateAll() {
+  console.log('Generating Vidyalayam AppStore Logo and Icon Suite...');
+
+  const standardSvg = createLogoSvg(false, true);
+  const maskableSvg = createLogoSvg(true, true);
+  const emblemOnlySvg = createLogoSvg(false, false);
+
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'logo.svg'), standardSvg);
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.svg'), emblemOnlySvg);
+
+  const renderPng = (svgStr, size) => {
+    const resvg = new Resvg(svgStr, { fitTo: { mode: 'width', value: size } });
+    return resvg.render().asPng();
+  };
+
+  // 1. Root brand assets
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'appstore.png'), renderPng(standardSvg, 1024));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'logo.png'), renderPng(standardSvg, 512));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'apple-touch-icon.png'), renderPng(standardSvg, 180));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.png'), renderPng(standardSvg, 64));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon-32x32.png'), renderPng(standardSvg, 32));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon-16x16.png'), renderPng(standardSvg, 16));
+
+  // 2. Android launcher icons
+  const androidSizes = [48, 72, 96, 144, 192, 512];
+  androidSizes.forEach((s) => {
+    fs.writeFileSync(
+      path.join(ANDROID_DIR, `android-launchericon-${s}-${s}.png`),
+      renderPng(standardSvg, s)
+    );
+  });
+
+  // 3. Web Manifest general icons & maskable icons
+  const manifestSizes = [48, 72, 96, 128, 144, 152, 192, 384, 512];
+  manifestSizes.forEach((s) => {
+    fs.writeFileSync(path.join(PUBLIC_DIR, `icon-${s}.png`), renderPng(standardSvg, s));
+  });
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'icon-maskable-192.png'), renderPng(maskableSvg, 192));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'icon-maskable-512.png'), renderPng(maskableSvg, 512));
+
+  // 4. iOS icons
+  const iosSizes = [
+    16, 20, 29, 32, 40, 50, 57, 58, 60, 64, 72, 76, 80, 87, 100, 114, 120, 128, 144, 152, 167, 180, 192, 512, 1024,
+  ];
+  iosSizes.forEach((s) => {
+    fs.writeFileSync(path.join(IOS_DIR, `${s}.png`), renderPng(standardSvg, s));
+  });
+  [120, 152, 167, 180].forEach((s) => {
+    fs.writeFileSync(path.join(PUBLIC_DIR, `apple-touch-icon-${s}x${s}.png`), renderPng(standardSvg, s));
+  });
+
+  // 5. Windows 11 Tiles
+  fs.writeFileSync(
+    path.join(WIN_DIR, 'SmallTile.scale-100.png'),
+    renderPng(standardSvg, 71)
+  );
+  fs.writeFileSync(
+    path.join(WIN_DIR, 'Square150x150Logo.scale-100.png'),
+    renderPng(standardSvg, 150)
+  );
+  fs.writeFileSync(
+    path.join(WIN_DIR, 'Square310x310Logo.scale-100.png'),
+    renderPng(standardSvg, 310)
+  );
+
+  console.log('All individual icons successfully rendered.');
+
+  // 6. Run python pack script to create pwa-icons.zip
+  execSync('python3 scripts/pack-pwa-zip.py', { stdio: 'inherit' });
+}
+
+generateAll().catch(console.error);

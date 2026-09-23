@@ -38,7 +38,6 @@ import { StudentExamScreen } from './StudentExamScreen';
 import { calculateClassResults } from '../utils/resultFormulaUtils';
 import { getStudentDiseCode } from '../utils/idCardPdf';
 import { VidyalayamLogo } from './VidyalayamLogo';
-import { VidyalayamLogo } from './VidyalayamLogo';
 
 interface StudentPortalProps {
   session: StudentSession;

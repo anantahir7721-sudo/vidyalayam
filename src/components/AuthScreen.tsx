@@ -288,49 +288,47 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   return (
     <div className="min-h-[calc(100vh-60px)] bg-[#f8f6f2] dark:bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Emblem & Title */}
-        <div className="flex justify-center">
-          {portalType === 'school' ? (
-            <VidyalayamLogo size={68} glow />
-          ) : (
-            <div
-              className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all ${
-                portalType === 'admin'
-                  ? 'bg-red-500/20 border border-red-500/30 text-red-500 dark:text-red-400 shadow-red-950/50'
-                  : 'bg-emerald-600/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shadow-emerald-950/50'
-              }`}
-            >
-              {portalType === 'admin' ? (
-                <Shield className="w-9 h-9" />
-              ) : (
-                <GraduationCap className="w-9 h-9" />
-              )}
-            </div>
-          )}
-        </div>
+        {/* Brand Header: Logo -> Name (only in english) -> by NRChad */}
+        <div className="flex flex-col items-center text-center">
+          {/* 1. Logo */}
+          <div className="relative">
+            <VidyalayamLogo size={72} glow />
+            {portalType === 'admin' && (
+              <div
+                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-red-600 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white shadow-sm"
+                title="Admin Portal"
+              >
+                <Shield className="w-3.5 h-3.5" />
+              </div>
+            )}
+            {portalType === 'student' && (
+              <div
+                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white shadow-sm"
+                title="Student Portal"
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+              </div>
+            )}
+          </div>
 
-        <h2 className="mt-4 text-center text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-          Vidyalayam (વિદ્યાલયમ)
-        </h2>
-        <p className="mt-1 text-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold tracking-wide">
-          Created by NR Chad
-        </p>
-        <p className="mt-1 text-center text-xs text-slate-600 dark:text-slate-400 font-medium">
-          {portalType === 'admin'
-            ? 'રાજ્ય એડમિનિસ્ટ્રેટર લૉગિન • Role-Based System Security'
-            : portalType === 'student'
-            ? 'વિદ્યાર્થી પોર્ટલ • ઓનલાઇન પરીક્ષા, ગુણ & પરિણામ'
-            : 'ગુજરાત રાજ્ય શાળા ગુણાંકન પોર્ટલ • Multi-School System'}
-        </p>
+          {/* 2. Name (only in english - original sans font) */}
+          <h1 className="mt-3.5 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Vidyalayam
+          </h1>
 
-        {/* Security badges */}
-        <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-slate-600 dark:text-slate-400">
-          <span className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
-            <Shield className="w-3 h-3 text-emerald-500 dark:text-emerald-400" /> Firebase Auth Secured
-          </span>
-          <span className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
-            <Lock className="w-3 h-3 text-emerald-500 dark:text-emerald-400" /> Server-side Security Rules
-          </span>
+          {/* 3. by NRChad */}
+          <p className="mt-0.5 text-xs sm:text-sm font-bold text-[#9d512d] dark:text-[#f59c73] tracking-wide">
+            by NRChad
+          </p>
+
+          {/* Contextual portal description */}
+          <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400 font-medium max-w-sm px-4">
+            {portalType === 'admin'
+              ? 'રાજ્ય એડમિનિસ્ટ્રેટર લૉગિન • Role-Based System Security'
+              : portalType === 'student'
+              ? 'વિદ્યાર્થી પોર્ટલ • ઓનલાઇન પરીક્ષા, ગુણ & પરિણામ'
+              : 'ગુજરાત રાજ્ય શાળા ગુણાંકન પોર્ટલ • Multi-School System'}
+          </p>
         </div>
       </div>
 

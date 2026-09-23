@@ -24,7 +24,7 @@
 
   <g transform="translate(0, 0)">
     <!-- EMBLEM GROUP -->
-    <g id="school-emblem" transform="translate(0, 22)">
+    <g id="school-emblem" transform="translate(0, -14)">
 
       <!-- 1. OPEN BOOK LAYERS (Base) -->
       <!-- Bottom Layer (Deep Terracotta Cover) -->
@@ -101,6 +101,23 @@
       <path d="M 240 254 L 240 210 C 240 200 248 194 256 194 C 264 194 272 200 272 210 L 272 254 Z" fill="#4d210d" />
     </g>
 
+    
+    <!-- 7. TYPOGRAPHY "Vidyalayam" & "by NRChad" -->
+    <text x="256" y="394"
+          text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', 'Noto Serif', serif"
+          font-size="44"
+          font-weight="800"
+          letter-spacing="0.5"
+          fill="#3b1d0c">Vidyalayam</text>
+
+    <text x="256" y="432"
+          text-anchor="middle"
+          font-family="system-ui, -apple-system, sans-serif"
+          font-size="24"
+          font-weight="700"
+          letter-spacing="0.8"
+          fill="#9d512d">by NRChad</text>
     
   </g>
 </svg>
