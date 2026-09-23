@@ -1,26 +1,116 @@
 {
-  "background_color": "#ffffff",
-  "description": "Vidyalayam (વિદ્યાલયમ) — General School Management System &amp; એકમ કસોટી ગુણપત્રક • Created by NR Chad",
-  "dir": "ltr",
-  "display": "standalone",
-  "name": "Vidyalayam",
-  "orientation": "any",
-  "scope": "/",
-  "short_name": "site--vidyalayam--8d9s2k6rjfqz.code",
+  "id": "/",
+  "name": "Vidyalayam - School Management System",
+  "short_name": "Vidyalayam",
+  "description": "General School Management System & એકમ કસોટી ગુણપત્રક for Gujarat Schools • by NRChad",
   "start_url": "/",
-  "theme_color": "#ffffff",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fbf7f0",
+  "theme_color": "#9d512d",
+  "lang": "gu",
+  "dir": "ltr",
+  "categories": [
+    "education",
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
-      "src": "https://site--vidyalayam--8d9s2k6rjfqz.code.run/favicon.ico",
-      "type": "image/x-icon",
-      "isSquare": false,
-      "isPng": false,
-      "isWebp": false,
-      "isJpg": false,
-      "width": 0,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "src": "/icon-48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Students (વિદ્યાર્થીઓ)",
+      "short_name": "Students",
+      "description": "Manage school students",
+      "url": "/?tab=students",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Staff (સ્ટાફ પત્રક)",
+      "short_name": "Staff",
+      "description": "Staff management & reports",
+      "url": "/?tab=staff",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Exams & Marks (પરીક્ષા ગુણ)",
+      "short_name": "Exams",
+      "description": "Marks entry and reports",
+      "url": "/?tab=marks",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

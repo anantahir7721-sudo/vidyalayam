@@ -1,123 +1,124 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <!-- Background Gradient (Warm Parchment/Linen Texture) -->
-    <radialGradient id="bg-grad" cx="50%" cy="46%" r="65%">
-      <stop offset="0%" stopColor="#fbf6ee" />
-      <stop offset="60%" stopColor="#f3e8d7" />
-      <stop offset="100%" stopColor="#e8d8be" />
+    <!-- Background Gradient (Warm Parchment/Linen) -->
+    <radialGradient id="bg-grad" cx="50%" cy="45%" r="70%">
+      <stop offset="0%" stop-color="#fbf7f0" />
+      <stop offset="65%" stop-color="#f0e2cf" />
+      <stop offset="100%" stop-color="#e5d2bc" />
     </radialGradient>
-
-    <!-- Papercraft Shadows -->
-    <filter id="shadow-book" x="-20%" y="-20%" width="140%" height="150%">
-      <feDropShadow dx="0" dy="12" stdDeviation="7" flood-color="#421f0b" flood-opacity="0.32" />
-    </filter>
+    
+    <!-- Papercraft Drop Shadows -->
     <filter id="shadow-deep" x="-15%" y="-15%" width="130%" height="135%">
-      <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#3d1b08" flood-opacity="0.25" />
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#4a2612" flood-opacity="0.25" />
+    </filter>
+    <filter id="shadow-book" x="-15%" y="-15%" width="130%" height="135%">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#3b1d0c" flood-opacity="0.32" />
     </filter>
     <filter id="shadow-roof" x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#301506" flood-opacity="0.28" />
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#331808" flood-opacity="0.28" />
     </filter>
   </defs>
 
   <!-- Background Base Canvas -->
-  <rect width="512" height="512" rx="104" fill="url(#bg-grad)" />
+  <rect width="512" height="512" rx="100" fill="url(#bg-grad)" />
 
-  <g transform="translate(0, 0)">
-    <!-- EMBLEM GROUP -->
-    <g id="school-emblem" transform="translate(0, -14)">
+  <!-- EMBLEM GROUP (Centered vertically and horizontally) -->
+  <g id="school-emblem" transform="translate(0, -18)">
+    <!-- 1. OPEN BOOK LAYERS (Base) -->
+    <!-- Bottom Cover (Deep Terracotta / Saddle Brown) -->
+    <path d="M 90 286 C 160 262 216 270 256 324 C 296 270 352 262 422 286 C 427 296 422 306 418 312 C 350 282 296 288 256 348 C 216 288 162 282 94 312 C 90 306 85 296 90 286 Z"
+          fill="#843e1b" filter="url(#shadow-book)" />
 
-      <!-- 1. OPEN BOOK LAYERS (Base) -->
-      <!-- Bottom Layer (Deep Terracotta Cover) -->
-      <path d="M 88 288 C 160 262 216 270 256 324 C 296 270 352 262 424 288 C 430 298 424 308 418 314 C 350 284 296 290 256 348 C 216 290 162 284 94 314 C 88 308 82 298 88 288 Z"
-            fill="#a64d1f" filter="url(#shadow-book)" />
+    <!-- Book Bottom Trim / Spines -->
+    <path d="M 94 306 C 162 278 216 284 256 342 C 296 284 350 278 418 306 L 416 314 C 350 286 296 292 256 352 C 216 292 162 286 96 314 Z"
+          fill="#5a260e" />
 
-      <!-- Book Bottom Trim / Spines -->
-      <path d="M 92 308 C 162 280 216 286 256 342 C 296 286 350 280 420 308 L 416 316 C 350 288 296 294 256 352 C 216 294 162 288 96 316 Z"
-            fill="#692d0f" />
+    <!-- Middle Page Layer (Warm Ochre / Tan Paper) -->
+    <path d="M 94 280 C 164 254 218 262 256 318 C 294 262 348 254 418 280 L 414 298 C 348 272 296 278 256 336 C 216 278 164 272 98 298 Z"
+          fill="#d88443" />
 
-      <!-- Middle Page Layer (Warm Ochre / Caramel Paper) -->
-      <path d="M 94 280 C 164 254 218 262 256 318 C 294 262 348 254 418 280 L 414 298 C 348 272 296 278 256 336 C 216 278 164 272 98 298 Z"
-            fill="#dd8a46" />
+    <!-- Top Open Pages (Warm Cream / Ivory Paper with 3D curve) -->
+    <path d="M 112 248 C 172 244 220 254 256 288 C 292 254 340 244 400 248 L 410 274 C 344 254 296 268 256 322 C 216 268 168 254 102 274 Z"
+          fill="#fbf7f0" filter="url(#shadow-deep)" />
 
-      <!-- Top Open Pages (Warm Cream / Ivory Paper with 3D curve) -->
-      <path d="M 112 248 C 172 244 220 254 256 288 C 292 254 340 244 400 248 L 410 274 C 344 254 296 268 256 322 C 216 268 168 254 102 274 Z"
-            fill="#fefcf8" filter="url(#shadow-deep)" />
+    <!-- Book Spine / Valley Stitch -->
+    <path d="M 256 288 L 256 338" stroke="#a0522d" stroke-width="3" stroke-linecap="round" />
 
-      <!-- Book Spine / Center Crease -->
-      <path d="M 256 288 L 256 336" stroke="#94481f" stroke-width="3.5" stroke-linecap="round" />
-
-      <!-- 2. SCHOOL BUILDING STRUCTURE -->
-      <!-- Left & Right Wing Walls -->
-      <rect x="146" y="196" width="60" height="64" fill="#eedec8" />
-      <rect x="306" y="196" width="60" height="64" fill="#eedec8" />
-
-      <!-- Central Tower Wall -->
-      <rect x="200" y="146" width="112" height="126" fill="#f8f1e7" />
-      <polygon points="200,146 256,104 312,146" fill="#f8f1e7" />
-
-      <!-- 3. ROOFS (Terracotta with Dark Border) -->
-      <!-- Central Gable Roof -->
-      <polygon points="256,92 324,146 314,152 256,108 198,152 188,146" fill="#5c2912" />
-      <polygon points="256,96 320,146 312,152 256,110 200,152 192,146" fill="#8c4423" filter="url(#shadow-roof)" />
-
-      <!-- Left Wing Roof -->
-      <polygon points="134,204 204,166 208,174 142,210" fill="#5c2912" />
-      <polygon points="136,204 204,168 206,174 142,208" fill="#8c4423" />
-
-      <!-- Right Wing Roof -->
-      <polygon points="378,204 308,166 304,174 370,210" fill="#5c2912" />
-      <polygon points="376,204 308,168 306,174 370,208" fill="#8c4423" />
-
-      <!-- 4. TOP FLAGPOLE & BANNER FLAG -->
-      <!-- Pole -->
-      <rect x="254" y="66" width="4" height="30" rx="2" fill="#4d210d" />
-      <!-- Pennant Flag (Flying to the right) -->
-      <path d="M 258 68 C 274 66 284 74 294 70 L 294 86 C 284 82 274 90 258 84 Z" fill="#692d0f" />
-
-      <!-- 5. ARCHED WINDOWS (Left & Right Wings) -->
-      <path d="M 160 234 L 160 215 C 160 210 164 206 169 206 C 174 206 178 210 178 215 L 178 234 Z" fill="#5c2912" />
-      <path d="M 184 234 L 184 215 C 184 210 188 206 193 206 C 198 206 202 210 202 215 L 202 234 Z" fill="#5c2912" />
-
-      <path d="M 310 234 L 310 215 C 310 210 314 206 319 206 C 324 206 328 210 328 215 L 328 234 Z" fill="#5c2912" />
-      <path d="M 334 234 L 334 215 C 334 210 338 206 343 206 C 348 206 352 210 352 215 L 352 234 Z" fill="#5c2912" />
-
-      <!-- 6. CENTRAL SUN MOTIF & ENTRYWAY -->
-      <circle cx="256" cy="154" r="16" fill="#c8672e" />
-
-      <!-- 8 Sun Rays -->
-      <rect x="254" y="130" width="4" height="6" rx="2" fill="#8c4423" />
-      <rect x="254" y="172" width="4" height="6" rx="2" fill="#8c4423" />
-      <rect x="232" y="152" width="6" height="4" rx="2" fill="#8c4423" />
-      <rect x="274" y="152" width="6" height="4" rx="2" fill="#8c4423" />
-      <rect x="239" y="138" width="5.5" height="3.5" rx="1.5" fill="#8c4423" transform="rotate(45 241.7 139.7)" />
-      <rect x="268" y="167" width="5.5" height="3.5" rx="1.5" fill="#8c4423" transform="rotate(45 270.7 168.7)" />
-      <rect x="268" y="138" width="5.5" height="3.5" rx="1.5" fill="#8c4423" transform="rotate(-45 270.7 139.7)" />
-      <rect x="239" y="167" width="5.5" height="3.5" rx="1.5" fill="#8c4423" transform="rotate(-45 241.7 168.7)" />
-
-      <!-- Lintel Bar -->
-      <rect x="244" y="186" width="24" height="5" rx="2.5" fill="#5c2912" />
-
-      <!-- Grand Arched Entry Door -->
-      <path d="M 240 254 L 240 210 C 240 200 248 194 256 194 C 264 194 272 200 272 210 L 272 254 Z" fill="#4d210d" />
-    </g>
-
+    <!-- 2. SCHOOL BUILDING STRUCTURE -->
+    <!-- Building Walls (Warm Linen / Off-White Cardstock) -->
+    <rect x="146" y="196" width="60" height="64" fill="#ede1d0" />
+    <rect x="306" y="196" width="60" height="64" fill="#ede1d0" />
     
-    <!-- 7. TYPOGRAPHY "Vidyalayam" & "by NRChad" -->
-    <text x="256" y="394"
-          text-anchor="middle"
-          font-family="Georgia, 'Times New Roman', 'Noto Serif', serif"
-          font-size="44"
-          font-weight="800"
-          letter-spacing="0.5"
-          fill="#3b1d0c">Vidyalayam</text>
+    <!-- Central Tower Wall -->
+    <rect x="200" y="146" width="112" height="126" fill="#f5ebe0" />
+    <polygon points="200,146 256,104 312,146" fill="#f5ebe0" />
 
-    <text x="256" y="432"
-          text-anchor="middle"
-          font-family="system-ui, -apple-system, sans-serif"
-          font-size="24"
-          font-weight="700"
-          letter-spacing="0.8"
-          fill="#9d512d">by NRChad</text>
+    <!-- 3. ROOFS (Warm Terracotta / Cedar Shingle Papercraft) -->
+    <!-- Central Triangular Gable Roof -->
+    <polygon points="256,92 324,146 314,152 256,108 198,152 188,146"
+            fill="#662f17" />
+    <polygon points="256,96 320,146 312,152 256,110 200,152 192,146"
+            fill="#8c4423" filter="url(#shadow-roof)" />
+
+    <!-- Left Wing Sloping Roof -->
+    <polygon points="134,204 204,166 208,174 142,210" fill="#662f17" />
+    <polygon points="136,204 204,168 206,174 142,208" fill="#8c4423" />
+
+    <!-- Right Wing Sloping Roof -->
+    <polygon points="378,204 308,166 304,174 370,210" fill="#662f17" />
+    <polygon points="376,204 308,168 306,174 370,208" fill="#8c4423" />
+
+    <!-- 4. TOP FLAGPOLE & BANNER FLAG -->
+    <!-- Pole -->
+    <rect x="254" y="68" width="4" height="28" rx="1.5" fill="#54240f" />
+    <!-- Pennant Flag (Flying to the right) -->
+    <path d="M 258 70 C 274 68 284 76 294 72 L 294 88 C 284 84 274 92 258 86 Z"
+          fill="#662f17" />
+
+    <!-- 5. ARCHED WINDOWS (Left & Right Wings) -->
+    <!-- Left Wing Windows (2 Arched Windows) -->
+    <path d="M 160 232 L 160 215 C 160 210 164 206 169 206 C 174 206 178 210 178 215 L 178 232 Z" fill="#633119" />
+    <path d="M 184 232 L 184 215 C 184 210 188 206 193 206 C 198 206 202 210 202 215 L 202 232 Z" fill="#633119" />
+
+    <!-- Right Wing Windows (2 Arched Windows) -->
+    <path d="M 310 232 L 310 215 C 310 210 314 206 319 206 C 324 206 328 210 328 215 L 328 232 Z" fill="#633119" />
+    <path d="M 334 232 L 334 215 C 334 210 338 206 343 206 C 348 206 352 210 352 215 L 352 232 Z" fill="#633119" />
+
+    <!-- 6. CENTRAL SUN MOTIF / CLOCK & ENTRYWAY -->
+    <circle cx="256" cy="154" r="16" fill="#c4622b" />
     
+    <!-- 8 Sun Rays around the circle -->
+    <rect x="254" y="130" width="4" height="6" rx="2" fill="#8c4423" />
+    <rect x="254" y="172" width="4" height="6" rx="2" fill="#8c4423" />
+    <rect x="232" y="152" width="6" height="4" rx="2" fill="#8c4423" />
+    <rect x="274" y="152" width="6" height="4" rx="2" fill="#8c4423" />
+    <rect x="239" y="138" width="5.5" height="3.5" rx="1.5" fill="#8c4423" transform="rotate(45 241.7 139.7)" />
+    <rect x="268" y="167" width="5.5" height="3.5" rx="1.5" fill="#8c4423" transform="rotate(45 270.7 168.7)" />
+    <rect x="268" y="138" width="5.5" height="3.5" rx="1.5" fill="#8c4423" transform="rotate(-45 270.7 139.7)" />
+    <rect x="239" y="167" width="5.5" height="3.5" rx="1.5" fill="#8c4423" transform="rotate(-45 241.7 168.7)" />
+
+    <!-- Lintel Bar above door -->
+    <rect x="244" y="186" width="24" height="5" rx="2" fill="#662f17" />
+
+    <!-- Central Grand Arched Entry Door -->
+    <path d="M 240 252 L 240 210 C 240 200 248 194 256 194 C 264 194 272 200 272 210 L 272 252 Z"
+          fill="#54240f" />
   </g>
+
+  <!-- 7. TYPOGRAPHY "Vidyalayam" & "by NRChad" -->
+  <text x="256" y="394"
+        text-anchor="middle"
+        font-family="Liberation Serif, Georgia, serif"
+        font-size="44"
+        font-weight="bold"
+        letter-spacing="0.5"
+        fill="#3b1d0c">Vidyalayam</text>
+
+  <text x="256" y="432"
+        text-anchor="middle"
+        font-family="Liberation Sans, sans-serif"
+        font-size="24"
+        font-weight="bold"
+        letter-spacing="0.8"
+        fill="#9d512d">by NRChad</text>
 </svg>
