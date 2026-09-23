@@ -290,25 +290,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Brand Header: Logo -> Name (only in english) -> by NRChad */}
         <div className="flex flex-col items-center text-center">
-          {/* 1. Logo */}
+          {/* 1. Logo (Clean, unobstructed) */}
           <div className="relative">
-            <VidyalayamLogo size={72} glow />
-            {portalType === 'admin' && (
-              <div
-                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-red-600 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white shadow-sm"
-                title="Admin Portal"
-              >
-                <Shield className="w-3.5 h-3.5" />
-              </div>
-            )}
-            {portalType === 'student' && (
-              <div
-                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white shadow-sm"
-                title="Student Portal"
-              >
-                <GraduationCap className="w-3.5 h-3.5" />
-              </div>
-            )}
+            <VidyalayamLogo size={76} glow />
           </div>
 
           {/* 2. Name (only in english - original sans font) */}
