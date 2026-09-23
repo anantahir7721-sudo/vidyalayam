@@ -20,7 +20,9 @@ import {
   Image as ImageIcon,
   Trash2,
   Crop,
+  KeyRound,
 } from 'lucide-react';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 interface SchoolProfileManagerProps {
   school: School;
@@ -53,6 +55,9 @@ export const SchoolProfileManager: React.FC<SchoolProfileManagerProps> = ({
   const [logoLoading, setLogoLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Password Change Modal State
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   // Logo Crop Modal States
   const [cropModalOpen, setCropModalOpen] = useState(false);
@@ -468,6 +473,35 @@ export const SchoolProfileManager: React.FC<SchoolProfileManagerProps> = ({
             </div>
           </div>
 
+          {/* Security & Password Management Section */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>સુરક્ષા અને પાસવર્ડ વ્યવસ્થાપન</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">સુરક્ષિત</span>
+                  </h3>
+                  <p className="text-xs text-[#a99f91]">
+                    શાળા લોગિન માટે તમારો વર્તમાન પાસવર્ડ બદલો અને એકાઉન્ટને સુરક્ષિત રાખો.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                id="btn-open-change-password"
+                onClick={() => setChangePasswordOpen(true)}
+                className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600/30 hover:bg-amber-600/40 border border-amber-500/50 text-amber-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
+              >
+                <KeyRound className="w-4 h-4 text-amber-400" />
+                <span>નવો પાસવર્ડ બદલો (Change Password)</span>
+              </button>
+            </div>
+          </div>
+
           {/* Submit Button */}
           <div className="pt-4 flex items-center justify-end gap-3">
             <button
@@ -497,6 +531,15 @@ export const SchoolProfileManager: React.FC<SchoolProfileManagerProps> = ({
           schoolName={formData.schoolName || school.schoolName}
           onClose={() => setCropModalOpen(false)}
           onCropComplete={handleCropComplete}
+        />
+      )}
+
+      {/* School Change Password Modal */}
+      {changePasswordOpen && (
+        <ChangePasswordModal
+          isOpen={changePasswordOpen}
+          onClose={() => setChangePasswordOpen(false)}
+          school={school}
         />
       )}
     </div>

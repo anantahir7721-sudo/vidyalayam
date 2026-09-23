@@ -19,8 +19,11 @@ import {
   X,
   Sparkles,
   ClipboardList,
+  KeyRound,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { ChangePasswordModal } from './ChangePasswordModal';
+import { VidyalayamLogo } from './VidyalayamLogo';
 
 export type ActiveTabType =
   | 'overview'
@@ -52,6 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const moreMenuBtnRef = useRef<HTMLButtonElement>(null);
   const moreMenuDropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownCoords, setDropdownCoords] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
@@ -179,10 +183,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <button
             onClick={() => handleSelectTab('overview')}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#9d512d]/15 dark:bg-[#9d512d]/20 border border-[#9d512d]/40 flex items-center justify-center text-[#9d512d] dark:text-[#f59c73] shadow-md shrink-0 cursor-pointer"
+            className="shrink-0 cursor-pointer transition-transform hover:scale-105"
             title="Dashboard Overview"
           >
-            <SchoolIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            <VidyalayamLogo size={38} glow />
           </button>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
@@ -289,6 +293,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </nav>
 
+              {school && (
+                <button
+                  id="btn-nav-change-password"
+                  onClick={() => setChangePasswordOpen(true)}
+                  className="flex items-center gap-1.5 bg-amber-500/10 dark:bg-amber-500/20 hover:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-400/40 dark:border-amber-500/30 px-3 py-2 rounded-2xl text-xs font-semibold transition-all shrink-0 touch-manipulation min-h-[38px] cursor-pointer shadow-xs"
+                  title="શાળા પાસવર્ડ બદલો (Change Password)"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span className="hidden xl:inline">પાસવર્ડ બદલો</span>
+                </button>
+              )}
+
               <button
                 id="btn-sign-out"
                 onClick={onLogout}
@@ -380,9 +396,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Drawer Header with Close Button */}
             <div className="bg-[#ede8e0] dark:bg-[#121921] border-b border-[#d8d0c5] dark:border-white/15 px-4 py-3 flex items-center justify-between shrink-0 shadow-lg">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-2xl bg-[#9d512d]/15 dark:bg-[#9d512d]/20 border border-[#9d512d]/40 flex items-center justify-center text-[#9d512d] dark:text-[#f59c73] shrink-0">
-                  <SchoolIcon className="w-5 h-5" />
-                </div>
+                <VidyalayamLogo size={36} />
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-[#141d24] dark:text-white truncate">{school.schoolName}</div>
                   <div className="text-xs text-[#9d512d] dark:text-[#f59c73] font-mono mt-0.5">
@@ -480,15 +494,28 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Mobile Drawer Logout & Close Actions */}
               <div className="pt-3 border-t border-[#d8d0c5] dark:border-white/10 space-y-2">
+                {school && (
+                  <button
+                    onClick={() => {
+                      setMobileDrawerOpen(false);
+                      setChangePasswordOpen(true);
+                    }}
+                    className="w-full py-3 px-4 rounded-2xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] shadow-xs"
+                  >
+                    <KeyRound className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" />
+                    <span>શાળા પાસવર્ડ બદલો (Change Password)</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => {
                     setMobileDrawerOpen(false);
                     onLogout();
                   }}
-                  className="w-full py-3 px-4 rounded-2xl bg-rose-100 hover:bg-rose-200/80 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-900 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[48px] shadow-xs"
+                  className="w-full py-3 px-4 rounded-2xl bg-rose-100 hover:bg-rose-200 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-950 dark:text-rose-200 border-2 border-rose-300 dark:border-rose-500/30 text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[48px] shadow-xs"
                 >
-                  <LogOut className="w-4 h-4 text-rose-700 dark:text-rose-300 shrink-0" />
-                  <span className="text-rose-900 dark:text-rose-300 font-bold">શાળા લોગ આઉટ કરો (Logout)</span>
+                  <LogOut className="w-4 h-4 text-rose-800 dark:text-rose-300 shrink-0" />
+                  <span className="text-rose-950 dark:text-rose-200 font-extrabold">શાળા લોગ આઉટ કરો (Logout)</span>
                 </button>
 
                 <button
@@ -567,6 +594,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>,
         document.body
+      )}
+
+      {/* School Change Password Modal */}
+      {school && changePasswordOpen && (
+        <ChangePasswordModal
+          isOpen={changePasswordOpen}
+          onClose={() => setChangePasswordOpen(false)}
+          school={school}
+        />
       )}
     </header>
   );

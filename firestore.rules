@@ -64,32 +64,32 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       // Subcollection: Students belonging to this school
-      // Read allowed for student verification & portal; write strictly locked to School Owner
+      // Read allowed for student verification & portal; write strictly locked to School Owner or Admin
       match /students/{studentId} {
         allow read: if true;
-        allow write: if isSchoolOwner(schoolId);
+        allow write, delete: if isSchoolOwner(schoolId) || isAdmin();
       }
 
       // Subcollection: Marks belonging to this school
-      // Read allowed for student results; write strictly locked to School Owner
+      // Read allowed for student results; write strictly locked to School Owner or Admin
       match /marks/{markId} {
         allow read: if true;
-        allow write: if isSchoolOwner(schoolId);
+        allow write, delete: if isSchoolOwner(schoolId) || isAdmin();
       }
 
       // Subcollection: Staff belonging to this school
       match /staff/{staffId} {
-        allow read, write: if isSchoolOwner(schoolId) || isAdmin();
+        allow read, write, delete: if isSchoolOwner(schoolId) || isAdmin();
       }
 
       // Subcollection: Online MCQ Exams
       match /online_exams/{examId} {
         allow read: if true;
-        allow write: if isSchoolOwner(schoolId);
+        allow write, delete: if isSchoolOwner(schoolId) || isAdmin();
 
         match /questions/{questionId} {
           allow read: if true;
-          allow write: if isSchoolOwner(schoolId);
+          allow write, delete: if isSchoolOwner(schoolId) || isAdmin();
         }
       }
 
@@ -97,13 +97,13 @@ service cloud.firestore {
       match /exam_attempts/{attemptId} {
         allow read: if true;
         allow create, update: if true;
-        allow delete: if isSchoolOwner(schoolId);
+        allow delete: if isSchoolOwner(schoolId) || isAdmin();
       }
 
       // All other school-specific subcollections
       match /{allChildren=**} {
         allow read: if isSchoolOwner(schoolId) || isAdmin();
-        allow write: if isSchoolOwner(schoolId);
+        allow write, delete: if isSchoolOwner(schoolId) || isAdmin();
       }
     }
 

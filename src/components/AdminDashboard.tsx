@@ -35,7 +35,12 @@ import {
   MessageSquare,
   Phone,
   ExternalLink,
+  Trash2,
+  Send,
 } from 'lucide-react';
+import { AdminGenerateTempPasswordModal } from './AdminGenerateTempPasswordModal';
+import { AdminDeleteSchoolModal } from './AdminDeleteSchoolModal';
+import { getSchoolApprovalWhatsApp, launchWhatsAppWithMessage } from '../utils/whatsappUtils';
 
 interface AdminDashboardProps {
   adminEmail?: string | null;
@@ -73,6 +78,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     action: 'reject',
     targetStatus: 'rejected',
   });
+
+  // Temporary Password & Delete School Modals
+  const [tempPassModalSchool, setTempPassModalSchool] = useState<School | null>(null);
+  const [deleteModalSchool, setDeleteModalSchool] = useState<School | null>(null);
 
   // Display Admin Identifier without internal domain suffix if present
   const displayAdminId = useMemo(() => {
@@ -530,6 +539,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </td>
                         <td className="py-3 px-3 text-right">
                           <div className="flex items-center justify-end gap-2">
+                            {/* Temp Password Generator */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const matching = schools.find((s) => s.diseCode === req.diseCode) || {
+                                  id: req.diseCode,
+                                  ownerUid: req.diseCode,
+                                  diseCode: req.diseCode,
+                                  schoolName: req.schoolName || req.diseCode,
+                                  district: 'Gujarat',
+                                  status: 'approved' as SchoolStatus,
+                                  contactPhone: req.contactNumber,
+                                };
+                                setTempPassModalSchool(matching);
+                              }}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition-colors shadow-sm cursor-pointer"
+                              title="Generate Temporary Password for School"
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
+                              <span>ટેમ્પરરી પાસવર્ડ</span>
+                            </button>
+
                             {cleanPhone && (
                               <a
                                 href={`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(
@@ -651,7 +682,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </span>
                         </td>
                         <td className="py-3 px-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* WhatsApp to School */}
+                            {school.contactPhone && (
+                              <a
+                                href={`https://wa.me/91${school.contactPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                                  `નમસ્તે, વિદ્યાલયમ એડમિન તરફથી આપની શાળા ${school.schoolName} (DISE: ${school.diseCode}) ના રજીસ્ટ્રેશન અંગે.`
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                title="Contact School on WhatsApp"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>WhatsApp</span>
+                              </a>
+                            )}
                             <button
                               id={`btn-approve-${school.id}`}
                               disabled={isBusy}
@@ -673,6 +719,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             >
                               <X className="w-3.5 h-3.5" />
                               <span>REJECT</span>
+                            </button>
+                            <button
+                              id={`btn-delete-pending-${school.id}`}
+                              disabled={isBusy}
+                              onClick={() => setDeleteModalSchool(school)}
+                              className="flex items-center gap-1 px-2 py-1.5 bg-rose-900/60 hover:bg-rose-800 text-rose-200 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 border border-rose-700/60"
+                              title="Delete School Completely"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
@@ -887,6 +942,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 ACTIVATE
                               </button>
                             )}
+
+                            {/* Temporary Password button */}
+                            <button
+                              id={`btn-manage-temppass-${school.id}`}
+                              disabled={isBusy}
+                              type="button"
+                              onClick={() => setTempPassModalSchool(school)}
+                              className="px-2.5 py-1 bg-amber-600/90 hover:bg-amber-500 text-white rounded-md text-xs font-bold transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer shadow-sm"
+                              title="શાળા માટે ટેમ્પરરી પાસવર્ડ સેટ કરો"
+                            >
+                              <KeyRound className="w-3 h-3" />
+                              <span className="hidden lg:inline">ટેમ્પરરી પાસવર્ડ</span>
+                              <span className="lg:hidden">પાસવર્ડ</span>
+                            </button>
+
+                            {/* DELETE SCHOOL COMPLETELY button */}
+                            <button
+                              id={`btn-manage-delete-${school.id}`}
+                              disabled={isBusy}
+                              type="button"
+                              onClick={() => setDeleteModalSchool(school)}
+                              className="px-2.5 py-1 bg-rose-700 hover:bg-rose-600 text-white rounded-md text-xs font-bold transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer shadow-sm"
+                              title="શાળા અને તમામ ડેટા સંપૂર્ણ ડિલીટ કરો"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span className="hidden lg:inline">સંપૂર્ણ ડિલીટ</span>
+                              <span className="lg:hidden">ડિલીટ</span>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -976,6 +1059,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Admin Generate Temporary Password Modal */}
+      {tempPassModalSchool && (
+        <AdminGenerateTempPasswordModal
+          isOpen={!!tempPassModalSchool}
+          school={tempPassModalSchool}
+          onClose={() => setTempPassModalSchool(null)}
+          onSuccess={() => {
+            setFeedback({
+              type: 'success',
+              message: `શાળા "${tempPassModalSchool.schoolName}" માટે ટેમ્પરરી પાસવર્ડ સફળતાપૂર્વક સેટ થઈ ગયો છે.`,
+            });
+          }}
+        />
+      )}
+
+      {/* Admin Delete School Completely Modal */}
+      {deleteModalSchool && (
+        <AdminDeleteSchoolModal
+          isOpen={!!deleteModalSchool}
+          school={deleteModalSchool}
+          onClose={() => setDeleteModalSchool(null)}
+          onSuccess={() => {
+            setFeedback({
+              type: 'success',
+              message: `શાળા "${deleteModalSchool.schoolName}" અને તેનો તમામ ડેટા સંપૂર્ણપણે ડિલીટ થઈ ગયો છે.`,
+            });
+          }}
+        />
       )}
 
       <footer className="bg-slate-950/90 border-t border-white/10 py-5 text-center text-xs text-slate-400 space-y-1 mt-auto">

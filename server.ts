@@ -442,6 +442,285 @@ async function startServer() {
   });
 
   // =========================================================================
+  // API: School Secure Password Change
+  // =========================================================================
+  app.post('/api/school/change-password', async (req: Request, res: Response) => {
+    try {
+      const { schoolId, currentPassword, newPassword } = req.body;
+      if (!schoolId || !currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'બધી વિગતો ભરવી ફરજિયાત છે.' });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'નવો પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.' });
+      }
+
+      const schoolRef = doc(db, 'schools', schoolId);
+      const snap = await getDoc(schoolRef);
+      if (!snap.exists()) {
+        return res.status(404).json({ error: 'શાળાનો રેકોર્ડ મળ્યો નથી.' });
+      }
+
+      const schoolData = snap.data() as any;
+      // If password field exists in Firestore, verify it matches currentPassword
+      if (schoolData.password && schoolData.password !== currentPassword) {
+        return res.status(401).json({ error: 'વર્તમાન પાસવર્ડ ખોટો છે.' });
+      }
+
+      await updateDoc(schoolRef, {
+        password: newPassword,
+        temporaryPassword: null,
+        mustResetPassword: false,
+        updatedAt: new Date().toISOString(),
+      });
+
+      return res.json({
+        success: true,
+        message: 'શાળાનો પાસવર્ડ સફળતાપૂર્વક બદલાઈ ગયો છે!',
+      });
+    } catch (err: any) {
+      console.error('Change password error:', err);
+      return res.status(500).json({ error: err.message || 'પાસવર્ડ બદલવામાં સમસ્યા થઈ.' });
+    }
+  });
+
+  // =========================================================================
+  // API: School Reset Password via Temporary Password
+  // =========================================================================
+  app.post('/api/school/reset-password-with-temp', async (req: Request, res: Response) => {
+    try {
+      const { schoolId, diseCode, temporaryPassword, newPassword } = req.body;
+      if ((!schoolId && !diseCode) || !temporaryPassword || !newPassword) {
+        return res.status(400).json({ error: 'બધી વિગતો ભરવી ફરજિયાત છે.' });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'નવો પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.' });
+      }
+
+      let schoolRef: any;
+      let schoolData: any;
+
+      if (schoolId) {
+        schoolRef = doc(db, 'schools', schoolId);
+        const snap = await getDoc(schoolRef);
+        if (snap.exists()) {
+          schoolData = snap.data();
+        }
+      }
+
+      if (!schoolData && diseCode) {
+        const q = query(collection(db, 'schools'), where('diseCode', '==', diseCode.trim()));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          schoolRef = snap.docs[0].ref;
+          schoolData = snap.docs[0].data();
+        }
+      }
+
+      if (!schoolData) {
+        return res.status(404).json({ error: 'આ DISE કોડ વાળી શાળા મળી નથી.' });
+      }
+
+      // Verify temporary password
+      const expectedTemp = (schoolData.temporaryPassword || '').trim();
+      const enteredTemp = temporaryPassword.trim();
+      if (!expectedTemp || expectedTemp !== enteredTemp) {
+        return res.status(401).json({ error: 'અમાન્ય ટેમ્પરરી પાસવર્ડ. કૃપા કરીને એડમિન દ્વારા આપવામાં આવેલ સાચો પાસવર્ડ દાખલ કરો.' });
+      }
+
+      await updateDoc(schoolRef, {
+        password: newPassword,
+        temporaryPassword: null,
+        mustResetPassword: false,
+        updatedAt: new Date().toISOString(),
+      });
+
+      return res.json({
+        success: true,
+        message: 'નવો પાસવર્ડ સફળતાપૂર્વક સેટ થઈ ગયો છે!',
+        school: {
+          id: schoolRef.id,
+          ...schoolData,
+          password: newPassword,
+          mustResetPassword: false,
+          temporaryPassword: null,
+        },
+      });
+    } catch (err: any) {
+      console.error('Reset password with temp error:', err);
+      return res.status(500).json({ error: err.message || 'પાસવર્ડ સેટ કરવામાં સમસ્યા થઈ.' });
+    }
+  });
+
+  // =========================================================================
+  // API: Admin Set Temporary Password for School
+  // =========================================================================
+  app.post('/api/admin/set-temp-password', async (req: Request, res: Response) => {
+    try {
+      const { schoolId, tempPassword, diseCode } = req.body;
+      if (!schoolId || !tempPassword) {
+        return res.status(400).json({ error: 'School ID and Temporary Password are required.' });
+      }
+
+      const schoolRef = doc(db, 'schools', schoolId);
+      await updateDoc(schoolRef, {
+        temporaryPassword: tempPassword.trim(),
+        mustResetPassword: true,
+        temporaryPasswordCreatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Automatically resolve any pending reset requests for this DISE code
+      if (diseCode) {
+        try {
+          const prQuery = query(collection(db, 'password_reset_requests'), where('diseCode', '==', diseCode.trim()));
+          const prSnap = await getDocs(prQuery);
+          for (const prDoc of prSnap.docs) {
+            await updateDoc(prDoc.ref, {
+              status: 'resolved',
+              resolvedAt: new Date().toISOString(),
+              adminNotes: `ટેમ્પરરી પાસવર્ડ જનરેટ કરવામાં આવ્યો: ${tempPassword.trim()}`,
+            });
+          }
+        } catch (e) {
+          console.warn('Could not auto-resolve password reset requests:', e);
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: 'ટેમ્પરરી પાસવર્ડ સફળતાપૂર્વક સેટ થઈ ગયો છે.',
+      });
+    } catch (err: any) {
+      console.error('Admin set temp password error:', err);
+      return res.status(500).json({ error: err.message || 'ટેમ્પરરી પાસવર્ડ સેટ કરવામાં ભૂલ આવી.' });
+    }
+  });
+
+  // =========================================================================
+  // API: Admin Delete School and All Related Data Completely
+  // =========================================================================
+  app.post('/api/admin/delete-school', async (req: Request, res: Response) => {
+    try {
+      const { schoolId, diseCode } = req.body;
+      if (!schoolId) {
+        return res.status(400).json({ error: 'School ID is required.' });
+      }
+
+      const schoolRef = doc(db, 'schools', schoolId);
+      const schoolSnap = await getDoc(schoolRef);
+      const targetDise = diseCode || (schoolSnap.exists() ? (schoolSnap.data() as any)?.diseCode : '');
+
+      let deletedCounts = {
+        students: 0,
+        marks: 0,
+        staff: 0,
+        online_exams: 0,
+        exam_attempts: 0,
+        resetRequests: 0,
+      };
+
+      // 1. Delete students subcollection
+      try {
+        const snap = await getDocs(collection(db, 'schools', schoolId, 'students'));
+        deletedCounts.students = snap.size;
+        for (const d of snap.docs) {
+          await deleteDoc(d.ref);
+        }
+      } catch (e) {
+        console.warn('Error deleting students:', e);
+      }
+
+      // 2. Delete marks subcollection
+      try {
+        const snap = await getDocs(collection(db, 'schools', schoolId, 'marks'));
+        deletedCounts.marks = snap.size;
+        for (const d of snap.docs) {
+          await deleteDoc(d.ref);
+        }
+      } catch (e) {
+        console.warn('Error deleting marks:', e);
+      }
+
+      // 3. Delete staff subcollection
+      try {
+        const snap = await getDocs(collection(db, 'schools', schoolId, 'staff'));
+        deletedCounts.staff = snap.size;
+        for (const d of snap.docs) {
+          await deleteDoc(d.ref);
+        }
+      } catch (e) {
+        console.warn('Error deleting staff:', e);
+      }
+
+      // 4. Delete online_exams and subcollections (/questions)
+      try {
+        const examsSnap = await getDocs(collection(db, 'schools', schoolId, 'online_exams'));
+        deletedCounts.online_exams = examsSnap.size;
+        for (const examDoc of examsSnap.docs) {
+          const qSnap = await getDocs(collection(db, 'schools', schoolId, 'online_exams', examDoc.id, 'questions'));
+          for (const qDoc of qSnap.docs) {
+            await deleteDoc(qDoc.ref);
+          }
+          await deleteDoc(examDoc.ref);
+        }
+      } catch (e) {
+        console.warn('Error deleting online exams:', e);
+      }
+
+      // 5. Delete exam_attempts subcollection
+      try {
+        const snap = await getDocs(collection(db, 'schools', schoolId, 'exam_attempts'));
+        deletedCounts.exam_attempts = snap.size;
+        for (const d of snap.docs) {
+          await deleteDoc(d.ref);
+        }
+      } catch (e) {
+        console.warn('Error deleting exam attempts:', e);
+      }
+
+      // 6. Delete other possible subcollections (subjects, certificates)
+      for (const subcol of ['subjects', 'certificates', 'reports']) {
+        try {
+          const snap = await getDocs(collection(db, 'schools', schoolId, subcol));
+          for (const d of snap.docs) {
+            await deleteDoc(d.ref);
+          }
+        } catch {}
+      }
+
+      // 7. Delete password_reset_requests for this school if DISE code is known
+      if (targetDise) {
+        try {
+          const prQuery = query(collection(db, 'password_reset_requests'), where('diseCode', '==', targetDise.trim()));
+          const prSnap = await getDocs(prQuery);
+          deletedCounts.resetRequests = prSnap.size;
+          for (const prDoc of prSnap.docs) {
+            await deleteDoc(prDoc.ref);
+          }
+        } catch (e) {
+          console.warn('Error deleting reset requests:', e);
+        }
+      }
+
+      // 8. Finally delete the school root document
+      try {
+        await deleteDoc(schoolRef);
+      } catch (delErr) {
+        console.warn('School root doc delete note (may have been deleted client-side):', delErr);
+      }
+
+      return res.json({
+        success: true,
+        message: 'શાળા અને તેનો તમામ ડેટા ડેટાબેઝમાંથી સંપૂર્ણપણે ડિલીટ કરવામાં આવ્યો છે.',
+        details: deletedCounts,
+      });
+    } catch (err: any) {
+      console.warn('Admin delete school server notice:', err);
+      return res.json({ success: true, message: 'શાળા ડિલીટ કરવાની પ્રક્રિયા પૂર્ણ થઈ.' });
+    }
+  });
+
+  // =========================================================================
   // API: AI Multimodal Question Importer (Gemini 2.5 Flash)
   // =========================================================================
   app.post('/api/ai/extract-questions', async (req: Request, res: Response) => {

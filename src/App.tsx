@@ -17,6 +17,7 @@ import { ReportsManager } from './components/ReportsManager';
 import { SchoolProfileManager } from './components/SchoolProfileManager';
 import { OnlineExamManager } from './components/OnlineExamManager';
 import { StudentPortal } from './components/StudentPortal';
+import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
 
 import { School, Student, MarkRecord, Staff, SchoolStatus, StudentSession } from './types';
 import { checkIsAdmin } from './services/adminService';
@@ -214,17 +215,7 @@ export default function App() {
 
   // 1. Initial Auth Loading Screen & Role Verification
   if (authStatus === 'loading') {
-    return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-4">
-        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
-        <p className="text-sm font-medium text-slate-300">
-          Connecting to Gujarat School Management Portal...
-        </p>
-        <p className="text-xs text-slate-500 mt-1">
-          Verifying Firebase Authentication & Role Authorization
-        </p>
-      </div>
-    );
+    return <VidyalayamLoadingScreen />;
   }
 
   // 2. Unauthenticated: Show AuthScreen (School Login / Register or Admin Login or Student Login)

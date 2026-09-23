@@ -844,7 +844,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
           <div className="flex items-center gap-2 text-xs font-bold text-[#141d24] dark:text-white">
             <Users className="w-4 h-4 text-[#9d512d] dark:text-amber-400" />
             <span>PDF માં સમાવિષ્ટ સ્ટાફ સભ્યો પસંદ કરો (Select Staff for PDF):</span>
-            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-950 dark:bg-amber-500/20 dark:text-amber-200 border border-amber-300/80 dark:border-amber-500/30 font-bold shadow-xs">
+            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-amber-100/90 text-amber-950 dark:bg-amber-500/20 dark:text-amber-200 border border-amber-400/80 dark:border-amber-500/30 font-extrabold shadow-xs">
               {staffToPrint.length} / {filteredStaff.length} પસંદ
             </span>
           </div>

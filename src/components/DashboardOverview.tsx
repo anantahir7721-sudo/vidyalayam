@@ -25,6 +25,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { ActiveTabType } from './Navbar';
+import { VidyalayamLogo } from './VidyalayamLogo';
 
 interface DashboardOverviewProps {
   school: School;
@@ -293,9 +294,12 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <Edit3 className="w-3.5 h-3.5 text-[#f59c73]" />
               <span>પ્રોફાઇલ સંપાદન</span>
             </button>
-            <div className="glass-card px-3.5 py-2 rounded-2xl text-center border border-white/10 hidden sm:block">
-              <span className="text-[10px] uppercase text-[#a99f91] block font-semibold">સિસ્ટમ</span>
-              <span className="text-xs font-bold text-[#f59c73]">Vidyalayam v2.5</span>
+            <div className="glass-card px-3.5 py-2 rounded-2xl flex items-center gap-2.5 border border-white/10 hidden sm:flex">
+              <VidyalayamLogo size={28} />
+              <div>
+                <span className="text-[10px] uppercase text-[#a99f91] block font-semibold">સિસ્ટમ</span>
+                <span className="text-xs font-bold text-[#f59c73]">Vidyalayam v2.5</span>
+              </div>
             </div>
           </div>
         </div>

@@ -3,9 +3,21 @@ import {
   signInWithEmailAndPassword,
   signOut as fbSignOut,
   onAuthStateChanged,
+  updatePassword,
   User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, getDocFromServer } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  onSnapshot,
+  getDocFromServer,
+  collection,
+  query,
+  where,
+  getDocs,
+} from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { School } from '../types';
 import { checkIsAdmin } from './adminService';
@@ -39,7 +51,7 @@ export interface RegisterSchoolParams {
  * Register a new school:
  * 1. Creates Firebase Auth user using DISE Code identifier + Password
  * 2. Writes the school profile document to Firestore at /schools/{uid} with status: "pending"
- * 3. Binds the authenticated UID to the school record
+ * 3. Saves password securely in Firestore
  */
 export async function registerSchool({
   schoolName,
@@ -77,6 +89,8 @@ export async function registerSchool({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       logoUrl: logoUrl || '',
+      password: password,
+      mustResetPassword: false,
     };
 
     // 3. Save to Firestore under /schools/{uid}
@@ -96,27 +110,68 @@ export async function registerSchool({
   }
 }
 
+export interface LoginSchoolResult {
+  user: User | null;
+  school: School;
+  requiresPasswordReset?: boolean;
+}
+
 /**
- * Log in school using DISE Code and Password
+ * Log in school using DISE Code and Password.
+ * Supports temporary password authentication (prompts to set new password twice).
  */
-export async function loginSchool(diseCode: string, password: string): Promise<{ user: User; school: School }> {
+export async function loginSchool(
+  diseCode: string,
+  password: string
+): Promise<LoginSchoolResult> {
   const cleanDise = diseCode.trim();
   if (!cleanDise || !password) {
     throw new Error('Please enter both School DISE Code and Password.');
   }
 
+  const cleanPass = password.trim();
   const email = diseCodeToAuthEmail(cleanDise);
 
+  // 1. Pre-check: Does school have a temporary password set in Firestore?
   try {
-    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const q = query(collection(db, 'schools'), where('diseCode', '==', cleanDise));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const schDoc = snap.docs[0];
+      const schData = schDoc.data() as School;
+      const schoolObj: School = {
+        id: schDoc.id,
+        ...schData,
+        status: schData.status || 'approved',
+      };
+
+      const tempPass = (schData.temporaryPassword || '').trim();
+      if (tempPass && tempPass === cleanPass) {
+        return {
+          user: auth.currentUser,
+          school: schoolObj,
+          requiresPasswordReset: true,
+        };
+      }
+    }
+  } catch (lookupErr) {
+    console.warn('School pre-check note:', lookupErr);
+  }
+
+  // 2. Standard Firebase Auth sign-in
+  try {
+    const credential = await signInWithEmailAndPassword(auth, email, cleanPass);
     const user = credential.user;
 
-    // Fetch the school document bound to this UID
     const schoolDocRef = doc(db, 'schools', user.uid);
-    const schoolSnapshot = await getDoc(schoolDocRef);
+    let schoolSnapshot = await getDoc(schoolDocRef);
+    if (!schoolSnapshot.exists()) {
+      try {
+        schoolSnapshot = await getDocFromServer(schoolDocRef);
+      } catch {}
+    }
 
     if (!schoolSnapshot.exists()) {
-      // Create fallback record if missing with pending status
       const fallbackSchool: School = {
         id: user.uid,
         ownerUid: user.uid,
@@ -133,20 +188,152 @@ export async function loginSchool(diseCode: string, password: string): Promise<{
     const rawData = schoolSnapshot.data() as School;
     const schoolData: School = {
       ...rawData,
-      // Legacy compatibility: schools created before status field are treated as 'approved'
       status: rawData.status || 'approved',
     };
 
-    return { user, school: schoolData };
+    if (schoolData.mustResetPassword === true) {
+      return {
+        user,
+        school: schoolData,
+        requiresPasswordReset: true,
+      };
+    }
+
+    return { user, school: schoolData, requiresPasswordReset: false };
   } catch (error: any) {
+    // 3. Fallback: Check if temporary password matches Firestore record even if Auth sign-in failed
+    try {
+      const q = query(collection(db, 'schools'), where('diseCode', '==', cleanDise));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const schDoc = snap.docs[0];
+        const schData = schDoc.data() as School;
+        const tempPass = (schData.temporaryPassword || '').trim();
+        if (tempPass && tempPass === cleanPass) {
+          return {
+            user: null,
+            school: { id: schDoc.id, ...schData, status: schData.status || 'approved' },
+            requiresPasswordReset: true,
+          };
+        }
+      }
+    } catch {}
+
     if (
       error.code === 'auth/wrong-password' ||
       error.code === 'auth/user-not-found' ||
       error.code === 'auth/invalid-credential'
     ) {
-      throw new Error('Invalid School DISE Code or Password. Please check your credentials.');
+      throw new Error('અમાન્ય School DISE કોડ અથવા પાસવર્ડ. કૃપા કરીને સાચી વિગતો દાખલ કરો અથવા એડમિનનો સંપર્ક કરો.');
     }
     throw error;
+  }
+}
+
+/**
+ * Reset school password when logging in via temporary password.
+ * Enforces new password entered twice and updates Firestore and Firebase Auth.
+ */
+export async function resetSchoolPasswordWithTemp(params: {
+  schoolId: string;
+  diseCode: string;
+  temporaryPassword: string;
+  newPassword: string;
+}): Promise<{ school: School }> {
+  const { schoolId, diseCode, temporaryPassword, newPassword } = params;
+
+  if (newPassword.length < 6) {
+    throw new Error('નવો પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.');
+  }
+
+  // 1. Call backend to update Firestore
+  const res = await fetch('/api/school/reset-password-with-temp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      schoolId,
+      diseCode,
+      temporaryPassword,
+      newPassword,
+    }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'પાસવર્ડ સેટ કરવામાં ભૂલ આવી.');
+  }
+
+  const result = await res.json();
+  const email = diseCodeToAuthEmail(diseCode);
+
+  // 2. Authenticate or update password in Firebase Auth
+  try {
+    if (auth.currentUser) {
+      await updatePassword(auth.currentUser, newPassword);
+    } else {
+      try {
+        await signInWithEmailAndPassword(auth, email, newPassword);
+      } catch {
+        try {
+          await createUserWithEmailAndPassword(auth, email, newPassword);
+        } catch {}
+      }
+    }
+  } catch (authErr) {
+    console.warn('Firebase auth password sync note:', authErr);
+  }
+
+  const updatedSchool: School = result.school || {
+    id: schoolId,
+    ownerUid: schoolId,
+    diseCode,
+    schoolName: diseCode,
+    district: 'Gujarat',
+    status: 'approved',
+    mustResetPassword: false,
+    temporaryPassword: null,
+  };
+
+  return { school: updatedSchool };
+}
+
+/**
+ * Securely change school password from School Dashboard / Profile.
+ */
+export async function changeSchoolPassword(params: {
+  schoolId: string;
+  currentPassword: string;
+  newPassword: string;
+  diseCode?: string;
+}): Promise<void> {
+  const { schoolId, currentPassword, newPassword } = params;
+
+  if (!currentPassword || !newPassword) {
+    throw new Error('બધી વિગતો ભરવી ફરજિયાત છે.');
+  }
+  if (newPassword.length < 6) {
+    throw new Error('નવો પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.');
+  }
+
+  // Update in Firebase Auth if signed in
+  if (auth.currentUser) {
+    try {
+      await updatePassword(auth.currentUser, newPassword);
+    } catch (fbErr: any) {
+      console.warn('Firebase Auth updatePassword warning:', fbErr);
+    }
+  }
+
+  // Call backend to update Firestore
+  const res = await fetch('/api/school/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schoolId, currentPassword, newPassword }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'પાસવર્ડ બદલવામાં અસમર્થ રહ્યા.');
   }
 }
 

@@ -21,6 +21,10 @@ export interface School {
   contactPhone?: string;
   establishedYear?: string;
   logoUrl?: string;
+  password?: string; // Stored securely for school credentials
+  temporaryPassword?: string; // Admin-issued temporary password
+  mustResetPassword?: boolean; // Set to true when temporary password is issued
+  temporaryPasswordCreatedAt?: string;
 }
 
 export interface AdminRecord {

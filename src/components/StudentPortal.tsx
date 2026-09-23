@@ -37,6 +37,8 @@ import {
 import { StudentExamScreen } from './StudentExamScreen';
 import { calculateClassResults } from '../utils/resultFormulaUtils';
 import { getStudentDiseCode } from '../utils/idCardPdf';
+import { VidyalayamLogo } from './VidyalayamLogo';
+import { VidyalayamLogo } from './VidyalayamLogo';
 
 interface StudentPortalProps {
   session: StudentSession;
@@ -247,9 +249,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                 className="w-10 h-10 rounded-xl object-contain bg-slate-100 dark:bg-white/10 p-1 border border-slate-200 dark:border-white/10 shadow-sm shrink-0"
               />
             ) : (
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-sm shadow-sm shrink-0">
-                🎓
-              </div>
+              <VidyalayamLogo size={40} />
             )}
             <div>
               <div className="flex items-center gap-2">

@@ -3,8 +3,9 @@
  * Admin WhatsApp Link: https://wa.me/qr/4XSTB6RUCXOYI1?s=v
  */
 
-export const ADMIN_WHATSAPP_LINK = 'https://wa.me/qr/4XSTB6RUCXOYI1?s=v';
-export const ADMIN_WHATSAPP_QR = 'https://wa.me/qr/4XSTB6RUCXOYI1?s=v';
+export const DEFAULT_ADMIN_PHONE = '7203070830';
+export const ADMIN_WHATSAPP_LINK = 'https://wa.me/917203070830';
+export const ADMIN_WHATSAPP_QR = 'https://wa.me/917203070830';
 
 export interface SchoolApprovalDetails {
   schoolName: string;
@@ -30,15 +31,14 @@ export interface AdminPasswordResetDetails {
 }
 
 /**
- * Gets the configured Admin WhatsApp phone number, if any.
- * Checks localStorage first, then optional environment variable.
+ * Gets the configured Admin WhatsApp phone number, default is 7203070830
  */
 export function getSavedAdminPhone(): string {
   try {
     const saved = localStorage.getItem('vidyalayam_admin_phone');
     if (saved && saved.trim()) return saved.trim();
   } catch {}
-  return (import.meta as any).env?.VITE_ADMIN_PHONE || '';
+  return (import.meta as any).env?.VITE_ADMIN_PHONE || DEFAULT_ADMIN_PHONE;
 }
 
 /**
@@ -224,6 +224,43 @@ ${details.adminName ? `• એડમિન નામ: ${details.adminName}\n` : 
     message,
     adminPhone: cleanPhone,
   };
+}
+
+/**
+ * Generates WhatsApp message and launch URL when Admin sends a temporary password to a school.
+ */
+export function getTemporaryPasswordWhatsApp(params: {
+  schoolName: string;
+  diseCode: string;
+  temporaryPassword: string;
+  recipientPhone?: string;
+}): {
+  url: string;
+  message: string;
+} {
+  const message = `નમસ્તે,
+વિદ્યાલયમ (Vidyalayam) પોર્ટલ પર આપની શાળા માટે એડમિન દ્વારા ટેમ્પરરી પાસવર્ડ જનરેટ કરવામાં આવ્યો છે.
+
+🏫 શાળાની વિગતો:
+• શાળાનું નામ: ${params.schoolName}
+• DISE કોડ: ${params.diseCode}
+
+🔑 તમારો ટેમ્પરરી પાસવર્ડ:
+${params.temporaryPassword}
+
+📌 સૂચના:
+1. પોર્ટલમાં તમારા DISE કોડ અને ઉપરોક્ત ટેમ્પરરી પાસવર્ડ વડે લૉગિન કરો.
+2. લૉગિન થતાં જ તમને નવો પાસવર્ડ સેટ કરવાનું પૂછવામાં આવશે.
+3. ત્યાં તમારો કાયમી નવો પાસવર્ડ બે વાર દાખલ કરીને સેવ કરી લેશો.
+
+આભાર!
+- એડમિન (વિદ્યાલયમ)`;
+
+  const encoded = encodeURIComponent(message);
+  const cleanPhone = params.recipientPhone ? normalizeWhatsAppNumber(params.recipientPhone) : '';
+  const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+
+  return { url, message };
 }
 
 /**

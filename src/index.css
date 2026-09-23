@@ -323,6 +323,52 @@ html.light .text-\[\#e4ded6\],
   color: #141d24 !important;
 }
 
+/* Explicit preservation of crisp white text on solid buttons, badges, and selected exam options */
+html.light button.bg-emerald-600, html.light button.bg-emerald-600 *,
+html.light button.bg-emerald-700, html.light button.bg-emerald-700 *,
+html.light button.bg-amber-600, html.light button.bg-amber-600 *,
+html.light button.bg-amber-700, html.light button.bg-amber-700 *,
+html.light button.bg-rose-600, html.light button.bg-rose-600 *,
+html.light button.bg-rose-700, html.light button.bg-rose-700 *,
+html.light button.bg-red-600, html.light button.bg-red-600 *,
+html.light button.bg-blue-600, html.light button.bg-blue-600 *,
+html.light button.bg-indigo-600, html.light button.bg-indigo-600 *,
+html.light button.bg-purple-600, html.light button.bg-purple-600 *,
+html.light button.btn-terracotta, html.light button.btn-terracotta *,
+html.light a.bg-emerald-600, html.light a.bg-emerald-600 *,
+html.light a.bg-amber-600, html.light a.bg-amber-600 *,
+html.light a.bg-rose-600, html.light a.bg-rose-600 *,
+html.light a.btn-terracotta, html.light a.btn-terracotta *,
+html.light .btn-terracotta, html.light .btn-terracotta *,
+html.light .bg-emerald-600.text-white,
+html.light .bg-amber-600.text-white,
+html.light .bg-rose-600.text-white,
+html.light .bg-blue-600.text-white,
+html.light [class*="bg-[#25D366]"], html.light [class*="bg-[#25D366]"] *,
+[data-theme="light"] button.bg-emerald-600, [data-theme="light"] button.bg-emerald-600 *,
+[data-theme="light"] button.bg-emerald-700, [data-theme="light"] button.bg-emerald-700 *,
+[data-theme="light"] button.bg-amber-600, [data-theme="light"] button.bg-amber-600 *,
+[data-theme="light"] button.bg-amber-700, [data-theme="light"] button.bg-amber-700 *,
+[data-theme="light"] button.bg-rose-600, [data-theme="light"] button.bg-rose-600 *,
+[data-theme="light"] button.bg-rose-700, [data-theme="light"] button.bg-rose-700 *,
+[data-theme="light"] button.bg-red-600, [data-theme="light"] button.bg-red-600 *,
+[data-theme="light"] button.bg-blue-600, [data-theme="light"] button.bg-blue-600 *,
+[data-theme="light"] button.bg-indigo-600, [data-theme="light"] button.bg-indigo-600 *,
+[data-theme="light"] button.bg-purple-600, [data-theme="light"] button.bg-purple-600 *,
+[data-theme="light"] button.btn-terracotta, [data-theme="light"] button.btn-terracotta *,
+[data-theme="light"] a.bg-emerald-600, [data-theme="light"] a.bg-emerald-600 *,
+[data-theme="light"] a.bg-amber-600, [data-theme="light"] a.bg-amber-600 *,
+[data-theme="light"] a.bg-rose-600, [data-theme="light"] a.bg-rose-600 *,
+[data-theme="light"] a.btn-terracotta, [data-theme="light"] a.btn-terracotta *,
+[data-theme="light"] .btn-terracotta, [data-theme="light"] .btn-terracotta *,
+[data-theme="light"] .bg-emerald-600.text-white,
+[data-theme="light"] .bg-amber-600.text-white,
+[data-theme="light"] .bg-rose-600.text-white,
+[data-theme="light"] .bg-blue-600.text-white,
+[data-theme="light"] [class*="bg-[#25D366]"], [data-theme="light"] [class*="bg-[#25D366]"] * {
+  color: #ffffff !important;
+}
+
 /* Muted / secondary text in light mode */
 html.light .text-slate-300,
 html.light .text-gray-300,
@@ -545,257 +591,97 @@ html.light [class*="bg-black\/"]:not(.fixed):not(.absolute),
 }
 
 /* Specific colored badges, alerts and stat card backgrounds in Light Mode */
-html.light [class*="bg-emerald-950"],
-html.light [class*="bg-emerald-900"],
-html.light [class*="bg-emerald-500\/"],
-html.light [class*="bg-emerald-50"],
-html.light [class*="bg-emerald-100"],
-html.light [class*="bg-green-500\/"],
-html.light [class*="bg-green-50"],
-html.light [class*="bg-green-100"],
-[data-theme="light"] [class*="bg-emerald-950"],
-[data-theme="light"] [class*="bg-emerald-900"],
-[data-theme="light"] [class*="bg-emerald-500\/"],
-[data-theme="light"] [class*="bg-emerald-50"],
-[data-theme="light"] [class*="bg-emerald-100"],
-[data-theme="light"] [class*="bg-green-500\/"],
-[data-theme="light"] [class*="bg-green-50"],
-[data-theme="light"] [class*="bg-green-100"],
-.theme-light [class*="bg-emerald-950"],
-.theme-light [class*="bg-emerald-900"],
-.theme-light [class*="bg-emerald-500\/"],
-.theme-light [class*="bg-emerald-50"],
-.theme-light [class*="bg-emerald-100"] {
+html.light .bg-emerald-50,
+html.light .bg-emerald-100,
+html.light .bg-green-50,
+html.light .bg-green-100,
+[data-theme="light"] .bg-emerald-50,
+[data-theme="light"] .bg-emerald-100,
+[data-theme="light"] .bg-green-50,
+[data-theme="light"] .bg-green-100,
+.theme-light .bg-emerald-50,
+.theme-light .bg-emerald-100 {
   background-color: #ecfdf5 !important;
   border-color: #a7f3d0 !important;
   color: #065f46 !important;
 }
 
-html.light [class*="bg-emerald-950"] *,
-html.light [class*="bg-emerald-900"] *,
-html.light [class*="bg-emerald-500\/"] *,
-html.light [class*="bg-emerald-50"] *,
-html.light [class*="bg-emerald-100"] *,
-[data-theme="light"] [class*="bg-emerald-950"] *,
-[data-theme="light"] [class*="bg-emerald-900"] *,
-[data-theme="light"] [class*="bg-emerald-500\/"] *,
-[data-theme="light"] [class*="bg-emerald-50"] *,
-[data-theme="light"] [class*="bg-emerald-100"] * {
-  color: #065f46 !important;
-}
-
-html.light [class*="bg-cyan-950"],
-html.light [class*="bg-cyan-900"],
-html.light [class*="bg-cyan-500\/"],
-html.light [class*="bg-cyan-50"],
-html.light [class*="bg-cyan-100"],
-html.light [class*="bg-teal-500\/"],
-html.light [class*="bg-teal-50"],
-html.light [class*="bg-teal-100"],
-[data-theme="light"] [class*="bg-cyan-950"],
-[data-theme="light"] [class*="bg-cyan-900"],
-[data-theme="light"] [class*="bg-cyan-500\/"],
-[data-theme="light"] [class*="bg-cyan-50"],
-[data-theme="light"] [class*="bg-cyan-100"],
-[data-theme="light"] [class*="bg-teal-500\/"],
-[data-theme="light"] [class*="bg-teal-50"],
-[data-theme="light"] [class*="bg-teal-100"],
-.theme-light [class*="bg-cyan-950"],
-.theme-light [class*="bg-cyan-900"],
-.theme-light [class*="bg-cyan-500\/"],
-.theme-light [class*="bg-cyan-50"],
-.theme-light [class*="bg-cyan-100"] {
+html.light .bg-cyan-50,
+html.light .bg-cyan-100,
+html.light .bg-teal-50,
+html.light .bg-teal-100,
+[data-theme="light"] .bg-cyan-50,
+[data-theme="light"] .bg-cyan-100,
+[data-theme="light"] .bg-teal-50,
+[data-theme="light"] .bg-teal-100,
+.theme-light .bg-cyan-50,
+.theme-light .bg-cyan-100 {
   background-color: #ecfeff !important;
   border-color: #a5f3fc !important;
   color: #155e75 !important;
 }
 
-html.light [class*="bg-cyan-950"] *,
-html.light [class*="bg-cyan-900"] *,
-html.light [class*="bg-cyan-500\/"] *,
-html.light [class*="bg-cyan-50"] *,
-html.light [class*="bg-cyan-100"] *,
-[data-theme="light"] [class*="bg-cyan-950"] *,
-[data-theme="light"] [class*="bg-cyan-900"] *,
-[data-theme="light"] [class*="bg-cyan-500\/"] *,
-[data-theme="light"] [class*="bg-cyan-50"] *,
-[data-theme="light"] [class*="bg-cyan-100"] * {
-  color: #155e75 !important;
-}
-
-html.light [class*="bg-blue-950"],
-html.light [class*="bg-blue-900"],
-html.light [class*="bg-blue-500\/"],
-html.light [class*="bg-blue-50"],
-html.light [class*="bg-blue-100"],
-html.light [class*="bg-sky-500\/"],
-html.light [class*="bg-sky-50"],
-html.light [class*="bg-sky-100"],
-[data-theme="light"] [class*="bg-blue-950"],
-[data-theme="light"] [class*="bg-blue-900"],
-[data-theme="light"] [class*="bg-blue-500\/"],
-[data-theme="light"] [class*="bg-blue-50"],
-[data-theme="light"] [class*="bg-blue-100"],
-[data-theme="light"] [class*="bg-sky-500\/"],
-[data-theme="light"] [class*="bg-sky-50"],
-[data-theme="light"] [class*="bg-sky-100"],
-.theme-light [class*="bg-blue-950"],
-.theme-light [class*="bg-blue-900"],
-.theme-light [class*="bg-blue-500\/"],
-.theme-light [class*="bg-blue-50"],
-.theme-light [class*="bg-blue-100"] {
+html.light .bg-blue-50,
+html.light .bg-blue-100,
+html.light .bg-sky-50,
+html.light .bg-sky-100,
+[data-theme="light"] .bg-blue-50,
+[data-theme="light"] .bg-blue-100,
+[data-theme="light"] .bg-sky-50,
+[data-theme="light"] .bg-sky-100,
+.theme-light .bg-blue-50,
+.theme-light .bg-blue-100 {
   background-color: #eff6ff !important;
   border-color: #bfdbfe !important;
   color: #1e40af !important;
 }
 
-html.light [class*="bg-blue-950"] *,
-html.light [class*="bg-blue-900"] *,
-html.light [class*="bg-blue-500\/"] *,
-html.light [class*="bg-blue-50"] *,
-html.light [class*="bg-blue-100"] *,
-[data-theme="light"] [class*="bg-blue-950"] *,
-[data-theme="light"] [class*="bg-blue-900"] *,
-[data-theme="light"] [class*="bg-blue-500\/"] *,
-[data-theme="light"] [class*="bg-blue-50"] *,
-[data-theme="light"] [class*="bg-blue-100"] * {
-  color: #1e40af !important;
-}
-
-html.light [class*="bg-amber-950"],
-html.light [class*="bg-amber-900"],
-html.light [class*="bg-amber-500\/"],
-html.light [class*="bg-amber-50"],
-html.light [class*="bg-amber-100"],
-html.light [class*="bg-yellow-500\/"],
-html.light [class*="bg-yellow-50"],
-html.light [class*="bg-yellow-100"],
-[data-theme="light"] [class*="bg-amber-950"],
-[data-theme="light"] [class*="bg-amber-900"],
-[data-theme="light"] [class*="bg-amber-500\/"],
-[data-theme="light"] [class*="bg-amber-50"],
-[data-theme="light"] [class*="bg-amber-100"],
-[data-theme="light"] [class*="bg-yellow-500\/"],
-[data-theme="light"] [class*="bg-yellow-50"],
-[data-theme="light"] [class*="bg-yellow-100"],
-.theme-light [class*="bg-amber-950"],
-.theme-light [class*="bg-amber-900"],
-.theme-light [class*="bg-amber-500\/"],
-.theme-light [class*="bg-amber-50"],
-.theme-light [class*="bg-amber-100"] {
+html.light .bg-amber-50,
+html.light .bg-amber-100,
+html.light .bg-yellow-50,
+html.light .bg-yellow-100,
+[data-theme="light"] .bg-amber-50,
+[data-theme="light"] .bg-amber-100,
+[data-theme="light"] .bg-yellow-50,
+[data-theme="light"] .bg-yellow-100,
+.theme-light .bg-amber-50,
+.theme-light .bg-amber-100 {
   background-color: #fffbeb !important;
   border-color: #fde68a !important;
   color: #92400e !important;
 }
 
-html.light [class*="bg-amber-950"] *,
-html.light [class*="bg-amber-900"] *,
-html.light [class*="bg-amber-500\/"] *,
-html.light [class*="bg-amber-50"] *,
-html.light [class*="bg-amber-100"] *,
-[data-theme="light"] [class*="bg-amber-950"] *,
-[data-theme="light"] [class*="bg-amber-900"] *,
-[data-theme="light"] [class*="bg-amber-500\/"] *,
-[data-theme="light"] [class*="bg-amber-50"] *,
-[data-theme="light"] [class*="bg-amber-100"] * {
-  color: #92400e !important;
-}
-
-html.light [class*="bg-red-950"],
-html.light [class*="bg-red-900"],
-html.light [class*="bg-red-500\/"],
-html.light [class*="bg-red-50"],
-html.light [class*="bg-red-100"],
-html.light [class*="bg-rose-950"],
-html.light [class*="bg-rose-900"],
-html.light [class*="bg-rose-500\/"],
-html.light [class*="bg-rose-50"],
-html.light [class*="bg-rose-100"],
-html.light [class*="bg-rose-200"],
-[data-theme="light"] [class*="bg-red-950"],
-[data-theme="light"] [class*="bg-red-900"],
-[data-theme="light"] [class*="bg-red-500\/"],
-[data-theme="light"] [class*="bg-red-50"],
-[data-theme="light"] [class*="bg-red-100"],
-[data-theme="light"] [class*="bg-rose-950"],
-[data-theme="light"] [class*="bg-rose-900"],
-[data-theme="light"] [class*="bg-rose-500\/"],
-[data-theme="light"] [class*="bg-rose-50"],
-[data-theme="light"] [class*="bg-rose-100"],
-[data-theme="light"] [class*="bg-rose-200"],
-.theme-light [class*="bg-red-950"],
-.theme-light [class*="bg-red-900"],
-.theme-light [class*="bg-rose-950"],
-.theme-light [class*="bg-rose-900"],
-.theme-light [class*="bg-rose-500\/"],
-.theme-light [class*="bg-rose-50"],
-.theme-light [class*="bg-rose-100"] {
+html.light .bg-red-50,
+html.light .bg-red-100,
+html.light .bg-rose-50,
+html.light .bg-rose-100,
+html.light .bg-rose-200,
+[data-theme="light"] .bg-red-50,
+[data-theme="light"] .bg-red-100,
+[data-theme="light"] .bg-rose-50,
+[data-theme="light"] .bg-rose-100,
+[data-theme="light"] .bg-rose-200,
+.theme-light .bg-red-50,
+.theme-light .bg-red-100,
+.theme-light .bg-rose-50,
+.theme-light .bg-rose-100 {
   background-color: #fef2f2 !important;
   border-color: #fecaca !important;
   color: #991b1b !important;
 }
 
-html.light [class*="bg-red-950"] *,
-html.light [class*="bg-red-900"] *,
-html.light [class*="bg-red-500\/"] *,
-html.light [class*="bg-red-50"] *,
-html.light [class*="bg-red-100"] *,
-html.light [class*="bg-rose-950"] *,
-html.light [class*="bg-rose-900"] *,
-html.light [class*="bg-rose-500\/"] *,
-html.light [class*="bg-rose-50"] *,
-html.light [class*="bg-rose-100"] *,
-html.light [class*="bg-rose-200"] *,
-[data-theme="light"] [class*="bg-red-950"] *,
-[data-theme="light"] [class*="bg-red-900"] *,
-[data-theme="light"] [class*="bg-red-500\/"] *,
-[data-theme="light"] [class*="bg-red-50"] *,
-[data-theme="light"] [class*="bg-red-100"] *,
-[data-theme="light"] [class*="bg-rose-950"] *,
-[data-theme="light"] [class*="bg-rose-900"] *,
-[data-theme="light"] [class*="bg-rose-500\/"] *,
-[data-theme="light"] [class*="bg-rose-50"] *,
-[data-theme="light"] [class*="bg-rose-100"] *,
-[data-theme="light"] [class*="bg-rose-200"] * {
-  color: #991b1b !important;
-}
-
-html.light [class*="bg-purple-950"],
-html.light [class*="bg-purple-900"],
-html.light [class*="bg-purple-500\/"],
-html.light [class*="bg-purple-50"],
-html.light [class*="bg-purple-100"],
-html.light [class*="bg-indigo-500\/"],
-html.light [class*="bg-indigo-50"],
-html.light [class*="bg-indigo-100"],
-[data-theme="light"] [class*="bg-purple-950"],
-[data-theme="light"] [class*="bg-purple-900"],
-[data-theme="light"] [class*="bg-purple-500\/"],
-[data-theme="light"] [class*="bg-purple-50"],
-[data-theme="light"] [class*="bg-purple-100"],
-[data-theme="light"] [class*="bg-indigo-500\/"],
-[data-theme="light"] [class*="bg-indigo-50"],
-[data-theme="light"] [class*="bg-indigo-100"],
-.theme-light [class*="bg-purple-950"],
-.theme-light [class*="bg-purple-900"],
-.theme-light [class*="bg-purple-500\/"],
-.theme-light [class*="bg-purple-50"],
-.theme-light [class*="bg-purple-100"] {
+html.light .bg-purple-50,
+html.light .bg-purple-100,
+html.light .bg-indigo-50,
+html.light .bg-indigo-100,
+[data-theme="light"] .bg-purple-50,
+[data-theme="light"] .bg-purple-100,
+[data-theme="light"] .bg-indigo-50,
+[data-theme="light"] .bg-indigo-100,
+.theme-light .bg-purple-50,
+.theme-light .bg-purple-100 {
   background-color: #faf5ff !important;
   border-color: #e9d5ff !important;
-  color: #6b21a8 !important;
-}
-
-html.light [class*="bg-purple-950"] *,
-html.light [class*="bg-purple-900"] *,
-html.light [class*="bg-purple-500\/"] *,
-html.light [class*="bg-purple-50"] *,
-html.light [class*="bg-purple-100"] *,
-[data-theme="light"] [class*="bg-purple-950"] *,
-[data-theme="light"] [class*="bg-purple-900"] *,
-[data-theme="light"] [class*="bg-purple-500\/"] *,
-[data-theme="light"] [class*="bg-purple-50"] *,
-[data-theme="light"] [class*="bg-purple-100"] * {
   color: #6b21a8 !important;
 }
 
@@ -993,47 +879,44 @@ html.light button[type="submit"]:not([class*="bg-white"]):not([class*="bg-slate"
   color: #ffffff !important;
 }
 
-/* High-contrast colored text for badges & alerts in light mode */
-html.light [class*="text-rose-"],
-[data-theme="light"] [class*="text-rose-"],
-html.light [class*="text-red-"],
-[data-theme="light"] [class*="text-red-"] {
+/* High-contrast colored text for pastels in light mode (only light shades 100-400) */
+html.light .text-rose-100, html.light .text-rose-200, html.light .text-rose-300, html.light .text-rose-400,
+[data-theme="light"] .text-rose-100, [data-theme="light"] .text-rose-200, [data-theme="light"] .text-rose-300, [data-theme="light"] .text-rose-400 {
   color: #be123c !important;
 }
 
-html.light [class*="text-emerald-"],
-[data-theme="light"] [class*="text-emerald-"],
-html.light [class*="text-green-"],
-[data-theme="light"] [class*="text-green-"] {
+html.light .text-emerald-100, html.light .text-emerald-200, html.light .text-emerald-300, html.light .text-emerald-400,
+[data-theme="light"] .text-emerald-100, [data-theme="light"] .text-emerald-200, [data-theme="light"] .text-emerald-300, [data-theme="light"] .text-emerald-400 {
   color: #047857 !important;
 }
 
-html.light [class*="text-amber-"],
-[data-theme="light"] [class*="text-amber-"],
-html.light [class*="text-yellow-"],
-[data-theme="light"] [class*="text-yellow-"] {
-  color: #b45309 !important;
+html.light .text-amber-100, html.light .text-amber-200, html.light .text-amber-300, html.light .text-amber-400,
+[data-theme="light"] .text-amber-100, [data-theme="light"] .text-amber-200, [data-theme="light"] .text-amber-300, [data-theme="light"] .text-amber-400 {
+  color: #78350f !important;
 }
 
-html.light [class*="text-blue-"],
-[data-theme="light"] [class*="text-blue-"],
-html.light [class*="text-sky-"],
-[data-theme="light"] [class*="text-sky-"] {
+html.light .text-blue-100, html.light .text-blue-200, html.light .text-blue-300, html.light .text-blue-400,
+[data-theme="light"] .text-blue-100, [data-theme="light"] .text-blue-200, [data-theme="light"] .text-blue-300, [data-theme="light"] .text-blue-400 {
   color: #1e40af !important;
 }
 
-html.light [class*="text-cyan-"],
-[data-theme="light"] [class*="text-cyan-"],
-html.light [class*="text-teal-"],
-[data-theme="light"] [class*="text-teal-"] {
-  color: #0e7490 !important;
+/* Student Exam option button & palette button guarantees */
+html.light button.bg-emerald-600,
+html.light button.bg-emerald-600 *,
+html.light span.bg-emerald-600,
+html.light span.bg-emerald-600 *,
+[data-theme="light"] button.bg-emerald-600,
+[data-theme="light"] button.bg-emerald-600 *,
+[data-theme="light"] span.bg-emerald-600,
+[data-theme="light"] span.bg-emerald-600 * {
+  color: #ffffff !important;
 }
 
-html.light [class*="text-purple-"],
-[data-theme="light"] [class*="text-purple-"],
-html.light [class*="text-indigo-"],
-[data-theme="light"] [class*="text-indigo-"] {
-  color: #4338ca !important;
+html.light button.bg-amber-500,
+html.light button.bg-amber-500 *,
+[data-theme="light"] button.bg-amber-500,
+[data-theme="light"] button.bg-amber-500 * {
+  color: #0f172a !important;
 }
 
 /* Native select options in light mode */
@@ -1080,6 +963,36 @@ html.light tbody td,
 [data-theme="light"] tbody td {
   color: #141d24 !important;
   border-color: rgba(169, 159, 145, 0.2) !important;
+}
+
+@keyframes progress {
+  0% {
+    left: -35%;
+    width: 35%;
+  }
+  50% {
+    left: 40%;
+    width: 50%;
+  }
+  100% {
+    left: 100%;
+    width: 35%;
+  }
+}
+
+@keyframes progress {
+  0% {
+    left: -35%;
+    width: 35%;
+  }
+  50% {
+    left: 40%;
+    width: 50%;
+  }
+  100% {
+    left: 100%;
+    width: 35%;
+  }
 }
 
 @media print {
