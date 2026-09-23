@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { School, Student, Staff, AllowedStandard } from '../types';
 import { getStudentDiseCode, getStudentDiseInlineStyle } from '../utils/idCardPdf';
 import {
@@ -12,6 +12,29 @@ import {
   Square,
   QrCode,
 } from 'lucide-react';
+
+function parseDateForSort(dateStr?: string): number {
+  if (!dateStr || !dateStr.trim()) return 9999999999999;
+  const clean = dateStr.trim();
+  const dmy = clean.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+  if (dmy) {
+    const day = parseInt(dmy[1], 10);
+    const month = parseInt(dmy[2], 10) - 1;
+    const year = parseInt(dmy[3], 10);
+    const t = new Date(year, month, day).getTime();
+    return isNaN(t) ? 9999999999999 : t;
+  }
+  const ymd = clean.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (ymd) {
+    const year = parseInt(ymd[1], 10);
+    const month = parseInt(ymd[2], 10) - 1;
+    const day = parseInt(ymd[3], 10);
+    const t = new Date(year, month, day).getTime();
+    return isNaN(t) ? 9999999999999 : t;
+  }
+  const t = new Date(clean).getTime();
+  return isNaN(t) ? 9999999999999 : t;
+}
 
 interface IdCardsManagerProps {
   school: School;
@@ -57,11 +80,31 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
     setSelectedStudentIds(next);
   };
 
+  // Seniority-based sorting for staff: school joining date first; tie-breaker: older staff first (earlier birth date)
+  const sortedStaffList = useMemo(() => {
+    const list = [...staffList];
+    list.sort((a, b) => {
+      const dateA = a.schoolJoiningDate || a.joiningDate || a.serviceJoiningDate || '';
+      const dateB = b.schoolJoiningDate || b.joiningDate || b.serviceJoiningDate || '';
+      const timeA = parseDateForSort(dateA);
+      const timeB = parseDateForSort(dateB);
+      if (timeA !== timeB) return timeA - timeB;
+
+      // Older age = earlier birthdate = smaller epoch milliseconds
+      const timeDobA = parseDateForSort(a.dob);
+      const timeDobB = parseDateForSort(b.dob);
+      if (timeDobA !== timeDobB) return timeDobA - timeDobB;
+
+      return (a.fullName || '').localeCompare(b.fullName || '', 'gu');
+    });
+    return list;
+  }, [staffList]);
+
   const toggleSelectAllStaff = () => {
-    if (selectedStaffIds.size === staffList.length) {
+    if (selectedStaffIds.size === sortedStaffList.length) {
       setSelectedStaffIds(new Set());
     } else {
-      setSelectedStaffIds(new Set(staffList.map((s) => s.id)));
+      setSelectedStaffIds(new Set(sortedStaffList.map((s) => s.id)));
     }
   };
 
@@ -77,7 +120,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
     (s) => selectedStudentIds.size === 0 || selectedStudentIds.has(s.id)
   );
 
-  const staffToPrint = staffList.filter(
+  const staffToPrint = sortedStaffList.filter(
     (s) => selectedStaffIds.size === 0 || selectedStaffIds.has(s.id)
   );
 
@@ -265,14 +308,15 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
                 <div class="field-row">
                   <span class="lbl">હોદ્દો:</span>
                   <span class="val font-bold" style="color:#78350f;">${stf.designation || 'શિક્ષક'}</span>
-                  <span class="lbl" style="margin-left: 6px;">વિષય:</span>
-                  <span class="val font-bold" style="color:#0f172a;">${stf.subject || '-'}</span>
+                  <span class="lbl" style="margin-left: 6px;">વિભાગ:</span>
+                  <span class="val font-bold" style="color:#0f172a;">${stf.section || stf.vibhag || 'માધ્યમિક'}</span>
                 </div>
                 <div class="field-row">
-                  <span class="lbl">શિક્ષક કોડ:</span>
+                  <span class="lbl">વિષય:</span>
+                  <span class="val font-bold" style="color:#0f172a;">${stf.subject || '-'}</span>
+                  <span class="lbl" style="margin-left: 6px;">શિક્ષક કોડ:</span>
                   <span class="val font-bold" style="font-family: monospace; color: #78350f; font-size: 6.8pt;">${stf.teacherCode || '-'}</span>
-                  <span class="lbl" style="margin-left: 6px;">HRPN:</span>
-                  <span class="val font-bold" style="font-family: monospace; color: #0369a1; font-size: 6.8pt;">${stf.hrpnNumber || '-'}</span>
+                  ${stf.hrpnNumber ? `<span class="lbl" style="margin-left: 5px;">HRPN:</span><span class="val font-bold" style="font-family: monospace; color: #0369a1; font-size: 6.8pt;">${stf.hrpnNumber}</span>` : ''}
                 </div>
                 <div class="field-row">
                   <span class="lbl">જન્મ તારીખ:</span>
@@ -1097,7 +1141,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {staffList.map((stf) => {
+            {sortedStaffList.map((stf) => {
               const isSelected = selectedStaffIds.size === 0 || selectedStaffIds.has(stf.id);
               return (
                 <div
@@ -1213,6 +1257,10 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
                         <div>
                           <span className="text-[#a99f91]">હોદ્દો: </span>
                           <strong className="text-amber-300 font-bold">{stf.designation || 'શિક્ષક'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-[#a99f91]">વિભાગ: </span>
+                          <span className="text-amber-200 font-semibold">{stf.section || stf.vibhag || 'માધ્યમિક'}</span>
                         </div>
                         <div>
                           <span className="text-[#a99f91]">વિષય: </span>

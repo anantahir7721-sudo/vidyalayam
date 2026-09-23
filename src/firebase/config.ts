@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, Firestore } from 'firebase/firestore';
 import firebaseConfigData from '../../firebase-applet-config.json';
 
 // Firebase configuration loaded from provisioned project
@@ -31,8 +31,19 @@ if (typeof window !== 'undefined') {
   } catch {}
 }
 
-// The single, consistent Firestore database instance for the entire application
-export const db = getFirestore(app, FIRESTORE_DATABASE_ID);
+// The single, consistent Firestore database instance for the entire application.
+// Using experimentalForceLongPolling eliminates the 10-second WebSocket backend connection timeout
+// which frequently occurs in preview iframes and restricted networks.
+let firestoreInstance: Firestore;
+try {
+  firestoreInstance = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+  }, FIRESTORE_DATABASE_ID);
+} catch (e) {
+  firestoreInstance = getFirestore(app, FIRESTORE_DATABASE_ID);
+}
+
+export const db = firestoreInstance;
 
 export function getDb() {
   return db;
@@ -41,4 +52,5 @@ export function getDb() {
 export function getActiveDbId(): string {
   return FIRESTORE_DATABASE_ID;
 }
+
 

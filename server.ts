@@ -526,8 +526,8 @@ Schema per question:
       // Model priority with robust fallbacks:
       const candidateModels = [
         'gemini-3.8-flash',
-        'gemini-2.5-flash',
         'gemini-3.1-flash-lite',
+        'gemini-2.5-flash',
         'gemini-flash-latest',
       ];
       let response: any = null;
@@ -554,22 +554,33 @@ Schema per question:
             if (response && response.text) break;
           } catch (mErr: any) {
             const errStr = String(mErr?.message || mErr || '');
-            const isTransient =
-              errStr.includes('503') ||
-              errStr.includes('high demand') ||
-              errStr.includes('UNAVAILABLE') ||
-              errStr.includes('overloaded') ||
-              errStr.includes('429') ||
-              errStr.includes('RESOURCE_EXHAUSTED');
-
             console.warn(
               `Model ${modelName} (attempt ${attemptsForThisModel}/${maxAttemptsPerModel}) error:`,
               errStr
             );
             lastModelError = mErr;
 
-            if (isTransient && attemptsForThisModel < maxAttemptsPerModel) {
-              await waitDelay(1500);
+            const isQuotaExhausted =
+              errStr.includes('429') ||
+              errStr.includes('RESOURCE_EXHAUSTED') ||
+              errStr.includes('resource_exhausted') ||
+              errStr.includes('usage limit') ||
+              errStr.includes('Quota') ||
+              errStr.includes('quota');
+
+            // If quota is exhausted on this specific model, immediately switch to the next fallback model
+            if (isQuotaExhausted) {
+              break;
+            }
+
+            const isTransientServerBusy =
+              errStr.includes('503') ||
+              errStr.includes('high demand') ||
+              errStr.includes('UNAVAILABLE') ||
+              errStr.includes('overloaded');
+
+            if (isTransientServerBusy && attemptsForThisModel < maxAttemptsPerModel) {
+              await waitDelay(1200);
             } else {
               break;
             }
@@ -642,12 +653,20 @@ Schema per question:
         rawMsg.includes('503') ||
         rawMsg.includes('high demand') ||
         rawMsg.includes('UNAVAILABLE') ||
-        rawMsg.includes('overloaded') ||
-        rawMsg.includes('429') ||
-        rawMsg.includes('RESOURCE_EXHAUSTED')
+        rawMsg.includes('overloaded')
       ) {
         userFriendlyMsg =
           'Google AI સર્વર પર હાલમાં ખૂબ જ ભારે ટ્રાફિક (High Demand) છે. કૃપા કરીને થોડી સેકન્ડ પછી "🔄 ફરી પ્રયાસ કરો" બટન દબાવો.';
+      } else if (
+        rawMsg.includes('429') ||
+        rawMsg.includes('RESOURCE_EXHAUSTED') ||
+        rawMsg.includes('resource_exhausted') ||
+        rawMsg.includes('usage limit') ||
+        rawMsg.includes('Quota') ||
+        rawMsg.includes('quota')
+      ) {
+        userFriendlyMsg =
+          'Google AI વપરાશ મર્યાદા (Quota Limit) પૂર્ણ થયેલ છે. કૃપા કરીને 1 મિનિટ પછી ફરી પ્રયાસ કરો અથવા નાનો દસ્તાવેજ અપલોડ કરો.';
       } else if (rawMsg.includes('API_KEY') || rawMsg.includes('apiKey')) {
         userFriendlyMsg = 'Google AI કન્ફિગરેશન ચકાસો. કૃપા કરીને ફરી પ્રયાસ કરો.';
       }
