@@ -185,5 +185,29 @@ export interface PasswordResetRequest {
   adminNotes?: string;
 }
 
+export interface RegisteredSchoolInfo {
+  id: string;
+  schoolName: string;
+  diseCode: string;
+  principalName?: string;
+  principalPhone?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  district?: string;
+  taluka?: string;
+  village?: string;
+  address?: string;
+}
+
+export interface StudentUidConflict {
+  studentId?: string;
+  studentUid: string;
+  studentName: string;
+  standard: string;
+  grNumber?: string;
+  registeredSchoolId: string;
+  registeredSchool: RegisteredSchoolInfo;
+}
+
 export * from './onlineExam';
 

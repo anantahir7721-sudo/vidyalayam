@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { School, Student, AllowedStandard } from '../types';
+import { School, Student, AllowedStandard, StudentUidConflict } from '../types';
 import {
   addStudent,
   updateStudent,
@@ -8,7 +8,10 @@ import {
   deleteAllStudents,
   bulkUpsertStudents,
   fixSchoolStudentsBloodGroups,
+  checkStudentUidConflict,
+  checkBatchStudentUidConflicts,
 } from '../services/firestoreService';
+import { StudentConflictModal } from './StudentConflictModal';
 import {
   downloadStudentTemplate,
   downloadCtsTemplate,
@@ -165,6 +168,14 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
   const [deleteAllConfirmInput, setDeleteAllConfirmInput] = useState('');
   const [isDeletingAll, setIsDeletingAll] = useState(false);
 
+  // Cross-School Student UID Conflict Modal & WhatsApp State
+  const [conflictModalOpen, setConflictModalOpen] = useState(false);
+  const [activeConflict, setActiveConflict] = useState<StudentUidConflict | null>(null);
+  const [batchConflictsList, setBatchConflictsList] = useState<StudentUidConflict[]>([]);
+  const [pendingImportRemainingRows, setPendingImportRemainingRows] = useState<any[] | null>(null);
+  const [inlineUidConflict, setInlineUidConflict] = useState<StudentUidConflict | null>(null);
+  const [isCheckingInlineUid, setIsCheckingInlineUid] = useState(false);
+
   // Derive unique sections for filtering
   const availableSections = useMemo(() => {
     const secs = new Set<string>();
@@ -284,6 +295,25 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
     }
   };
 
+  // Handle Child UID Blur check in Manual Add Form
+  const handleCheckAddUidOnBlur = async () => {
+    const raw = addForm.diseCode.trim();
+    const clean = raw.replace(/\D/g, '');
+    if (clean.length >= 18) {
+      setIsCheckingInlineUid(true);
+      try {
+        const conflict = await checkStudentUidConflict(clean, schoolId);
+        setInlineUidConflict(conflict);
+      } catch (err) {
+        console.warn('Error checking inline UID conflict:', err);
+      } finally {
+        setIsCheckingInlineUid(false);
+      }
+    } else {
+      setInlineUidConflict(null);
+    }
+  };
+
   // Submit Manual Add Student Form
   const handleSubmitAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,7 +340,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
     }
     const cleanAddDise = digitsAddDise.slice(0, 18);
 
-    // Check duplicate Child UID
+    // Check duplicate Child UID in current school
     const dupUid = students.some((s) => {
       const sUid = (s.studentStateCode || s.diseCode || '').replace(/\D/g, '');
       return sUid && sUid.length >= 18 && sUid.slice(0, 18) === cleanAddDise;
@@ -363,6 +393,16 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
     setAddSubmitting(true);
     try {
+      // Cross-School Check: Child UID cannot exist in any other school
+      const crossConflict = await checkStudentUidConflict(cleanAddDise, schoolId);
+      if (crossConflict) {
+        setActiveConflict(crossConflict);
+        setBatchConflictsList([]);
+        setConflictModalOpen(true);
+        setAddSubmitting(false);
+        return;
+      }
+
       await addStudent(schoolId, {
         studentName: name,
         standard: addForm.standard,
@@ -444,6 +484,17 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       // Reject internal Firestore document IDs (contain letters)
       if (rawEditDise && !/[a-zA-Z]/.test(rawEditDise)) {
         cleanEditDise = digitsEditDise.length >= 18 ? digitsEditDise.slice(0, 18) : (rawEditDise || undefined);
+      }
+
+      if (cleanEditDise) {
+        const crossConflict = await checkStudentUidConflict(cleanEditDise, schoolId);
+        if (crossConflict && crossConflict.studentId !== editingStudent.id) {
+          setActiveConflict(crossConflict);
+          setBatchConflictsList([]);
+          setConflictModalOpen(true);
+          setEditSubmitting(false);
+          return;
+        }
       }
 
       await updateStudent(schoolId, editingStudent.id, {
@@ -540,6 +591,54 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
     setIsImporting(true);
     try {
+      // 1. Cross-school check: ensure no student UID exists in another school
+      const allUids = parseResult.validRows
+        .map((r) => r.diseCode || '')
+        .filter(Boolean);
+
+      const conflictsMap = await checkBatchStudentUidConflicts(allUids, schoolId);
+      if (conflictsMap.size > 0) {
+        const conflictsArray = Array.from(conflictsMap.values());
+        setActiveConflict(null);
+        setBatchConflictsList(conflictsArray);
+
+        // Pre-filter remaining non-conflicting rows in case user wants to proceed with remainder
+        const cleanRows = parseResult.validRows
+          .filter((r) => {
+            const c = (r.diseCode || '').replace(/\D/g, '');
+            return !conflictsMap.has(c);
+          })
+          .map((r) => ({
+            studentName: r.name,
+            standard: r.standard,
+            diseCode: r.diseCode,
+            studentStateCode: r.diseCode,
+            grNumber: r.grNumber,
+            section: r.section,
+            division: r.section,
+            dob: r.dob,
+            doa: r.doa,
+            address: r.address,
+            motherName: r.motherName,
+            fatherName: r.fatherName,
+            gender: r.gender,
+            caste: r.caste,
+            bloodGroup: r.bloodGroup,
+            contactNumber: r.contactNumber,
+            mobileNumber: r.contactNumber,
+            fatherOccupation: r.fatherOccupation,
+            motherOccupation: r.motherOccupation,
+            placeOfBirth: r.placeOfBirth,
+            photoUrl: r.photoUrl,
+            aadhaarNo: r.aadhaarNo,
+          }));
+
+        setPendingImportRemainingRows(cleanRows);
+        setConflictModalOpen(true);
+        setIsImporting(false);
+        return;
+      }
+
       const studentsToImport = parseResult.validRows.map((r) => ({
         studentName: r.name,
         standard: r.standard,
@@ -609,6 +708,56 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
     setIsExecutingDualImport(true);
     try {
+      // 1. Cross-school check: ensure no student UID exists in another school
+      const allUids = dualParseResult.validRows
+        .map((r) => r.studentStateCode || r.diseCode || '')
+        .filter(Boolean);
+
+      const conflictsMap = await checkBatchStudentUidConflicts(allUids, schoolId);
+      if (conflictsMap.size > 0) {
+        const conflictsArray = Array.from(conflictsMap.values());
+        setActiveConflict(null);
+        setBatchConflictsList(conflictsArray);
+
+        // Pre-filter remaining non-conflicting rows in case user wants to proceed with remainder
+        const cleanRows = dualParseResult.validRows
+          .filter((r) => {
+            const c = (r.studentStateCode || r.diseCode || '').replace(/\D/g, '');
+            return !conflictsMap.has(c);
+          })
+          .map((r) => ({
+            studentName: r.name,
+            standard: r.standard,
+            diseCode: r.diseCode,
+            studentStateCode: r.studentStateCode,
+            grNumber: r.grNumber,
+            section: r.section,
+            division: r.section,
+            rollNumber: r.rollNumber,
+            dob: r.dob,
+            doa: r.doa,
+            gender: r.gender,
+            caste: r.caste,
+            bloodGroup: r.bloodGroup,
+            contactNumber: r.contactNumber,
+            mobileNumber: r.contactNumber,
+            medium: r.medium,
+            cwsnDisability: r.cwsnDisability,
+            fatherName: r.fatherName,
+            motherName: r.motherName,
+            address: r.address,
+            aadhaarNo: r.aadhaarNo,
+            placeOfBirth: r.placeOfBirth,
+            fatherOccupation: r.fatherOccupation,
+            motherOccupation: r.motherOccupation,
+          }));
+
+        setPendingImportRemainingRows(cleanRows);
+        setConflictModalOpen(true);
+        setIsExecutingDualImport(false);
+        return;
+      }
+
       const studentsToImport = dualParseResult.validRows.map((r) => ({
         studentName: r.name, // priority: UDISE+ student name
         standard: r.standard,
@@ -652,6 +801,36 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       alert(err.message || 'વિદ્યાર્થીઓ આયાત કરવામાં ભૂલ આવી.');
     } finally {
       setIsExecutingDualImport(false);
+    }
+  };
+
+  // Handle Proceeding with only remaining valid non-conflicting rows from import
+  const handleProceedWithRemainingImport = async () => {
+    if (!pendingImportRemainingRows || pendingImportRemainingRows.length === 0) {
+      setConflictModalOpen(false);
+      return;
+    }
+
+    setConflictModalOpen(false);
+    setIsImporting(true);
+    try {
+      const res = await bulkUpsertStudents(schoolId, pendingImportRemainingRows, students);
+      setImportStatusMessage(
+        `આયાત સફળ! ${res.added} નવા વિદ્યાર્થીઓ ઉમેરાયા અને ${res.updated} જૂના રેકોર્ડ્સ અપડેટ થયા. (${batchConflictsList.length} અન્ય શાળામાં નોંધાયેલા વિદ્યાર્થીઓ બાકાત રખાયા છે)`
+      );
+      setIsConfirmModalOpen(false);
+      setPreviewModalOpen(false);
+      setIsDualImportModalOpen(false);
+      setPendingImportRemainingRows(null);
+      setCtsFile(null);
+      setUdiseFile(null);
+      setDualParseResult(null);
+      onRefresh();
+      setTimeout(() => setImportStatusMessage(null), 8000);
+    } catch (err: any) {
+      alert(err.message || 'વિદ્યાર્થીઓ આયાત કરવામાં ભૂલ આવી.');
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -1353,8 +1532,13 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Child UID (૧૮ અંકનો DISE કોડ) <span className="text-red-500 font-bold">* (ફરજિયાત)</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                      <span>
+                        Child UID (૧૮ અંકનો DISE કોડ) <span className="text-red-500 font-bold">* (ફરજિયાત)</span>
+                      </span>
+                      {isCheckingInlineUid && (
+                        <span className="text-[10px] text-cyan-500 animate-pulse font-normal">તપાસ થઈ રહી છે...</span>
+                      )}
                     </label>
                     <input
                       type="text"
@@ -1362,9 +1546,49 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       maxLength={18}
                       placeholder="૧૮ અંકનો Child UID (ફરજિયાત)"
                       value={addForm.diseCode}
-                      onChange={(e) => setAddForm({ ...addForm, diseCode: e.target.value })}
+                      onBlur={handleCheckAddUidOnBlur}
+                      onChange={(e) => {
+                        setAddForm({ ...addForm, diseCode: e.target.value });
+                        if (inlineUidConflict) setInlineUidConflict(null);
+                      }}
                       className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-cyan-600 dark:text-cyan-300 focus:outline-none focus:border-terracotta font-mono"
                     />
+
+                    {/* Inline Conflict Warning Card */}
+                    {inlineUidConflict && (
+                      <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start justify-between gap-2.5 text-xs animate-fadeIn">
+                        <div className="space-y-1">
+                          <div className="font-bold text-amber-500 dark:text-amber-400 flex items-center gap-1.5">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>આ Child UID અન્ય શાળામાં પહેલેથી નોંધાયેલ છે!</span>
+                          </div>
+                          <div className="text-slate-700 dark:text-slate-300">
+                            શાળા:{' '}
+                            <strong className="text-slate-900 dark:text-white">
+                              {inlineUidConflict.registeredSchool.schoolName}
+                            </strong>
+                          </div>
+                          <div className="text-slate-500 dark:text-slate-400 text-[11px]">
+                            આચાર્યશ્રી:{' '}
+                            {inlineUidConflict.registeredSchool.principalName || 'નોંધાયેલ નથી'}
+                            {inlineUidConflict.registeredSchool.principalPhone
+                              ? ` (${inlineUidConflict.registeredSchool.principalPhone})`
+                              : ''}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveConflict(inlineUidConflict);
+                            setBatchConflictsList([]);
+                            setConflictModalOpen(true);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shrink-0 flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
+                        >
+                          <span>વિગત & WhatsApp</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2699,6 +2923,21 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
           }}
         />
       )}
+
+      {/* MODAL 7: CROSS-SCHOOL STUDENT UID CONFLICT & WHATSAPP MODAL */}
+      <StudentConflictModal
+        isOpen={conflictModalOpen}
+        onClose={() => {
+          setConflictModalOpen(false);
+          setActiveConflict(null);
+          setBatchConflictsList([]);
+        }}
+        conflict={activeConflict}
+        batchConflicts={batchConflictsList}
+        currentSchool={school}
+        remainingCount={pendingImportRemainingRows ? pendingImportRemainingRows.length : 0}
+        onProceedWithRemaining={handleProceedWithRemainingImport}
+      />
     </div>
   );
 };

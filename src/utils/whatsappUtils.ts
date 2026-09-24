@@ -263,6 +263,60 @@ ${params.temporaryPassword}
   return { url, message };
 }
 
+export interface StudentTransferWhatsAppDetails {
+  studentName: string;
+  studentUid: string;
+  standard?: string;
+  grNumber?: string;
+  registeredSchoolName: string;
+  registeredSchoolDise?: string;
+  registeredPrincipalName?: string;
+  registeredPrincipalPhone?: string;
+  currentSchoolName: string;
+  currentSchoolDise?: string;
+  currentPrincipalName?: string;
+  currentContactPhone?: string;
+}
+
+/**
+ * Generates pre-typed WhatsApp message asking the other school's principal to remove/delete
+ * the student from their Vidyalayam portal so the student can be admitted to the new school.
+ */
+export function getStudentTransferWhatsApp(details: StudentTransferWhatsAppDetails): {
+  url: string;
+  message: string;
+  phone: string;
+} {
+  const principalSalutation = details.registeredPrincipalName && details.registeredPrincipalName.trim()
+    ? `નમસ્કાર આચાર્યશ્રી ${details.registeredPrincipalName.trim()},`
+    : 'નમસ્કાર આચાર્યશ્રી,';
+
+  const message = `${principalSalutation}
+
+હું *${details.currentSchoolName.trim()}*${details.currentSchoolDise ? ` (DISE: ${details.currentSchoolDise})` : ''} માંથી સંપર્ક કરી રહ્યો છું.
+
+અમારી શાળામાં નીચે મુજબના વિદ્યાર્થી પ્રવેશ મેળવી રહ્યા છે:
+• વિદ્યાર્થીનું નામ: *${details.studentName.trim()}*
+• Child UID: *${details.studentUid.trim()}*${details.standard ? `\n• ધોરણ: ${details.standard}` : ''}${details.grNumber ? `\n• G.R. નં: ${details.grNumber}` : ''}
+
+હાલમાં વિદ્યાલયમ્ (Vidyalayam) પોર્ટલ પર આ વિદ્યાર્થી આપની શાળા *${details.registeredSchoolName.trim()}*${details.registeredSchoolDise ? ` (DISE: ${details.registeredSchoolDise})` : ''} માં નોંધાયેલ બતાવે છે.
+
+વિદ્યાલયમ્ પોર્ટલના નિયમ મુજબ એક વિદ્યાર્થી એક સમયે ફક્ત એક જ શાળામાં નોંધાઈ શકે છે. જો આ વિદ્યાર્થી આપની શાળામાંથી નીકળી ગયા હોય, તો નમ્ર વિનંતી છે કે આપની શાળાના Vidyalayam પોર્ટલમાંથી આ વિદ્યાર્થીનું નામ કમી/ડિલીટ (Delete) કરી આપશો, જેથી અમે તેમને અમારી શાળામાં દાખલ કરી શકીએ.
+
+આભાર સહ,
+${details.currentPrincipalName ? `આચાર્યશ્રી: ${details.currentPrincipalName}\n` : ''}${details.currentSchoolName}${details.currentContactPhone ? `\nસંપર્ક: ${details.currentContactPhone}` : ''}`;
+
+  const encoded = encodeURIComponent(message);
+  const cleanPhone = details.registeredPrincipalPhone
+    ? normalizeWhatsAppNumber(details.registeredPrincipalPhone)
+    : '';
+  const url = cleanPhone
+    ? `https://wa.me/${cleanPhone}?text=${encoded}`
+    : `https://wa.me/?text=${encoded}`;
+
+  return { url, message, phone: cleanPhone };
+}
+
 /**
  * Copies message to clipboard and launches WhatsApp.
  * Returns true if copy was successful.

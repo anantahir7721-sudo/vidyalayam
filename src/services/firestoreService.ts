@@ -1,5 +1,6 @@
 import {
   collection,
+  collectionGroup,
   doc,
   addDoc,
   setDoc,
@@ -14,7 +15,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Student, MarkRecord } from '../types';
+import { Student, MarkRecord, StudentUidConflict, RegisteredSchoolInfo } from '../types';
 import { cleanAndNormalizeBloodGroup, diagnoseStudentBloodGroup } from '../utils/bloodGroupUtils';
 
 /**
@@ -311,6 +312,191 @@ export async function bulkUpsertStudents(
   }
 
   return { added: addedCount, updated: updatedCount };
+}
+
+/**
+ * Checks if a given student Child UID (૧૮ અંકનો DISE / State Code) is already registered in another school.
+ * A student can only belong to one school at a time across Gujarat.
+ * Returns the conflict details including registered school and principal contact, or null if clear.
+ */
+export async function checkStudentUidConflict(
+  uid: string,
+  currentSchoolId: string
+): Promise<StudentUidConflict | null> {
+  if (!uid) return null;
+  const cleanUid = uid.replace(/\D/g, '');
+  if (!cleanUid || cleanUid.length < 10) return null;
+
+  const queries = [
+    query(collectionGroup(db, 'students'), where('studentStateCode', '==', cleanUid)),
+    query(collectionGroup(db, 'students'), where('diseCode', '==', cleanUid)),
+  ];
+
+  if (uid.trim() !== cleanUid) {
+    queries.push(query(collectionGroup(db, 'students'), where('studentStateCode', '==', uid.trim())));
+    queries.push(query(collectionGroup(db, 'students'), where('diseCode', '==', uid.trim())));
+  }
+
+  try {
+    const snapshots = await Promise.all(queries.map((q) => getDocs(q)));
+
+    for (const snap of snapshots) {
+      for (const d of snap.docs) {
+        const pathParts = d.ref.path.split('/');
+        // Path format: schools/{schoolId}/students/{studentId}
+        const schoolId = pathParts[1];
+        if (schoolId && schoolId !== currentSchoolId) {
+          const studentData = d.data();
+          let registeredSchool: RegisteredSchoolInfo = {
+            id: schoolId,
+            schoolName: 'અન્ય શાળા (Other School)',
+            diseCode: '',
+          };
+
+          try {
+            const schoolDoc = await getDoc(doc(db, 'schools', schoolId));
+            if (schoolDoc.exists()) {
+              const sData = schoolDoc.data() as any;
+              registeredSchool = {
+                id: schoolId,
+                schoolName: sData.schoolName || 'શાળા નામ ઉપલબ્ધ નથી',
+                diseCode: sData.diseCode || '',
+                principalName: sData.principalName || '',
+                principalPhone: sData.principalPhone || sData.contactPhone || '',
+                contactPhone: sData.contactPhone || sData.principalPhone || '',
+                contactEmail: sData.contactEmail || '',
+                district: sData.district || '',
+                taluka: sData.taluka || '',
+                village: sData.village || '',
+                address: sData.address || '',
+              };
+            }
+          } catch (sErr) {
+            console.warn('Error fetching registered school details:', sErr);
+          }
+
+          return {
+            studentId: d.id,
+            studentUid: cleanUid || uid.trim(),
+            studentName: studentData.studentName || 'વિદ્યાર્થી',
+            standard: studentData.standard || '',
+            grNumber: studentData.grNumber || '',
+            registeredSchoolId: schoolId,
+            registeredSchool,
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error during cross-school UID check:', err);
+  }
+
+  return null;
+}
+
+/**
+ * Batch checks an array of student UIDs against all other schools in Firestore.
+ * Used during Excel import (single Excel or CTS + UDISE+ merge) to identify and block
+ * students already registered in other schools before writing to Firestore.
+ */
+export async function checkBatchStudentUidConflicts(
+  uids: string[],
+  currentSchoolId: string
+): Promise<Map<string, StudentUidConflict>> {
+  const conflicts = new Map<string, StudentUidConflict>();
+  if (!uids || uids.length === 0) return conflicts;
+
+  // Normalize UIDs and remove duplicates & empties
+  const cleanUidSet = new Set<string>();
+  for (const raw of uids) {
+    if (!raw) continue;
+    const clean = raw.replace(/\D/g, '');
+    if (clean && clean.length >= 10) {
+      cleanUidSet.add(clean);
+    }
+  }
+
+  const uniqueUids = Array.from(cleanUidSet);
+  if (uniqueUids.length === 0) return conflicts;
+
+  const schoolCache = new Map<string, RegisteredSchoolInfo>();
+
+  // Process in chunks of 25 (Firestore 'in' operator max is 30)
+  const chunkSize = 25;
+  for (let i = 0; i < uniqueUids.length; i += chunkSize) {
+    const chunk = uniqueUids.slice(i, i + chunkSize);
+
+    try {
+      const [snapState, snapDise] = await Promise.all([
+        getDocs(query(collectionGroup(db, 'students'), where('studentStateCode', 'in', chunk))),
+        getDocs(query(collectionGroup(db, 'students'), where('diseCode', 'in', chunk))),
+      ]);
+
+      const allDocs = [...snapState.docs, ...snapDise.docs];
+      for (const d of allDocs) {
+        const pathParts = d.ref.path.split('/');
+        const schoolId = pathParts[1];
+        if (schoolId && schoolId !== currentSchoolId) {
+          const studentData = d.data();
+          const matchedUid =
+            (studentData.studentStateCode ? studentData.studentStateCode.replace(/\D/g, '') : '') ||
+            (studentData.diseCode ? studentData.diseCode.replace(/\D/g, '') : '');
+
+          if (matchedUid && !conflicts.has(matchedUid)) {
+            let schoolInfo = schoolCache.get(schoolId);
+            if (!schoolInfo) {
+              try {
+                const schoolDoc = await getDoc(doc(db, 'schools', schoolId));
+                if (schoolDoc.exists()) {
+                  const sData = schoolDoc.data() as any;
+                  schoolInfo = {
+                    id: schoolId,
+                    schoolName: sData.schoolName || 'શાળા નામ ઉપલબ્ધ નથી',
+                    diseCode: sData.diseCode || '',
+                    principalName: sData.principalName || '',
+                    principalPhone: sData.principalPhone || sData.contactPhone || '',
+                    contactPhone: sData.contactPhone || sData.principalPhone || '',
+                    contactEmail: sData.contactEmail || '',
+                    district: sData.district || '',
+                    taluka: sData.taluka || '',
+                    village: sData.village || '',
+                    address: sData.address || '',
+                  };
+                } else {
+                  schoolInfo = {
+                    id: schoolId,
+                    schoolName: 'અન્ય શાળા (Other School)',
+                    diseCode: '',
+                  };
+                }
+              } catch {
+                schoolInfo = {
+                  id: schoolId,
+                  schoolName: 'અન્ય શાળા (Other School)',
+                  diseCode: '',
+                };
+              }
+              schoolCache.set(schoolId, schoolInfo);
+            }
+
+            conflicts.set(matchedUid, {
+              studentId: d.id,
+              studentUid: matchedUid,
+              studentName: studentData.studentName || 'વિદ્યાર્થી',
+              standard: studentData.standard || '',
+              grNumber: studentData.grNumber || '',
+              registeredSchoolId: schoolId,
+              registeredSchool: schoolInfo,
+            });
+          }
+        }
+      }
+    } catch (batchErr) {
+      console.error('Batch cross-school UID check error:', batchErr);
+    }
+  }
+
+  return conflicts;
 }
 
 /**
