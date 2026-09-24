@@ -564,6 +564,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
           exam={analyticsExam}
           schoolId={school.id}
           allStudents={students}
+          school={school}
         />
       )}
 

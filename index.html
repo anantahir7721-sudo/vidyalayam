@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="gu">
+<html lang="gu" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,7 +9,7 @@
     <meta property="og:description" content="Vidyalayam — General School Management System & એકમ કસોટી ગુણપત્રક • by NRChad" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#9d512d" />
+    <meta name="theme-color" content="#080b0f" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -21,9 +21,28 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@300;400;500;600;700;800&family=Noto+Serif+Devanagari:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
-  <body class="antialiased selection:bg-[#9d512d]/30 selection:text-[#9d512d]">
-    <div id="root"></div>
+  <body class="bg-[#080b0f] text-[#e4ded6] antialiased selection:bg-[#9d512d]/30 selection:text-[#9d512d] min-h-screen">
+    <div id="root">
+      <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#080b0f;color:#e4ded6;font-family:'Plus Jakarta Sans',sans-serif;text-align:center;padding:20px;">
+        <div style="width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,#9d512d,#b55f37);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 10px 30px rgba(157,81,45,0.45);">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+        </div>
+        <div style="font-size:20px;font-weight:bold;letter-spacing:0.3px;color:#ffffff;margin-bottom:6px;">વિદ્યાલયમ (Vidyalayam)</div>
+        <div style="font-size:13px;color:#a99f91;margin-bottom:14px;">શાળા પોર્ટલ લોડ થઈ રહ્યું છે...</div>
+        <div style="width:120px;height:3px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;position:relative;">
+          <div style="width:50%;height:100%;background:#9d512d;border-radius:999px;animation:vidyPulse 1.2s ease-in-out infinite alternate;"></div>
+        </div>
+        <style>
+          @keyframes vidyPulse {
+            0% { transform: translateX(-60px); }
+            100% { transform: translateX(120px); }
+          }
+        </style>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

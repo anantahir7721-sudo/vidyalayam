@@ -13,6 +13,7 @@ import { IdCardsManager } from './components/IdCardsManager';
 import { CertificatesManager } from './components/CertificatesManager';
 import { ExamsManager } from './components/ExamsManager';
 import { ResultsManager } from './components/ResultsManager';
+import { ParentMessagingManager } from './components/ParentMessagingManager';
 import { ReportsManager } from './components/ReportsManager';
 import { SchoolProfileManager } from './components/SchoolProfileManager';
 import { OnlineExamManager } from './components/OnlineExamManager';
@@ -380,6 +381,16 @@ export default function App() {
               marks={marks}
               onBack={() => setActiveTab('overview')}
               onNavigateToMarks={() => setActiveTab('exams')}
+            />
+          )}
+
+          {activeTab === 'parent_messaging' && (
+            <ParentMessagingManager
+              school={school}
+              students={students}
+              marks={marks}
+              onBack={() => setActiveTab('overview')}
+              onRefresh={loadSchoolData}
             />
           )}
 

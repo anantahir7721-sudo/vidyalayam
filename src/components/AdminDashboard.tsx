@@ -542,7 +542,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <button
                               type="button"
                               onClick={() => {
-                                const matching = schools.find((s) => s.diseCode === req.diseCode) || {
+                                const matching = schools.find((s) => s.diseCode === req.diseCode) || ({
                                   id: req.diseCode,
                                   ownerUid: req.diseCode,
                                   diseCode: req.diseCode,
@@ -550,7 +550,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                   district: 'Gujarat',
                                   status: 'approved' as SchoolStatus,
                                   contactPhone: req.contactNumber,
-                                };
+                                  createdAt: new Date().toISOString(),
+                                  updatedAt: new Date().toISOString(),
+                                } as School);
                                 setTempPassModalSchool(matching);
                               }}
                               className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold transition-colors shadow-xs cursor-pointer"

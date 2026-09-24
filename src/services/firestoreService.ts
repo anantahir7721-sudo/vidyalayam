@@ -15,7 +15,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Student, MarkRecord, StudentUidConflict, RegisteredSchoolInfo } from '../types';
+import { Student, MarkRecord, StudentUidConflict, RegisteredSchoolInfo, ParentBroadcastRecord } from '../types';
 import { cleanAndNormalizeBloodGroup, diagnoseStudentBloodGroup } from '../utils/bloodGroupUtils';
 
 /**
@@ -983,5 +983,41 @@ export async function fixSchoolStudentsBloodGroups(
     fixedCount: studentsToUpdate.length,
     details,
   };
+}
+
+/**
+ * Save record of parent message broadcast to Firestore.
+ * Path: /schools/{schoolId}/parent_broadcasts/{broadcastId}
+ */
+export async function saveParentMessageBroadcast(
+  schoolId: string,
+  record: Omit<ParentBroadcastRecord, 'id'>
+): Promise<string> {
+  const col = collection(db, 'schools', schoolId, 'parent_broadcasts');
+  const docRef = await addDoc(col, {
+    ...record,
+    createdAt: new Date().toISOString(),
+  });
+  return docRef.id;
+}
+
+/**
+ * Fetch past parent message broadcasts for the school.
+ */
+export async function getParentMessageBroadcasts(
+  schoolId: string
+): Promise<ParentBroadcastRecord[]> {
+  try {
+    const col = collection(db, 'schools', schoolId, 'parent_broadcasts');
+    const q = query(col, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as ParentBroadcastRecord[];
+  } catch (err) {
+    console.error('Error fetching parent message broadcasts:', err);
+    return [];
+  }
 }
 

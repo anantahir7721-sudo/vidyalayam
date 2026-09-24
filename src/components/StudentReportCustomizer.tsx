@@ -181,7 +181,7 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
   const [filterGender, setFilterGender] = useState<string>('all');
   const [filterSection, setFilterSection] = useState<string>('all');
   const [reportTitle, setReportTitle] = useState<string>('વિદ્યાર્થી યાદી પત્રક');
-  const [paperOrientation, setPaperOrientation] = useState<'portrait' | 'landscape'>('auto');
+  const [paperOrientation, setPaperOrientation] = useState<'portrait' | 'landscape' | 'auto'>('auto');
 
   // Filter available sections
   const availableSections = useMemo(() => {

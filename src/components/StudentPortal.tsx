@@ -683,7 +683,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                         <div key={sIdx} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5">
                           <div className="text-slate-500 dark:text-slate-400 text-[11px] truncate">{sub.subjectName}</div>
                           <div className="font-bold text-slate-900 dark:text-white text-sm mt-0.5">
-                            <span className="text-emerald-600 dark:text-emerald-400">{sub.obtained}</span> / {sub.total}
+                            <span className="text-emerald-600 dark:text-emerald-400">{sub.marksObtained}</span> / {sub.maxMarks}
                           </div>
                         </div>
                       ))}
@@ -756,12 +756,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                      {calculatedResult.subjects.map((sub, sIdx) => (
+                      {calculatedResult.subjectScores.map((sub, sIdx) => (
                         <tr key={sIdx} className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
-                          <td className="p-3 font-semibold text-slate-900 dark:text-white">{sub.subjectName}</td>
-                          <td className="p-3 text-center text-slate-700 dark:text-slate-300">{sub.firstTermConverted ?? '-'}</td>
-                          <td className="p-3 text-center text-slate-700 dark:text-slate-300">{sub.secondTermConverted ?? '-'}</td>
-                          <td className="p-3 text-center font-bold text-slate-900 dark:text-white">{sub.finalHundredMarks ?? '-'}</td>
+                          <td className="p-3 font-semibold text-slate-900 dark:text-white">{sub.subjectNameGu || sub.subjectNameEn}</td>
+                          <td className="p-3 text-center text-slate-700 dark:text-slate-300">{sub.prathamRaw ?? '-'}</td>
+                          <td className="p-3 text-center text-slate-700 dark:text-slate-300">{sub.dwitiyaRaw ?? '-'}</td>
+                          <td className="p-3 text-center font-bold text-slate-900 dark:text-white">{sub.finalMarkWithGrace ?? sub.total100 ?? '-'}</td>
                           <td className="p-3 text-center">
                             <span className="px-2 py-0.5 rounded font-bold text-[11px] bg-slate-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-300">
                               {sub.grade || '-'}
@@ -791,7 +791,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                   <div className="text-right">
                     <div className="text-xs text-slate-600 dark:text-slate-300">કુલ ગુણ / ટકાવારી:</div>
                     <div className="text-lg font-bold text-slate-900 dark:text-white">
-                      {calculatedResult.totalObtainedMarks} / {calculatedResult.totalMaxMarks} ({calculatedResult.overallPercentage}%)
+                      {calculatedResult.totalObtained} / {calculatedResult.totalMax} ({calculatedResult.percentage}%)
                     </div>
                   </div>
                 </div>
@@ -914,7 +914,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">સરનામું:</span>
                     <strong className="text-slate-800 dark:text-slate-300 truncate max-w-[180px]">
-                      {student.address || school.village || school.district || '-'}
+                      {student.address || school.address || school.district || '-'}
                     </strong>
                   </div>
                 </div>

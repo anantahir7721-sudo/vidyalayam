@@ -20,6 +20,8 @@ import {
   Sparkles,
   HelpCircle,
   Percent,
+  Send,
+  MessageSquare,
 } from 'lucide-react';
 import {
   calculateClassResults,
@@ -27,6 +29,7 @@ import {
   getSubjectsForStandard,
   getExamsForStandard,
 } from '../utils/resultFormulaUtils';
+import { SendExamResultModal } from './SendExamResultModal';
 
 interface ResultsManagerProps {
   school: School;
@@ -49,6 +52,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PASS' | 'PASS_WITH_SIDDHI' | 'PASS_WITH_KRUPA' | 'FAIL'>('ALL');
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [showRulesModal, setShowRulesModal] = useState(false);
+  const [sendResultModalOpen, setSendResultModalOpen] = useState(false);
 
   // 1. Calculate Results using the exact GSEB Formula Engine
   const classResults = useMemo(() => {
@@ -907,6 +911,15 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setSendResultModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition-all cursor-pointer"
+            title="વાલીઓને વ્યક્તિગત પરીક્ષા પરિણામ WhatsApp / SMS દ્વારા મોકલો"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>વાલીઓને પરિણામ મોકલો 🚀</span>
+          </button>
+
           {onNavigateToMarks && (
             <button
               onClick={onNavigateToMarks}
@@ -1477,6 +1490,17 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             </div>
           </div>
         </div>
+      )}
+      {/* Send Exam Result to Parents Modal */}
+      {sendResultModalOpen && (
+        <SendExamResultModal
+          isOpen={sendResultModalOpen}
+          onClose={() => setSendResultModalOpen(false)}
+          school={school}
+          students={students}
+          marks={marks}
+          initialStandard={selectedStandard}
+        />
       )}
     </div>
   );

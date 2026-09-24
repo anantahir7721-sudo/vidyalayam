@@ -242,7 +242,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
   const [filterSection, setFilterSection] = useState<string>('all');
   const [staffSearchQuery, setStaffSearchQuery] = useState<string>('');
   const [reportTitle, setReportTitle] = useState<string>('શાળા સ્ટાફ પત્રક (Staff Master Register)');
-  const [paperOrientation, setPaperOrientation] = useState<'portrait' | 'landscape'>('auto');
+  const [paperOrientation, setPaperOrientation] = useState<'portrait' | 'landscape' | 'auto'>('auto');
 
   // Available designations
   const availableDesignations = useMemo(() => {

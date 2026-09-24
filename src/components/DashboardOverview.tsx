@@ -23,6 +23,7 @@ import {
   Clock,
   Layers,
   Edit3,
+  MessageSquare,
 } from 'lucide-react';
 import { ActiveTabType } from './Navbar';
 import { VidyalayamLogo } from './VidyalayamLogo';
@@ -65,16 +66,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   const teachingStaffCount = staffList.filter(
     (st) =>
-      st.staffType === 'teaching' ||
-      !st.staffType ||
-      st.role?.toLowerCase().includes('teacher') ||
-      st.role?.includes('શિક્ષક')
+      st.category === 'teaching' ||
+      !st.category ||
+      st.designation?.toLowerCase().includes('teacher') ||
+      st.designation?.includes('શિક્ષક')
   ).length;
   const nonTeachingStaffCount = staffList.filter(
     (st) =>
-      st.staffType === 'non_teaching' ||
-      st.role?.toLowerCase().includes('peon') ||
-      st.role?.toLowerCase().includes('clerk')
+      st.category === 'non_teaching' ||
+      st.designation?.toLowerCase().includes('peon') ||
+      st.designation?.toLowerCase().includes('clerk')
   ).length;
 
   const ekamKasotiCount = marks.filter((m) => m.examType.includes('એકમ કસોટી')).length;
@@ -126,6 +127,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       badge: 'GSEB નિયમો & ગેઝેટ',
       color: 'hover:border-rose-500/40',
       actionText: 'પરિણામ ગેઝેટ',
+    },
+    {
+      id: 'parent_messaging' as ActiveTabType,
+      title: 'વાલી સંચાર & મેસેજિંગ (Parent Messaging)',
+      desc: 'પરીક્ષાનું પરિણામ એક બટનથી દરેક વિદ્યાર્થીના વાલીના મોબાઇલમાં WhatsApp / SMS દ્વારા મોકલો. સામાન્ય સૂચનાઓ અને પરિપત્રોનું પર્સનલ બ્રોડકાસ્ટ.',
+      icon: <MessageSquare className="w-5 h-5 text-emerald-400" />,
+      badge: 'WhatsApp & SMS',
+      color: 'hover:border-emerald-500/40',
+      actionText: 'વાલીઓને મેસેજ મોકલો',
     },
     {
       id: 'idcards' as ActiveTabType,

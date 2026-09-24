@@ -11,6 +11,7 @@ export interface School {
   updatedAt?: string;
   // Extended School Profile Information
   address?: string;
+  pincode?: string;
   village?: string;
   taluka?: string;
   schoolType?: string; // 'માધ્યમિક' | 'ઉચ્ચતર માધ્યમિક' | 'પ્રાથમિક' | 'સંયુક્ત'
@@ -207,6 +208,42 @@ export interface StudentUidConflict {
   grNumber?: string;
   registeredSchoolId: string;
   registeredSchool: RegisteredSchoolInfo;
+}
+
+export interface ParentMessageRecipient {
+  studentId: string;
+  studentName: string;
+  standard: string;
+  grNumber?: string;
+  rollNumber?: string;
+  section?: string;
+  parentName?: string;
+  parentPhone: string;
+  messageText: string;
+  status: 'pending' | 'sent' | 'skipped' | 'no_phone';
+  sentAt?: string;
+  examScore?: {
+    obtainedMarks: number;
+    totalMarks: number;
+    percentage: number;
+    grade?: string;
+    statusText?: string;
+    subjectsSummary?: string;
+  };
+}
+
+export interface ParentBroadcastRecord {
+  id?: string;
+  schoolId: string;
+  broadcastType: 'exam_result' | 'general_notice';
+  title: string;
+  examId?: string;
+  examType?: string;
+  standard?: string;
+  totalRecipients: number;
+  sentCount: number;
+  createdAt: string;
+  previewMessage: string;
 }
 
 export * from './onlineExam';

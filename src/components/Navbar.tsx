@@ -20,6 +20,7 @@ import {
   Sparkles,
   ClipboardList,
   KeyRound,
+  MessageSquare,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -33,6 +34,7 @@ export type ActiveTabType =
   | 'exams'
   | 'online_exams'
   | 'results'
+  | 'parent_messaging'
   | 'idcards'
   | 'certificates'
   | 'reports'
@@ -140,6 +142,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'exams', label: 'પરીક્ષાઓ & કસોટી', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'online_exams', label: '📝 ઓનલાઇન MCQ', icon: <FileText className="w-3.5 h-3.5 text-emerald-400" /> },
     { id: 'results', label: 'પરિણામ', icon: <Award className="w-3.5 h-3.5" /> },
+    { id: 'parent_messaging', label: 'વાલી સંચાર', icon: <MessageSquare className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> },
     { id: 'idcards', label: 'ID Cards', icon: <CreditCard className="w-3.5 h-3.5" /> },
   ];
 

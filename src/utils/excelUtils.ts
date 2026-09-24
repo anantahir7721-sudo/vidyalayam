@@ -15,6 +15,7 @@ export interface ParsedStudentRow {
   standard: string;
   diseCode?: string;
   grNumber?: string;
+  rollNumber?: string;
   section?: string;
   dob?: string;
   address?: string;

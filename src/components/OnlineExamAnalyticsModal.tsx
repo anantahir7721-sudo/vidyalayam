@@ -15,10 +15,12 @@ import {
   HelpCircle,
   ArrowUpDown,
   Filter,
+  Send,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { OnlineExam, MCQQuestion, ExamAttempt, Student } from '../types';
+import { OnlineExam, MCQQuestion, ExamAttempt, Student, School } from '../types';
 import { getExamQuestions, getExamAttempts } from '../services/onlineExamService';
+import { SendExamResultModal } from './SendExamResultModal';
 
 interface OnlineExamAnalyticsModalProps {
   isOpen: boolean;
@@ -26,6 +28,7 @@ interface OnlineExamAnalyticsModalProps {
   exam: OnlineExam;
   schoolId: string;
   allStudents: Student[];
+  school?: School;
 }
 
 export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> = ({
@@ -34,6 +37,7 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
   exam,
   schoolId,
   allStudents,
+  school,
 }) => {
   const [activeTab, setActiveTab] = useState<'students' | 'questions'>('students');
   const [loading, setLoading] = useState(true);
@@ -41,6 +45,7 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
   const [attempts, setAttempts] = useState<ExamAttempt[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PASS' | 'FAIL'>('ALL');
+  const [sendResultModalOpen, setSendResultModalOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen && exam?.id) {
@@ -241,6 +246,16 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSendResultModalOpen(true)}
+              disabled={attempts.length === 0}
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-md shadow-emerald-950/30"
+              title="વાલીઓને ઓનલાઇન કસોટીના ગુણ WhatsApp / SMS દ્વારા મોકલો"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">વાલીઓને પરિણામ મોકલો 🚀</span>
+              <span className="sm:hidden">પરિણામ મોકલો</span>
+            </button>
             <button
               onClick={handleExportExcel}
               disabled={attempts.length === 0}
@@ -480,6 +495,19 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
           </button>
         </div>
       </div>
+
+      {/* Send Exam Result to Parents Modal */}
+      {sendResultModalOpen && (
+        <SendExamResultModal
+          isOpen={sendResultModalOpen}
+          onClose={() => setSendResultModalOpen(false)}
+          school={school || ({ id: schoolId, schoolName: '' } as School)}
+          students={allStudents}
+          marks={[]}
+          initialOnlineExam={exam}
+          initialExamAttempts={attempts}
+        />
+      )}
     </div>
   );
 };
