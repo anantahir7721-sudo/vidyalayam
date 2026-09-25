@@ -321,6 +321,7 @@ export default function App() {
               marks={marks}
               staffList={staffList}
               onNavigate={(tab) => setActiveTab(tab)}
+              onStudentUpdated={() => loadSchoolData()}
             />
           )}
 

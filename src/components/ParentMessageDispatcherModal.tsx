@@ -13,7 +13,6 @@ import {
   ChevronLeft,
   Download,
   Share2,
-  ExternalLink,
   Edit2,
   Sparkles,
   Smartphone,
@@ -26,7 +25,9 @@ import {
   Radio,
   FileSpreadsheet,
   RotateCcw,
-  BookOpen,
+  ShieldCheck,
+  Lock,
+  ExternalLink,
 } from 'lucide-react';
 import {
   buildWhatsAppLink,
@@ -61,15 +62,17 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
   school,
   onRefresh,
 }) => {
-  // Main Tab: 'broadcast' (All at once in 1-click) vs 'individual' (Student by student carousel)
-  const [dispatcherTab, setDispatcherTab] = useState<'broadcast' | 'individual'>('broadcast');
+  // Three distinct dispatch options:
+  // 1. 'auto_personal': Individual personal WhatsApp to each parent automatically (100% Private, child's marks only)
+  // 2. 'group_notice': 1-Click WhatsApp Group Announcement with Secure Student Portal Link
+  // 3. 'individual': Manual student-by-student preview & send
+  const [dispatcherTab, setDispatcherTab] = useState<'auto_personal' | 'group_notice' | 'individual'>('auto_personal');
 
   const [recipients, setRecipients] = useState<ParentMessageRecipient[]>(initialRecipients);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [allCopied, setAllCopied] = useState(false);
   const [numbersCopied, setNumbersCopied] = useState(false);
-  const [broadcastCopied, setBroadcastCopied] = useState(false);
+  const [noticeCopied, setNoticeCopied] = useState(false);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [tempPhone, setTempPhone] = useState('');
   const [isSavingHistory, setIsSavingHistory] = useState(false);
@@ -77,8 +80,8 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
   const [saveError, setSaveError] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'pending' | 'sent' | 'no_phone'>('all');
 
-  // Consolidated Broadcast Message State (for 1-click Broadcast)
-  const defaultBroadcastText = useMemo(() => {
+  // Consolidated Group Notice Message (Private: NO marks leaked to other parents)
+  const defaultNoticeText = useMemo(() => {
     return buildClassConsolidatedBroadcastMessage(
       school,
       recipients,
@@ -88,14 +91,14 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
     );
   }, [school, recipients, title, examTitle, standard]);
 
-  const [customBroadcastText, setCustomBroadcastText] = useState<string>('');
-  const [isEditingBroadcastText, setIsEditingBroadcastText] = useState(false);
-  const activeBroadcastText = customBroadcastText || defaultBroadcastText;
+  const [customNoticeText, setCustomNoticeText] = useState<string>('');
+  const [isEditingNoticeText, setIsEditingNoticeText] = useState(false);
+  const activeNoticeText = customNoticeText || defaultNoticeText;
 
-  // Auto-Broadcast Sequence Runner State
+  // Auto-Broadcast Personal Dispatcher Runner State
   const [autoRunning, setAutoRunning] = useState(false);
-  const [autoDelay, setAutoDelay] = useState<number>(3); // seconds between auto-sends
-  const [autoCountdown, setAutoCountdown] = useState<number>(3);
+  const [autoDelay, setAutoDelay] = useState<number>(2); // seconds between auto-sends
+  const [autoCountdown, setAutoCountdown] = useState<number>(2);
   const [autoSuccess, setAutoSuccess] = useState(false);
 
   // Sync recipients if prop updates
@@ -105,7 +108,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
     setHistorySaved(false);
     setAutoRunning(false);
     setAutoSuccess(false);
-    setCustomBroadcastText('');
+    setCustomNoticeText('');
   }, [initialRecipients]);
 
   // Derived Counts
@@ -127,6 +130,11 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
     if (filterMode === 'no_phone') return recipients.filter((r) => !r.parentPhone || r.status === 'no_phone');
     return recipients;
   }, [recipients, filterMode]);
+
+  // Next Pending student for 1-Tap Thumb Dispatcher
+  const nextPendingRecipient = useMemo(() => {
+    return recipients.find((r) => r.parentPhone && r.status !== 'sent') || null;
+  }, [recipients]);
 
   // Open helper to safely navigate without popup blocking
   const triggerOpenLink = (url: string) => {
@@ -158,7 +166,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
     }
   };
 
-  // Mark all students as sent (used after 1-click broadcast)
+  // Mark all students as sent
   const handleMarkAllAsSent = () => {
     const now = new Date().toISOString();
     setRecipients((prev) =>
@@ -170,7 +178,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
     );
   };
 
-  // Individual WhatsApp dispatch
+  // Individual WhatsApp dispatch (Contains ONLY that student's marks!)
   const handleLaunchWhatsApp = (recipient: ParentMessageRecipient, index: number) => {
     if (!recipient.parentPhone) return;
     const url = buildWhatsAppLink(recipient.parentPhone, recipient.messageText);
@@ -178,7 +186,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
     handleMarkAsSentAndNext(index);
   };
 
-  // Individual SMS dispatch
+  // Individual SMS dispatch (Contains ONLY that student's marks!)
   const handleLaunchSms = (recipient: ParentMessageRecipient, index: number) => {
     if (!recipient.parentPhone) return;
     const url = buildSmsLink(recipient.parentPhone, recipient.messageText);
@@ -194,20 +202,6 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
       setTimeout(() => setCopiedIndex(null), 2500);
     } catch (err) {
       console.error('Copy failed:', err);
-    }
-  };
-
-  // Copy all individual messages
-  const handleCopyAll = async () => {
-    try {
-      const allText = recipients
-        .map((r, i) => `--- [${i + 1}] ${r.studentName} (${r.parentPhone || 'નંબર નથી'}) ---\n${r.messageText}\n`)
-        .join('\n\n');
-      await navigator.clipboard.writeText(allText);
-      setAllCopied(true);
-      setTimeout(() => setAllCopied(false), 3000);
-    } catch (err) {
-      console.error('Copy all failed:', err);
     }
   };
 
@@ -232,34 +226,30 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
     }
   };
 
-  // 1-CLICK BROADCAST: Native Share / WhatsApp Group Dispatch
-  const handleShareConsolidatedWhatsApp = async () => {
-    const textToSend = activeBroadcastText;
+  // 1-CLICK CLASS GROUP NOTICE (Opens WhatsApp to share the official notice with private portal link)
+  const handleShareGroupNoticeWhatsApp = async () => {
+    const textToSend = activeNoticeText;
 
-    // Mobile / Modern Browser Web Share API (opens native WhatsApp share sheet directly)
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
         await navigator.share({
-          title: title || 'વિદ્યાલયમ શાળા પરિણામ બ્રોડકાસ્ટ',
+          title: title || 'વિદ્યાલયમ શાળા પરિણામ નોટિસ',
           text: textToSend,
         });
         handleMarkAllAsSent();
         return;
       } catch (err: any) {
-        if (err.name === 'AbortError') {
-          return;
-        }
+        if (err.name === 'AbortError') return;
         console.warn('Native share failed, using WhatsApp link:', err);
       }
     }
 
-    // Direct WhatsApp link (opens WhatsApp Web or App directly to pick recipient / group / broadcast)
     const url = `https://wa.me/?text=${encodeURIComponent(textToSend)}`;
     triggerOpenLink(url);
     handleMarkAllAsSent();
   };
 
-  // 1-CLICK GROUP SMS: Opens native SMS app with all parents prefilled
+  // 1-CLICK GROUP SMS
   const handleSendGroupSms = () => {
     const validPhones = recipients
       .map((r) => r.parentPhone)
@@ -268,13 +258,13 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
       setSaveError('કોઈ માન્ય મોબાઇલ નંબર મળ્યો નથી.');
       return;
     }
-    const summaryText = `${school.schoolName || 'શાળા'}: ${title}. ${examTitle ? `પરીક્ષા: ${examTitle}.` : ''} વિગતવાર પરિણામ જાહેર થયેલ છે.`;
+    const summaryText = `${school.schoolName || 'શાળા'}: ${title}. ${examTitle ? `પરીક્ષા: ${examTitle}.` : ''} વિગતવાર પરિણામ શાળા પોર્ટલ પર રોલ નંબર દ્વારા ઉપલબ્ધ છે.`;
     const url = buildGroupSmsLink(validPhones, summaryText);
     triggerOpenLink(url);
     handleMarkAllAsSent();
   };
 
-  // Download VCF contacts file for WhatsApp Broadcast creation
+  // Download VCF contacts file
   const handleDownloadVcf = () => {
     const ok = exportParentContactsVcf(
       recipients.map((r) => ({
@@ -288,17 +278,6 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
     );
     if (!ok) {
       setSaveError('કોઈ માન્ય મોબાઇલ નંબર મળ્યો નથી.');
-    }
-  };
-
-  // Copy Broadcast Text
-  const handleCopyBroadcastText = async () => {
-    try {
-      await navigator.clipboard.writeText(activeBroadcastText);
-      setBroadcastCopied(true);
-      setTimeout(() => setBroadcastCopied(false), 3000);
-    } catch (err) {
-      console.error('Failed to copy broadcast text:', err);
     }
   };
 
@@ -352,7 +331,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
         totalRecipients: recipients.length,
         sentCount,
         createdAt: new Date().toISOString(),
-        previewMessage: activeBroadcastText.slice(0, 160) || '',
+        previewMessage: activeNoticeText.slice(0, 160) || '',
       });
       setHistorySaved(true);
       setSaveError(null);
@@ -366,6 +345,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
   };
 
   // Auto-Broadcast Sequence Runner Engine
+  // Opens WhatsApp for each parent sequentially with ONLY their child's marks!
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     if (autoRunning) {
@@ -401,16 +381,11 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
     };
   }, [autoRunning, autoCountdown, recipients, autoDelay]);
 
-  // Next Pending student for Auto Runner display
-  const nextPendingRecipient = useMemo(() => {
-    return recipients.find((r) => r.parentPhone && r.status !== 'sent') || null;
-  }, [recipients]);
-
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn select-none">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[95vh] overflow-hidden text-slate-100">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[96vh] overflow-hidden text-slate-100">
         
         {/* HEADER */}
         <div className="shrink-0 px-4 sm:px-6 py-3.5 bg-slate-950 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -423,8 +398,9 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                 <h3 className="text-sm sm:text-base font-bold text-white tracking-wide">
                   {title}
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  {broadcastType === 'exam_result' ? 'પરીક્ષા પરિણામ' : 'વાલી સૂચના'}
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                  <span>૧૦૦% પ્રાઇવેટ (દરેક વાલીને ફક્ત પોતાના બાળકની વિગત)</span>
                 </span>
               </div>
               <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
@@ -459,43 +435,62 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
           </div>
         </div>
 
-        {/* PRIMARY DISPATCH MODE SELECTOR TABS */}
+        {/* THREE WORKFLOW TABS */}
         <div className="shrink-0 px-4 sm:px-6 py-2 bg-slate-950/70 border-b border-slate-800 flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs w-full sm:w-auto">
+          <div className="flex items-center gap-1 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs w-full lg:w-auto overflow-x-auto">
+            {/* TAB 1: Auto Personal Send */}
             <button
               type="button"
               onClick={() => {
-                setDispatcherTab('broadcast');
+                setDispatcherTab('auto_personal');
                 setAutoRunning(false);
               }}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 py-2 px-4 rounded-xl font-bold transition-all cursor-pointer ${
-                dispatcherTab === 'broadcast'
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap ${
+                dispatcherTab === 'auto_personal'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-950/40'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Radio className="w-4 h-4 text-emerald-300" />
-              <span>📢 ૧-ક્લિક સામૂહિક બ્રોડકાસ્ટ (All at Once)</span>
+              <RotateCcw className="w-3.5 h-3.5 text-emerald-300" />
+              <span>⚡ ઓટો-પર્સનલ સેન્ડર (ખાનગી મેસેજ)</span>
             </button>
 
+            {/* TAB 2: Group Announcement Notice */}
+            <button
+              type="button"
+              onClick={() => {
+                setDispatcherTab('group_notice');
+                setAutoRunning(false);
+              }}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap ${
+                dispatcherTab === 'group_notice'
+                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-950/40'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5 text-cyan-300" />
+              <span>📢 વાલી ગ્રૂપ સિક્યોર નોટિસ</span>
+            </button>
+
+            {/* TAB 3: Manual Individual View */}
             <button
               type="button"
               onClick={() => {
                 setDispatcherTab('individual');
                 setAutoRunning(false);
               }}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 py-2 px-4 rounded-xl font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap ${
                 dispatcherTab === 'individual'
-                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-950/40'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-950/40'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Users className="w-4 h-4 text-cyan-300" />
-              <span>👤 એક-એક વ્યક્તિગત મોકલો (One-by-One)</span>
+              <Users className="w-3.5 h-3.5 text-purple-300" />
+              <span>👤 એક-એક વિદ્યાર્થી ચકાસો</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-2 text-xs w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-2 text-xs w-full lg:w-auto justify-between lg:justify-end">
             <div className="flex items-center gap-2">
               <span className="text-slate-400">પ્રગતિ:</span>
               <strong className="text-emerald-400 font-mono text-sm">
@@ -518,7 +513,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
               ) : (
                 <>
                   <Save className="w-3.5 h-3.5 text-teal-400" />
-                  <span>ઇતિહાસ સેવ કરો</span>
+                  <span>ઇતિહાસ સેવ</span>
                 </>
               )}
             </button>
@@ -550,105 +545,73 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
           </div>
         )}
 
-        {/* TAB 1: ALL-AT-ONCE BROADCAST (User's Primary Request) */}
-        {dispatcherTab === 'broadcast' && (
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-slate-900/60">
+        {/* ========================================================================= */}
+        {/* TAB 1: ⚡ AUTO-PERSONAL SENDER (Every Parent Gets ONLY Their Child's Marks!) */}
+        {/* ========================================================================= */}
+        {dispatcherTab === 'auto_personal' && (
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-900/60">
             
-            {/* HERO 1-CLICK BROADCAST BANNER */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-gradient-to-br from-emerald-950/70 via-slate-900 to-teal-950/60 border border-emerald-500/40 shadow-xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>૧-ક્લિક સામૂહિક શેરિંગ • 1-Click Multi Broadcast</span>
-                  </div>
-                  <h4 className="text-base sm:text-lg font-bold text-white tracking-wide">
-                    WhatsApp ગ્રૂપ અથવા બ્રોડકાસ્ટ લિસ્ટમાં એકસાથે મોકલો
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
-                    નીચેના બટન પર ક્લિક કરતા આપનું WhatsApp ખુલશે અને આપ આપના વર્ગના વાલી ગ્રૂપ (Parents Group) અથવા WhatsApp Broadcast List માં તમામ <strong className="text-emerald-400">{recipients.length} વિદ્યાર્થીઓનું</strong> સંપૂર્ણ પરિણામ ૧ સેકન્ડમાં એકસાથે શેર કરી શકશો.
-                  </p>
-                </div>
-
-                <div className="flex sm:flex-col items-center sm:items-end gap-2 shrink-0">
-                  <span className="text-xs text-slate-400">કુલ વાલીઓ:</span>
-                  <span className="px-3 py-1 rounded-xl bg-slate-800 font-mono font-bold text-emerald-400 text-sm border border-slate-700">
-                    {recipients.length} વિદ્યાર્થીઓ
-                  </span>
-                </div>
-              </div>
-
-              {/* ACTION BUTTONS ROW FOR 1-CLICK BROADCAST */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
-                {/* 1. Main WhatsApp Broadcast Share Button */}
-                <button
-                  type="button"
-                  onClick={handleShareConsolidatedWhatsApp}
-                  className="col-span-1 sm:col-span-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/60 transition-all cursor-pointer transform active:scale-98"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span>🟢 WhatsApp પર સામૂહિક મોકલો (૧-ક્લિક) 🚀</span>
-                </button>
-
-                {/* 2. Group SMS Button */}
-                <button
-                  type="button"
-                  onClick={handleSendGroupSms}
-                  className="py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-750 text-slate-100 font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all cursor-pointer"
-                  title="બધા વાલીઓના નંબરો સાથે સામૂહિક SMS મોકલો"
-                >
-                  <Smartphone className="w-4 h-4 text-cyan-400" />
-                  <span>📱 સામૂહિક SMS મોકલો</span>
-                </button>
-
-                {/* 3. Mark All Sent Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleMarkAllAsSent();
-                    handleSaveToHistory();
-                  }}
-                  className="py-3 px-4 rounded-2xl bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 border border-emerald-500/40 transition-all cursor-pointer"
-                  title="બધા વિદ્યાર્થીઓને મોકલેલ તરીકે માર્ક કરો"
-                >
-                  <CheckCheck className="w-4 h-4 text-emerald-400" />
-                  <span>✅ બધાને મોકલેલ માર્ક કરો</span>
-                </button>
+            {/* PRIVACY GUARANTEE BANNER */}
+            <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="text-xs space-y-1">
+                <h4 className="font-bold text-emerald-300">
+                  ૧૦૦% પ્રાઇવેટ & સુરક્ષિત પર્સનલ મેસેજિંગ:
+                </h4>
+                <p className="text-slate-300 leading-relaxed">
+                  દરેક વાલીને <strong>ફક્ત અને ફક્ત એમના જ બાળકના ગુણ, ટકાવારી અને રિઝલ્ટ</strong> મળશે. કોઈપણ વાલી બીજા વિદ્યાર્થીના માર્ક્સ જોઈ શકશે નહીં.
+                </p>
               </div>
             </div>
 
-            {/* AUTO-BROADCAST SEQUENCE RUNNER CARD */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-slate-950/80 border border-slate-800 space-y-4">
+            {/* ZERO BACK-AND-FORTH 1-CLICK SHORTCUT BANNER */}
+            <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-start gap-2.5">
+                <Sparkles className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <h5 className="font-bold text-cyan-300">
+                    વારંવાર WhatsApp ખોલીને Back ન જવું હોય તો? (૧-ક્લિક રીત)
+                  </h5>
+                  <p className="text-slate-300 leading-relaxed text-[11px]">
+                    વર્ગના WhatsApp ગ્રૂપમાં ફક્ત ૧ જ વાર સિક્યોર લિંક મોકલો. વાલીઓ લિંક પર ક્લિક કરી રોલ નંબર નાખીને ફક્ત પોતાના જ બાળકની માર્કશીટ જોઈ શકશે (૧૦૦% ખાનગી).
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDispatcherTab('group_notice')}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold whitespace-nowrap shadow-md cursor-pointer shrink-0 flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span>૧-ક્લિક ગ્રૂપ નોટિસ ખોલો ➡️</span>
+              </button>
+            </div>
+
+            {/* AUTO RUNNER CONTROLLER CARD */}
+            <div className="p-4 sm:p-5 rounded-3xl bg-slate-950 border border-slate-800 space-y-4 shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
-                    <RotateCcw className={`w-5 h-5 ${autoRunning ? 'animate-spin' : ''}`} />
-                  </div>
-                  <div>
-                    <h5 className="text-sm font-bold text-white flex items-center gap-2">
-                      <span>⚡ ઓટો-બ્રોડકાસ્ટ રનર (Continuous Personal Auto-Send)</span>
-                      {autoRunning && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                      )}
-                    </h5>
-                    <p className="text-xs text-slate-400">
-                      જો દરેક વાલીને વ્યક્તિગત પરિણામ મોકલવું હોય પરંતુ વારંવાર ક્લિક ન કરવું હોય, તો ઓટો-રનર આપોઆપ ક્રમશઃ દરેક વાલીનું WhatsApp ખોલી આપશે.
-                    </p>
-                  </div>
+                <div>
+                  <h4 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>⚡ બધા વાલીઓને આપમેળે પર્સનલ મેસેજ મોકલો (Auto-Dispatch Queue)</span>
+                    {autoRunning && <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />}
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1">
+                    નીચેનું બટન દબાવતા સિસ્ટમ ક્રમશઃ દરેક વાલીનું WhatsApp ખોલશે જેમાં ફક્ત તેમના જ બાળકના માર્ક્સ તૈયાર હશે.
+                  </p>
                 </div>
 
-                {/* Auto Runner Controls */}
+                {/* Speed selector */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[11px]">
-                    <span className="text-slate-400 px-1.5">સ્પીડ:</span>
-                    {[2, 3, 5].map((sec) => (
+                    <span className="text-slate-400 px-1.5">સમય વિરામ:</span>
+                    {[1, 2, 3].map((sec) => (
                       <button
                         key={sec}
                         type="button"
                         onClick={() => setAutoDelay(sec)}
                         className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
                           autoDelay === sec
-                            ? 'bg-cyan-500 text-slate-950'
+                            ? 'bg-emerald-500 text-slate-950'
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
@@ -665,35 +628,35 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                         setAutoRunning(true);
                         setAutoCountdown(autoDelay);
                       }}
-                      className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
+                      className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all cursor-pointer disabled:opacity-40"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>ઓટો-સેન્ડ શરૂ કરો ({pendingCount} બાકી)</span>
+                      <span>ઓટો-સેન્ડ શરૂ કરો ({pendingCount} બાકી) 🚀</span>
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setAutoRunning(false)}
-                      className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
+                      className="py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
                     >
                       <Pause className="w-3.5 h-3.5 fill-current" />
-                      <span>વિરામ / બંધ કરો</span>
+                      <span>વિરામ / થોભો</span>
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Running Status Banner */}
+              {/* Live Auto-Send Status */}
               {autoRunning && nextPendingRecipient && (
-                <div className="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2 text-cyan-300">
+                <div className="p-3.5 rounded-2xl bg-emerald-950/50 border border-emerald-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 text-emerald-300">
                     <span className="font-bold">આગામી વાલી:</span>
-                    <strong className="text-white">{nextPendingRecipient.studentName}</strong>
-                    <span className="font-mono text-cyan-400">({nextPendingRecipient.parentPhone})</span>
+                    <strong className="text-white text-sm">{nextPendingRecipient.studentName}</strong>
+                    <span className="font-mono text-emerald-400">({nextPendingRecipient.parentPhone})</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-cyan-300 font-bold">
-                      {autoCountdown} સેકન્ડમાં આપોઆપ ખુલશે...
+                    <span className="font-mono text-emerald-300 font-bold">
+                      {autoCountdown} સેકન્ડમાં આપમેળે WhatsApp ખુલશે...
                     </span>
                     <button
                       type="button"
@@ -702,19 +665,19 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                         handleLaunchWhatsApp(nextPendingRecipient, idx);
                         setAutoCountdown(autoDelay);
                       }}
-                      className="px-3 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[11px] cursor-pointer"
+                      className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer"
                     >
-                      તુરંત ખોલો ➡️
+                      તુરંત મોકલો ➡️
                     </button>
                   </div>
                 </div>
               )}
 
               {autoSuccess && (
-                <div className="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between text-xs text-emerald-300">
+                <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between text-xs text-emerald-300">
                   <div className="flex items-center gap-2">
                     <CheckCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>🎉 તમામ પાત્ર વાલીઓને ઓટો-બ્રોડકાસ્ટ દ્વારા મેસેજ મોકલાઈ ગયા છે!</span>
+                    <span>🎉 તમામ વાલીઓને તેમના બાળકના વ્યક્તિગત ગુણ સફળતાપૂર્વક મોકલાઈ ગયા છે!</span>
                   </div>
                   <button
                     type="button"
@@ -727,110 +690,169 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
               )}
             </div>
 
-            {/* BROADCAST MESSAGE PREVIEW & EDIT BOX */}
+            {/* ACTIVE STUDENT PERSONAL PREVIEW CARD */}
+            {nextPendingRecipient && (
+              <div className="p-4 sm:p-5 rounded-3xl bg-slate-950/80 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                    <h5 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                      આગામી વાલીને જનાર પર્સનલ મેસેજનું પ્રિવ્યૂ (Sample Preview):
+                    </h5>
+                  </div>
+                  <span className="text-xs font-mono text-emerald-400 font-bold">
+                    વિદ્યાર્થી: {nextPendingRecipient.studentName}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-200 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                  {nextPendingRecipient.messageText}
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <span>
+                    વાલી નંબર: <strong className="font-mono text-white">{nextPendingRecipient.parentPhone || 'નંબર નથી'}</strong>
+                  </span>
+                  <span>
+                    ગુણ વિગત: <strong className="text-emerald-400 font-mono">
+                      {nextPendingRecipient.examScore ? `${nextPendingRecipient.examScore.obtainedMarks}/${nextPendingRecipient.examScore.totalMarks} (${nextPendingRecipient.examScore.percentage.toFixed(1)}%)` : 'પરિણામ ઉપલબ્ધ'}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 2: 📢 CLASS WHATSAPP GROUP NOTICE (With Secure Student Portal Link) */}
+        {/* ========================================================================= */}
+        {dispatcherTab === 'group_notice' && (
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-slate-900/60">
+            <div className="p-4 sm:p-6 rounded-3xl bg-gradient-to-br from-cyan-950/70 via-slate-900 to-blue-950/60 border border-cyan-500/40 shadow-xl space-y-4">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  <Radio className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>૧-ક્લિક સમગ્ર વર્ગ વાલી ગ્રૂપ શેરિંગ (Class Parents Group Notice)</span>
+                </div>
+                <h4 className="text-base sm:text-lg font-bold text-white tracking-wide">
+                  WhatsApp વાલી ગ્રૂપમાં સત્તાવાર પરિણામ નોટિસ ૧-ક્લિકથી મોકલો
+                </h4>
+                <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+                  આ મેસેજમાં કોઈપણ વિદ્યાર્થીના માર્ક્સ જાહેર દેખાશે <strong>નહીં</strong>. દરેક વાલીશ્રી લિંક પર ક્લિક કરી પોતાના બાળકના રોલ નંબર / G.R. નંબર દ્વારા <strong>ફક્ત પોતાના બાળકના જ ગુણ અને પ્રગતિપત્રક</strong> ખાનગી રીતે જોઈ શકશે.
+                </p>
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={handleShareGroupNoticeWhatsApp}
+                  className="col-span-1 sm:col-span-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-500 hover:from-cyan-500 hover:to-blue-400 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/60 transition-all cursor-pointer transform active:scale-98"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>🟢 WhatsApp વાલી ગ્રૂપમાં મોકલો (૧-ક્લિક) 🚀</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSendGroupSms}
+                  className="py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-750 text-slate-100 font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all cursor-pointer"
+                >
+                  <Smartphone className="w-4 h-4 text-cyan-400" />
+                  <span>📱 સામૂહિક SMS મોકલો</span>
+                </button>
+              </div>
+            </div>
+
+            {/* NOTICE PREVIEW BOX */}
             <div className="p-4 sm:p-5 rounded-3xl bg-slate-950 border border-slate-800 space-y-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                  <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
                   <h5 className="text-xs font-bold text-white uppercase tracking-wider">
-                    સામૂહિક બ્રોડકાસ્ટ લખાણ (Class Result Broadcast Message)
+                    વાલી ગ્રૂપ સિક્યોર નોટિસ લખાણ (Group Notice Text)
                   </h5>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsEditingBroadcastText(!isEditingBroadcastText)}
+                    onClick={() => setIsEditingNoticeText(!isEditingNoticeText)}
                     className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                   >
                     <Edit2 className="w-3 h-3 text-cyan-400" />
-                    <span>{isEditingBroadcastText ? 'પ્રિવ્યૂ જુઓ' : 'મેસેજ એડિટ કરો'}</span>
+                    <span>{isEditingNoticeText ? 'પ્રિવ્યૂ જુઓ' : 'મેસેજ એડિટ કરો'}</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={handleCopyBroadcastText}
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(activeNoticeText);
+                      setNoticeCopied(true);
+                      setTimeout(() => setNoticeCopied(false), 3000);
+                    }}
                     className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                   >
-                    {broadcastCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-cyan-400" />}
-                    <span>{broadcastCopied ? 'કૉપી થઈ ગયું!' : 'લખાણ કૉપી'}</span>
+                    {noticeCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-cyan-400" />}
+                    <span>{noticeCopied ? 'કૉપી થયું!' : 'લખાણ કૉપી'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleDownloadVcf}
                     className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
-                    title="WhatsApp Broadcast List માટે વાલીઓના કોન્ટેક્ટ્સ ડાઉનલોડ કરો"
+                    title="વાલીઓના નંબરો તમારા ફોનમાં સેવ કરો"
                   >
                     <Download className="w-3 h-3 text-emerald-400" />
-                    <span>વાલી કોન્ટેક્ટ્સ (.VCF)</span>
+                    <span>વાલી નંબરો (.VCF)</span>
                   </button>
                 </div>
               </div>
 
-              {isEditingBroadcastText ? (
+              {isEditingNoticeText ? (
                 <div className="space-y-2">
                   <textarea
-                    rows={12}
-                    value={activeBroadcastText}
-                    onChange={(e) => setCustomBroadcastText(e.target.value)}
-                    className="w-full p-3 rounded-2xl bg-slate-900 border border-slate-700 text-xs font-sans text-slate-100 focus:outline-none focus:border-emerald-500 transition-colors leading-relaxed"
-                    placeholder="અહીં આપનો કસ્ટમ બ્રોડકાસ્ટ મેસેજ ટાઇપ કરો..."
+                    rows={10}
+                    value={activeNoticeText}
+                    onChange={(e) => setCustomNoticeText(e.target.value)}
+                    className="w-full p-3 rounded-2xl bg-slate-900 border border-slate-700 text-xs font-sans text-slate-100 focus:outline-none focus:border-cyan-500 leading-relaxed"
                   />
                   <div className="flex justify-end gap-2">
                     <button
                       type="button"
-                      onClick={() => setCustomBroadcastText('')}
+                      onClick={() => setCustomNoticeText('')}
                       className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs hover:text-white cursor-pointer"
                     >
-                      ડિફોલ્ટ રીસેટ કરો
+                      ડિફોલ્ટ રીસેટ
                     </button>
                     <button
                       type="button"
-                      onClick={() => setIsEditingBroadcastText(false)}
-                      className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 cursor-pointer"
+                      onClick={() => setIsEditingNoticeText(false)}
+                      className="px-3 py-1 rounded-lg bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 cursor-pointer"
                     >
-                      સાચવો (Save)
+                      સેવ કરો
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs font-mono text-slate-200 whitespace-pre-wrap max-h-60 overflow-y-auto leading-relaxed selection:bg-emerald-500/30">
-                  {activeBroadcastText}
+                <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs font-mono text-slate-200 whitespace-pre-wrap max-h-56 overflow-y-auto leading-relaxed">
+                  {activeNoticeText}
                 </div>
               )}
-
-              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                <span>
-                  💡 <strong>ટિપ:</strong> આ મેસેજમાં તમામ વિદ્યાર્થીઓના રોલ નંબર, ગુણ અને પરિણામ સમાવિષ્ટ છે.
-                </span>
-                <span>
-                  કુલ અક્ષરો: <strong className="font-mono text-white">{activeBroadcastText.length}</strong>
-                </span>
-              </div>
             </div>
           </div>
         )}
 
-        {/* TAB 2: ONE-BY-ONE INDIVIDUAL DISPATCHER (Student by Student Carousel) */}
+        {/* ========================================================================= */}
+        {/* TAB 3: 👤 MANUAL INDIVIDUAL VIEW (Browse, verify, or edit phone numbers) */}
+        {/* ========================================================================= */}
         {dispatcherTab === 'individual' && (
           <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-0">
             {/* LEFT: Featured Student Dispatch Card (7 cols) */}
             <div className="lg:col-span-7 p-4 sm:p-6 overflow-y-auto flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/60 space-y-4">
               {currentRecipient ? (
                 <div className="space-y-4">
-                  {/* Top Notice: Shortcut to Broadcast */}
-                  <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between text-xs text-cyan-300">
-                    <span>💡 બધાને એકસાથે મોકલવા માટે ઉપર આપેલ <strong>"સામૂહિક બ્રોડકાસ્ટ"</strong> ટેબ વાપરો.</span>
-                    <button
-                      type="button"
-                      onClick={() => setDispatcherTab('broadcast')}
-                      className="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] cursor-pointer"
-                    >
-                      બ્રોડકાસ્ટ પર જાઓ ➡️
-                    </button>
-                  </div>
-
                   {/* Student Identity Header */}
                   <div className="flex items-center justify-between gap-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
                     <div className="flex items-center gap-3">
@@ -942,7 +964,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-400 font-semibold flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>વાલીને જતો પર્સનલાઇઝ્ડ મેસેજ:</span>
+                        <span>આ બાળકના વાલીને જતો પર્સનલ મેસેજ:</span>
                       </span>
                       <button
                         type="button"
@@ -952,7 +974,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                         {copiedIndex === currentIndex ? (
                           <>
                             <Check className="w-3 h-3 text-emerald-400" />
-                            <span className="text-emerald-400 font-bold">કૉપી થઈ ગયું!</span>
+                            <span className="text-emerald-400 font-bold">કૉપી થયું!</span>
                           </>
                         ) : (
                           <>
@@ -963,7 +985,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                       </button>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/90 text-xs font-mono text-slate-200 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed selection:bg-emerald-500/30">
+                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/90 text-xs font-mono text-slate-200 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
                       {currentRecipient.messageText}
                     </div>
                   </div>
@@ -1011,7 +1033,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                       className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-30 cursor-pointer"
                     >
                       <ChevronLeft className="w-4 h-4" />
-                      <span>અગાઉનો (Previous)</span>
+                      <span>અગાઉનો</span>
                     </button>
 
                     <span className="font-mono text-slate-400">
@@ -1024,7 +1046,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                       onClick={() => setCurrentIndex((prev) => Math.min(recipients.length - 1, prev + 1))}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-30 cursor-pointer"
                     >
-                      <span>આગામી (Next)</span>
+                      <span>આગામી</span>
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -1038,7 +1060,6 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
 
             {/* RIGHT: All Students Queue List (5 cols) */}
             <div className="lg:col-span-5 p-4 flex flex-col overflow-hidden bg-slate-950/40">
-              {/* List Filter Tabs */}
               <div className="shrink-0 flex items-center justify-between gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 text-[11px] mb-3">
                 <button
                   type="button"
@@ -1134,14 +1155,44 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
           </div>
         )}
 
-        {/* BOTTOM STATUS FOOTER */}
+        {/* 1-TAP THUMB QUICK SEND BAR (Persistent bottom bar for rapid 1-tap dispatch) */}
+        {nextPendingRecipient && (
+          <div className="shrink-0 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border-t border-emerald-500/40 flex items-center justify-between gap-3 shadow-2xl">
+            <div className="flex items-center gap-2 text-xs truncate min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="text-slate-400 hidden sm:inline">આગામી વાલી:</span>
+              <strong className="text-white font-bold truncate text-xs sm:text-sm">
+                {nextPendingRecipient.studentName}
+              </strong>
+              <span className="font-mono text-emerald-400 text-xs shrink-0">
+                ({nextPendingRecipient.parentPhone})
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const idx = recipients.findIndex((r) => r.studentId === nextPendingRecipient.studentId);
+                handleLaunchWhatsApp(nextPendingRecipient, idx);
+              }}
+              className="shrink-0 py-2 sm:py-2.5 px-4 sm:px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/70 transition-transform active:scale-95 cursor-pointer"
+            >
+              <Send className="w-4 h-4" />
+              <span>૧-ટેપ WhatsApp મોકલો & આગળ ➡️</span>
+            </button>
+          </div>
+        )}
+
+        {/* FOOTER */}
         <div className="shrink-0 px-4 sm:px-6 py-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
           <div className="flex items-center gap-2 text-center sm:text-left">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span>
-              {dispatcherTab === 'broadcast'
-                ? 'સામૂહિક બ્રોડકાસ્ટ મોડ: ૧-ક્લિકથી સંપૂર્ણ પરિણામ વર્ગના વાલી WhatsApp ગ્રૂપ અથવા બ્રોડકાસ્ટ લિસ્ટમાં મોકલાશે.'
-                : 'વ્યક્તિગત મોડ: દરેક વાલીને પર્સનલ માર્ક્સ સાથે અલગથી સંદેશો મોકલાશે.'}
+              {dispatcherTab === 'auto_personal'
+                ? 'દરેક વાલીના ફોન પર ૧૦૦% પ્રાઇવેટ મેસેજ જશે જેમાં ફક્ત તેમના બાળકના જ ગુણ અને ટકાવારી હશે.'
+                : dispatcherTab === 'group_notice'
+                ? 'વાલી ગ્રૂપ નોટિસમાં કોઈ બાળકના ગુણ જાહેર થતા નથી. વાલી પોર્ટલ લિંક દ્વારા ખાનગી પરિણામ જોઈ શકે છે.'
+                : 'વ્યક્તિગત મોડમાં તમે દરેક વિદ્યાર્થીના મોબાઈલ નંબર અને પરિણામની ચકાસણી કરી શકો છો.'}
             </span>
           </div>
           <button

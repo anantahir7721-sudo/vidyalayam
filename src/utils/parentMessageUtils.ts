@@ -361,33 +361,11 @@ export function buildClassConsolidatedBroadcastMessage(
 
   let body = '';
   if (hasExamScores) {
-    body = `\n\nનમસ્કાર વાલીશ્રીઓ,\nઆપણી શાળામાં લેવાયેલ *${examTitle || 'પરીક્ષા'}* નું પરિણામ જાહેર કરવામાં આવેલ છે. વિદ્યાર્થીઓના ગુણ નીચે મુજબ છે:\n\n*પરિણામ યાદી:*`;
-
-    // Sort by roll number or student name
-    const sorted = [...recipients].sort((a, b) => {
-      const rA = parseInt(a.rollNumber || '999', 10);
-      const rB = parseInt(b.rollNumber || '999', 10);
-      if (rA !== rB && !isNaN(rA) && !isNaN(rB)) return rA - rB;
-      return a.studentName.localeCompare(b.studentName);
-    });
-
-    sorted.forEach((r, idx) => {
-      const rollStr = r.rollNumber ? `[રોલ ${r.rollNumber}]` : `[${idx + 1}]`;
-      if (r.examScore) {
-        const marksStr = `${r.examScore.obtainedMarks}/${r.examScore.totalMarks}`;
-        const pctStr = `${r.examScore.percentage.toFixed(1)}%`;
-        const gradeStr = r.examScore.grade ? `(${r.examScore.grade})` : '';
-        body += `\n${rollStr} *${r.studentName}*: ${marksStr} • ${pctStr} ${gradeStr}`;
-      } else {
-        body += `\n${rollStr} *${r.studentName}*`;
-      }
-    });
-
     const passedCount = recipients.filter(
       (r) => r.examScore && (r.examScore.percentage >= 33 || r.examScore.statusText?.includes('ઉત્તીર્ણ'))
     ).length;
 
-    body += `\n\n📊 *સારાંશ:* કુલ વિદ્યાર્થીઓ: *${recipients.length}* | ઉત્તીર્ણ: *${passedCount}*`;
+    body = `\n\nનમસ્કાર વાલીશ્રીઓ,\nઆપણી શાળામાં લેવાયેલ *${examTitle || 'પરીક્ષા'}* નું પરિણામ સફળતાપૂર્વક જાહેર કરવામાં આવેલ છે.\n\n📊 *વર્ગ સારાંશ (Class Summary):*\n• ધોરણ: *${stdDisplay}*\n• કુલ વિદ્યાર્થીઓ: *${recipients.length}*\n• સફળતા દર (ઉત્તીર્ણ): *${passedCount} / ${recipients.length}*\n\n🔒 *ખાનગી પરિણામ ચકાસણી (Private Result Access):*\nદરેક વિદ્યાર્થીની ગુપ્તતા (Privacy) જળવાઈ રહે તે હેતુથી તમામ વાલીઓને તેમના બાળકના વિષયવાર ગુણ અને ટકાવારી વ્યક્તિગત રીતે મોકલવામાં આવી રહ્યા છે.\n\nઆ ઉપરાંત વાલીશ્રી પોતાના બાળકના પરિણામ અને પ્રગતિપત્રક માટે શાળા વિદ્યાર્થી પોર્ટલ (Student Portal) પર જઈને રોલ નંબર દ્વારા પણ પરિણામ ચકાસી શકે છે.`;
   } else {
     // General Notice broadcast
     const sampleMsg = recipients[0]?.messageText || '';

@@ -369,6 +369,25 @@ html.light [class*="bg-[#25D366]"], html.light [class*="bg-[#25D366]"] *,
   color: #ffffff !important;
 }
 
+/* WhatsApp Chat Preview Outgoing Bubbles */
+html.light .whatsapp-bubble-light,
+html.light .whatsapp-bubble-light *,
+[data-theme="light"] .whatsapp-bubble-light,
+[data-theme="light"] .whatsapp-bubble-light *,
+.theme-light .whatsapp-bubble-light,
+.theme-light .whatsapp-bubble-light * {
+  color: #111b21 !important;
+}
+
+html.light .whatsapp-bubble-dark,
+html.light .whatsapp-bubble-dark *,
+[data-theme="light"] .whatsapp-bubble-dark,
+[data-theme="light"] .whatsapp-bubble-dark *,
+.theme-light .whatsapp-bubble-dark,
+.theme-light .whatsapp-bubble-dark * {
+  color: #e9edef !important;
+}
+
 /* Muted / secondary text in light mode */
 html.light .text-slate-300,
 html.light .text-gray-300,

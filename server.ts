@@ -1333,6 +1333,75 @@ Schema per question:
   });
 
   // =========================================================================
+  // Bulk Parent Personalized SMS Dispatcher API
+  // =========================================================================
+  app.post('/api/send-bulk-parent-sms', async (req: Request, res: Response) => {
+    try {
+      const { recipients } = req.body;
+      if (!Array.isArray(recipients) || recipients.length === 0) {
+        return res.status(400).json({ error: 'કોઈ વાલી નંબર મળ્યો નથી.' });
+      }
+
+      const apiKey = process.env.FAST2SMS_API_KEY || process.env.SMS_API_KEY;
+      
+      // If an external SMS gateway key is configured, dispatch concurrently
+      if (apiKey) {
+        let sentCount = 0;
+        let failedCount = 0;
+
+        await Promise.all(
+          recipients.map(async (rec: any) => {
+            const phone = String(rec.parentPhone || '').replace(/\D/g, '').slice(-10);
+            if (phone.length === 10 && rec.messageText) {
+              try {
+                // Example Fast2SMS Quick SMS API dispatch
+                const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+                  method: 'POST',
+                  headers: {
+                    authorization: apiKey,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    route: 'q',
+                    message: rec.messageText,
+                    language: 'unicode',
+                    numbers: phone,
+                  }),
+                });
+                if (response.ok) {
+                  sentCount++;
+                } else {
+                  failedCount++;
+                }
+              } catch (e) {
+                failedCount++;
+              }
+            }
+          })
+        );
+
+        return res.json({
+          success: true,
+          message: `${sentCount} વાલીઓને SMS સફળતાપૂર્વક મોકલાયા.`,
+          sentCount,
+          failedCount,
+        });
+      }
+
+      // If no external gateway key is configured in env
+      return res.json({
+        success: true,
+        isSimulated: true,
+        message: 'SMS API કી રૂપરેખાંકિત નથી. સિસ્ટમ સ્થાનિક બ્રોડકાસ્ટ અને WhatsApp ઓટો-રનર દ્વારા મેસેજિંગ સુવિધા આપે છે.',
+        totalRecipients: recipients.length,
+      });
+    } catch (err: any) {
+      console.error('Error in /api/send-bulk-parent-sms:', err);
+      return res.status(500).json({ error: 'SMS મોકલવામાં સમસ્યા થઈ.' });
+    }
+  });
+
+  // =========================================================================
   // Vite Middleware (Dev) vs Static Files (Prod)
   // =========================================================================
   if (process.env.NODE_ENV !== 'production') {

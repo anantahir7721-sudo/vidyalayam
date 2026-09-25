@@ -31,6 +31,7 @@ import {
   replaceSmartVariables,
 } from '../utils/parentMessageUtils';
 import { getParentMessageBroadcasts } from '../services/firestoreService';
+import { useTheme } from '../context/ThemeContext';
 import { ParentMessageDispatcherModal } from './ParentMessageDispatcherModal';
 import { SendExamResultModal } from './SendExamResultModal';
 
@@ -163,6 +164,31 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
   const previewMessage = useMemo(() => {
     return replaceSmartVariables(noticeText, sampleStudent, school);
   }, [noticeText, sampleStudent, school]);
+
+  const { theme } = useTheme();
+  const [previewThemeOverride, setPreviewThemeOverride] = useState<'auto' | 'light' | 'dark'>('auto');
+  const [previewCopied, setPreviewCopied] = useState(false);
+
+  const isLightWhatsApp =
+    previewThemeOverride === 'auto' ? theme === 'light' : previewThemeOverride === 'light';
+
+  const formattedCurrentTime = useMemo(() => {
+    const d = new Date();
+    const hours = d.getHours();
+    const minutes = d.getMinutes();
+    const ampm = hours >= 12 ? 'બપોરે' : (hours >= 17 ? 'સાંજે' : 'સવારે');
+    const h12 = hours % 12 || 12;
+    const mPad = minutes < 10 ? `0${minutes}` : minutes;
+    return `${ampm} ${h12}:${mPad}`;
+  }, []);
+
+  const handleCopyPreview = () => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(previewMessage);
+      setPreviewCopied(true);
+      setTimeout(() => setPreviewCopied(false), 2000);
+    }
+  };
 
   // Toggle selection
   const handleToggleStudent = (id: string) => {
@@ -403,23 +429,140 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
             </div>
 
             {/* Live Interactive WhatsApp Preview Card */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-300 flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-emerald-400" />
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-lg space-y-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>વાલીના મોબાઇલ પર કેવો મેસેજ દેખાશે (Live Preview):</span>
                 </h3>
-                <span className="text-[11px] text-slate-400 font-mono">
-                  નમૂનો: {sampleStudent.studentName}
-                </span>
+                <div className="flex items-center gap-1.5 text-[11px] self-start sm:self-auto">
+                  <span className="text-slate-500 dark:text-slate-400">નમૂનો:</span>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/60 truncate max-w-[200px]">
+                    {sampleStudent.studentName}
+                  </span>
+                </div>
               </div>
 
-              <div className="bg-[#0b141a] rounded-2xl p-4 border border-[#202c33] shadow-inner space-y-2">
-                <div className="bg-[#005c4b] text-slate-100 rounded-2xl p-3.5 text-xs whitespace-pre-wrap leading-relaxed shadow max-h-56 overflow-y-auto">
-                  {previewMessage}
+              {/* Authentic WhatsApp Phone Screen Frame */}
+              <div className="rounded-2xl overflow-hidden border border-[#d1c7b7] dark:border-[#202c33] shadow-md">
+                {/* WhatsApp Top Header Bar */}
+                <div className="px-3.5 py-2.5 bg-[#008069] dark:bg-[#1f2c34] text-white flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-white/20 dark:bg-slate-700 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {sampleStudent.studentName.charAt(0) || 'વા'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-white tracking-wide truncate flex items-center gap-1.5">
+                        <span className="truncate">{school.schoolName || 'શાળા કાર્યાલય'}</span>
+                        <span className="text-[9px] bg-white/25 px-1.5 py-0.2 rounded font-normal shrink-0">સત્તાવાર</span>
+                      </div>
+                      <div className="text-[10px] text-emerald-100 dark:text-slate-300 truncate">
+                        પ્રતિ: વાલીશ્રી ({sampleStudent.studentName})
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyPreview}
+                    className="px-2.5 py-1 rounded-lg bg-black/20 hover:bg-black/30 active:scale-95 text-white text-[11px] font-medium flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                    title="આ મેસેજ કૉપી કરો"
+                  >
+                    {previewCopied ? <Check className="w-3 h-3 text-emerald-200" /> : <Copy className="w-3 h-3 text-white" />}
+                    <span>{previewCopied ? 'કૉપી થઈ ગયો!' : 'કૉપી'}</span>
+                  </button>
                 </div>
-                <div className="text-[10px] text-slate-500 text-right">
-                  WhatsApp મેસેજ પૂર્વાવલોકન
+
+                {/* WhatsApp Chat Body Canvas */}
+                <div
+                  className={`p-3.5 sm:p-4 space-y-2.5 transition-colors ${
+                    isLightWhatsApp
+                      ? 'bg-[#efeae2]'
+                      : 'bg-[#0b141a]'
+                  }`}
+                  style={{
+                    backgroundImage: isLightWhatsApp
+                      ? 'radial-gradient(#ded7cc 1.2px, transparent 1.2px)'
+                      : 'radial-gradient(#1f2c34 1.2px, transparent 1.2px)',
+                    backgroundSize: '16px 16px',
+                  }}
+                >
+                  {/* Date Pill */}
+                  <div className="text-center">
+                    <span
+                      className={`inline-block px-2.5 py-0.5 rounded-md text-[10px] font-semibold tracking-wide shadow-xs ${
+                        isLightWhatsApp
+                          ? 'bg-white/95 text-[#54656f] border border-[#e1d9ce]'
+                          : 'bg-[#182229] text-[#8696a0] border border-[#222e35]'
+                      }`}
+                    >
+                      આજે • Today
+                    </span>
+                  </div>
+
+                  {/* Outgoing WhatsApp Chat Bubble */}
+                  <div className="flex justify-end">
+                    <div
+                      className={`whatsapp-chat-bubble max-w-[96%] sm:max-w-[88%] rounded-2xl rounded-tr-xs p-3.5 shadow-sm text-xs leading-relaxed select-text space-y-2 ${
+                        isLightWhatsApp
+                          ? 'whatsapp-bubble-light bg-[#d9fdd3] border border-[#c4edbc]'
+                          : 'whatsapp-bubble-dark bg-[#005c4b] border border-[#025a4a]'
+                      }`}
+                    >
+                      {/* Message Content with Guaranteed Legible Color */}
+                      <div
+                        className="whitespace-pre-wrap font-sans text-xs leading-relaxed select-text"
+                        style={{
+                          color: isLightWhatsApp ? '#111b21' : '#e9edef',
+                          fontWeight: 400,
+                        }}
+                      >
+                        {previewMessage}
+                      </div>
+
+                      {/* Timestamp & Double Blue Read Tick */}
+                      <div className="flex items-center justify-end gap-1 text-[10px] pt-0.5 select-none">
+                        <span
+                          style={{
+                            color: isLightWhatsApp ? '#54656f' : '#8696a0',
+                            fontWeight: 500,
+                          }}
+                        >
+                          {formattedCurrentTime}
+                        </span>
+                        <span className="text-[#53bdeb] font-bold text-xs" title="વાંચાયેલ">
+                          ✓✓
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* WhatsApp Footer Info Bar */}
+                <div
+                  className={`px-3.5 py-2 border-t text-[11px] flex items-center justify-between flex-wrap gap-2 ${
+                    isLightWhatsApp
+                      ? 'bg-[#f0f2f5] border-[#d1c7b7] text-[#54656f]'
+                      : 'bg-[#111b21] border-[#202c33] text-[#8696a0]'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>WhatsApp મેસેજ પૂર્વાવલોકન ({isLightWhatsApp ? 'લાઇટ મોડ' : 'ડાર્ક મોડ'})</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setPreviewThemeOverride(isLightWhatsApp ? 'dark' : 'light')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      isLightWhatsApp
+                        ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300 shadow-xs'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    }`}
+                    title="લાઇટ / ડાર્ક વ્યુ બદલો"
+                  >
+                    <span>{isLightWhatsApp ? '🌙 ડાર્ક મોડમાં જુઓ' : '☀️ લાઇટ મોડમાં જુઓ'}</span>
+                  </button>
                 </div>
               </div>
             </div>

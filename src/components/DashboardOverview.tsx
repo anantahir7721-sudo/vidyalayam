@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { ActiveTabType } from './Navbar';
 import { VidyalayamLogo } from './VidyalayamLogo';
+import { UniversalStudentSearch } from './UniversalStudentSearch';
 
 interface DashboardOverviewProps {
   school: School;
@@ -34,6 +35,7 @@ interface DashboardOverviewProps {
   marks: MarkRecord[];
   staffList?: Staff[];
   onNavigate: (tab: ActiveTabType) => void;
+  onStudentUpdated?: (updated: Student) => void;
 }
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
@@ -42,6 +44,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   marks,
   staffList = [],
   onNavigate,
+  onStudentUpdated,
 }) => {
   // Statistics calculations
   const std9Count = students.filter((s) => String(s.standard) === '9').length;
@@ -312,6 +315,19 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* =========================================================================
+            UNIVERSAL STUDENT SEARCH (યુનિવર્સલ વિદ્યાર્થી શોધ)
+            Placed under profile info and above/around vidyarthi sankhya
+            ========================================================================= */}
+        <div className="mt-6 pt-6 border-t border-white/10">
+          <UniversalStudentSearch
+            students={students}
+            school={school}
+            onNavigate={onNavigate}
+            onStudentUpdated={onStudentUpdated}
+          />
         </div>
 
         {/* =========================================================================
