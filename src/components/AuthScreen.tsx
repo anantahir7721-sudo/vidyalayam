@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { loginSchool, registerSchool } from '../services/authService';
+import { loginSchool, registerSchool, checkSchoolDiseExists } from '../services/authService';
 import { loginAdmin } from '../services/adminService';
 import { studentLogin } from '../services/onlineExamService';
 import { School, StudentSession } from '../types';
@@ -114,6 +114,33 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [schoolLogo, setSchoolLogo] = useState<string>('');
   const [logoLoading, setLogoLoading] = useState(false);
 
+  // School Registration DISE Uniqueness Verification State
+  const [registerDiseChecking, setRegisterDiseChecking] = useState(false);
+  const [registerDiseExists, setRegisterDiseExists] = useState(false);
+  const [existingSchoolName, setExistingSchoolName] = useState<string | null>(null);
+
+  const handleValidateRegisterDise = async (code: string) => {
+    const clean = code.trim();
+    if (!clean || clean.length < 5) {
+      setRegisterDiseExists(false);
+      setExistingSchoolName(null);
+      return;
+    }
+    setRegisterDiseChecking(true);
+    try {
+      const res = await checkSchoolDiseExists(clean);
+      setRegisterDiseExists(res.exists);
+      setExistingSchoolName(res.schoolName || null);
+      if (res.exists) {
+        setError(`આ ડાયસ કોડ (${clean}) ધરાવતી શાળા${res.schoolName ? ` "${res.schoolName}"` : ''} પહેલેથી જ નોંધાયેલી છે. કૃપા કરીને લૉગિન કરો.`);
+      }
+    } catch (err) {
+      console.warn('DISE uniqueness check failed:', err);
+    } finally {
+      setRegisterDiseChecking(false);
+    }
+  };
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -222,6 +249,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
     setLoading(true);
     try {
+      // Pre-verify DISE code uniqueness before attempting registration
+      const diseCheck = await checkSchoolDiseExists(cleanDise);
+      if (diseCheck.exists) {
+        setRegisterDiseExists(true);
+        setExistingSchoolName(diseCheck.schoolName || null);
+        setError(
+          `આ ડાયસ કોડ (${cleanDise}) ધરાવતી શાળા${diseCheck.schoolName ? ` ("${diseCheck.schoolName}")` : ''} પહેલેથી જ સિસ્ટમમાં નોંધાયેલી છે. એક જ ડાયસ કોડ પર બીજી શાળા નોંધણી શક્ય નથી. કૃપા કરીને લૉગિન કરો.`
+        );
+        setLoading(false);
+        return;
+      }
+
       const { school } = await registerSchool({
         schoolName: cleanName,
         diseCode: cleanDise,
@@ -683,8 +722,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#e4ded6] mb-1.5">
-                      School DISE Code (શાળા ડાયસ કોડ) *
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#e4ded6] mb-1.5 flex items-center justify-between">
+                      <span>School DISE Code (શાળા ડાયસ કોડ) *</span>
+                      {registerDiseChecking && (
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-normal">
+                          <span className="w-2.5 h-2.5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></span>
+                          ચકાસી રહ્યું છે...
+                        </span>
+                      )}
                     </label>
                     <div className="relative rounded-xl shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#a99f91]">
@@ -695,11 +740,54 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         type="text"
                         required
                         value={diseCode}
-                        onChange={(e) => setDiseCode(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setDiseCode(val);
+                          if (registerDiseExists) {
+                            setRegisterDiseExists(false);
+                            setExistingSchoolName(null);
+                          }
+                        }}
+                        onBlur={(e) => handleValidateRegisterDise(e.target.value)}
                         placeholder="e.g. 24070500101"
-                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60"
+                        className={`glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60 ${
+                          registerDiseExists
+                            ? 'border-red-500 ring-2 ring-red-400/40 dark:border-red-500'
+                            : ''
+                        }`}
                       />
                     </div>
+
+                    {/* Uniqueness Alert Banner if already exists */}
+                    {registerDiseExists ? (
+                      <div className="mt-2 p-3 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-800 text-xs text-red-800 dark:text-red-300 space-y-1.5 animate-fadeIn">
+                        <div className="flex items-start gap-1.5 font-bold">
+                          <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                          <span>
+                            આ ડાયસ કોડ ({diseCode.trim()}) ધરાવતી શાળા{existingSchoolName ? ` "${existingSchoolName}"` : ''} પહેલેથી જ સિસ્ટમમાં નોંધાયેલી છે!
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-red-700 dark:text-red-300 pl-5.5 leading-relaxed">
+                          એક ડાયસ કોડ માત્ર એક જ શાળા માટે વાપરી શકાય છે. જો આ તમારી શાળા હોય, તો લૉગિન કરો.
+                        </p>
+                        <div className="pl-5.5 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSchoolMode('login');
+                              setError(null);
+                            }}
+                            className="inline-flex items-center gap-1 font-bold text-red-700 dark:text-red-300 hover:text-red-900 underline cursor-pointer text-[11px]"
+                          >
+                            <span>આ ડાયસ કોડ સાથે સીધા લૉગિન કરવા અહીં ક્લિક કરો ➔</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-[11px] text-slate-500 dark:text-[#a99f91]">
+                        દરેક શાળાનો ૧૧ અંકનો ડાયસ કોડ યુનિક હોવો જરૂરી છે (No duplicate registrations).
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -808,7 +896,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     <button
                       id="btn-register-submit"
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || registerDiseChecking || registerDiseExists}
                       className="w-full btn-terracotta flex justify-center items-center py-3 px-4 rounded-2xl shadow-lg text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {loading ? (
@@ -816,6 +904,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                           <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                           Registering School...
                         </span>
+                      ) : registerDiseChecking ? (
+                        'Verifying DISE Code...'
+                      ) : registerDiseExists ? (
+                        'Cannot Register: Duplicate DISE Code'
                       ) : (
                         'Register School (Submit for Approval)'
                       )}

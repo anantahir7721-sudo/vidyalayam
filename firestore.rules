@@ -43,6 +43,13 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Unique DISE code registry: enforces global uniqueness of school DISE codes
+    match /dise_registry/{diseCode} {
+      allow read: if true;
+      allow create: if isAuthenticated() && !exists(/databases/$(database)/documents/dise_registry/$(diseCode));
+      allow update, delete: if isAdmin();
+    }
+
     // School profile document: /schools/{schoolId}
     match /schools/{schoolId} {
       // Public directory read: enables students and public to verify school by 11-digit DISE code

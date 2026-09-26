@@ -160,9 +160,25 @@
         "adminNotes": { "type": "string" }
       },
       "required": ["diseCode", "status", "createdAt"]
+    },
+    "DiseRegistryEntry": {
+      "title": "DiseRegistryEntry",
+      "description": "Global registry ensuring 11-digit School DISE codes are strictly unique across the system",
+      "type": "object",
+      "properties": {
+        "diseCode": { "type": "string", "maxLength": 11, "minLength": 11 },
+        "schoolId": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "registeredAt": { "type": "string" }
+      },
+      "required": ["diseCode", "schoolId"]
     }
   },
   "firestore": {
+    "/dise_registry/{diseCode}": {
+      "schema": { "$ref": "#/entities/DiseRegistryEntry" },
+      "description": "Unique DISE code reservation and registry preventing duplicate school registration"
+    },
     "/password_reset_requests/{requestId}": {
       "schema": { "$ref": "#/entities/PasswordResetRequest" },
       "description": "Password reset requests submitted by schools"
