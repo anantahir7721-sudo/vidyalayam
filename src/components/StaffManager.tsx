@@ -316,10 +316,11 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white transition-colors cursor-pointer active:scale-95"
+          title="પાછળના મેનુ પર જાઓ (Go Back)"
         >
           <ArrowLeft className="w-4 h-4 text-[#f59c73]" />
-          <span>ડેશબોર્ડ પર પાછા જાઓ (Back to Dashboard)</span>
+          <span>પાછળ જાઓ (Go Back)</span>
         </button>
 
         <div className="flex items-center gap-2">

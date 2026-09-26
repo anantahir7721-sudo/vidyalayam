@@ -11,13 +11,15 @@ import {
   Key,
   Database,
   Terminal,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface SecurityAuditorProps {
   school: School;
+  onBack?: () => void;
 }
 
-export const SecurityAuditor: React.FC<SecurityAuditorProps> = ({ school }) => {
+export const SecurityAuditor: React.FC<SecurityAuditorProps> = ({ school, onBack }) => {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{
     blockedSuccessfully: boolean;
@@ -50,21 +52,33 @@ export const SecurityAuditor: React.FC<SecurityAuditorProps> = ({ school }) => {
       {/* Overview Card */}
       <div className="bg-slate-800/90 rounded-xl border border-slate-700/80 p-6 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="p-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <ShieldCheck className="w-4 h-4" />
-              </span>
-              <span className="text-xs font-semibold text-emerald-400">
-                Firestore Security Rules Deployed & Active
-              </span>
+          <div className="flex items-start gap-4">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1"
+                title="પાછળના મેનુ પર જાઓ (Go Back)"
+              >
+                <ArrowLeft className="w-5 h-5 text-emerald-400" />
+              </button>
+            )}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="p-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <ShieldCheck className="w-4 h-4" />
+                </span>
+                <span className="text-xs font-semibold text-emerald-400">
+                  Firestore Security Rules Deployed & Active
+                </span>
+              </div>
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                Backend Tenant Isolation & Security Audit
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+                In this architecture, security is enforced directly at the Firebase Cloud Firestore database engine. A school can never access, query, or mutate another school&apos;s students or marks, even with modified client code.
+              </p>
             </div>
-            <h2 className="text-xl font-bold text-white tracking-tight">
-              Backend Tenant Isolation & Security Audit
-            </h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-              In this architecture, security is enforced directly at the Firebase Cloud Firestore database engine. A school can never access, query, or mutate another school&apos;s students or marks, even with modified client code.
-            </p>
           </div>
 
           <button

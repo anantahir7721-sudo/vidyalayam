@@ -881,8 +881,14 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+            <div>
+              {/* Mobile Horizontal Scroll Indicator */}
+              <div className="sm:hidden px-3.5 py-2 bg-slate-950/90 text-[11px] text-[#f59c73] flex items-center justify-between border-b border-white/5">
+                <span className="font-semibold">📱 મોબાઇલ ટિપ: પ્રશ્નો અને ગુણ ભરવા માટે ડાબે-જમણે સ્ક્રોલ કરો</span>
+                <span className="text-[10px] text-slate-400 font-mono">↔️ Swipe</span>
+              </div>
+              <div className="overflow-x-auto mobile-table-scroll">
+                <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-950/80 border-b border-white/10 text-slate-400">
                     <th className="py-3.5 px-3 w-12 text-center font-bold">ક્રમ</th>
@@ -1005,6 +1011,7 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>

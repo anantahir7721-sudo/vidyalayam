@@ -15,7 +15,16 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Student, MarkRecord, StudentUidConflict, RegisteredSchoolInfo, ParentBroadcastRecord } from '../types';
+import {
+  Student,
+  MarkRecord,
+  StudentUidConflict,
+  RegisteredSchoolInfo,
+  ParentBroadcastRecord,
+  School,
+  SchoolAdmissionSettings,
+  AdmissionApplication,
+} from '../types';
 import { cleanAndNormalizeBloodGroup, diagnoseStudentBloodGroup } from '../utils/bloodGroupUtils';
 
 /**
@@ -100,6 +109,11 @@ export async function addStudent(
     ...(data.aadhaarNo ? { aadhaarNo: data.aadhaarNo.trim() } : {}),
     ...(data.photoUrl ? { photoUrl: data.photoUrl.trim() } : {}),
     ...(data.academicYear ? { academicYear: data.academicYear.trim() } : {}),
+    ...(data.previousYearTotalDays !== undefined ? { previousYearTotalDays: data.previousYearTotalDays } : {}),
+    ...(data.previousYearPresentDays !== undefined ? { previousYearPresentDays: data.previousYearPresentDays } : {}),
+    ...(data.previousYearPercentage !== undefined ? { previousYearPercentage: data.previousYearPercentage } : {}),
+    ...(data.height !== undefined ? { height: data.height } : {}),
+    ...(data.weight !== undefined ? { weight: data.weight } : {}),
   };
 
   const docRef = await addDoc(studentsCol, newStudent);
@@ -155,6 +169,11 @@ export async function bulkAddStudents(
         ...(item.placeOfBirth ? { placeOfBirth: item.placeOfBirth.trim() } : {}),
         ...(item.aadhaarNo ? { aadhaarNo: item.aadhaarNo.trim() } : {}),
         ...(item.photoUrl ? { photoUrl: item.photoUrl.trim() } : {}),
+        ...(item.previousYearTotalDays !== undefined ? { previousYearTotalDays: item.previousYearTotalDays } : {}),
+        ...(item.previousYearPresentDays !== undefined ? { previousYearPresentDays: item.previousYearPresentDays } : {}),
+        ...(item.previousYearPercentage !== undefined ? { previousYearPercentage: item.previousYearPercentage } : {}),
+        ...(item.height !== undefined ? { height: item.height } : {}),
+        ...(item.weight !== undefined ? { weight: item.weight } : {}),
       };
       batch.set(docRef, newStudentData);
     }
@@ -266,6 +285,11 @@ export async function bulkUpsertStudents(
         if (item.studentStateCode !== undefined) updateData.studentStateCode = item.studentStateCode.trim();
         if (item.cwsnDisability !== undefined) updateData.cwsnDisability = item.cwsnDisability.trim();
         if (item.medium !== undefined) updateData.medium = item.medium.trim();
+        if (item.previousYearTotalDays !== undefined) updateData.previousYearTotalDays = item.previousYearTotalDays;
+        if (item.previousYearPresentDays !== undefined) updateData.previousYearPresentDays = item.previousYearPresentDays;
+        if (item.previousYearPercentage !== undefined) updateData.previousYearPercentage = item.previousYearPercentage;
+        if (item.height !== undefined) updateData.height = item.height;
+        if (item.weight !== undefined) updateData.weight = item.weight;
 
         batch.set(docRef, updateData, { merge: true });
         updatedCount++;
@@ -302,6 +326,11 @@ export async function bulkUpsertStudents(
           ...(item.placeOfBirth ? { placeOfBirth: item.placeOfBirth.trim() } : {}),
           ...(item.aadhaarNo ? { aadhaarNo: item.aadhaarNo.trim() } : {}),
           ...(item.photoUrl ? { photoUrl: item.photoUrl.trim() } : {}),
+          ...(item.previousYearTotalDays !== undefined ? { previousYearTotalDays: item.previousYearTotalDays } : {}),
+          ...(item.previousYearPresentDays !== undefined ? { previousYearPresentDays: item.previousYearPresentDays } : {}),
+          ...(item.previousYearPercentage !== undefined ? { previousYearPercentage: item.previousYearPercentage } : {}),
+          ...(item.height !== undefined ? { height: item.height } : {}),
+          ...(item.weight !== undefined ? { weight: item.weight } : {}),
         };
         batch.set(docRef, newStudentData);
         addedCount++;
@@ -1020,4 +1049,192 @@ export async function getParentMessageBroadcasts(
     return [];
   }
 }
+
+/**
+ * Fetch all registered schools for the public Admission Directory.
+ * Accessible from the login screen so students/parents can find their school.
+ */
+export async function getSchoolsForAdmissionDirectory(): Promise<School[]> {
+  try {
+    const schoolsCol = collection(db, 'schools');
+    const snap = await getDocs(schoolsCol);
+    const schools = snap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as School[];
+
+    // Filter approved schools or active legacy schools
+    return schools.filter((s) => s.status === 'approved' || !s.status);
+  } catch (err) {
+    console.error('Error fetching schools for admission directory:', err);
+    return [];
+  }
+}
+
+/**
+ * Update school admission settings (open/closed, dates, instructions).
+ * Stored on the school document: /schools/{schoolId}
+ */
+export async function updateSchoolAdmissionSettings(
+  schoolId: string,
+  settings: SchoolAdmissionSettings
+): Promise<void> {
+  const schoolRef = doc(db, 'schools', schoolId);
+  await updateDoc(schoolRef, {
+    admissionSettings: {
+      ...settings,
+      updatedAt: new Date().toISOString(),
+    },
+  });
+}
+
+/**
+ * Submit an online admission application from student/parent.
+ * Path: /schools/{schoolId}/admissions/{applicationId}
+ */
+export async function submitAdmissionApplication(
+  schoolId: string,
+  application: Omit<AdmissionApplication, 'id' | 'createdAt' | 'status'>
+): Promise<string> {
+  const col = collection(db, 'schools', schoolId, 'admissions');
+  const now = new Date().toISOString();
+  const docRef = await addDoc(col, {
+    ...application,
+    status: 'pending',
+    createdAt: now,
+    updatedAt: now,
+  });
+  return docRef.id;
+}
+
+/**
+ * Real-time listener for school's admission applications.
+ * Path: /schools/{schoolId}/admissions
+ */
+export function subscribeToAdmissionApplications(
+  schoolId: string,
+  callback: (applications: AdmissionApplication[]) => void
+): () => void {
+  const col = collection(db, 'schools', schoolId, 'admissions');
+  return onSnapshot(
+    col,
+    (snapshot) => {
+      const list = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as AdmissionApplication[];
+      // Sort newest first
+      list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      callback(list);
+    },
+    (err) => {
+      console.error('Error in admission applications listener:', err);
+    }
+  );
+}
+
+/**
+ * Update an existing admission application (e.g. edit student details before admitting).
+ */
+export async function updateAdmissionApplication(
+  schoolId: string,
+  applicationId: string,
+  data: Partial<AdmissionApplication>
+): Promise<void> {
+  const ref = doc(db, 'schools', schoolId, 'admissions', applicationId);
+  await updateDoc(ref, {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * Accept student admission application:
+ * 1. Creates a new Student record in /schools/{schoolId}/students with the specified Admission Date (DOA)
+ *    and other fields from the form.
+ * 2. Marks the application as 'approved' with the admission date and createdStudentId.
+ */
+export async function acceptAdmissionApplication(
+  schoolId: string,
+  application: AdmissionApplication,
+  admissionDate: string
+): Promise<Student> {
+  // Normalize blood group
+  const cleanBlood = cleanAndNormalizeBloodGroup(application.bloodGroup) || application.bloodGroup || '';
+
+  // 1. Create the new Student record in school's students subcollection
+  const studentsCol = collection(db, 'schools', schoolId, 'students');
+  const now = new Date().toISOString();
+
+  const newStudentData: Omit<Student, 'id'> = {
+    schoolId,
+    studentName: application.studentName.trim(),
+    standard: String(application.admissionStandard).trim(),
+    dob: application.dob.trim(),
+    doa: admissionDate.trim(), // Date of Admission entered by school
+    diseCode: application.childUid.trim(), // 18-digit child UID
+    motherName: application.motherName.trim(),
+    gender: application.gender,
+    bloodGroup: cleanBlood,
+    caste: application.category,
+    contactNumber: application.contactNumber.trim(),
+    address: application.address.trim(),
+    photoUrl: application.photoUrl || undefined,
+    previousYearTotalDays: application.previousYearTotalDays || undefined,
+    previousYearPresentDays: application.previousYearPresentDays || undefined,
+    previousYearPercentage: application.previousYearPercentage || undefined,
+    height: application.height || undefined,
+    weight: application.weight || undefined,
+    admissionApplicationId: application.id,
+    createdAt: now,
+    updatedAt: now,
+    // rollNumber, grNumber, and section are intentionally blank for the school to assign later
+  };
+
+  const studentDocRef = await addDoc(studentsCol, newStudentData);
+
+  // 2. Mark the admission application as approved
+  const appRef = doc(db, 'schools', schoolId, 'admissions', application.id);
+  await updateDoc(appRef, {
+    status: 'approved',
+    admissionDate: admissionDate.trim(),
+    createdStudentId: studentDocRef.id,
+    reviewedAt: now,
+    updatedAt: now,
+  });
+
+  return {
+    id: studentDocRef.id,
+    ...newStudentData,
+  };
+}
+
+/**
+ * Reject an admission application with an optional reason.
+ */
+export async function rejectAdmissionApplication(
+  schoolId: string,
+  applicationId: string,
+  reason?: string
+): Promise<void> {
+  const ref = doc(db, 'schools', schoolId, 'admissions', applicationId);
+  await updateDoc(ref, {
+    status: 'rejected',
+    rejectionReason: reason || 'પ્રવેશ માન્ય રાખેલ નથી',
+    reviewedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * Delete an admission application.
+ */
+export async function deleteAdmissionApplication(
+  schoolId: string,
+  applicationId: string
+): Promise<void> {
+  const ref = doc(db, 'schools', schoolId, 'admissions', applicationId);
+  await deleteDoc(ref);
+}
+
 

@@ -22,6 +22,7 @@ import {
   Eye,
   BookOpen,
   ArrowRight,
+  ArrowLeft,
   Layers,
   X,
 } from 'lucide-react';
@@ -253,8 +254,18 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
         <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-900/40">
+          <div className="flex items-center gap-3">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+                title="પાછળના મેનુ પર જાઓ (Go Back)"
+              >
+                <ArrowLeft className="w-5 h-5 text-emerald-400" />
+              </button>
+            )}
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-900/40 shrink-0">
               <MessageSquare className="w-6 h-6" />
             </div>
             <div>

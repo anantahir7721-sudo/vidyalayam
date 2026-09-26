@@ -74,6 +74,11 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
     placeOfBirth: student.placeOfBirth || '',
     aadhaarNo: student.aadhaarNo || '',
     academicYear: student.academicYear || '2026–27',
+    previousYearTotalDays: student.previousYearTotalDays ? String(student.previousYearTotalDays) : '220',
+    previousYearPresentDays: student.previousYearPresentDays ? String(student.previousYearPresentDays) : '',
+    previousYearPercentage: student.previousYearPercentage ? String(student.previousYearPercentage) : '',
+    height: student.height ? String(student.height) : '',
+    weight: student.weight ? String(student.weight) : '',
   });
 
   if (!isOpen) return null;
@@ -194,6 +199,11 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
         placeOfBirth: formData.placeOfBirth.trim() || '',
         aadhaarNo: formData.aadhaarNo.trim() || '',
         academicYear: formData.academicYear.trim() || '',
+        previousYearTotalDays: formData.previousYearTotalDays.trim() || '',
+        previousYearPresentDays: formData.previousYearPresentDays.trim() || '',
+        previousYearPercentage: formData.previousYearPercentage.trim() || '',
+        height: formData.height.trim() || '',
+        weight: formData.weight.trim() || '',
       };
 
       await updateStudent(school.id, student.id, payload);
@@ -837,6 +847,80 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 </div>
               </div>
 
+              {/* SECTION 6: PHYSICAL MEASUREMENTS & PREVIOUS ACADEMIC HISTORY */}
+              <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-white/5 rounded-xl p-5">
+                <h3 className="text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wide flex items-center gap-2 mb-4">
+                  <FileText className="w-4 h-4" />
+                  <span>6. શારીરિક માપ & અગાઉની શૈક્ષણિક વિગતો (Physical & Previous Academic History)</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      ગત વર્ષના હાજર દિવસ (હાજર / કુલ)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        placeholder="હાજર દિવસ"
+                        value={formData.previousYearPresentDays}
+                        onChange={(e) => setFormData({ ...formData, previousYearPresentDays: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
+                      />
+                      <span className="text-slate-400 font-bold">/</span>
+                      <input
+                        type="number"
+                        placeholder="કુલ દિવસ"
+                        value={formData.previousYearTotalDays}
+                        onChange={(e) => setFormData({ ...formData, previousYearTotalDays: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      ગત વર્ષના ટકા (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="દા.ત. 78.50"
+                      value={formData.previousYearPercentage}
+                      onChange={(e) => setFormData({ ...formData, previousYearPercentage: e.target.value })}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      ઊંચાઈ (Height in cm)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="દા.ત. 142.5"
+                      value={formData.height}
+                      onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      વજન (Weight in kg)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="દા.ત. 36.2"
+                      value={formData.weight}
+                      onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Bottom Buttons */}
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
@@ -979,6 +1063,46 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
                 <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900/60 p-3 rounded-lg border border-slate-200 dark:border-white/5 min-h-[90px]">
                   {student.address || 'સરનામું દાખલ કરેલ નથી.'}
+                </div>
+              </div>
+
+              {/* Box 5: Physical & Previous Academic Record */}
+              <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-white/5 rounded-xl p-5 space-y-3 md:col-span-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider border-b border-slate-200 dark:border-white/5 pb-2">
+                  <FileText className="w-4 h-4" />
+                  <span>શારીરિક માપ & અગાઉનું શૈક્ષણિક પ્રદર્શન (Physical & Academic Record)</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">ગત વર્ષની હાજરી</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">
+                      {student.previousYearPresentDays
+                        ? `${student.previousYearPresentDays} / ${student.previousYearTotalDays || 220}`
+                        : '-'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">ગત વર્ષના ટકા</span>
+                    <span className="text-sm font-bold text-purple-600 dark:text-purple-400 font-mono mt-0.5 block">
+                      {student.previousYearPercentage ? `${student.previousYearPercentage}%` : '-'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">ઊંચાઈ (Height)</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">
+                      {student.height ? `${student.height} cm` : '-'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">વજન (Weight)</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">
+                      {student.weight ? `${student.weight} kg` : '-'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

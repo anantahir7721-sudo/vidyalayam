@@ -34,6 +34,11 @@ export interface ParsedStudentRow {
   cwsnDisability?: string;
   medium?: string;
   aadhaarNo?: string;
+  previousYearTotalDays?: string | number;
+  previousYearPresentDays?: string | number;
+  previousYearPercentage?: string | number;
+  height?: string | number;
+  weight?: string | number;
   isValid: boolean;
   isDuplicateInFile: boolean;
   isExistingUpdate: boolean;
@@ -70,6 +75,11 @@ export interface MergedStudentRow {
   aadhaarNo?: string;
   cwsnDisability?: string;
   photoUrl?: string;
+  previousYearTotalDays?: string | number;
+  previousYearPresentDays?: string | number;
+  previousYearPercentage?: string | number;
+  height?: string | number;
+  weight?: string | number;
   matchSource: 'both' | 'cts_only' | 'udise_only';
   isValid: boolean;
   isDuplicateInFile: boolean;
@@ -1228,6 +1238,11 @@ export async function parseStudentsExcelFile(
     let rawMotherOcc: any = undefined;
     let rawPlaceOfBirth: any = undefined;
     let rawPhoto: any = undefined;
+    let rawHeight: any = undefined;
+    let rawWeight: any = undefined;
+    let rawAttendedDays: any = undefined;
+    let rawTotalDays: any = undefined;
+    let rawPercentage: any = undefined;
 
     for (const key of Object.keys(row)) {
       const cleanKey = key.trim().toLowerCase().replace(/[\._\-]/g, ' ').replace(/\s+/g, ' ');
@@ -1421,6 +1436,56 @@ export async function parseStudentsExcelFile(
       ) {
         rawPhoto = row[key];
       }
+      // Height
+      else if (
+        cleanKey === 'height' ||
+        cleanKey === 'student height' ||
+        cleanKey.includes('ઊંચાઈ') ||
+        cleanKey.includes('height (cm)') ||
+        cleanKey.includes('height in cm')
+      ) {
+        rawHeight = row[key];
+      }
+      // Weight
+      else if (
+        cleanKey === 'weight' ||
+        cleanKey === 'student weight' ||
+        cleanKey.includes('વજન') ||
+        cleanKey.includes('weight (kg)') ||
+        cleanKey.includes('weight in kg')
+      ) {
+        rawWeight = row[key];
+      }
+      // Attended Days
+      else if (
+        cleanKey === 'attended school days' ||
+        cleanKey === 'attended school days previous year' ||
+        cleanKey === 'attended days' ||
+        cleanKey.includes('હાજર દિવસ') ||
+        cleanKey.includes('ગત વર્ષના હાજર દિવસ')
+      ) {
+        rawAttendedDays = row[key];
+      }
+      // Total Days
+      else if (
+        cleanKey === 'total school days' ||
+        cleanKey === 'total days' ||
+        cleanKey.includes('કુલ દિવસ') ||
+        cleanKey.includes('શાળા દિવસો')
+      ) {
+        rawTotalDays = row[key];
+      }
+      // Percentage
+      else if (
+        cleanKey === 'percentage' ||
+        cleanKey === 'marks percentage' ||
+        cleanKey === 'marks obtained in previous year (%)' ||
+        cleanKey === 'marks obtained in previous year' ||
+        cleanKey.includes('ગત વર્ષના ટકા') ||
+        cleanKey.includes('ગત વર્ષ ટકા')
+      ) {
+        rawPercentage = row[key];
+      }
     }
 
     if (!rawDise) {
@@ -1473,6 +1538,11 @@ export async function parseStudentsExcelFile(
     const motherOccupation = rawMotherOcc !== undefined && String(rawMotherOcc).trim() !== '' ? String(rawMotherOcc).trim() : undefined;
     const placeOfBirth = rawPlaceOfBirth !== undefined && String(rawPlaceOfBirth).trim() !== '' ? String(rawPlaceOfBirth).trim() : undefined;
     const photoUrl = rawPhoto !== undefined && String(rawPhoto).trim() !== '' ? String(rawPhoto).trim() : undefined;
+    const height = rawHeight !== undefined && String(rawHeight).trim() !== '' ? String(rawHeight).trim() : undefined;
+    const weight = rawWeight !== undefined && String(rawWeight).trim() !== '' ? String(rawWeight).trim() : undefined;
+    const previousYearPresentDays = rawAttendedDays !== undefined && String(rawAttendedDays).trim() !== '' ? String(rawAttendedDays).trim() : undefined;
+    const previousYearTotalDays = rawTotalDays !== undefined && String(rawTotalDays).trim() !== '' ? String(rawTotalDays).trim() : undefined;
+    const previousYearPercentage = rawPercentage !== undefined && String(rawPercentage).trim() !== '' ? String(rawPercentage).replace('%', '').trim() : undefined;
 
     let isValid = true;
     let isDuplicateInFile = false;
@@ -1567,6 +1637,11 @@ export async function parseStudentsExcelFile(
       motherOccupation,
       placeOfBirth,
       photoUrl,
+      previousYearTotalDays,
+      previousYearPresentDays,
+      previousYearPercentage,
+      height,
+      weight,
       isValid,
       isDuplicateInFile,
       isExistingUpdate,
@@ -1740,6 +1815,10 @@ export async function parseDualFiles(
     bankAccountNo?: string;
     bankIfsc?: string;
     bankName?: string;
+    height?: string;
+    weight?: string;
+    previousYearPresentDays?: string;
+    previousYearPercentage?: string;
   }
 
   const udiseMap = new Map<string, UdiseParsedRecord>();
@@ -1796,6 +1875,10 @@ export async function parseDualFiles(
   let bankAccountColIdx = -1;
   let bankIfscColIdx = -1;
   let bankNameColIdx = -1;
+  let heightColIdx = -1;
+  let weightColIdx = -1;
+  let attendedDaysColIdx = -1;
+  let prevMarksColIdx = -1;
 
   if (headerRowIndex >= 0 && udise2D[headerRowIndex]) {
     const headerCells = udise2D[headerRowIndex].map((c) =>
@@ -2025,6 +2108,22 @@ export async function parseDualFiles(
       else if (h.includes('bank name') || h.includes('બેંકનું નામ') || h === 'bank') {
         if (bankNameColIdx === -1) bankNameColIdx = c;
       }
+      // 25. Height
+      else if (h.includes('height') || h.includes('ઊંચાઈ')) {
+        if (heightColIdx === -1) heightColIdx = c;
+      }
+      // 26. Weight
+      else if (h.includes('weight') || h.includes('વજન')) {
+        if (weightColIdx === -1) weightColIdx = c;
+      }
+      // 27. Attended School Days Previous Year
+      else if (h.includes('attended school days') || h.includes('attended days') || h.includes('હાજર દિવસ')) {
+        if (attendedDaysColIdx === -1) attendedDaysColIdx = c;
+      }
+      // 28. Marks in previous year (%)
+      else if (h.includes('marks obtained in previous year') || (h.includes('previous year') && h.includes('%')) || h.includes('ગત વર્ષના ટકા')) {
+        if (prevMarksColIdx === -1) prevMarksColIdx = c;
+      }
     });
   }
 
@@ -2041,7 +2140,11 @@ export async function parseDualFiles(
     casteColIdx = 10;
     mobileColIdx = 16;
     cwsnColIdx = 21;
+    heightColIdx = 26; // Col 27
+    weightColIdx = 27; // Col 28
     doaColIdx = 31;
+    attendedDaysColIdx = 35; // Col 36
+    prevMarksColIdx = 37; // Col 38
     bloodGroupColIdx = 41;
     mediumColIdx = 42;
     aadhaarColIdx = 51;
@@ -2251,6 +2354,20 @@ export async function parseDualFiles(
     let rawBankName = bankNameColIdx >= 0 && bankNameColIdx < row.length ? getCellStr(row[bankNameColIdx]) : '';
     if (!rawBankName && obj) rawBankName = obj['Bank Name'] || obj['Bank'] || obj['બેંકનું નામ'] || '';
 
+    // 21. Height & Weight
+    let rawHeight = heightColIdx >= 0 && heightColIdx < row.length ? getCellStr(row[heightColIdx]) : '';
+    if (!rawHeight && obj) rawHeight = obj['Student Height (cm)'] || obj['Height'] || obj['ઊંચાઈ'] || '';
+
+    let rawWeight = weightColIdx >= 0 && weightColIdx < row.length ? getCellStr(row[weightColIdx]) : '';
+    if (!rawWeight && obj) rawWeight = obj['Student Weight (kg)'] || obj['Weight'] || obj['વજન'] || '';
+
+    // 22. Attended Days & Percentage
+    let rawAttendedDays = attendedDaysColIdx >= 0 && attendedDaysColIdx < row.length ? getCellStr(row[attendedDaysColIdx]) : '';
+    if (!rawAttendedDays && obj) rawAttendedDays = obj['Attended School Days Previous Year'] || obj['Attended Days'] || obj['હાજર દિવસ'] || '';
+
+    let rawPrevMarks = prevMarksColIdx >= 0 && prevMarksColIdx < row.length ? getCellStr(row[prevMarksColIdx]) : '';
+    if (!rawPrevMarks && obj) rawPrevMarks = obj['Marks Obtained in Previous Year (%)'] || obj['Previous Year %'] || obj['ગત વર્ષના ટકા'] || '';
+
     // =========================================================================
     // CRITICAL DEFENSIVE SANITIZATION: PREVENT FIELD-SHIFT / POLLUTION
     // =========================================================================
@@ -2338,6 +2455,10 @@ export async function parseDualFiles(
       bankAccountNo: rawBankAcc,
       bankIfsc: rawBankIfsc,
       bankName: rawBankName,
+      height: rawHeight || undefined,
+      weight: rawWeight || undefined,
+      previousYearPresentDays: rawAttendedDays || undefined,
+      previousYearPercentage: rawPrevMarks ? rawPrevMarks.replace('%', '').trim() : undefined,
     };
 
     allUdiseRecords.push(record);
@@ -2629,6 +2750,11 @@ export async function parseDualFiles(
       cwsnDisability,
       fatherName,
       motherName,
+      previousYearPresentDays: udise?.previousYearPresentDays,
+      previousYearTotalDays: udise?.previousYearPresentDays ? '220' : undefined,
+      previousYearPercentage: udise?.previousYearPercentage,
+      height: udise?.height,
+      weight: udise?.weight,
       matchSource,
       isValid,
       isDuplicateInFile,

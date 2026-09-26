@@ -43,9 +43,38 @@
         "rollNumber": { "type": "string" },
         "grNumber": { "type": "string" },
         "dob": { "type": "string" },
-        "gender": { "type": "string" }
+        "gender": { "type": "string" },
+        "previousYearTotalDays": { "type": "string" },
+        "previousYearPresentDays": { "type": "string" },
+        "previousYearPercentage": { "type": "string" },
+        "height": { "type": "string" },
+        "weight": { "type": "string" },
+        "admissionApplicationId": { "type": "string" }
       },
       "required": ["schoolId", "studentName", "standard", "dob"]
+    },
+    "AdmissionApplication": {
+      "title": "AdmissionApplication",
+      "description": "Online student admission application submitted by parent/student to a school",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "schoolDiseCode": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "studentName": { "type": "string" },
+        "admissionStandard": { "type": "string" },
+        "childUid": { "type": "string" },
+        "dob": { "type": "string" },
+        "motherName": { "type": "string" },
+        "gender": { "type": "string" },
+        "bloodGroup": { "type": "string" },
+        "category": { "type": "string" },
+        "contactNumber": { "type": "string" },
+        "address": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["schoolId", "studentName", "admissionStandard", "childUid", "dob", "contactNumber", "status"]
     },
     "MarkRecord": {
       "title": "MarkRecord",
@@ -165,6 +194,10 @@
     "/schools/{schoolId}/exam_attempts/{attemptId}": {
       "schema": { "$ref": "#/entities/ExamAttempt" },
       "description": "Student submissions and attempts for online tests"
+    },
+    "/schools/{schoolId}/admissions/{admissionId}": {
+      "schema": { "$ref": "#/entities/AdmissionApplication" },
+      "description": "Online admission applications submitted to the school"
     }
   }
 }

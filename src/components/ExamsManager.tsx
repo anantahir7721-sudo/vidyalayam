@@ -102,16 +102,25 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
   const ekamKasotiMarksCount = marks.filter((m) => m.examType.includes('એકમ કસોટી')).length;
   const termMarksCount = marks.filter((m) => !m.examType.includes('એકમ કસોટી')).length;
 
+  const handleBack = () => {
+    if (subView !== 'overview') {
+      setSubView('overview');
+    } else {
+      onBack();
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header & Sub-Navigation Strip */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <button
-          onClick={onBack}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white transition-colors cursor-pointer"
+          onClick={handleBack}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white transition-colors cursor-pointer active:scale-95"
+          title={subView !== 'overview' ? 'પરીક્ષાઓની ઝાંખી પર પાછા જાઓ' : 'પાછળના મેનુ પર જાઓ'}
         >
           <ArrowLeft className="w-4 h-4 text-[#f59c73]" />
-          <span>મુખ્ય ડેશબોર્ડ (Dashboard)</span>
+          <span>{subView !== 'overview' ? 'પરીક્ષાઓની ઝાંખી પર પાછા જાઓ' : 'પાછળ જાઓ (Go Back)'}</span>
         </button>
 
         {/* Sub-view switcher tabs */}

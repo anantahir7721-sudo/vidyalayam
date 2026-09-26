@@ -29,6 +29,10 @@ import {
   Check,
   KeyRound,
   HelpCircle,
+  UserPlus,
+  ArrowLeft,
+  Sparkles,
+  Flame,
 } from 'lucide-react';
 import { submitPasswordResetRequest } from '../services/adminService';
 import {
@@ -38,6 +42,8 @@ import {
 } from '../utils/whatsappUtils';
 import { SetNewPasswordModal } from './SetNewPasswordModal';
 import { VidyalayamLogo } from './VidyalayamLogo';
+import { OnlineAdmissionPortal, getSchoolAdmissionStatus } from './OnlineAdmissionPortal';
+import { getSchoolsForAdmissionDirectory } from '../services/firestoreService';
 
 const GUJARAT_DISTRICTS = [
   'Ahmedabad', 'Amreli', 'Anand', 'Aravalli', 'Banaskantha', 'Bharuch',
@@ -59,8 +65,38 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   onAdminAuthSuccess,
   onStudentAuthSuccess,
 }) => {
-  // Top-level portal switch: School Login vs Student Login vs Admin Login
-  const [portalType, setPortalType] = useState<'school' | 'student' | 'admin'>('school');
+  // Top-level portal switch: School Login vs Student Login vs Admission vs Admin Login
+  const [portalType, setPortalType] = useState<'school' | 'student' | 'admin' | 'admission'>('school');
+
+  // Real-time check if any school currently has admissions open
+  const [openAdmissionsCount, setOpenAdmissionsCount] = useState<number | null>(null);
+  const [checkingAdmissions, setCheckingAdmissions] = useState<boolean>(true);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    getSchoolsForAdmissionDirectory()
+      .then((schools) => {
+        if (!isMounted) return;
+        const openSchools = schools.filter(
+          (s) => getSchoolAdmissionStatus(s).status === 'open'
+        );
+        setOpenAdmissionsCount(openSchools.length);
+        setCheckingAdmissions(false);
+      })
+      .catch((err) => {
+        console.warn('Admission status check error:', err);
+        if (isMounted) {
+          setOpenAdmissionsCount(0);
+          setCheckingAdmissions(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const hasOpenAdmissions = (openAdmissionsCount ?? 0) > 0;
 
   // School sub-mode: Login vs Register
   const [schoolMode, setSchoolMode] = useState<'login' | 'register'>('login');
@@ -311,69 +347,166 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               ? 'રાજ્ય એડમિનિસ્ટ્રેટર લૉગિન • Role-Based System Security'
               : portalType === 'student'
               ? 'વિદ્યાર્થી પોર્ટલ • ઓનલાઇન પરીક્ષા, ગુણ & પરિણામ'
+              : portalType === 'admission'
+              ? 'ઓનલાઇન પ્રવેશ પોર્ટલ • શાળાઓમાં નવા વિદ્યાર્થીઓ માટે પ્રવેશ અરજી'
               : 'ગુજરાત રાજ્ય શાળા ગુણાંકન પોર્ટલ • Multi-School System'}
           </p>
         </div>
       </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="glass-panel py-8 px-4 shadow-xl dark:shadow-2xl shadow-slate-900/10 dark:shadow-black/60 sm:rounded-3xl sm:px-8 border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#121921]/90 transition-colors">
-          {/* PRIMARY PORTAL SELECTOR: [ School Login ] [ Student Login ] [ Admin Login ] */}
-          <div className="grid grid-cols-3 rounded-2xl bg-slate-100 dark:bg-[#090c10]/90 p-1.5 border border-slate-200 dark:border-white/10 mb-6 shadow-inner gap-1">
+      {portalType === 'admission' ? (
+        <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-4xl px-3 sm:px-4">
+          <div className="glass-panel py-6 px-4 shadow-xl dark:shadow-2xl shadow-slate-900/10 dark:shadow-black/60 sm:rounded-3xl sm:px-8 border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#121921]/90 transition-colors">
+            <OnlineAdmissionPortal onBackToLogin={() => setPortalType('school')} />
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* ============================================================ */}
+          {/* SEPARATE HIGHLIGHTED ADMISSION BANNER                         */}
+          {/* Separated from School/Student/Admin login tabs                */}
+          {/* Highlighted in vivid, radiant colors if admission is open    */}
+          {/* ============================================================ */}
+          <div className="mt-5 sm:mx-auto sm:w-full sm:max-w-md px-3 sm:px-0">
             <button
-              id="tab-portal-school"
               type="button"
+              id="btn-admission-highlight-banner"
               onClick={() => {
-                setPortalType('school');
+                setPortalType('admission');
                 setError(null);
                 setSuccessMessage(null);
               }}
-              className={`flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl transition-all ${
-                portalType === 'school'
-                  ? 'bg-[#9d512d] text-white shadow-lg'
-                  : 'text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-[#e4ded6]'
+              className={`w-full text-left rounded-2xl p-3.5 sm:p-4 transition-all duration-300 cursor-pointer shadow-lg relative overflow-hidden group ${
+                hasOpenAdmissions
+                  ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:via-orange-600 hover:to-rose-700 text-white shadow-orange-500/30 border-2 border-amber-300 dark:border-amber-400/80 hover:scale-[1.02] active:scale-[0.99] ring-2 ring-orange-400/40'
+                  : 'bg-white dark:bg-[#121921] hover:bg-amber-50/60 dark:hover:bg-[#16202c] text-slate-800 dark:text-[#e4ded6] border border-amber-500/30 dark:border-amber-500/20 hover:border-amber-500/60 shadow-md'
               }`}
             >
-              <SchoolIcon className="w-3.5 h-3.5 shrink-0" />
-              <span>School</span>
-            </button>
+              {/* Dynamic glowing shimmer effect when admissions open */}
+              {hasOpenAdmissions && (
+                <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/20 rounded-full blur-xl pointer-events-none group-hover:scale-150 transition-transform" />
+              )}
 
-            <button
-              id="tab-portal-student"
-              type="button"
-              onClick={() => {
-                setPortalType('student');
-                setError(null);
-                setSuccessMessage(null);
-              }}
-              className={`flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl transition-all ${
-                portalType === 'student'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg'
-                  : 'text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-[#e4ded6]'
-              }`}
-            >
-              <GraduationCap className="w-3.5 h-3.5 shrink-0" />
-              <span>Student</span>
-            </button>
+              <div className="flex items-center justify-between gap-3 relative z-10">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-md ${
+                      hasOpenAdmissions
+                        ? 'bg-white text-orange-600 ring-2 ring-white/60 shadow-orange-950/20'
+                        : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                    }`}
+                  >
+                    <UserPlus className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`text-xs sm:text-sm font-black tracking-tight ${
+                          hasOpenAdmissions ? 'text-white' : 'text-slate-900 dark:text-white'
+                        }`}
+                      >
+                        નવા પ્રવેશ (Online Admissions)
+                      </span>
+                      {hasOpenAdmissions ? (
+                        <span className="inline-flex items-center gap-1.5 bg-black/30 backdrop-blur-md text-yellow-200 font-extrabold text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full border border-yellow-300/50 shadow-xs animate-pulse">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-80"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                          </span>
+                          <span>🔥 પ્રવેશ શરૂ છે! (OPEN)</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 bg-amber-500/10 dark:bg-amber-400/10 text-amber-700 dark:text-amber-300 font-semibold text-[10px] px-2 py-0.5 rounded-full border border-amber-500/20">
+                          {checkingAdmissions ? 'ચકાસી રહ્યું છે...' : 'ઓનલાઇન પોર્ટલ'}
+                        </span>
+                      )}
+                    </div>
+                    <p
+                      className={`text-[11px] sm:text-xs mt-0.5 truncate ${
+                        hasOpenAdmissions
+                          ? 'text-amber-100 font-medium'
+                          : 'text-slate-500 dark:text-slate-400'
+                      }`}
+                    >
+                      {hasOpenAdmissions
+                        ? `${openAdmissionsCount} શાળાઓમાં પ્રવેશ ચાલુ છે • ઓનલાઇન અરજી કરવા ક્લિક કરો`
+                        : 'ગુજરાત રાજ્યની શાળાઓમાં પ્રવેશ માહિતી અને ઓનલાઇન અરજી ફોર્મ'}
+                    </p>
+                  </div>
+                </div>
 
-            <button
-              id="tab-portal-admin"
-              type="button"
-              onClick={() => {
-                setPortalType('admin');
-                setError(null);
-                setSuccessMessage(null);
-              }}
-              className={`flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl transition-all ${
-                portalType === 'admin'
-                  ? 'bg-rose-700 text-white shadow-lg'
-                  : 'text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-[#e4ded6]'
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5 shrink-0" />
-              <span>Admin</span>
+                <div
+                  className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-full transition-transform group-hover:translate-x-1 ${
+                    hasOpenAdmissions
+                      ? 'bg-white/20 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-300'
+                  }`}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </div>
+              </div>
             </button>
           </div>
+
+          {/* PRIMARY LOGIN CARD: Only authenticated roles [ School ] [ Student ] [ Admin ] */}
+          <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-md px-3 sm:px-0">
+            <div className="glass-panel py-8 px-4 shadow-xl dark:shadow-2xl shadow-slate-900/10 dark:shadow-black/60 sm:rounded-3xl sm:px-8 border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#121921]/90 transition-colors">
+              {/* Clean 3-way authenticated roles: School, Student, Admin */}
+              <div className="grid grid-cols-3 rounded-2xl bg-slate-100 dark:bg-[#090c10]/90 p-1.5 border border-slate-200 dark:border-white/10 mb-6 shadow-inner gap-1">
+                <button
+                  id="tab-portal-school"
+                  type="button"
+                  onClick={() => {
+                    setPortalType('school');
+                    setError(null);
+                    setSuccessMessage(null);
+                  }}
+                  className={`flex items-center justify-center gap-1.5 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
+                    portalType === 'school'
+                      ? 'bg-[#9d512d] text-white shadow-lg'
+                      : 'text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-[#e4ded6]'
+                  }`}
+                >
+                  <SchoolIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <span>શાળા</span>
+                </button>
+
+                <button
+                  id="tab-portal-student"
+                  type="button"
+                  onClick={() => {
+                    setPortalType('student');
+                    setError(null);
+                    setSuccessMessage(null);
+                  }}
+                  className={`flex items-center justify-center gap-1.5 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
+                    portalType === 'student'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg'
+                      : 'text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-[#e4ded6]'
+                  }`}
+                >
+                  <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <span>વિદ્યાર્થી</span>
+                </button>
+
+                <button
+                  id="tab-portal-admin"
+                  type="button"
+                  onClick={() => {
+                    setPortalType('admin');
+                    setError(null);
+                    setSuccessMessage(null);
+                  }}
+                  className={`flex items-center justify-center gap-1.5 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
+                    portalType === 'admin'
+                      ? 'bg-rose-700 text-white shadow-lg'
+                      : 'text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-[#e4ded6]'
+                  }`}
+                >
+                  <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <span>એડમિન</span>
+                </button>
+              </div>
 
           {/* Error Message Box */}
           {error && (
@@ -910,19 +1043,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
           {/* Architecture note */}
           <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 space-y-1.5">
-            <div className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-300">
-              <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Multi-Role Security Architecture</span>
+              <div className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-300">
+                <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Multi-Role Security Architecture</span>
+              </div>
+              <p>
+                • <strong>Role Authorization:</strong> Admin authority is checked server-side directly against <code>/admins/{'{uid}'}</code> in Firestore.
+              </p>
+              <p>
+                • <strong>Zero Hardcoded Credentials:</strong> All authentication credentials reside exclusively in Firebase Authentication.
+              </p>
             </div>
-            <p>
-              • <strong>Role Authorization:</strong> Admin authority is checked server-side directly against <code>/admins/{'{uid}'}</code> in Firestore.
-            </p>
-            <p>
-              • <strong>Zero Hardcoded Credentials:</strong> All authentication credentials reside exclusively in Firebase Authentication.
-            </p>
           </div>
         </div>
-      </div>
+      </>
+    )}
 
       {/* MODAL 1: Forgot Password Assistant */}
       {forgotPasswordOpen && (

@@ -160,6 +160,41 @@ const ALL_STUDENT_COLUMNS: StudentColumnDef[] = [
     minWidth: '110px',
     align: 'left',
   },
+  {
+    id: 'height',
+    label: 'ઊંચાઈ (Height cm)',
+    getValue: (s) => (s.height ? `${s.height} cm` : '-'),
+    defaultSelected: false,
+    minWidth: '55px',
+    align: 'center',
+  },
+  {
+    id: 'weight',
+    label: 'વજન (Weight kg)',
+    getValue: (s) => (s.weight ? `${s.weight} kg` : '-'),
+    defaultSelected: false,
+    minWidth: '55px',
+    align: 'center',
+  },
+  {
+    id: 'previousYearPercentage',
+    label: 'ગત વર્ષ ટકા (%)',
+    getValue: (s) => (s.previousYearPercentage ? `${s.previousYearPercentage}%` : '-'),
+    defaultSelected: false,
+    minWidth: '60px',
+    align: 'center',
+  },
+  {
+    id: 'previousYearAttendance',
+    label: 'ગત વર્ષની હાજરી',
+    getValue: (s) =>
+      s.previousYearPresentDays
+        ? `${s.previousYearPresentDays} / ${s.previousYearTotalDays || 220}`
+        : '-',
+    defaultSelected: false,
+    minWidth: '70px',
+    align: 'center',
+  },
 ];
 
 interface StudentReportCustomizerProps {

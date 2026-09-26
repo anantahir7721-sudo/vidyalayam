@@ -23,10 +23,12 @@ import {
   ShieldCheck,
   Check,
   Award,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface SubjectManagerProps {
   school: School;
+  onBack?: () => void;
 }
 
 const STANDARDS_LIST: Array<{ id: AllowedStandard; label: string; subLabel: string }> = [
@@ -36,7 +38,7 @@ const STANDARDS_LIST: Array<{ id: AllowedStandard; label: string; subLabel: stri
   { id: '12', label: 'ધોરણ 12', subLabel: 'Class 12' },
 ];
 
-export const SubjectManager: React.FC<SubjectManagerProps> = ({ school }) => {
+export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }) => {
   const [selectedStandard, setSelectedStandard] = useState<AllowedStandard>('9');
   const [customSubjects, setCustomSubjects] = useState<StandardSubject[]>([]);
   const [loading, setLoading] = useState(false);
@@ -236,17 +238,29 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school }) => {
       {/* Top Banner - iOS Style Glass Card */}
       <div className="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden border border-white/10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>વિષય અને વિભાગ સંચાલન (Subject & Section Management)</span>
+          <div className="flex items-start gap-4">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1"
+                title="પાછળના મેનુ પર જાઓ (Go Back)"
+              >
+                <ArrowLeft className="w-5 h-5 text-emerald-400" />
+              </button>
+            )}
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold mb-3">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>વિષય અને વિભાગ સંચાલન (Subject & Section Management)</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                ધોરણ વાર વિષય વ્યવસ્થાપન
+              </h2>
+              <p className="text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                દરેક ધોરણ માટે અલગ વિષયો અને તેમના વિભાગો (Sections) તથા મહત્તમ ગુણ નિયત કરો. એક ધોરણમાં ઉમેરેલ વિષય બીજા ધોરણમાં દેખાશે નહીં.
+              </p>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              ધોરણ વાર વિષય વ્યવસ્થાપન
-            </h2>
-            <p className="text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-              દરેક ધોરણ માટે અલગ વિષયો અને તેમના વિભાગો (Sections) તથા મહત્તમ ગુણ નિયત કરો. એક ધોરણમાં ઉમેરેલ વિષય બીજા ધોરણમાં દેખાશે નહીં.
-            </p>
           </div>
 
           <button

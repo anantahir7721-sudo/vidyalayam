@@ -558,7 +558,13 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
           </span>
         </div>
 
-        <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+        {/* Mobile Horizontal Scroll Tip */}
+        <div className="sm:hidden px-3.5 py-2 bg-slate-950/90 text-[11px] text-[#f59c73] flex items-center justify-between border-b border-white/5">
+          <span className="font-semibold">📱 મોબાઇલ ટિપ: ગુણ જોવા અને ભરવા માટે ડાબે-જમણે સ્ક્રોલ કરો</span>
+          <span className="text-[10px] text-slate-400 font-mono">↔️ Swipe</span>
+        </div>
+
+        <div className="overflow-x-auto mobile-table-scroll max-h-[600px] overflow-y-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-900 text-[#a99f91] sticky top-0 z-10 shadow border-b border-slate-800">
               <tr>

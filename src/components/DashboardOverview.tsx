@@ -24,6 +24,7 @@ import {
   Layers,
   Edit3,
   MessageSquare,
+  UserPlus,
 } from 'lucide-react';
 import { ActiveTabType } from './Navbar';
 import { VidyalayamLogo } from './VidyalayamLogo';
@@ -94,6 +95,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       badge: `${students.length} વિદ્યાર્થી`,
       color: 'hover:border-blue-500/40',
       actionText: 'વિદ્યાર્થીઓ જુઓ',
+    },
+    {
+      id: 'admissions' as ActiveTabType,
+      title: 'ઓનલાઇન પ્રવેશ સંચાલન (Admissions Portal)',
+      desc: 'શાળા પ્રવેશ પ્રક્રિયા શરૂ/બંધ કરો, તારીખ ગાળો નક્કી કરો, વાલીઓની ઓનલાઇન અરજીઓ ચકાસો અને સીધા વિદ્યાર્થી તરીકે એડમિટ કરો.',
+      icon: <UserPlus className="w-5 h-5 text-indigo-400" />,
+      badge: 'ઓનલાઇન પ્રવેશ',
+      color: 'hover:border-indigo-500/40',
+      actionText: 'પ્રવેશ અરજીઓ જુઓ',
     },
     {
       id: 'staff' as ActiveTabType,
@@ -188,20 +198,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* =========================================================================
           STARTING SECTION: SCHOOL BASIC INFORMATION (શાળાની મૂળભૂત માહિતી)
           ========================================================================= */}
-      <section className="glass-panel rounded-3xl border border-white/10 p-6 sm:p-7 shadow-xl">
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+      <section className="glass-panel rounded-2xl sm:rounded-3xl border border-white/10 p-4 sm:p-7 shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 sm:gap-6">
           {/* Main Info */}
           <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/15 text-[#7a3b1a] border border-[#9d512d]/30 dark:bg-[#9d512d]/25 dark:text-[#f59c73] dark:border-[#9d512d]/40 inline-flex items-center gap-1.5 shadow-xs">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-[#9d512d]/15 text-[#7a3b1a] border border-[#9d512d]/30 dark:bg-[#9d512d]/25 dark:text-[#f59c73] dark:border-[#9d512d]/40 inline-flex items-center gap-1.5 shadow-xs">
                 <Building className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
-                <span>શાળાની મૂળભૂત માહિતી (School Basic Info)</span>
+                <span>શાળા માહિતી</span>
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-stone-100 text-stone-800 border border-stone-200 dark:bg-white/5 dark:border-white/10 dark:text-[#e4ded6]">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-stone-100 text-stone-800 border border-stone-200 dark:bg-white/5 dark:border-white/10 dark:text-[#e4ded6]">
                 DISE: {school.diseCode}
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 shadow-xs">
@@ -209,12 +219,12 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-[#e4ded6] tracking-tight leading-snug">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-stone-900 dark:text-[#e4ded6] tracking-tight leading-snug">
               {school.schoolName}
             </h1>
 
             {/* Address & Meta details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3 text-xs pt-1">
               <div className="flex items-start gap-2 text-stone-700 dark:text-slate-300">
                 <MapPin className="w-4 h-4 text-[#9d512d] dark:text-[#f59c73] shrink-0 mt-0.5" />
                 <div>
@@ -333,7 +343,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         {/* =========================================================================
             DETAILED STATISTICAL STRIP (વિદ્યાર્થી સંખ્યા, સ્ટાફ સંખ્યા વગેરે)
             ========================================================================= */}
-        <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mt-5 pt-5 sm:mt-6 sm:pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: વિદ્યાર્થી સંખ્યા */}
           <div className="glass-card rounded-2xl border border-white/10 p-4 shadow flex flex-col justify-between">
             <div>
@@ -518,7 +528,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {modules.map((mod) => (
             <div
               key={mod.id}

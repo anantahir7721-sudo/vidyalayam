@@ -66,13 +66,21 @@ import {
   Phone,
   Printer,
   Sparkles,
+  ArrowLeft,
+  ChevronDown,
+  LayoutGrid,
+  List,
+  MessageSquare,
+  Smartphone,
 } from 'lucide-react';
+import { useDeviceType } from '../utils/useDeviceType';
 
 interface StudentsManagerProps {
   school: School;
   schoolId: string;
   students: Student[];
   onRefresh: () => void;
+  onBack?: () => void;
 }
 
 export const StudentsManager: React.FC<StudentsManagerProps> = ({
@@ -80,7 +88,13 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
   schoolId,
   students,
   onRefresh,
+  onBack,
 }) => {
+  const device = useDeviceType();
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const [viewLayout, setViewLayout] = useState<'auto' | 'cards' | 'table'>('auto');
+  const isCardView = viewLayout === 'cards' || (viewLayout === 'auto' && device.effectiveType === 'mobile');
+
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStandardFilter, setSelectedStandardFilter] = useState<string>('ALL');
@@ -631,6 +645,11 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             placeOfBirth: r.placeOfBirth,
             photoUrl: r.photoUrl,
             aadhaarNo: r.aadhaarNo,
+            previousYearTotalDays: r.previousYearTotalDays ? String(r.previousYearTotalDays) : undefined,
+            previousYearPresentDays: r.previousYearPresentDays ? String(r.previousYearPresentDays) : undefined,
+            previousYearPercentage: r.previousYearPercentage ? String(r.previousYearPercentage) : undefined,
+            height: r.height ? String(r.height) : undefined,
+            weight: r.weight ? String(r.weight) : undefined,
           }));
 
         setPendingImportRemainingRows(cleanRows);
@@ -662,6 +681,11 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
         placeOfBirth: r.placeOfBirth,
         photoUrl: r.photoUrl,
         aadhaarNo: r.aadhaarNo,
+        previousYearTotalDays: r.previousYearTotalDays ? String(r.previousYearTotalDays) : undefined,
+        previousYearPresentDays: r.previousYearPresentDays ? String(r.previousYearPresentDays) : undefined,
+        previousYearPercentage: r.previousYearPercentage ? String(r.previousYearPercentage) : undefined,
+        height: r.height ? String(r.height) : undefined,
+        weight: r.weight ? String(r.weight) : undefined,
       }));
 
       const res = await bulkUpsertStudents(schoolId, studentsToImport, students);
@@ -750,6 +774,11 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             placeOfBirth: r.placeOfBirth,
             fatherOccupation: r.fatherOccupation,
             motherOccupation: r.motherOccupation,
+            previousYearTotalDays: r.previousYearTotalDays ? String(r.previousYearTotalDays) : undefined,
+            previousYearPresentDays: r.previousYearPresentDays ? String(r.previousYearPresentDays) : undefined,
+            previousYearPercentage: r.previousYearPercentage ? String(r.previousYearPercentage) : undefined,
+            height: r.height ? String(r.height) : undefined,
+            weight: r.weight ? String(r.weight) : undefined,
           }));
 
         setPendingImportRemainingRows(cleanRows);
@@ -783,6 +812,11 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
         placeOfBirth: r.placeOfBirth,
         fatherOccupation: r.fatherOccupation,
         motherOccupation: r.motherOccupation,
+        previousYearTotalDays: r.previousYearTotalDays ? String(r.previousYearTotalDays) : undefined,
+        previousYearPresentDays: r.previousYearPresentDays ? String(r.previousYearPresentDays) : undefined,
+        previousYearPercentage: r.previousYearPercentage ? String(r.previousYearPercentage) : undefined,
+        height: r.height ? String(r.height) : undefined,
+        weight: r.weight ? String(r.weight) : undefined,
       }));
 
       const res = await bulkUpsertStudents(schoolId, studentsToImport, students);
@@ -895,134 +929,306 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       {/* Top Header Card */}
       <div className="glass-card border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800/80 inline-flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                વિદ્યાર્થી માસ્ટર ઇન્ફોર્મેશન સિસ્ટમ
-              </span>
-              <span className="text-xs text-slate-400 font-mono">
-                DISE: {school.diseCode || 'N/A'}
-              </span>
+          <div className="flex items-start gap-3">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1"
+                title="પાછળના મેનુ પર જાઓ (Go Back)"
+              >
+                <ArrowLeft className="w-5 h-5 text-terracotta" />
+              </button>
+            )}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800/80 inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  વિદ્યાર્થી માસ્ટર ઇન્ફોર્મેશન સિસ્ટમ
+                </span>
+                <span className="text-xs text-slate-400 font-mono">
+                  DISE: {school.diseCode || 'N/A'}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                <Users className="w-6 h-6 text-terracotta shrink-0" />
+                <span>વિદ્યાર્થી સંચાલન (Student Master Management)</span>
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 mt-1">
+                સંપૂર્ણ મૂળભૂત વિગતો, G.R. નંબર, ફોટો, Excel આયાત/નિકાસ તથા ડિજિટલ આઈડી કાર્ડ જનરેશન
+              </p>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-              <Users className="w-6 h-6 text-terracotta shrink-0" />
-              <span>વિદ્યાર્થી સંચાલન (Student Master Management)</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1">
-              સંપૂર્ણ મૂળભૂત વિગતો, G.R. નંબર, ફોટો, Excel આયાત/નિકાસ તથા ડિજિટલ આઈડી કાર્ડ જનરેશન
-            </p>
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Primary 1: Add Student Button */}
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-terracotta hover:bg-terracotta-hover text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-terracotta/25 transition-all min-h-[44px] cursor-pointer"
-              title="નવો વિદ્યાર્થી ઉમેરો"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>+ નવો ઉમેરો</span>
-            </button>
-
-            {/* Primary 2: Dual-File Smart Import Button (CTS + UDISE+) */}
-            <button
-              onClick={() => setIsDualImportModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-900/30 transition-all min-h-[44px] border border-emerald-400/40 cursor-pointer"
-              title="CTS અને UDISE+ એક્સેલ ફાઇલો મર્જ કરીને આયાત કરો"
-            >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>દ્વિ-ફાઇલ આયાત (CTS + UDISE+)</span>
-            </button>
-
-            {/* Secondary 1: Single File Upload Excel */}
-            <label className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-sm cursor-pointer min-h-[44px]">
-              {isParsingExcel ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Upload className="w-4 h-4 text-emerald-400" />
-              )}
-              <span>એક ફાઇલ આયાત</span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                disabled={isParsingExcel}
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    handleExcelFileSelected(e.target.files[0]);
-                  }
-                }}
-              />
-            </label>
-
-            {/* Secondary 2: Export to Excel */}
-            <button
-              onClick={() => exportStudentsExcel(students, school.schoolName, school.diseCode)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-sm min-h-[44px] cursor-pointer"
-              title="Export all students to Excel"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-amber-400" />
-              <span>એક્સપોર્ટ</span>
-            </button>
-
-            {/* Template Downloads Menu / Buttons */}
-            <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-700/80">
-              <span className="text-[11px] font-semibold text-slate-400 px-1.5 flex items-center gap-1">
-                <Download className="w-3.5 h-3.5 text-emerald-400" />
-                ટેમ્પ્લેટ:
-              </span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            {/* Mobile Action Bar (< sm screens) */}
+            <div className="flex sm:hidden items-center gap-2 w-full">
               <button
-                onClick={() => downloadCtsTemplate(school.diseCode, school.schoolName)}
-                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-xs font-semibold transition-colors border border-emerald-700/40"
-                title="CTS Excel Template (GR No. & AadhaarUID)"
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-terracotta hover:bg-terracotta-hover text-white rounded-xl text-xs font-bold shadow-md shadow-terracotta/25 transition-all min-h-[44px] cursor-pointer"
+                title="નવો વિદ્યાર્થી ઉમેરો"
               >
-                CTS
+                <UserPlus className="w-4 h-4" />
+                <span>+ નવો ઉમેરો</span>
               </button>
+
               <button
-                onClick={() => downloadUdisePlusTemplate(school.diseCode, school.schoolName)}
-                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg text-xs font-semibold transition-colors border border-cyan-700/40"
-                title="UDISE+ Excel Template (Col 1 to 61)"
+                type="button"
+                onClick={() => setMobileToolsOpen((prev) => !prev)}
+                className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold border transition-all min-h-[44px] cursor-pointer ${
+                  mobileToolsOpen
+                    ? 'bg-[#9d512d] text-white border-transparent'
+                    : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+                }`}
+                title="આયાત, નિકાસ અને ટેમ્પ્લેટ્સ સાધનો"
               >
-                UDISE+
+                <FileSpreadsheet className="w-4 h-4 text-amber-400" />
+                <span>સાધનો</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${mobileToolsOpen ? 'rotate-180' : ''}`} />
               </button>
+
               <button
-                onClick={() => downloadStudentTemplate(school.diseCode, school.schoolName)}
-                className="px-2 py-1 hover:bg-slate-800 text-slate-300 rounded-lg text-xs transition-colors"
-                title="General Student Master Template"
+                type="button"
+                onClick={() => setViewLayout((prev) => (isCardView ? 'table' : 'cards'))}
+                className="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+                title={isCardView ? 'કોષ્ટક વ્યુમાં બદલો' : 'કાર્ડ વ્યુમાં બદલો'}
               >
-                સામાન્ય
+                {isCardView ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
               </button>
             </div>
 
-            {/* Delete All Students Button */}
-            <button
-              onClick={() => {
-                if (selectedStudentIds.size > 0) {
-                  setDeleteAllScope('selected');
-                } else if (
-                  selectedStandardFilter !== 'ALL' ||
-                  selectedSectionFilter !== 'ALL' ||
-                  selectedGenderFilter !== 'ALL' ||
-                  selectedBloodFilter !== 'ALL' ||
-                  searchQuery.trim()
-                ) {
-                  setDeleteAllScope('filtered');
-                } else {
-                  setDeleteAllScope('all');
-                }
-                setDeleteAllConfirmInput('');
-                setIsDeleteAllModalOpen(true);
-              }}
-              disabled={students.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-red-950/50 hover:bg-red-900/80 text-red-300 border border-red-800/60 hover:border-red-700 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed min-h-[44px]"
-              title="બધા અથવા ફિલ્ટર કરેલા વિદ્યાર્થીઓ કાઢી નાખો (Delete All / Bulk Delete)"
-            >
-              <Trash2 className="w-4 h-4 text-red-400" />
-              <span>બધા કાઢી નાખો</span>
-            </button>
+            {/* Mobile Dropdown Menu for Excel / Tools */}
+            {mobileToolsOpen && (
+              <div className="sm:hidden p-3 rounded-2xl bg-slate-950 border border-slate-800 shadow-xl space-y-2 animate-fadeIn w-full">
+                <div className="text-[11px] font-bold text-[#f59c73] uppercase tracking-wider px-1">
+                  એક્સેલ આયાત & નિકાસ સાધનો
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setMobileToolsOpen(false);
+                      setIsDualImportModalOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 p-2 rounded-xl bg-emerald-950/60 border border-emerald-800/80 text-emerald-300 text-xs font-bold text-left cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                    <span>દ્વિ-ફાઇલ (CTS+UDISE)</span>
+                  </button>
+
+                  <label className="flex items-center gap-1.5 p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold cursor-pointer">
+                    <Upload className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>એક ફાઇલ આયાત</span>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      className="hidden"
+                      disabled={isParsingExcel}
+                      onChange={(e) => {
+                        setMobileToolsOpen(false);
+                        if (e.target.files?.[0]) {
+                          handleExcelFileSelected(e.target.files[0]);
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <button
+                    onClick={() => {
+                      setMobileToolsOpen(false);
+                      exportStudentsExcel(students, school.schoolName, school.diseCode);
+                    }}
+                    className="flex items-center gap-1.5 p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold text-left cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Excel એક્સપોર્ટ</span>
+                  </button>
+
+                  <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 col-span-2 justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 pl-1">ટેમ્પ્લેટ્સ:</span>
+                    <button
+                      onClick={() => downloadCtsTemplate(school.diseCode, school.schoolName)}
+                      className="px-2 py-1 bg-slate-800 text-emerald-300 rounded text-[11px] font-bold"
+                    >
+                      CTS
+                    </button>
+                    <button
+                      onClick={() => downloadUdisePlusTemplate(school.diseCode, school.schoolName)}
+                      className="px-2 py-1 bg-slate-800 text-cyan-300 rounded text-[11px] font-bold"
+                    >
+                      UDISE+
+                    </button>
+                    <button
+                      onClick={() => downloadStudentTemplate(school.diseCode, school.schoolName)}
+                      className="px-2 py-1 bg-slate-800 text-slate-300 rounded text-[11px] font-bold"
+                    >
+                      સામાન્ય
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setMobileToolsOpen(false);
+                      if (selectedStudentIds.size > 0) {
+                        setDeleteAllScope('selected');
+                      } else if (
+                        selectedStandardFilter !== 'ALL' ||
+                        selectedSectionFilter !== 'ALL' ||
+                        selectedGenderFilter !== 'ALL' ||
+                        selectedBloodFilter !== 'ALL' ||
+                        searchQuery.trim()
+                      ) {
+                        setDeleteAllScope('filtered');
+                      } else {
+                        setDeleteAllScope('all');
+                      }
+                      setDeleteAllConfirmInput('');
+                      setIsDeleteAllModalOpen(true);
+                    }}
+                    disabled={students.length === 0}
+                    className="col-span-2 flex items-center justify-center gap-1.5 p-2 rounded-xl bg-red-950/60 border border-red-800 text-red-300 text-xs font-bold cursor-pointer disabled:opacity-40"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                    <span>બધા વિદ્યાર્થી કાઢી નાખો</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Desktop Action Bar (>= sm screens) */}
+            <div className="hidden sm:flex items-center gap-2 flex-wrap">
+              {/* Primary 1: Add Student Button */}
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-terracotta hover:bg-terracotta-hover text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-terracotta/25 transition-all min-h-[44px] cursor-pointer"
+                title="નવો વિદ્યાર્થી ઉમેરો"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>+ નવો ઉમેરો</span>
+              </button>
+
+              {/* Primary 2: Dual-File Smart Import Button (CTS + UDISE+) */}
+              <button
+                onClick={() => setIsDualImportModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-900/30 transition-all min-h-[44px] border border-emerald-400/40 cursor-pointer"
+                title="CTS અને UDISE+ એક્સેલ ફાઇલો મર્જ કરીને આયાત કરો"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>દ્વિ-ફાઇલ આયાત (CTS + UDISE+)</span>
+              </button>
+
+              {/* Secondary 1: Single File Upload Excel */}
+              <label className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-sm cursor-pointer min-h-[44px]">
+                {isParsingExcel ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4 text-emerald-400" />
+                )}
+                <span>એક ફાઇલ આયાત</span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  disabled={isParsingExcel}
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      handleExcelFileSelected(e.target.files[0]);
+                    }
+                  }}
+                />
+              </label>
+
+              {/* Secondary 2: Export to Excel */}
+              <button
+                onClick={() => exportStudentsExcel(students, school.schoolName, school.diseCode)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-sm min-h-[44px] cursor-pointer"
+                title="Export all students to Excel"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-amber-400" />
+                <span>એક્સપોર્ટ</span>
+              </button>
+
+              {/* Template Downloads Menu / Buttons */}
+              <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-700/80">
+                <span className="text-[11px] font-semibold text-slate-400 px-1.5 flex items-center gap-1">
+                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  ટેમ્પ્લેટ:
+                </span>
+                <button
+                  onClick={() => downloadCtsTemplate(school.diseCode, school.schoolName)}
+                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-xs font-semibold transition-colors border border-emerald-700/40"
+                  title="CTS Excel Template (GR No. & AadhaarUID)"
+                >
+                  CTS
+                </button>
+                <button
+                  onClick={() => downloadUdisePlusTemplate(school.diseCode, school.schoolName)}
+                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg text-xs font-semibold transition-colors border border-cyan-700/40"
+                  title="UDISE+ Excel Template (Col 1 to 61)"
+                >
+                  UDISE+
+                </button>
+                <button
+                  onClick={() => downloadStudentTemplate(school.diseCode, school.schoolName)}
+                  className="px-2 py-1 hover:bg-slate-800 text-slate-300 rounded-lg text-xs transition-colors"
+                  title="General Student Master Template"
+                >
+                  સામાન્ય
+                </button>
+              </div>
+
+              {/* Delete All Students Button */}
+              <button
+                onClick={() => {
+                  if (selectedStudentIds.size > 0) {
+                    setDeleteAllScope('selected');
+                  } else if (
+                    selectedStandardFilter !== 'ALL' ||
+                    selectedSectionFilter !== 'ALL' ||
+                    selectedGenderFilter !== 'ALL' ||
+                    selectedBloodFilter !== 'ALL' ||
+                    searchQuery.trim()
+                  ) {
+                    setDeleteAllScope('filtered');
+                  } else {
+                    setDeleteAllScope('all');
+                  }
+                  setDeleteAllConfirmInput('');
+                  setIsDeleteAllModalOpen(true);
+                }}
+                disabled={students.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-red-950/50 hover:bg-red-900/80 text-red-300 border border-red-800/60 hover:border-red-700 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed min-h-[44px]"
+                title="બધા અથવા ફિલ્ટર કરેલા વિદ્યાર્થીઓ કાઢી નાખો (Delete All / Bulk Delete)"
+              >
+                <Trash2 className="w-4 h-4 text-red-400" />
+                <span>બધા કાઢી નાખો</span>
+              </button>
+
+              {/* View Layout Toggle Button */}
+              <div className="flex items-center p-1 bg-slate-900 border border-slate-700 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setViewLayout('cards')}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    isCardView ? 'bg-[#9d512d] text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="કાર્ડ વ્યુ"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewLayout('table')}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    !isCardView ? 'bg-[#9d512d] text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="કોષ્ટક વ્યુ"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1230,174 +1436,184 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm text-slate-200">
-              <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-white/10 text-[11px]">
-                <tr>
-                  <th className="px-4 py-3.5 w-10 text-center">
-                    <button
-                      type="button"
-                      onClick={handleToggleSelectAll}
-                      className="text-slate-400 hover:text-white"
-                      title="Select / Deselect all"
-                    >
-                      {selectedStudentIds.size === filteredStudents.length && filteredStudents.length > 0 ? (
-                        <CheckSquare className="w-4 h-4 text-terracotta" />
-                      ) : (
-                        <Square className="w-4 h-4" />
-                      )}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3.5 w-12 text-center">ફોટો</th>
-                  <th className="px-4 py-3.5">વિદ્યાર્થીનું નામ (Name as in GR)</th>
-                  <th className="px-4 py-3.5">G.R. નં</th>
-                  <th className="px-4 py-3.5">ધોરણ & વર્ગ</th>
-                  <th className="px-4 py-3.5">રોલ નં</th>
-                  <th className="px-4 py-3.5">જન્મ તારીખ (DOB)</th>
-                  <th className="px-4 py-3.5">બ્લડ ગ્રૂપ</th>
-                  <th className="px-4 py-3.5">મોબાઈલ</th>
-                  <th className="px-4 py-3.5 text-right">ક્રિયાઓ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filteredStudents.map((st, idx) => {
+          <div>
+            {/* View Mode Bar */}
+            <div className="px-4 py-2.5 bg-slate-950/80 border-b border-white/10 flex items-center justify-between text-xs flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleSelectAll}
+                  className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white font-medium cursor-pointer"
+                >
+                  {selectedStudentIds.size === filteredStudents.length && filteredStudents.length > 0 ? (
+                    <CheckSquare className="w-4 h-4 text-terracotta" />
+                  ) : (
+                    <Square className="w-4 h-4" />
+                  )}
+                  <span>બધા પસંદ ({filteredStudents.length})</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 p-0.5 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setViewLayout('cards')}
+                  className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                    isCardView ? 'bg-[#9d512d] text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="કાર્ડ વ્યુ (મોબાઇલ માટે સરળ)"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>કાર્ડ્સ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewLayout('table')}
+                  className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                    !isCardView ? 'bg-[#9d512d] text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="કોષ્ટક વ્યુ (સંપૂર્ણ વિગતો)"
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span>ટેબલ</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile / Card View */}
+            {isCardView ? (
+              <div className="p-3 sm:p-4 space-y-3">
+                {filteredStudents.map((st) => {
                   const isSelected = selectedStudentIds.has(st.id);
                   const stdClean = String(st.standard).replace(/^class\s*/i, '').trim();
+                  const cleanBg = cleanAndNormalizeBloodGroup(st.bloodGroup);
+                  const rawPhone = st.contactNumber || st.mobileNumber || '';
+                  const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
 
                   return (
-                    <tr
+                    <div
                       key={st.id}
-                      className={`hover:bg-slate-850/60 transition-colors ${
-                        isSelected ? 'bg-terracotta/10' : ''
+                      className={`glass-card rounded-2xl border p-3.5 transition-all shadow-xs ${
+                        isSelected
+                          ? 'border-terracotta bg-terracotta/10'
+                          : 'border-white/10 bg-slate-900/90 hover:border-white/20'
                       }`}
                     >
-                      {/* Selection Checkbox */}
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleSelectStudent(st.id)}
-                          className="text-slate-400 hover:text-white"
-                        >
-                          {isSelected ? (
-                            <CheckSquare className="w-4 h-4 text-terracotta" />
-                          ) : (
-                            <Square className="w-4 h-4" />
-                          )}
-                        </button>
-                      </td>
+                      <div className="flex items-start justify-between gap-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          {/* Multi-select Checkbox */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSelectStudent(st.id)}
+                            className="p-1 text-slate-400 hover:text-white shrink-0 cursor-pointer"
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-5 h-5 text-terracotta" />
+                            ) : (
+                              <Square className="w-5 h-5" />
+                            )}
+                          </button>
 
-                      {/* Photo Avatar */}
-                      <td className="px-4 py-3 text-center">
-                        <div
-                          onClick={() => setViewingProfileStudent(st)}
-                          className="w-9 h-11 rounded-lg border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center cursor-pointer shadow-sm mx-auto hover:border-terracotta transition-colors"
-                          title="Click to view profile"
-                        >
-                          {st.photoUrl ? (
-                            <img src={st.photoUrl} alt={st.studentName} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-xs font-bold text-slate-500">
-                              {(st.studentName || 'S').trim().charAt(0)}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Student Name */}
-                      <td className="px-4 py-3">
-                        <div
-                          onClick={() => setViewingProfileStudent(st)}
-                          className="font-bold text-white hover:text-amber-300 cursor-pointer flex items-center gap-1.5 transition-colors"
-                        >
-                          <span>{st.studentName}</span>
-                        </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
-                          {st.fatherName ? `વાલી: ${st.fatherName}` : st.address ? `સરનામું: ${st.address}` : ''}
-                        </div>
-                      </td>
-
-                      {/* GR Number */}
-                      <td className="px-4 py-3 font-mono font-bold text-amber-300 text-xs">
-                        {st.grNumber ? (
-                          <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
-                            {st.grNumber}
-                          </span>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-
-                      {/* Standard & Section */}
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-800 border border-slate-700 text-slate-200">
-                          ધોરણ {stdClean} {st.section || st.division ? `(${st.section || st.division})` : ''}
-                        </span>
-                      </td>
-
-                      {/* Roll Number */}
-                      <td className="px-4 py-3 font-mono text-xs text-slate-300">
-                        {st.rollNumber || '-'}
-                      </td>
-
-                      {/* DOB */}
-                      <td className="px-4 py-3 text-xs text-slate-300 font-mono">
-                        {st.dob || '-'}
-                      </td>
-
-                      {/* Blood Group */}
-                      <td className="px-4 py-3">
-                        {(() => {
-                          const cleanBg = cleanAndNormalizeBloodGroup(st.bloodGroup);
-                          if (cleanBg) {
-                            return (
-                              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-950/60 border border-red-800/60 text-red-300">
-                                {cleanBg}
+                          {/* Photo Avatar */}
+                          <div
+                            onClick={() => setViewingProfileStudent(st)}
+                            className="w-11 h-11 rounded-xl border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
+                          >
+                            {st.photoUrl ? (
+                              <img src={st.photoUrl} alt={st.studentName} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-sm font-bold text-slate-400">
+                                {(st.studentName || 'S').trim().charAt(0)}
                               </span>
-                            );
-                          }
-                          if (st.bloodGroup && st.bloodGroup.trim()) {
-                            return (
-                              <span
-                                className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300"
-                                title={st.bloodGroup}
+                            )}
+                          </div>
+
+                          {/* Student Details */}
+                          <div className="min-w-0 flex-1">
+                            <div
+                              onClick={() => setViewingProfileStudent(st)}
+                              className="font-bold text-white text-sm truncate hover:text-amber-300 cursor-pointer leading-tight"
+                            >
+                              {st.studentName}
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-200 border border-slate-700">
+                                ધો. {stdClean} {st.section || st.division ? `(${st.section || st.division})` : ''}
+                              </span>
+                              {st.rollNumber && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-300 bg-slate-800/80">
+                                  રોલ: {st.rollNumber}
+                                </span>
+                              )}
+                              {st.grNumber && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-amber-300 bg-slate-950 border border-slate-800">
+                                  GR: {st.grNumber}
+                                </span>
+                              )}
+                              {cleanBg && (
+                                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold text-red-300 bg-red-950/60 border border-red-800/60">
+                                  {cleanBg}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Father / Address subtitle if present */}
+                      {(st.fatherName || st.address) && (
+                        <div className="text-[11px] text-slate-400 mt-2 pl-9 truncate">
+                          {st.fatherName ? `વાલી: ${st.fatherName}` : `સરનામું: ${st.address}`}
+                        </div>
+                      )}
+
+                      {/* Card Actions Bottom Strip */}
+                      <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between gap-1 text-xs">
+                        {/* Quick Call / WhatsApp */}
+                        <div className="flex items-center gap-1.5">
+                          {cleanPhone ? (
+                            <>
+                              <a
+                                href={`tel:${cleanPhone}`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800/80 text-emerald-300 font-mono text-[11px]"
+                                title="કૉલ કરો"
                               >
-                                {st.bloodGroup}
-                              </span>
-                            );
-                          }
-                          return <span className="text-slate-500 text-xs">-</span>;
-                        })()}
-                      </td>
+                                <Phone className="w-3 h-3 text-emerald-400" />
+                                <span>{cleanPhone}</span>
+                              </a>
+                              <a
+                                href={`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(`નમસ્તે વાલીશ્રી, ${school.schoolName} તરફથી આપના પાલ્ય ${st.studentName} સંદર્ભે સંદેશ.`)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1 rounded-lg bg-[#25D366]/20 hover:bg-[#25D366]/30 text-[#25D366] border border-[#25D366]/30"
+                                title="WhatsApp મેસેજ"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                              </a>
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-slate-500 italic pl-1">મોબાઈલ નથી</span>
+                          )}
+                        </div>
 
-                      {/* Contact Mobile */}
-                      <td className="px-4 py-3 font-mono text-xs text-emerald-400">
-                        {st.contactNumber || st.mobileNumber || '-'}
-                      </td>
-
-                      {/* Action buttons */}
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* View Profile */}
+                        {/* Action Icons */}
+                        <div className="flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => setViewingProfileStudent(st)}
                             className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-                            title="View Full Profile"
+                            title="વિદ્યાર્થી પ્રોફાઇલ જુઓ"
                           >
                             <Eye className="w-4 h-4 text-emerald-400" />
                           </button>
-
-                          {/* Print Single ID Card */}
                           <button
                             type="button"
                             onClick={() => printStudentIdCards(school, [st])}
                             className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-                            title="Generate ID Card"
+                            title="ID કાર્ડ પ્રિન્ટ"
                           >
                             <CreditCard className="w-4 h-4 text-amber-400" />
                           </button>
-
-                          {/* Quick Edit */}
                           <button
                             type="button"
                             onClick={() => {
@@ -1417,27 +1633,235 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                               });
                             }}
                             className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-                            title="Quick Edit"
+                            title="સુધારો કરો"
                           >
                             <Edit3 className="w-4 h-4 text-blue-400" />
                           </button>
-
-                          {/* Delete */}
                           <button
                             type="button"
                             onClick={() => setDeletingStudent(st)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-colors"
-                            title="Delete Student"
+                            title="કાઢી નાખો"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+            ) : (
+              <div className="overflow-x-auto mobile-table-scroll">
+                <table className="w-full text-left text-xs sm:text-sm text-slate-200">
+                  <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-white/10 text-[11px]">
+                    <tr>
+                      <th className="px-4 py-3.5 w-10 text-center">
+                        <button
+                          type="button"
+                          onClick={handleToggleSelectAll}
+                          className="text-slate-400 hover:text-white"
+                          title="Select / Deselect all"
+                        >
+                          {selectedStudentIds.size === filteredStudents.length && filteredStudents.length > 0 ? (
+                            <CheckSquare className="w-4 h-4 text-terracotta" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      </th>
+                      <th className="px-4 py-3.5 w-12 text-center">ફોટો</th>
+                      <th className="px-4 py-3.5">વિદ્યાર્થીનું નામ (Name as in GR)</th>
+                      <th className="px-4 py-3.5">G.R. નં</th>
+                      <th className="px-4 py-3.5">ધોરણ & વર્ગ</th>
+                      <th className="px-4 py-3.5">રોલ નં</th>
+                      <th className="px-4 py-3.5">જન્મ તારીખ (DOB)</th>
+                      <th className="px-4 py-3.5">બ્લડ ગ્રૂપ</th>
+                      <th className="px-4 py-3.5">મોબાઈલ</th>
+                      <th className="px-4 py-3.5 text-right">ક્રિયાઓ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredStudents.map((st, idx) => {
+                      const isSelected = selectedStudentIds.has(st.id);
+                      const stdClean = String(st.standard).replace(/^class\s*/i, '').trim();
+
+                      return (
+                        <tr
+                          key={st.id}
+                          className={`hover:bg-slate-850/60 transition-colors ${
+                            isSelected ? 'bg-terracotta/10' : ''
+                          }`}
+                        >
+                          {/* Selection Checkbox */}
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSelectStudent(st.id)}
+                              className="text-slate-400 hover:text-white"
+                            >
+                              {isSelected ? (
+                                <CheckSquare className="w-4 h-4 text-terracotta" />
+                              ) : (
+                                <Square className="w-4 h-4" />
+                              )}
+                            </button>
+                          </td>
+
+                          {/* Photo Avatar */}
+                          <td className="px-4 py-3 text-center">
+                            <div
+                              onClick={() => setViewingProfileStudent(st)}
+                              className="w-9 h-11 rounded-lg border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center cursor-pointer shadow-sm mx-auto hover:border-terracotta transition-colors"
+                              title="Click to view profile"
+                            >
+                              {st.photoUrl ? (
+                                <img src={st.photoUrl} alt={st.studentName} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-xs font-bold text-slate-500">
+                                  {(st.studentName || 'S').trim().charAt(0)}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Student Name */}
+                          <td className="px-4 py-3">
+                            <div
+                              onClick={() => setViewingProfileStudent(st)}
+                              className="font-bold text-white hover:text-amber-300 cursor-pointer flex items-center gap-1.5 transition-colors"
+                            >
+                              <span>{st.studentName}</span>
+                            </div>
+                            <div className="text-[11px] text-slate-400 mt-0.5">
+                              {st.fatherName ? `વાલી: ${st.fatherName}` : st.address ? `સરનામું: ${st.address}` : ''}
+                            </div>
+                          </td>
+
+                          {/* GR Number */}
+                          <td className="px-4 py-3 font-mono font-bold text-amber-300 text-xs">
+                            {st.grNumber ? (
+                              <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
+                                {st.grNumber}
+                              </span>
+                            ) : (
+                              '-'
+                            )}
+                          </td>
+
+                          {/* Standard & Section */}
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-800 border border-slate-700 text-slate-200">
+                              ધોરણ {stdClean} {st.section || st.division ? `(${st.section || st.division})` : ''}
+                            </span>
+                          </td>
+
+                          {/* Roll Number */}
+                          <td className="px-4 py-3 font-mono text-xs text-slate-300">
+                            {st.rollNumber || '-'}
+                          </td>
+
+                          {/* DOB */}
+                          <td className="px-4 py-3 text-xs text-slate-300 font-mono">
+                            {st.dob || '-'}
+                          </td>
+
+                          {/* Blood Group */}
+                          <td className="px-4 py-3">
+                            {(() => {
+                              const cleanBg = cleanAndNormalizeBloodGroup(st.bloodGroup);
+                              if (cleanBg) {
+                                return (
+                                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-950/60 border border-red-800/60 text-red-300">
+                                    {cleanBg}
+                                  </span>
+                                );
+                              }
+                              if (st.bloodGroup && st.bloodGroup.trim()) {
+                                return (
+                                  <span
+                                    className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300"
+                                    title={st.bloodGroup}
+                                  >
+                                    {st.bloodGroup}
+                                  </span>
+                                );
+                              }
+                              return <span className="text-slate-500 text-xs">-</span>;
+                            })()}
+                          </td>
+
+                          {/* Contact Mobile */}
+                          <td className="px-4 py-3 font-mono text-xs text-emerald-400">
+                            {st.contactNumber || st.mobileNumber || '-'}
+                          </td>
+
+                          {/* Action buttons */}
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* View Profile */}
+                              <button
+                                type="button"
+                                onClick={() => setViewingProfileStudent(st)}
+                                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                                title="View Full Profile"
+                              >
+                                <Eye className="w-4 h-4 text-emerald-400" />
+                              </button>
+
+                              {/* Print Single ID Card */}
+                              <button
+                                type="button"
+                                onClick={() => printStudentIdCards(school, [st])}
+                                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                                title="Generate ID Card"
+                              >
+                                <CreditCard className="w-4 h-4 text-amber-400" />
+                              </button>
+
+                              {/* Quick Edit */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingStudent(st);
+                                  setEditForm({
+                                    studentName: st.studentName,
+                                    standard: st.standard,
+                                    grNumber: st.grNumber,
+                                    section: st.section || st.division,
+                                    rollNumber: st.rollNumber,
+                                    dob: st.dob,
+                                    bloodGroup: cleanAndNormalizeBloodGroup(st.bloodGroup) || '',
+                                    contactNumber: st.contactNumber || st.mobileNumber,
+                                    diseCode: st.diseCode || st.studentStateCode || '',
+                                    studentStateCode: st.studentStateCode || st.diseCode || '',
+                                    aadhaarNo: st.aadhaarNo || '',
+                                  });
+                                }}
+                                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                                title="Quick Edit"
+                              >
+                                <Edit3 className="w-4 h-4 text-blue-400" />
+                              </button>
+
+                              {/* Delete */}
+                              <button
+                                type="button"
+                                onClick={() => setDeletingStudent(st)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-colors"
+                                title="Delete Student"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

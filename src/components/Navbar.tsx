@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { School } from '../types';
 import {
+  ArrowLeft,
   School as SchoolIcon,
   LogOut,
   ShieldCheck,
@@ -21,14 +22,20 @@ import {
   ClipboardList,
   KeyRound,
   MessageSquare,
+  UserPlus,
+  Smartphone,
+  Monitor,
+  RotateCcw,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { VidyalayamLogo } from './VidyalayamLogo';
+import { useDeviceType } from '../utils/useDeviceType';
 
 export type ActiveTabType =
   | 'overview'
   | 'students'
+  | 'admissions'
   | 'staff'
   | 'marks'
   | 'exams'
@@ -47,6 +54,8 @@ interface NavbarProps {
   onLogout: () => void;
   activeTab: ActiveTabType;
   setActiveTab: (tab: ActiveTabType) => void;
+  canGoBack?: boolean;
+  onBack?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -54,7 +63,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   activeTab,
   setActiveTab,
+  canGoBack = false,
+  onBack,
 }) => {
+  const device = useDeviceType();
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -138,6 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const mainTabs: { id: ActiveTabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'ડેશબોર્ડ', icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
     { id: 'students', label: 'વિદ્યાર્થીઓ', icon: <Users className="w-3.5 h-3.5" /> },
+    { id: 'admissions', label: 'નવા પ્રવેશ', icon: <UserPlus className="w-3.5 h-3.5 text-blue-500" /> },
     { id: 'staff', label: 'સ્ટાફ', icon: <UserCheck className="w-3.5 h-3.5" /> },
     { id: 'exams', label: 'પરીક્ષાઓ & કસોટી', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'online_exams', label: '📝 ઓનલાઇન MCQ', icon: <FileText className="w-3.5 h-3.5 text-emerald-400" /> },
@@ -172,8 +185,41 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="text-[#635848]/40 dark:text-[#a99f91]/40 hidden sm:inline">•</span>
           <span className="text-[#9d512d] dark:text-[#f59c73] font-semibold text-[10px] sm:text-xs hidden sm:inline">by NRChad</span>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <span className="bg-white dark:bg-[#202d38] text-[#141d24] dark:text-[#e4ded6] border border-[#d8d0c5] dark:border-white/15 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono shadow-xs">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* Active device indicator & manual toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              const next =
+                device.viewMode === 'mobile'
+                  ? 'desktop'
+                  : device.viewMode === 'desktop'
+                  ? 'auto'
+                  : device.isMobile
+                  ? 'desktop'
+                  : 'mobile';
+              device.setViewMode(next);
+            }}
+            className="inline-flex items-center gap-1 bg-white/80 dark:bg-[#202d38] text-[#141d24] dark:text-[#e4ded6] border border-[#d8d0c5] dark:border-white/15 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold shadow-xs cursor-pointer hover:border-[#9d512d] transition-all"
+            title={`મોડ: ${device.effectiveType === 'mobile' ? 'મોબાઇલ ઓપ્ટિમાઇઝ્ડ' : 'ડેસ્કટોપ મોડ'} (${device.viewMode === 'auto' ? 'ઓટો ડિવાઇસ' : 'મેન્યુઅલ'}). ક્લિક કરીને બદલો.`}
+          >
+            {device.effectiveType === 'mobile' ? (
+              <>
+                <Smartphone className="w-3 h-3 text-[#9d512d] dark:text-[#f59c73]" />
+                <span>મોબાઇલ</span>
+              </>
+            ) : (
+              <>
+                <Monitor className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <span>ડેસ્કટોપ</span>
+              </>
+            )}
+            {device.viewMode !== 'auto' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#9d512d] animate-pulse"></span>
+            )}
+          </button>
+
+          <span className="bg-white dark:bg-[#202d38] text-[#141d24] dark:text-[#e4ded6] border border-[#d8d0c5] dark:border-white/15 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono shadow-xs hidden xs:inline">
             ગુજરાત શાળાઓ
           </span>
           <ThemeToggle compact className="ml-1" />
@@ -210,8 +256,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {school ? (
           <>
-            {/* Desktop Navigation Menu (Visible on lg screens) */}
+            {/* Desktop Navigation Menu (Visible on lg screens >= 1024px) */}
             <div className="hidden lg:flex items-center gap-2 shrink-0">
+              {canGoBack && onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/80 dark:bg-white/5 hover:bg-[#ede8e0] dark:hover:bg-white/10 text-[#141d24] dark:text-[#e4ded6] border border-[#d8d0c5] dark:border-white/10 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 touch-manipulation min-h-[38px]"
+                  title="પાછળના મેનુ પર જાઓ (Go Back)"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
+                  <span>પાછળ</span>
+                </button>
+              )}
+
               <nav className="flex items-center bg-[#ede8e0]/80 dark:bg-white/5 p-1 rounded-2xl border border-[#d8d0c5] dark:border-white/10 text-xs shrink-0">
                 {mainTabs.map((tab) => {
                   const isActive = activeTab === tab.id;
@@ -227,6 +285,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                     >
                       {tab.icon}
                       <span>{tab.label}</span>
+                      {tab.id === 'admissions' && school?.admissionSettings?.isOpen && (
+                        <span className="bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter animate-pulse shadow-xs">
+                          OPEN
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -304,7 +367,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title="શાળા પાસવર્ડ બદલો (Change Password)"
                 >
                   <KeyRound className="w-3.5 h-3.5" />
-                  <span className="hidden xl:inline">પાસવર્ડ બદલો</span>
+                  <span className="hidden 2xl:inline">પાસવર્ડ</span>
                 </button>
               )}
 
@@ -319,13 +382,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
-            {/* Mobile / Tablet Header Controls (Visible on < lg) */}
+            {/* Mobile / Tablet Header Controls (Visible on < lg screens) */}
             <div className="flex lg:hidden items-center gap-1 sm:gap-1.5 shrink-0">
-              {/* Quick Mobile Access Button: Students */}
+              {canGoBack && onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[#ede8e0] hover:bg-[#dfd7cc] dark:bg-white/10 dark:hover:bg-white/15 text-[#141d24] dark:text-[#e4ded6] border border-[#d8d0c5] dark:border-white/15 transition-all cursor-pointer touch-manipulation min-h-[36px] active:scale-95 shadow-xs shrink-0"
+                  title="પાછળના મેનુ પર જાઓ (Go Back)"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
+                  <span className="text-[11px] sm:text-xs">પાછળ</span>
+                </button>
+              )}
+
+              {/* Quick Students button on tablets only (>= sm) */}
               <button
                 type="button"
                 onClick={() => handleSelectTab('students')}
-                className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer touch-manipulation min-h-[38px] ${
+                className={`hidden sm:flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer touch-manipulation min-h-[36px] ${
                   activeTab === 'students'
                     ? 'bg-[#9d512d] text-white border-[#9d512d] shadow-sm'
                     : 'bg-white dark:bg-white/5 hover:bg-[#ede8e0] dark:hover:bg-white/10 text-[#141d24] dark:text-white border-[#d8d0c5] dark:border-white/15'
@@ -333,29 +408,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="વિદ્યાર્થીઓ"
               >
                 <Users className={`w-3.5 h-3.5 ${activeTab === 'students' ? 'text-white' : 'text-[#9d512d] dark:text-[#f59c73]'}`} />
-                <span className="text-[11px] sm:text-xs">વિદ્યાર્થી</span>
-              </button>
-
-              {/* Quick Mobile Access Button: Staff */}
-              <button
-                type="button"
-                onClick={() => handleSelectTab('staff')}
-                className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer touch-manipulation min-h-[38px] ${
-                  activeTab === 'staff'
-                    ? 'bg-[#9d512d] text-white border-[#9d512d] shadow-sm'
-                    : 'bg-white dark:bg-white/5 hover:bg-[#ede8e0] dark:hover:bg-white/10 text-[#141d24] dark:text-white border-[#d8d0c5] dark:border-white/15'
-                }`}
-                title="સ્ટાફ"
-              >
-                <UserCheck className={`w-3.5 h-3.5 ${activeTab === 'staff' ? 'text-white' : 'text-[#9d512d] dark:text-[#f59c73]'}`} />
-                <span className="text-[11px] sm:text-xs">સ્ટાફ</span>
+                <span className="text-[11px] sm:text-xs">વિદ્યાર્થીઓ</span>
               </button>
 
               {/* Mobile Drawer Menu Button */}
               <button
                 type="button"
                 onClick={() => setMobileDrawerOpen((prev) => !prev)}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer touch-manipulation min-h-[38px] ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer touch-manipulation min-h-[36px] ${
                   mobileDrawerOpen
                     ? 'bg-[#9d512d] text-white border-[#f59c73]/40 shadow-lg'
                     : 'bg-white dark:bg-white/5 hover:bg-[#ede8e0] dark:hover:bg-white/10 text-[#141d24] dark:text-white border-[#d8d0c5] dark:border-white/15'
@@ -373,7 +433,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onLogout}
-                className="p-2 rounded-xl bg-white dark:bg-white/5 hover:bg-rose-50 dark:hover:bg-rose-950/60 text-[#635848] dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-300 border border-[#d8d0c5] dark:border-white/15 transition-all cursor-pointer touch-manipulation min-h-[38px] flex items-center justify-center shadow-xs"
+                className="p-1.5 sm:p-2 rounded-xl bg-white dark:bg-white/5 hover:bg-rose-50 dark:hover:bg-rose-950/60 text-[#635848] dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-300 border border-[#d8d0c5] dark:border-white/15 transition-all cursor-pointer touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center shadow-xs shrink-0"
                 title="Logout"
               >
                 <LogOut className="w-4 h-4" />
@@ -419,6 +479,55 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Drawer Menu Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-12 bg-[#f7f5f0] dark:bg-[#0c1219]">
+              {/* Device Mode Switcher */}
+              <div className="p-3 rounded-2xl bg-white dark:bg-white/[0.04] border border-[#d8d0c5] dark:border-white/10 shadow-xs space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-[#9d512d] dark:text-[#f59c73] uppercase tracking-wider text-[11px]">
+                    ડિસ્પ્લે / ડિવાઇસ મોડ (Device View)
+                  </span>
+                  <span className="text-[10px] text-stone-500 font-mono">
+                    {device.screenWidth}px ({device.deviceType})
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-black/5 dark:bg-black/40">
+                  <button
+                    type="button"
+                    onClick={() => device.setViewMode('mobile')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+                      device.viewMode === 'mobile'
+                        ? 'bg-[#9d512d] text-white shadow-sm'
+                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>મોબાઇલ</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => device.setViewMode('desktop')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+                      device.viewMode === 'desktop'
+                        ? 'bg-[#9d512d] text-white shadow-sm'
+                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Monitor className="w-3.5 h-3.5" />
+                    <span>ડેસ્કટોપ</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => device.setViewMode('auto')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+                      device.viewMode === 'auto'
+                        ? 'bg-[#9d512d] text-white shadow-sm'
+                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>ઓટો</span>
+                  </button>
+                </div>
+              </div>
               {/* Quick Profile Access */}
               <div className="p-3.5 rounded-2xl bg-white dark:bg-white/[0.04] border border-[#d8d0c5] dark:border-white/10 flex items-center justify-between shadow-xs">
                 <div className="min-w-0">
@@ -457,7 +566,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </span>
                           <span className="text-sm font-semibold">{tab.label}</span>
                         </div>
-                        {isActive && <span className="w-2.5 h-2.5 rounded-full bg-white shadow-sm" />}
+                        <div className="flex items-center gap-1.5">
+                          {tab.id === 'admissions' && school?.admissionSettings?.isOpen && (
+                            <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse shadow-xs">
+                              OPEN
+                            </span>
+                          )}
+                          {isActive && <span className="w-2.5 h-2.5 rounded-full bg-white shadow-sm" />}
+                        </div>
                       </button>
                     );
                   })}

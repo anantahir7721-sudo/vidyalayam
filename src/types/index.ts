@@ -26,6 +26,49 @@ export interface School {
   temporaryPassword?: string; // Admin-issued temporary password
   mustResetPassword?: boolean; // Set to true when temporary password is issued
   temporaryPasswordCreatedAt?: string;
+  admissionSettings?: SchoolAdmissionSettings;
+}
+
+export interface SchoolAdmissionSettings {
+  isOpen: boolean; // whether admission is currently open
+  mode: 'open' | 'closed' | 'date_range';
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD (optional, if omitted open indefinitely)
+  instructions?: string; // Instructions for parents/students
+  allowedStandards?: string[]; // e.g. ['9', '10', '11', '12']
+  updatedAt?: string;
+}
+
+export interface AdmissionApplication {
+  id: string;
+  schoolId: string;
+  schoolDiseCode: string;
+  schoolName: string;
+  studentName: string; // As written in LC
+  photoUrl?: string; // Base64 compressed photo
+  admissionStandard: string; // 9, 10, 11, 12
+  childUid: string; // 18-digit UDISE child UID / Student DISE (Required)
+  dob: string; // Birthdate YYYY-MM-DD or DD/MM/YYYY (Required)
+  motherName: string; // Mata nu naam
+  gender: 'Boy' | 'Girl' | 'Other' | string;
+  bloodGroup: string; // A+, A-, B+, B-, O+, O-, AB+, AB-, 'ખબર નથી' / "Don't know"
+  category: 'OBC' | 'SC' | 'ST' | 'Others' | string;
+  contactNumber: string; // Vaalina nambar (10 digits)
+  address: string;
+  // Academic & Physical details
+  previousYearTotalDays?: string | number; // Gaya varshna Hajar divas: __ mathi ___ (kull divas)
+  previousYearPresentDays?: string | number; // Gaya varshna Hajar divas: hajar divas
+  previousYearPercentage?: string | number; // Gaya varshna Taka
+  height?: string | number; // Height in cm
+  weight?: string | number; // Weight in kg
+  // Status and processing
+  status: 'pending' | 'approved' | 'rejected';
+  admissionDate?: string; // Entered by school on acceptance (DOA)
+  createdStudentId?: string; // ID of student created upon acceptance
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt?: string;
+  reviewedAt?: string;
 }
 
 export interface AdminRecord {
@@ -69,6 +112,13 @@ export interface Student {
   studentStateCode?: string; // Col 61 in UDISE+ / AadhaarUID in CTS
   cwsnDisability?: string; // Disability details from Col 22, 23-25
   medium?: string; // Medium of instruction from Col 43
+  // Extended Academic History & Physical Details (Admissions & UDISE+)
+  previousYearTotalDays?: string | number; // ગત વર્ષના કુલ શાળા દિવસો
+  previousYearPresentDays?: string | number; // ગત વર્ષના હાજર દિવસો
+  previousYearPercentage?: string | number; // ગત વર્ષના ટકા
+  height?: string | number; // ઊંચાઈ (cm)
+  weight?: string | number; // વજન (kg)
+  admissionApplicationId?: string; // Linked online admission application if admitted via portal
 }
 
 export interface Staff {

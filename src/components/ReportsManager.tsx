@@ -77,6 +77,12 @@ export const ReportsManager: React.FC<ReportsManagerProps> = ({
       'માતાનો વ્યવસાય': s.motherOccupation || '-',
       'જન્મ સ્થળ': s.placeOfBirth || '-',
       'રહેઠાણનું સરનામું': s.address || '-',
+      'ગત વર્ષના હાજર દિવસ': s.previousYearPresentDays
+        ? `${s.previousYearPresentDays} / ${s.previousYearTotalDays || 220}`
+        : '-',
+      'ગત વર્ષના ટકા (%)': s.previousYearPercentage ? `${s.previousYearPercentage}%` : '-',
+      'ઊંચાઈ (Height cm)': s.height ? `${s.height} cm` : '-',
+      'વજન (Weight kg)': s.weight ? `${s.weight} kg` : '-',
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -361,10 +367,11 @@ export const ReportsManager: React.FC<ReportsManagerProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white transition-colors cursor-pointer active:scale-95"
+          title="પાછળના મેનુ પર જાઓ (Go Back)"
         >
           <ArrowLeft className="w-4 h-4 text-[#f59c73]" />
-          <span>ડેશબોર્ડ પર પાછા જાઓ (Back to Dashboard)</span>
+          <span>પાછળ જાઓ (Go Back)</span>
         </button>
 
         <div className="flex items-center gap-2">

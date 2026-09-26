@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Navbar, ActiveTabType } from './components/Navbar';
 import { AuthScreen } from './components/AuthScreen';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -17,6 +17,7 @@ import { ParentMessagingManager } from './components/ParentMessagingManager';
 import { ReportsManager } from './components/ReportsManager';
 import { SchoolProfileManager } from './components/SchoolProfileManager';
 import { OnlineExamManager } from './components/OnlineExamManager';
+import { AdmissionManager } from './components/AdmissionManager';
 import { StudentPortal } from './components/StudentPortal';
 import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
 
@@ -60,8 +61,67 @@ export default function App() {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
 
-  // Active Navigation Tab (Defaults directly to 'students' for fast school workflow)
-  const [activeTab, setActiveTab] = useState<ActiveTabType>('overview');
+  // Active Navigation Tab History Stack (enables one-by-one seamless step back)
+  const [tabHistory, setTabHistory] = useState<ActiveTabType[]>(['overview']);
+  const activeTab: ActiveTabType = tabHistory[tabHistory.length - 1] || 'overview';
+  const isInternalPopRef = useRef(false);
+
+  // Synchronize with browser / mobile hardware Back Button (popstate)
+  useEffect(() => {
+    try {
+      window.history.replaceState({ tab: 'overview' }, '');
+    } catch (e) {
+      // ignore in environments where history API might be restricted
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      if (isInternalPopRef.current) {
+        isInternalPopRef.current = false;
+        return;
+      }
+      setTabHistory((prev) => {
+        if (prev.length > 1) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateToTab = useCallback((newTab: ActiveTabType, replace = false) => {
+    setTabHistory((prev) => {
+      const current = prev[prev.length - 1];
+      if (current === newTab) return prev; // Do not push consecutive duplicate tabs
+
+      if (replace) {
+        const next = [...prev.slice(0, -1), newTab];
+        try {
+          window.history.replaceState({ tab: newTab }, '');
+        } catch (e) {}
+        return next;
+      }
+
+      const next = [...prev, newTab];
+      try {
+        window.history.pushState({ tab: newTab }, '');
+      } catch (e) {}
+      return next;
+    });
+  }, []);
+
+  const navigateBack = useCallback(() => {
+    setTabHistory((prev) => {
+      if (prev.length <= 1) return prev;
+      try {
+        isInternalPopRef.current = true;
+        window.history.back();
+      } catch (e) {}
+      return prev.slice(0, -1);
+    });
+  }, []);
 
   // Listen for Firebase Auth state changes and determine Admin vs School role
   useEffect(() => {
@@ -303,10 +363,12 @@ export default function App() {
           school={school}
           onLogout={handleLogout}
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={(tab) => navigateToTab(tab)}
+          canGoBack={tabHistory.length > 1 || activeTab !== 'overview'}
+          onBack={navigateBack}
         />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 lg:pb-8">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 lg:pb-8">
           {dataLoading && (
             <div className="mb-4 glass-card border border-white/10 px-4 py-2 rounded-2xl text-xs text-emerald-400 flex items-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -320,7 +382,7 @@ export default function App() {
               students={students}
               marks={marks}
               staffList={staffList}
-              onNavigate={(tab) => setActiveTab(tab)}
+              onNavigate={(tab) => navigateToTab(tab)}
               onStudentUpdated={() => loadSchoolData()}
             />
           )}
@@ -331,6 +393,16 @@ export default function App() {
               schoolId={school.id}
               students={students}
               onRefresh={loadSchoolData}
+              onBack={navigateBack}
+            />
+          )}
+
+          {activeTab === 'admissions' && (
+            <AdmissionManager
+              school={school}
+              onBack={navigateBack}
+              onRefresh={loadSchoolData}
+              onNavigateToStudents={() => navigateToTab('students')}
             />
           )}
 
@@ -338,8 +410,8 @@ export default function App() {
             <StaffManager
               schoolId={school.id}
               school={school}
-              onBack={() => setActiveTab('overview')}
-              onGenerateIdCard={() => setActiveTab('idcards')}
+              onBack={navigateBack}
+              onGenerateIdCard={() => navigateToTab('idcards')}
             />
           )}
 
@@ -348,9 +420,9 @@ export default function App() {
               school={school}
               students={students}
               marks={marks}
-              onBack={() => setActiveTab('overview')}
+              onBack={navigateBack}
               onRefresh={loadSchoolData}
-              onNavigateToResults={() => setActiveTab('results')}
+              onNavigateToResults={() => navigateToTab('results')}
               initialSubView="ekam_kasoti"
             />
           )}
@@ -360,9 +432,9 @@ export default function App() {
               school={school}
               students={students}
               marks={marks}
-              onBack={() => setActiveTab('overview')}
+              onBack={navigateBack}
               onRefresh={loadSchoolData}
-              onNavigateToResults={() => setActiveTab('results')}
+              onNavigateToResults={() => navigateToTab('results')}
               initialSubView="overview"
             />
           )}
@@ -371,7 +443,7 @@ export default function App() {
             <OnlineExamManager
               school={school}
               students={students}
-              onBack={() => setActiveTab('overview')}
+              onBack={navigateBack}
             />
           )}
 
@@ -380,8 +452,8 @@ export default function App() {
               school={school}
               students={students}
               marks={marks}
-              onBack={() => setActiveTab('overview')}
-              onNavigateToMarks={() => setActiveTab('exams')}
+              onBack={navigateBack}
+              onNavigateToMarks={() => navigateToTab('exams')}
             />
           )}
 
@@ -390,7 +462,7 @@ export default function App() {
               school={school}
               students={students}
               marks={marks}
-              onBack={() => setActiveTab('overview')}
+              onBack={navigateBack}
               onRefresh={loadSchoolData}
             />
           )}
@@ -400,7 +472,7 @@ export default function App() {
               school={school}
               students={students}
               staffList={staffList}
-              onBack={() => setActiveTab('overview')}
+              onBack={navigateBack}
             />
           )}
 
@@ -408,7 +480,7 @@ export default function App() {
             <CertificatesManager
               school={school}
               students={students}
-              onBack={() => setActiveTab('overview')}
+              onBack={navigateBack}
             />
           )}
 
@@ -418,7 +490,7 @@ export default function App() {
               students={students}
               marks={marks}
               staffList={staffList}
-              onBack={() => setActiveTab('overview')}
+              onBack={navigateBack}
             />
           )}
 
@@ -426,18 +498,22 @@ export default function App() {
             <SchoolProfileManager
               school={school}
               onProfileUpdated={(updated) => setSchool((prev) => prev ? { ...prev, ...updated } : prev)}
-              onBack={() => setActiveTab('overview')}
+              onBack={navigateBack}
             />
           )}
 
           {activeTab === 'subjects' && (
             <SubjectManager
               school={school}
+              onBack={navigateBack}
             />
           )}
 
           {activeTab === 'security' && (
-            <SecurityAuditor school={school} />
+            <SecurityAuditor
+              school={school}
+              onBack={navigateBack}
+            />
           )}
         </main>
 

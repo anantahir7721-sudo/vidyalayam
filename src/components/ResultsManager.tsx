@@ -765,17 +765,27 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
       {/* Top Banner */}
       <div className="glass-panel rounded-3xl border border-white/10 p-6 shadow-xl relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/25 text-[#f59c73] border border-[#9d512d]/40 mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>ઓટોમેટેડ રિઝલ્ટ કેલ્ક્યુલેટર • GSEB વાર્ષિક પરિણામ ફોર્મ્યુલા</span>
+          <div className="flex items-start gap-4">
+            <button
+              type="button"
+              onClick={onBack}
+              className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-[#e4ded6] hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1"
+              title="પાછળના મેનુ પર જાઓ (Go Back)"
+            >
+              <ArrowLeft className="w-5 h-5 text-[#f59c73]" />
+            </button>
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/25 text-[#f59c73] border border-[#9d512d]/40 mb-2">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>ઓટોમેટેડ રિઝલ્ટ કેલ્ક્યુલેટર • GSEB વાર્ષિક પરિણામ ફોર્મ્યુલા</span>
+              </div>
+              <h2 className="text-2xl font-black text-[#e4ded6] tracking-tight">
+                વાર્ષિક પરિણામ અને પ્રગતિ પત્રક કેન્દ્ર
+              </h2>
+              <p className="text-xs text-[#a99f91] mt-1 max-w-2xl leading-relaxed">
+                પ્રથમ (10%), દ્વિતીય (10%), વાર્ષિક (60%) અને આંતરિક (20%) ગુણભાર મુજબ 100 ગુણમાં રૂપાંતર. ગુજરાત બોર્ડના સત્તાવાર નિયમો મુજબ સિદ્ધિ ગુણ (#) અને આચાર્યશ્રી કૃપા ગુણ (*) ની સચોટ ગણતરી.
+              </p>
             </div>
-            <h2 className="text-2xl font-black text-[#e4ded6] tracking-tight">
-              વાર્ષિક પરિણામ અને પ્રગતિ પત્રક કેન્દ્ર
-            </h2>
-            <p className="text-xs text-[#a99f91] mt-1 max-w-2xl leading-relaxed">
-              પ્રથમ (10%), દ્વિતીય (10%), વાર્ષિક (60%) અને આંતરિક (20%) ગુણભાર મુજબ 100 ગુણમાં રૂપાંતર. ગુજરાત બોર્ડના સત્તાવાર નિયમો મુજબ સિદ્ધિ ગુણ (#) અને આચાર્યશ્રી કૃપા ગુણ (*) ની સચોટ ગણતરી.
-            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -1033,8 +1043,14 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             </div>
           </div>
 
+          {/* Mobile Horizontal Scroll Tip */}
+          <div className="sm:hidden px-3.5 py-2 bg-slate-950/90 text-[11px] text-[#f59c73] flex items-center justify-between border-b border-white/5">
+            <span className="font-semibold">📱 મોબાઇલ ટિપ: વિષયવાર ગુણ અને પરિણામ જોવા ડાબે-જમણે સ્ક્રોલ કરો</span>
+            <span className="text-[10px] text-slate-400 font-mono">↔️ Swipe</span>
+          </div>
+
           {/* Master Table */}
-          <div className="overflow-x-auto max-h-[620px] overflow-y-auto">
+          <div className="overflow-x-auto mobile-table-scroll max-h-[620px] overflow-y-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-900 text-[#a99f91] sticky top-0 z-10 shadow border-b border-slate-800">
                 <tr>
