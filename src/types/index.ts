@@ -27,6 +27,71 @@ export interface School {
   mustResetPassword?: boolean; // Set to true when temporary password is issued
   temporaryPasswordCreatedAt?: string;
   admissionSettings?: SchoolAdmissionSettings;
+  dailyNewsEnabled?: boolean; // Toggle for students to see 5 AM Daily News
+  dailyJanvaJevuEnabled?: boolean; // Toggle for students to see 1 PM Daily GK
+  dailySuvicharEnabled?: boolean; // Toggle for students to see Daily Suvichar
+}
+
+export type NewsCategory = 'kutch' | 'gujarat' | 'india' | 'world' | 'science_education' | 'sports';
+
+export interface NewsItem {
+  id: string;
+  category: NewsCategory;
+  categoryLabel: string;
+  headline: string;
+  summary: string;
+  impact?: string;
+  sourceDate?: string;
+}
+
+export interface DailyNewsBulletin {
+  id: string; // YYYY-MM-DD
+  editionDate: string;
+  dateKey: string;
+  cycleTime: string;
+  nextCycleTime: string;
+  nextUpdateTimeTimestamp: number;
+  items: NewsItem[];
+  morningPrayerShloka?: string;
+}
+
+export interface JanvaJevuQuestion {
+  id: string;
+  questionNumber: number;
+  question: string;
+  answer: string;
+  explanation?: string;
+  subject: string;
+  classStandard: '9' | '10' | '11' | '12' | 'general';
+  isWeeklyCoreRevision?: boolean;
+}
+
+export interface DailyJanvaJevuBulletin {
+  id: string; // YYYY-MM-DD
+  editionDate: string;
+  dateKey: string;
+  cycleTime: string;
+  nextCycleTime: string;
+  nextUpdateTimeTimestamp: number;
+  questions: JanvaJevuQuestion[];
+  suvichar?: string;
+}
+
+export interface DailySuvicharItem {
+  id: string;
+  thought: string; // The inspiring quote / thought
+  authorOrSource: string; // Personality or source
+  explanation: string; // ટૂંકી સમજૂતી
+  example: string; // વ્યવહારિક ઉદાહરણ
+  moralValue: string; // પાયાનું મૂલ્ય
+}
+
+export interface DailySuvicharBulletin {
+  id: string; // YYYY-MM-DD
+  editionDate: string;
+  dateKey: string;
+  cycleTime: string;
+  suvichar: DailySuvicharItem;
 }
 
 export interface SchoolAdmissionSettings {

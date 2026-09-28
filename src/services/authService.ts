@@ -48,72 +48,28 @@ export interface RegisterSchoolParams {
 }
 
 /**
- * Check if a School DISE code is already registered in the system.
- * Enforces that DISE code is strictly unique across all schools.
- * If any school with the same DISE already exists, returns exists: true.
+ * Check if a school with the given DISE Code is already registered.
+ * Returns true if a school document already exists with this DISE code.
  */
-export async function checkSchoolDiseExists(
-  diseCode: string
-): Promise<{ exists: boolean; schoolName?: string; schoolId?: string }> {
+export async function checkSchoolDiseExists(diseCode: string): Promise<boolean> {
   const cleanDise = diseCode.trim();
-  if (!cleanDise) {
-    return { exists: false };
-  }
-
+  if (!cleanDise) return false;
   try {
-    // 1. Check direct DISE reservation document in /dise_registry/{cleanDise}
-    const regRef = doc(db, 'dise_registry', cleanDise);
-    const regSnap = await getDoc(regRef);
-    if (regSnap.exists()) {
-      const regData = regSnap.data();
-      return {
-        exists: true,
-        schoolName: regData?.schoolName || undefined,
-        schoolId: regData?.schoolId || undefined,
-      };
-    }
-
-    // 2. Query /schools collection where diseCode matches cleanDise
-    const q1 = query(collection(db, 'schools'), where('diseCode', '==', cleanDise));
-    const snap1 = await getDocs(q1);
-    if (!snap1.empty) {
-      const sch = snap1.docs[0].data() as School;
-      return {
-        exists: true,
-        schoolName: sch.schoolName || undefined,
-        schoolId: snap1.docs[0].id,
-      };
-    }
-
-    // 3. Normalized check: sanitize spaces / lowercase if user entered formatted code
-    const sanitized = cleanDise.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (sanitized && sanitized !== cleanDise) {
-      const q2 = query(collection(db, 'schools'), where('diseCode', '==', sanitized));
-      const snap2 = await getDocs(q2);
-      if (!snap2.empty) {
-        const sch = snap2.docs[0].data() as School;
-        return {
-          exists: true,
-          schoolName: sch.schoolName || undefined,
-          schoolId: snap2.docs[0].id,
-        };
-      }
-    }
-
-    return { exists: false };
-  } catch (err) {
-    console.warn('Error checking school DISE existence:', err);
-    return { exists: false };
+    const q = query(collection(db, 'schools'), where('diseCode', '==', cleanDise));
+    const snap = await getDocs(q);
+    return !snap.empty;
+  } catch (error) {
+    console.error('Error checking school DISE existence:', error);
+    return false;
   }
 }
 
 /**
  * Register a new school:
- * 1. Verifies that the DISE Code is globally unique (rejects duplicates immediately)
+ * 1. Checks if a school with this DISE Code is already registered
  * 2. Creates Firebase Auth user using DISE Code identifier + Password
  * 3. Writes the school profile document to Firestore at /schools/{uid} with status: "pending"
- * 4. Records the DISE reservation in /dise_registry/{diseCode}
- * 5. Saves password securely in Firestore
+ * 4. Saves password securely in Firestore
  */
 export async function registerSchool({
   schoolName,
@@ -133,23 +89,22 @@ export async function registerSchool({
     throw new Error('Password must be at least 6 characters long.');
   }
 
-  // 1. Mandatory Pre-check: Verify DISE Code is strictly unique before attempting registration
-  const diseCheck = await checkSchoolDiseExists(cleanDise);
-  if (diseCheck.exists) {
-    const schoolLabel = diseCheck.schoolName ? ` ("${diseCheck.schoolName}")` : '';
+  // Strictly enforce DISE Code uniqueness: if any school with this DISE already exists, reject registration
+  const diseAlreadyExists = await checkSchoolDiseExists(cleanDise);
+  if (diseAlreadyExists) {
     throw new Error(
-      `આ ડાયસ કોડ (${cleanDise}) ધરાવતી શાળા${schoolLabel} પહેલેથી જ સિસ્ટમમાં નોંધાયેલી છે. એક જ ડાયસ કોડ પર બે શાળાઓ નોંધાઈ શકતી નથી. કૃપા કરીને 'DISE Code Login' દ્વારા લૉગિન કરો.`
+      `આ DISE કોડ (${cleanDise}) ધરાવતી શાળા પહેલેથી જ રજીસ્ટર થયેલી છે. તમે પહેલેથી રજીસ્ટર થયેલા DISE કોડ સાથે નવી શાળા રજીસ્ટર કરી શકતા નથી. કૃપા કરીને લૉગિન કરો. (A school with DISE Code "${cleanDise}" is already registered. You cannot register a school with that same DISE.)`
     );
   }
 
   const email = diseCodeToAuthEmail(cleanDise);
 
   try {
-    // 2. Create user in Firebase Authentication
+    // 1. Create user in Firebase Authentication
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     const user = credential.user;
 
-    // 3. Prepare the school document directly bound to user.uid with status: "pending"
+    // 2. Prepare the school document directly bound to user.uid with status: "pending"
     const schoolData: School = {
       id: user.uid,
       ownerUid: user.uid,
@@ -164,29 +119,15 @@ export async function registerSchool({
       mustResetPassword: false,
     };
 
-    // 4. Save to Firestore under /schools/{uid}
+    // 3. Save to Firestore under /schools/{uid}
     const schoolDocRef = doc(db, 'schools', user.uid);
     await setDoc(schoolDocRef, schoolData);
-
-    // 5. Reserve DISE code in /dise_registry/{cleanDise} to lock uniqueness
-    try {
-      const regRef = doc(db, 'dise_registry', cleanDise);
-      await setDoc(regRef, {
-        diseCode: cleanDise,
-        schoolId: user.uid,
-        schoolName: schoolName.trim(),
-        district: district.trim() || 'Gujarat',
-        registeredAt: new Date().toISOString(),
-      });
-    } catch (regErr) {
-      console.warn('Note on dise_registry setDoc:', regErr);
-    }
 
     return { user, school: schoolData };
   } catch (error: any) {
     if (error.code === 'auth/email-already-in-use') {
       throw new Error(
-        `આ ડાયસ કોડ (${cleanDise}) ધરાવતી શાળા પહેલેથી જ સિસ્ટમમાં નોંધાયેલી છે. એક જ ડાયસ કોડથી ફરીથી નવી શાળા નોંધણી શક્ય નથી. કૃપા કરીને લૉગિન કરો.`
+        `આ DISE કોડ (${cleanDise}) ધરાવતી શાળા પહેલેથી જ રજીસ્ટર થયેલી છે. તમે પહેલેથી રજીસ્ટર થયેલા DISE કોડ સાથે નવી શાળા રજીસ્ટર કરી શકતા નથી. કૃપા કરીને લૉગિન કરો. (A school with DISE Code "${cleanDise}" is already registered. You cannot register a school with that same DISE.)`
       );
     } else if (error.code === 'auth/weak-password') {
       throw new Error('Password must be at least 6 characters.');

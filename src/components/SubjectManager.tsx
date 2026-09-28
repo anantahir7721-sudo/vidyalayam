@@ -254,10 +254,10 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>વિષય અને વિભાગ સંચાલન (Subject & Section Management)</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
                 ધોરણ વાર વિષય વ્યવસ્થાપન
               </h2>
-              <p className="text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+              <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
                 દરેક ધોરણ માટે અલગ વિષયો અને તેમના વિભાગો (Sections) તથા મહત્તમ ગુણ નિયત કરો. એક ધોરણમાં ઉમેરેલ વિષય બીજા ધોરણમાં દેખાશે નહીં.
               </p>
             </div>
@@ -322,8 +322,8 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
                       <BookOpen className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-base text-white">{sub.name}</h4>
-                      <div className="text-xs text-slate-400">{sub.englishName}</div>
+                      <h4 className="font-bold text-base text-slate-900 dark:text-white">{sub.name}</h4>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{sub.englishName}</div>
                     </div>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-cyan-950/80 text-cyan-300 border border-cyan-800/80 shrink-0">
@@ -371,9 +371,9 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
                       <Layers className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-base text-white">{sub.subjectName}</h4>
+                      <h4 className="font-bold text-base text-slate-900 dark:text-white">{sub.subjectName}</h4>
                       {sub.englishName && (
-                        <div className="text-xs text-slate-400">{sub.englishName}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{sub.englishName}</div>
                       )}
                     </div>
                   </div>
@@ -438,10 +438,10 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
 
         {/* Empty State when no subjects exist */}
         {installedSubjects.length === 0 && customSubjects.length === 0 && (
-          <div className="glass-card rounded-3xl p-12 text-center text-slate-400 space-y-3">
-            <BookOpen className="w-10 h-10 text-slate-600 mx-auto" />
-            <h4 className="text-base font-semibold text-white">ધોરણ {selectedStandard} માં કોઈ વિષય મળ્યો નથી</h4>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <div className="glass-card rounded-3xl p-12 text-center text-slate-500 dark:text-slate-400 space-y-3">
+            <BookOpen className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto" />
+            <h4 className="text-base font-semibold text-slate-900 dark:text-white">ધોરણ {selectedStandard} માં કોઈ વિષય મળ્યો નથી</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
               આ ધોરણ માટે નવો વિષય અને તેના વિભાગો ઉમેરવા માટે ઉપર આપેલા &apos;નવો વિષય ઉમેરો&apos; બટન પર ક્લિક કરો.
             </p>
           </div>
@@ -454,8 +454,8 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
           <div className="glass-panel w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-white/15 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
             <div className="shrink-0 flex items-center justify-between pb-3 border-b border-white/10">
               <div>
-                <h3 className="text-base sm:text-lg font-bold text-white">ધોરણ {selectedStandard} માં નવો વિષય ઉમેરો</h3>
-                <p className="text-xs text-slate-400">વિષયનું નામ અને વિભાગો (Sections) દાખલ કરો</p>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">ધોરણ {selectedStandard} માં નવો વિષય ઉમેરો</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">વિષયનું નામ અને વિભાગો (Sections) દાખલ કરો</p>
               </div>
               <button
                 type="button"
@@ -484,17 +484,17 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
 
               {/* Standard display */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   પસંદ કરેલ ધોરણ (Selected Standard)
                 </label>
-                <div className="glass-input px-3.5 py-2.5 rounded-xl text-sm font-semibold text-emerald-300 bg-slate-900/60">
+                <div className="glass-input px-3.5 py-2.5 rounded-xl text-sm font-semibold text-emerald-600 dark:text-emerald-300 bg-slate-100 dark:bg-slate-900/60">
                   ધોરણ {selectedStandard} (Class {selectedStandard})
                 </div>
               </div>
 
               {/* Subject Name */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   વિષયનું નામ (ગુજરાતીમાં) <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -509,7 +509,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
 
               {/* English Name (optional) */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   English Name <span className="text-slate-500 font-normal">(વૈકલ્પિક)</span>
                 </label>
                 <input
@@ -524,22 +524,22 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
               {/* Sections Builder */}
               <div className="space-y-2 pt-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>વિભાગો (Sections) અને મહત્તમ ગુણ (Max Marks)</span>
                   </label>
                   <button
                     type="button"
                     onClick={handleAddSectionRow}
-                    className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 py-1 px-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
+                    className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 flex items-center gap-1 py-1 px-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
                   >
                     <Plus className="w-3 h-3" />
                     <span>વિભાગ ઉમેરો</span>
                   </button>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200/90 leading-relaxed flex items-start gap-2">
-                  <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-800 dark:text-amber-200/90 leading-relaxed flex items-start gap-2">
+                  <Info className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
                   <span>
                     <strong>મહત્તમ ગુણ વૈકલ્પિક છે:</strong> જો તમે મહત્તમ ગુણ ખાલી રાખશો, તો તેને ૦ ગણવામાં નહીં આવે. તમે પાછળથી ગમે ત્યારે ગુણદાખલ અથવા ફેરફાર કરી શકશો.
                   </span>
@@ -568,7 +568,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
                         type="button"
                         onClick={() => handleRemoveSectionRow(idx)}
                         disabled={sections.length <= 1}
-                        className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -579,11 +579,11 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
               </div>
 
               {/* Action Buttons */}
-              <div className="shrink-0 pt-3 border-t border-white/10 flex items-center justify-end gap-3 mt-3">
+              <div className="shrink-0 pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-3 mt-3">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs transition-colors min-h-[44px] cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-colors min-h-[44px] cursor-pointer"
                 >
                   રદ કરો (Cancel)
                 </button>
@@ -606,8 +606,8 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
           <div className="glass-panel w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-white/15 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
             <div className="shrink-0 flex items-center justify-between pb-3 border-b border-white/10">
               <div>
-                <h3 className="text-base sm:text-lg font-bold text-white">વિષય & વિભાગ ગુણ એડિટ કરો</h3>
-                <p className="text-xs text-slate-400">ધોરણ {selectedStandard} — {editingSubject.subjectName}</p>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">વિષય & વિભાગ ગુણ એડિટ કરો</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">ધોરણ {selectedStandard} — {editingSubject.subjectName}</p>
               </div>
               <button
                 type="button"
@@ -635,7 +635,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   વિષયનું નામ (Subject Name)
                 </label>
                 <input
@@ -648,7 +648,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   English Name
                 </label>
                 <input
@@ -662,14 +662,14 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
               {/* Sections Builder */}
               <div className="space-y-2 pt-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>વિભાગો (Sections) અને મહત્તમ ગુણ (Max Marks)</span>
                   </label>
                   <button
                     type="button"
                     onClick={handleAddSectionRow}
-                    className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 py-1 px-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
+                    className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 flex items-center gap-1 py-1 px-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
                   >
                     <Plus className="w-3 h-3" />
                     <span>વિભાગ ઉમેરો</span>
@@ -699,7 +699,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
                         type="button"
                         onClick={() => handleRemoveSectionRow(idx)}
                         disabled={sections.length <= 1}
-                        className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -709,11 +709,11 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
               </div>
               </div>
 
-              <div className="shrink-0 pt-3 border-t border-white/10 flex items-center justify-end gap-3 mt-3">
+              <div className="shrink-0 pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-3 mt-3">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs min-h-[44px] cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-semibold text-xs min-h-[44px] cursor-pointer"
                 >
                   રદ કરો
                 </button>
@@ -733,21 +733,21 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
       {/* DELETE CONFIRMATION MODAL */}
       {isDeleteModalOpen && deletingSubject && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md">
-          <div className="glass-panel w-full max-w-md rounded-3xl p-5 sm:p-6 border border-white/15 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto animate-fadeIn">
-            <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto">
+          <div className="glass-panel w-full max-w-md rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-white/15 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto animate-fadeIn">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-500 dark:text-red-400 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
             <div className="text-center space-y-1">
-              <h3 className="text-lg font-bold text-white">વિષય ડિલીટ કરવાની પુષ્ટિ</h3>
-              <p className="text-xs text-slate-300">
-                શું તમે ખરેખર ધોરણ {selectedStandard} માંથી &apos;<strong className="text-white">{deletingSubject.subjectName}</strong>&apos; વિષય ડિલીટ કરવા માંગો છો?
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">વિષય ડિલીટ કરવાની પુષ્ટિ</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                શું તમે ખરેખર ધોરણ {selectedStandard} માંથી &apos;<strong className="text-slate-900 dark:text-white">{deletingSubject.subjectName}</strong>&apos; વિષય ડિલીટ કરવા માંગો છો?
               </p>
             </div>
             <div className="flex items-center gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs min-h-[44px]"
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-semibold text-xs min-h-[44px] cursor-pointer"
               >
                 રદ કરો
               </button>

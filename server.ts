@@ -1402,6 +1402,135 @@ Schema per question:
   });
 
   // =========================================================================
+  // DAILY KNOWLEDGE & NEWS API (5:00 AM News & 1:00 PM Janva Jevu)
+  // =========================================================================
+
+  // GET /api/daily-news: returns active 5 AM news bulletin
+  app.get('/api/daily-news', async (_req: Request, res: Response) => {
+    try {
+      const now = new Date();
+      const hours = now.getHours();
+      const editionDate = new Date(now);
+      if (hours < 5) {
+        editionDate.setDate(editionDate.getDate() - 1);
+      }
+      const y = editionDate.getFullYear();
+      const m = String(editionDate.getMonth() + 1).padStart(2, '0');
+      const d = String(editionDate.getDate()).padStart(2, '0');
+      const dateKey = `${y}-${m}-${d}`;
+
+      // Try reading from Firestore
+      const docRef = doc(db, 'daily_news', dateKey);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        return res.json({ success: true, bulletin: snap.data() });
+      }
+
+      return res.json({
+        success: true,
+        dateKey,
+        needsClientFallback: true,
+        message: 'Active date cycle determined',
+      });
+    } catch (err: any) {
+      console.error('Error in /api/daily-news:', err);
+      return res.status(500).json({ error: 'Failed to retrieve daily news' });
+    }
+  });
+
+  // GET /api/daily-janva-jevu: returns active 1 PM Janva Jevu bulletin
+  app.get('/api/daily-janva-jevu', async (_req: Request, res: Response) => {
+    try {
+      const now = new Date();
+      const hours = now.getHours();
+      const editionDate = new Date(now);
+      if (hours < 13) {
+        editionDate.setDate(editionDate.getDate() - 1);
+      }
+      const y = editionDate.getFullYear();
+      const m = String(editionDate.getMonth() + 1).padStart(2, '0');
+      const d = String(editionDate.getDate()).padStart(2, '0');
+      const dateKey = `${y}-${m}-${d}`;
+
+      // Try reading from Firestore
+      const docRef = doc(db, 'daily_janva_jevu', dateKey);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        return res.json({ success: true, bulletin: snap.data() });
+      }
+
+      return res.json({
+        success: true,
+        dateKey,
+        needsClientFallback: true,
+        message: 'Active date cycle determined',
+      });
+    } catch (err: any) {
+      console.error('Error in /api/daily-janva-jevu:', err);
+      return res.status(500).json({ error: 'Failed to retrieve daily Janva Jevu' });
+    }
+  });
+
+  // POST /api/daily-knowledge/refresh-news: Generates fresh 10-point news using Gemini
+  app.post('/api/daily-knowledge/refresh-news', async (req: Request, res: Response) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(400).json({ error: 'Gemini API key is not configured' });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+
+      const todayStr = new Date().toLocaleDateString('gu-IN');
+      const prompt = `You are the chief Gujarati educational news editor for secondary and higher secondary schools (Classes 9 to 12).
+Generate exactly 10 short, punchy, inspiring educational news points in pure, natural Gujarati for date: ${todayStr}.
+Categories to include:
+1. કચ્છ વિશેષ (2 items): Kutch ports, Dholavira, Khavda renewable energy, handicrafts, wildlife.
+2. ગુજરાત સમાચાર (2 items): GIFT city, schools, industries, environment, agriculture.
+3. રાષ્ટ્રીય / ભારત (2 items): ISRO, national achievements, digital public infrastructure, defence.
+4. વિશ્વ સમાચાર (2 items): Global science, space, environment, international relations.
+5. વિજ્ઞાન અને શિક્ષણ (1 item): Student innovations, STEM, NEP.
+6. રમતગમત (1 item): Indian sports champions, chess, athletics.
+
+Format: Return strictly a valid JSON array of 10 objects:
+[
+  {
+    "category": "kutch" | "gujarat" | "india" | "world" | "science_education" | "sports",
+    "categoryLabel": string (in Gujarati),
+    "headline": string (short punchy Gujarati headline),
+    "summary": string (short 1-2 lines explanation in Gujarati)
+  }
+]`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.3,
+        },
+      });
+
+      const text = response.text || '[]';
+      const items = JSON.parse(text);
+
+      return res.json({ success: true, items });
+    } catch (err: any) {
+      console.error('Error generating AI news:', err);
+      return res.status(500).json({ error: err.message || 'Failed to generate news' });
+    }
+  });
+
+  // =========================================================================
   // Vite Middleware (Dev) vs Static Files (Prod)
   // =========================================================================
   if (process.env.NODE_ENV !== 'production') {

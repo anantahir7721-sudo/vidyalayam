@@ -25,10 +25,17 @@ import {
   Edit3,
   MessageSquare,
   UserPlus,
+  Newspaper,
+  Lightbulb,
+  ToggleLeft,
+  ToggleRight,
+  Flame,
 } from 'lucide-react';
 import { ActiveTabType } from './Navbar';
 import { VidyalayamLogo } from './VidyalayamLogo';
 import { UniversalStudentSearch } from './UniversalStudentSearch';
+import { DailyKnowledgeModal } from './DailyKnowledgeModal';
+import { updateSchoolProfile } from '../services/firestoreService';
 
 interface DashboardOverviewProps {
   school: School;
@@ -37,6 +44,7 @@ interface DashboardOverviewProps {
   staffList?: Staff[];
   onNavigate: (tab: ActiveTabType) => void;
   onStudentUpdated?: (updated: Student) => void;
+  onSchoolUpdated?: (updated: Partial<School>) => void;
 }
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
@@ -46,7 +54,76 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   staffList = [],
   onNavigate,
   onStudentUpdated,
+  onSchoolUpdated,
 }) => {
+  const [knowledgeModalOpen, setKnowledgeModalOpen] = React.useState(false);
+  const [modalInitialTab, setModalInitialTab] = React.useState<'news' | 'janva_jevu' | 'suvichar'>('news');
+  const [newsEnabled, setNewsEnabled] = React.useState(school.dailyNewsEnabled !== false);
+  const [janvaJevuEnabled, setJanvaJevuEnabled] = React.useState(school.dailyJanvaJevuEnabled !== false);
+  const [suvicharEnabled, setSuvicharEnabled] = React.useState(school.dailySuvicharEnabled !== false);
+
+  React.useEffect(() => {
+    setNewsEnabled(school.dailyNewsEnabled !== false);
+    setJanvaJevuEnabled(school.dailyJanvaJevuEnabled !== false);
+    setSuvicharEnabled(school.dailySuvicharEnabled !== false);
+  }, [school.dailyNewsEnabled, school.dailyJanvaJevuEnabled, school.dailySuvicharEnabled]);
+
+  const saveTogglesToStorage = (news: boolean, janva: boolean, suv: boolean) => {
+    try {
+      localStorage.setItem(
+        `school_toggles_${school.id}`,
+        JSON.stringify({
+          dailyNewsEnabled: news,
+          dailyJanvaJevuEnabled: janva,
+          dailySuvicharEnabled: suv,
+          updatedAt: Date.now(),
+        })
+      );
+    } catch (e) {}
+  };
+
+  const handleToggleNews = async (nextVal: boolean) => {
+    setNewsEnabled(nextVal);
+    saveTogglesToStorage(nextVal, janvaJevuEnabled, suvicharEnabled);
+    try {
+      await updateSchoolProfile(school.id, { dailyNewsEnabled: nextVal });
+      if (onSchoolUpdated) {
+        onSchoolUpdated({ dailyNewsEnabled: nextVal });
+      }
+    } catch (e) {
+      console.error('Failed to toggle news:', e);
+      setNewsEnabled(!nextVal);
+    }
+  };
+
+  const handleToggleJanvaJevu = async (nextVal: boolean) => {
+    setJanvaJevuEnabled(nextVal);
+    saveTogglesToStorage(newsEnabled, nextVal, suvicharEnabled);
+    try {
+      await updateSchoolProfile(school.id, { dailyJanvaJevuEnabled: nextVal });
+      if (onSchoolUpdated) {
+        onSchoolUpdated({ dailyJanvaJevuEnabled: nextVal });
+      }
+    } catch (e) {
+      console.error('Failed to toggle janva jevu:', e);
+      setJanvaJevuEnabled(!nextVal);
+    }
+  };
+
+  const handleToggleSuvichar = async (nextVal: boolean) => {
+    setSuvicharEnabled(nextVal);
+    saveTogglesToStorage(newsEnabled, janvaJevuEnabled, nextVal);
+    try {
+      await updateSchoolProfile(school.id, { dailySuvicharEnabled: nextVal });
+      if (onSchoolUpdated) {
+        onSchoolUpdated({ dailySuvicharEnabled: nextVal });
+      }
+    } catch (e) {
+      console.error('Failed to toggle suvichar:', e);
+      setSuvicharEnabled(!nextVal);
+    }
+  };
+
   // Statistics calculations
   const std9Count = students.filter((s) => String(s.standard) === '9').length;
   const std10Count = students.filter((s) => String(s.standard) === '10').length;
@@ -219,46 +296,46 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-stone-900 dark:text-[#e4ded6] tracking-tight leading-snug">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-950 dark:text-[#e4ded6] tracking-tight leading-snug">
               {school.schoolName}
             </h1>
 
             {/* Address & Meta details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3 text-xs pt-1">
-              <div className="flex items-start gap-2 text-stone-700 dark:text-slate-300">
+              <div className="flex items-start gap-2 text-slate-800 dark:text-slate-300">
                 <MapPin className="w-4 h-4 text-[#9d512d] dark:text-[#f59c73] shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-stone-500 dark:text-[#a99f91] block text-[10px] uppercase font-bold">સરનામું & જિલ્લો</span>
-                  <span>{school.address || `${school.district} જિલ્લો, ગુજરાત`}</span>
-                  {school.pincode && <span className="font-mono ml-1">({school.pincode})</span>}
+                  <span className="text-slate-600 dark:text-[#a99f91] block text-[10px] uppercase font-bold">સરનામું & જિલ્લો</span>
+                  <span className="text-slate-900 dark:text-slate-200">{school.address || `${school.district} જિલ્લો, ગુજરાત`}</span>
+                  {school.pincode && <span className="font-mono ml-1 font-semibold text-slate-900 dark:text-slate-200">({school.pincode})</span>}
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 text-stone-700 dark:text-slate-300">
+              <div className="flex items-start gap-2 text-slate-800 dark:text-slate-300">
                 <UserCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-stone-500 dark:text-[#a99f91] block text-[10px] uppercase font-bold">આચાર્યશ્રી</span>
-                  <span className="font-bold text-stone-900 dark:text-[#e4ded6]">{school.principalName || 'નોંધાયેલ નથી'}</span>
+                  <span className="text-slate-600 dark:text-[#a99f91] block text-[10px] uppercase font-bold">આચાર્યશ્રી</span>
+                  <span className="font-bold text-slate-950 dark:text-[#e4ded6]">{school.principalName || 'નોંધાયેલ નથી'}</span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 text-stone-700 dark:text-slate-300">
+              <div className="flex items-start gap-2 text-slate-800 dark:text-slate-300">
                 <Phone className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-stone-500 dark:text-[#a99f91] block text-[10px] uppercase font-bold">સંપર્ક / મોબાઈલ</span>
+                  <span className="text-slate-600 dark:text-[#a99f91] block text-[10px] uppercase font-bold">સંપર્ક / મોબાઈલ</span>
                   {school.contactPhone || school.principalPhone || (school as any).contactNumber ? (
-                    <span className="font-mono text-[#e4ded6] font-semibold">
+                    <span className="font-mono text-slate-950 dark:text-[#e4ded6] font-bold">
                       {school.contactPhone || school.principalPhone || (school as any).contactNumber}
                     </span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => onNavigate('profile')}
-                      className="text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1.5 font-medium hover:underline cursor-pointer group"
+                      className="text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1.5 font-medium cursor-pointer group"
                       title="શાળા પ્રોફાઇલમાં સંપર્ક નંબર ઉમેરો"
                     >
-                      <span className="text-slate-400">ઉપલબ્ધ નથી</span>
-                      <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full font-bold group-hover:bg-emerald-500/30">
+                      <span className="text-slate-500 dark:text-slate-400">ઉપલબ્ધ નથી</span>
+                      <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 rounded-full font-bold group-hover:bg-emerald-500/30">
                         + ઉમેરો
                       </span>
                     </button>
@@ -266,23 +343,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 text-slate-300">
-                <Mail className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 text-slate-800 dark:text-slate-300">
+                <Mail className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-[#a99f91] block text-[10px] uppercase font-bold">સત્તાવાર ઈમેલ</span>
+                  <span className="text-slate-600 dark:text-[#a99f91] block text-[10px] uppercase font-bold">સત્તાવાર ઈમેલ</span>
                   {school.contactEmail || (school as any).email ? (
-                    <span className="font-mono text-[#e4ded6] font-semibold truncate block max-w-[200px]">
+                    <span className="font-mono text-slate-950 dark:text-[#e4ded6] font-semibold truncate block max-w-[200px]">
                       {school.contactEmail || (school as any).email}
                     </span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => onNavigate('profile')}
-                      className="text-purple-400 hover:text-purple-300 inline-flex items-center gap-1.5 font-medium hover:underline cursor-pointer group"
+                      className="text-purple-600 dark:text-purple-300 inline-flex items-center gap-1.5 font-medium hover:underline cursor-pointer group"
                       title="શાળા પ્રોફાઇલમાં ઈમેલ ઉમેરો"
                     >
-                      <span className="text-slate-400">ઉપલબ્ધ નથી</span>
-                      <span className="text-[10px] px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-full font-bold group-hover:bg-purple-500/30">
+                      <span className="text-slate-500 dark:text-slate-400">ઉપલબ્ધ નથી</span>
+                      <span className="text-[10px] px-2 py-0.5 bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/40 rounded-full font-bold group-hover:bg-purple-500/30">
                         + ઉમેરો
                       </span>
                     </button>
@@ -290,19 +367,19 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 text-slate-300">
-                <BookOpen className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 text-slate-800 dark:text-slate-300">
+                <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-[#a99f91] block text-[10px] uppercase font-bold">શિક્ષણ માધ્યમ & બોર્ડ</span>
-                  <span className="font-bold">ગુજરાતી માધ્યમ • GSEB</span>
+                  <span className="text-slate-600 dark:text-[#a99f91] block text-[10px] uppercase font-bold">શિક્ષણ માધ્યમ & બોર્ડ</span>
+                  <span className="font-bold text-slate-950 dark:text-[#e4ded6]">ગુજરાતી માધ્યમ • GSEB</span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 text-slate-300">
-                <Calendar className="w-4 h-4 text-[#f59c73] shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 text-slate-800 dark:text-slate-300">
+                <Calendar className="w-4 h-4 text-[#9d512d] dark:text-[#f59c73] shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-[#a99f91] block text-[10px] uppercase font-bold">શૈક્ષણિક વર્ષ</span>
-                  <span className="font-bold text-[#f59c73] font-mono">૨૦૨૬–૨૭</span>
+                  <span className="text-slate-600 dark:text-[#a99f91] block text-[10px] uppercase font-bold">શૈક્ષણિક વર્ષ</span>
+                  <span className="font-bold text-[#9d512d] dark:text-[#f59c73] font-mono">૨૦૨૬–૨૭</span>
                 </div>
               </div>
             </div>
@@ -312,16 +389,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div className="flex sm:flex-col gap-2 shrink-0">
             <button
               onClick={() => onNavigate('profile')}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl glass-card hover:border-[#9d512d]/60 text-xs font-bold text-[#e4ded6] hover:text-white transition-all cursor-pointer shadow"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl glass-card hover:border-[#9d512d]/60 text-xs font-bold text-stone-800 dark:text-[#e4ded6] hover:text-[#9d512d] dark:hover:text-white transition-all cursor-pointer shadow"
             >
-              <Edit3 className="w-3.5 h-3.5 text-[#f59c73]" />
+              <Edit3 className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
               <span>પ્રોફાઇલ સંપાદન</span>
             </button>
-            <div className="glass-card px-3.5 py-2 rounded-2xl flex items-center gap-2.5 border border-white/10 hidden sm:flex">
+            <div className="glass-card px-3.5 py-2 rounded-2xl flex items-center gap-2.5 border border-stone-200 dark:border-white/10 hidden sm:flex">
               <VidyalayamLogo size={28} />
               <div>
-                <span className="text-[10px] uppercase text-[#a99f91] block font-semibold">સિસ્ટમ</span>
-                <span className="text-xs font-bold text-[#f59c73]">Vidyalayam v2.5</span>
+                <span className="text-[10px] uppercase text-stone-500 dark:text-[#a99f91] block font-semibold">સિસ્ટમ</span>
+                <span className="text-xs font-bold text-[#9d512d] dark:text-[#f59c73]">Vidyalayam v2.5</span>
               </div>
             </div>
           </div>
@@ -348,49 +425,49 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div className="glass-card rounded-2xl border border-white/10 p-4 shadow flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#a99f91] uppercase tracking-wider">
+                <span className="text-xs font-bold text-slate-700 dark:text-[#a99f91] uppercase tracking-wider">
                   વિદ્યાર્થી સંખ્યા
                 </span>
-                <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                   <Users className="w-4 h-4" />
                 </div>
               </div>
 
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl font-black text-[#e4ded6] font-mono">{students.length}</span>
-                <span className="text-xs text-[#a99f91] font-semibold">કુલ વિદ્યાર્થીઓ</span>
+                <span className="text-3xl font-black text-slate-950 dark:text-[#e4ded6] font-mono">{students.length}</span>
+                <span className="text-xs text-slate-700 dark:text-[#a99f91] font-semibold">કુલ વિદ્યાર્થીઓ</span>
               </div>
 
               {/* Standard breakdown */}
               <div className="mt-3 grid grid-cols-4 gap-1 text-center text-[10px] font-mono">
-                <div className="p-1 rounded bg-white/5">
-                  <div className="text-[#a99f91]">ધો.૯</div>
-                  <div className="font-bold text-[#e4ded6]">{std9Count}</div>
+                <div className="p-1 rounded bg-slate-100 border border-slate-200 dark:bg-white/5 dark:border-white/10">
+                  <div className="text-slate-600 dark:text-[#a99f91] font-bold">ધો.૯</div>
+                  <div className="font-bold text-slate-950 dark:text-[#e4ded6]">{std9Count}</div>
                 </div>
-                <div className="p-1 rounded bg-white/5">
-                  <div className="text-[#a99f91]">ધો.૧૦</div>
-                  <div className="font-bold text-[#e4ded6]">{std10Count}</div>
+                <div className="p-1 rounded bg-slate-100 border border-slate-200 dark:bg-white/5 dark:border-white/10">
+                  <div className="text-slate-600 dark:text-[#a99f91] font-bold">ધો.૧૦</div>
+                  <div className="font-bold text-slate-950 dark:text-[#e4ded6]">{std10Count}</div>
                 </div>
-                <div className="p-1 rounded bg-white/5">
-                  <div className="text-[#a99f91]">ધો.૧૧</div>
-                  <div className="font-bold text-[#e4ded6]">{std11Count}</div>
+                <div className="p-1 rounded bg-slate-100 border border-slate-200 dark:bg-white/5 dark:border-white/10">
+                  <div className="text-slate-600 dark:text-[#a99f91] font-bold">ધો.૧૧</div>
+                  <div className="font-bold text-slate-950 dark:text-[#e4ded6]">{std11Count}</div>
                 </div>
-                <div className="p-1 rounded bg-white/5">
-                  <div className="text-[#a99f91]">ધો.૧૨</div>
-                  <div className="font-bold text-[#e4ded6]">{std12Count}</div>
+                <div className="p-1 rounded bg-slate-100 border border-slate-200 dark:bg-white/5 dark:border-white/10">
+                  <div className="text-slate-600 dark:text-[#a99f91] font-bold">ધો.૧૨</div>
+                  <div className="font-bold text-slate-950 dark:text-[#e4ded6]">{std12Count}</div>
                 </div>
               </div>
 
               {/* Gender ratio */}
-              <div className="mt-2 text-[11px] text-slate-300 flex items-center justify-between px-1">
-                <span>કુમાર: <strong className="text-blue-400">{boysCount}</strong></span>
-                <span>કન્યા: <strong className="text-rose-400">{girlsCount}</strong></span>
+              <div className="mt-2 text-[11px] text-slate-700 dark:text-slate-300 flex items-center justify-between px-1">
+                <span>કુમાર: <strong className="text-blue-700 dark:text-blue-400 font-bold">{boysCount}</strong></span>
+                <span>કન્યા: <strong className="text-rose-700 dark:text-rose-400 font-bold">{girlsCount}</strong></span>
               </div>
             </div>
 
             <button
               onClick={() => onNavigate('students')}
-              className="mt-3 pt-2 border-t border-white/5 text-xs text-[#f59c73] hover:underline font-bold flex items-center justify-between cursor-pointer"
+              className="mt-3 pt-2 border-t border-slate-200 dark:border-white/5 text-xs text-[#9d512d] dark:text-[#f59c73] hover:underline font-bold flex items-center justify-between cursor-pointer"
             >
               <span>વિદ્યાર્થીઓ જુઓ</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -398,37 +475,37 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
 
           {/* Card 2: સ્ટાફ સંખ્યા */}
-          <div className="glass-card rounded-2xl border border-white/10 p-4 shadow flex flex-col justify-between">
+          <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 p-4 shadow flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#a99f91] uppercase tracking-wider">
+                <span className="text-xs font-bold text-slate-700 dark:text-[#a99f91] uppercase tracking-wider">
                   સ્ટાફ સંખ્યા
                 </span>
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-500 flex items-center justify-center">
                   <UserCheck className="w-4 h-4" />
                 </div>
               </div>
 
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl font-black text-[#e4ded6] font-mono">{staffList.length}</span>
-                <span className="text-xs text-[#a99f91] font-semibold">કુલ સ્ટાફ</span>
+                <span className="text-3xl font-black text-slate-950 dark:text-[#e4ded6] font-mono">{staffList.length}</span>
+                <span className="text-xs text-slate-700 dark:text-[#a99f91] font-semibold">કુલ સ્ટાફ</span>
               </div>
 
               <div className="mt-3 space-y-1.5 text-xs">
-                <div className="flex items-center justify-between p-1.5 rounded bg-white/5">
-                  <span className="text-[#a99f91]">શૈક્ષણિક સ્ટાફ (શિક્ષકો):</span>
-                  <span className="font-bold font-mono text-[#e4ded6]">{teachingStaffCount}</span>
+                <div className="flex items-center justify-between p-1.5 rounded bg-slate-100 border border-slate-200 dark:bg-white/5 dark:border-white/10">
+                  <span className="text-slate-700 dark:text-[#a99f91] font-medium">શૈક્ષણિક સ્ટાફ (શિક્ષકો):</span>
+                  <span className="font-bold font-mono text-slate-950 dark:text-[#e4ded6]">{teachingStaffCount}</span>
                 </div>
-                <div className="flex items-center justify-between p-1.5 rounded bg-white/5">
-                  <span className="text-[#a99f91]">બિન-શૈક્ષણિક સ્ટાફ:</span>
-                  <span className="font-bold font-mono text-[#e4ded6]">{nonTeachingStaffCount}</span>
+                <div className="flex items-center justify-between p-1.5 rounded bg-slate-100 border border-slate-200 dark:bg-white/5 dark:border-white/10">
+                  <span className="text-slate-700 dark:text-[#a99f91] font-medium">બિન-શૈક્ષણિક સ્ટાફ:</span>
+                  <span className="font-bold font-mono text-slate-950 dark:text-[#e4ded6]">{nonTeachingStaffCount}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => onNavigate('staff')}
-              className="mt-3 pt-2 border-t border-white/5 text-xs text-[#f59c73] hover:underline font-bold flex items-center justify-between cursor-pointer"
+              className="mt-3 pt-2 border-t border-slate-200 dark:border-white/5 text-xs text-[#9d512d] dark:text-[#f59c73] hover:underline font-bold flex items-center justify-between cursor-pointer"
             >
               <span>સ્ટાફ મેનેજર ખોલો</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -436,29 +513,29 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
 
           {/* Card 3: પરીક્ષાઓ અને ગુણ */}
-          <div className="glass-card rounded-2xl border border-white/10 p-4 shadow flex flex-col justify-between">
+          <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 p-4 shadow flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#a99f91] uppercase tracking-wider">
+                <span className="text-xs font-bold text-slate-700 dark:text-[#a99f91] uppercase tracking-wider">
                   પરીક્ષા & ગુણ સ્થિતિ
                 </span>
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-500 flex items-center justify-center">
                   <Award className="w-4 h-4" />
                 </div>
               </div>
 
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl font-black text-[#e4ded6] font-mono">{marks.length}</span>
-                <span className="text-xs text-[#a99f91] font-semibold">કુલ ગુણ રેકોર્ડ્સ</span>
+                <span className="text-3xl font-black text-slate-950 dark:text-[#e4ded6] font-mono">{marks.length}</span>
+                <span className="text-xs text-slate-700 dark:text-[#a99f91] font-semibold">કુલ ગુણ રેકોર્ડ્સ</span>
               </div>
 
               <div className="mt-3 space-y-1.5 text-xs">
-                <div className="flex items-center justify-between p-1.5 rounded bg-emerald-500/10 text-emerald-300">
-                  <span>એકમ કસોટી – ૧:</span>
+                <div className="flex items-center justify-between p-1.5 rounded bg-emerald-50 text-emerald-900 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20">
+                  <span className="font-medium">એકમ કસોટી – ૧:</span>
                   <span className="font-bold font-mono">{ekamKasotiCount}</span>
                 </div>
-                <div className="flex items-center justify-between p-1.5 rounded bg-blue-500/10 text-blue-300">
-                  <span>સત્રાંત / વાર્ષિક:</span>
+                <div className="flex items-center justify-between p-1.5 rounded bg-blue-50 text-blue-900 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20">
+                  <span className="font-medium">સત્રાંત / વાર્ષિક:</span>
                   <span className="font-bold font-mono">{termExamsCount}</span>
                 </div>
               </div>
@@ -466,7 +543,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
             <button
               onClick={() => onNavigate('exams')}
-              className="mt-3 pt-2 border-t border-white/5 text-xs text-[#f59c73] hover:underline font-bold flex items-center justify-between cursor-pointer"
+              className="mt-3 pt-2 border-t border-slate-200 dark:border-white/5 text-xs text-[#9d512d] dark:text-[#f59c73] hover:underline font-bold flex items-center justify-between cursor-pointer"
             >
               <span>પરીક્ષાઓ કેન્દ્ર ખોલો</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -474,37 +551,185 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
 
           {/* Card 4: પરિણામ અને સુરક્ષા */}
-          <div className="glass-card rounded-2xl border border-white/10 p-4 shadow flex flex-col justify-between">
+          <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 p-4 shadow flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#a99f91] uppercase tracking-wider">
+                <span className="text-xs font-bold text-slate-700 dark:text-[#a99f91] uppercase tracking-wider">
                   પરિણામ & સુરક્ષા
                 </span>
-                <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-600 dark:text-teal-400 flex items-center justify-center">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
               </div>
 
-              <div className="mt-2 text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+              <div className="mt-2 text-sm font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                 <CheckCircle className="w-4 h-4" />
                 <span>GSEB Excel Source of Truth</span>
               </div>
 
-              <div className="mt-2 text-xs text-slate-300 leading-relaxed">
-                સિદ્ધિ ગુણ (<span className="text-[#f59c73] font-bold">#</span>) અને કૃપા ગુણ (<span className="text-amber-400 font-bold">*</span>) ની ગણતરી સાથે વાર્ષિક પરિણામ તૈયાર.
+              <div className="mt-2 text-xs text-stone-700 dark:text-slate-300 leading-relaxed">
+                સિદ્ધિ ગુણ (<span className="text-[#9d512d] dark:text-[#f59c73] font-bold">#</span>) અને કૃપા ગુણ (<span className="text-amber-600 dark:text-amber-400 font-bold">*</span>) ની ગણતરી સાથે વાર્ષિક પરિણામ તૈયાર.
               </div>
 
-              <div className="mt-2 text-[11px] text-teal-300 flex items-center gap-1">
+              <div className="mt-2 text-[11px] text-teal-700 dark:text-teal-300 flex items-center gap-1">
                 <span>Cloud Firestore: ૧૦૦% આઇસોલેટેડ</span>
               </div>
             </div>
 
             <button
               onClick={() => onNavigate('results')}
-              className="mt-3 pt-2 border-t border-white/5 text-xs text-[#f59c73] hover:underline font-bold flex items-center justify-between cursor-pointer"
+              className="mt-3 pt-2 border-t border-stone-200 dark:border-white/5 text-xs text-[#9d512d] dark:text-[#f59c73] hover:underline font-bold flex items-center justify-between cursor-pointer"
             >
               <span>પરિણામ પત્રક જુઓ</span>
               <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          DAILY KNOWLEDGE & NEWS WIDGET (દૈનિક શાળા સમાચાર અને સામાન્ય જ્ઞાન)
+          ========================================================================= */}
+      <section className="glass-panel rounded-2xl sm:rounded-3xl border border-white/10 p-5 sm:p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#9d512d]/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/25 text-[#f59c73] border border-[#9d512d]/40 flex items-center gap-1.5 shadow-sm">
+                <Flame className="w-3.5 h-3.5" />
+                દૈનિક શાળા જ્ઞાન અને સમાચાર
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white/5 text-[#e4ded6] border border-white/10 flex items-center gap-1">
+                <Clock className="w-3 h-3 text-emerald-400" />
+                સમાચાર ૫:૦૦ AM • GK ૧:૦૦ PM
+              </span>
+            </div>
+
+            <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-[#e4ded6] tracking-tight flex items-center gap-2.5">
+              <Newspaper className="w-5 h-5 text-[#f59c73]" />
+              <span>આજના ૧૦ મુખ્ય સમાચાર & ૨૦ સામાન્ય જ્ઞાન પ્રશ્નો (Janva Jevu)</span>
+            </h2>
+
+            <p className="text-xs text-stone-600 dark:text-[#a99f91] max-w-2xl leading-relaxed">
+              કચ્છ, ગુજરાત, ભારત અને વિશ્વના ૧૦ ટૂંકા સમાચાર તેમજ ધોરણ ૯ થી ૧૨ના પાઠ્યપુસ્તક આધારિત ૨૦ પાયાના GK પ્રશ્નો. શાળા પ્રાર્થના સંમેલન (Morning Assembly) અને વિદ્યાર્થી પોર્ટલ માટે ઉપલબ્ધ.
+            </p>
+
+            {/* Quick Toggles: Single central place for on/off controls */}
+            <div className="flex items-center gap-3 pt-1 flex-wrap text-xs">
+              <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-white/5 px-2.5 py-1 rounded-xl border border-stone-200 dark:border-white/10">
+                <span className="text-stone-700 dark:text-stone-300 font-semibold">સમાચાર:</span>
+                <button
+                  type="button"
+                  onClick={() => handleToggleNews(!newsEnabled)}
+                  className={`px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                    newsEnabled
+                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
+                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                  }`}
+                >
+                  {newsEnabled ? (
+                    <>
+                      <ToggleRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>ચાલુ</span>
+                    </>
+                  ) : (
+                    <>
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-500 dark:text-rose-400" />
+                      <span>બંધ</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-white/5 px-2.5 py-1 rounded-xl border border-stone-200 dark:border-white/10">
+                <span className="text-stone-700 dark:text-stone-300 font-semibold">જાણવા જેવું:</span>
+                <button
+                  type="button"
+                  onClick={() => handleToggleJanvaJevu(!janvaJevuEnabled)}
+                  className={`px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                    janvaJevuEnabled
+                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
+                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                  }`}
+                >
+                  {janvaJevuEnabled ? (
+                    <>
+                      <ToggleRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>ચાલુ</span>
+                    </>
+                  ) : (
+                    <>
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-500 dark:text-rose-400" />
+                      <span>બંધ</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-white/5 px-2.5 py-1 rounded-xl border border-stone-200 dark:border-white/10">
+                <span className="text-stone-700 dark:text-stone-300 font-semibold">સુવિચાર:</span>
+                <button
+                  type="button"
+                  onClick={() => handleToggleSuvichar(!suvicharEnabled)}
+                  className={`px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                    suvicharEnabled
+                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
+                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                  }`}
+                >
+                  {suvicharEnabled ? (
+                    <>
+                      <ToggleRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>ચાલુ</span>
+                    </>
+                  ) : (
+                    <>
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-500 dark:text-rose-400" />
+                      <span>બંધ</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons to preview and print */}
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setModalInitialTab('news');
+                setKnowledgeModalOpen(true);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-[#9d512d] hover:bg-[#b55f37] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
+            >
+              <Newspaper className="w-4 h-4" />
+              <span>આજના ૧૦ સમાચાર</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setModalInitialTab('janva_jevu');
+                setKnowledgeModalOpen(true);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-[#e4ded6] border border-white/15 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+            >
+              <Lightbulb className="w-4 h-4 text-amber-400" />
+              <span>આજનું જાણવા જેવું (૨૦ GK)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setModalInitialTab('suvichar');
+                setKnowledgeModalOpen(true);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>✨ આજનો સુવિચાર & PDF</span>
             </button>
           </div>
         </div>
@@ -516,14 +741,14 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl sm:text-2xl font-black text-[#e4ded6] tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black text-stone-900 dark:text-[#e4ded6] tracking-tight">
               શાળા વ્યવસ્થાપન મોડ્યુલ્સ (School Modules)
             </h2>
-            <p className="text-xs text-[#a99f91] mt-0.5">
+            <p className="text-xs text-stone-600 dark:text-[#a99f91] mt-0.5">
               તમામ દૈનિક અને શૈક્ષણિક કામગીરી માટે સુવ્યવસ્થિત મોડ્યુલ્સ
             </p>
           </div>
-          <span className="text-xs font-semibold text-[#f59c73] hidden sm:inline">
+          <span className="text-xs font-semibold text-[#9d512d] dark:text-[#f59c73] hidden sm:inline">
             Created by NR Chad
           </span>
         </div>
@@ -533,27 +758,27 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <div
               key={mod.id}
               onClick={() => onNavigate(mod.id)}
-              className={`glass-panel rounded-3xl border border-white/10 p-5 shadow-lg flex flex-col justify-between cursor-pointer transition-all duration-200 hover:-translate-y-1 ${mod.color}`}
+              className={`glass-panel rounded-3xl border border-stone-200 dark:border-white/10 p-5 shadow-lg flex flex-col justify-between cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:border-[#9d512d]/40 ${mod.color}`}
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+                  <div className="p-3 rounded-2xl bg-stone-100 dark:bg-white/5 border border-stone-200 dark:border-white/10">
                     {mod.icon}
                   </div>
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[#f59c73]">
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-white/5 border border-stone-200 dark:border-white/10 text-[#9d512d] dark:text-[#f59c73]">
                     {mod.badge}
                   </span>
                 </div>
 
-                <h3 className="text-base font-bold text-[#e4ded6] mb-1.5">
+                <h3 className="text-base font-bold text-stone-900 dark:text-[#e4ded6] mb-1.5">
                   {mod.title}
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-stone-600 dark:text-slate-300 leading-relaxed">
                   {mod.desc}
                 </p>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-bold text-[#f59c73]">
+              <div className="mt-5 pt-3 border-t border-stone-200 dark:border-white/5 flex items-center justify-between text-xs font-bold text-[#9d512d] dark:text-[#f59c73]">
                 <span>{mod.actionText}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
@@ -561,6 +786,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           ))}
         </div>
       </section>
+
+      {/* Daily Knowledge & News Modal for School Assembly / Preview */}
+      <DailyKnowledgeModal
+        school={school}
+        isOpen={knowledgeModalOpen}
+        onClose={() => setKnowledgeModalOpen(false)}
+        initialTab={modalInitialTab}
+        onSchoolUpdated={onSchoolUpdated}
+      />
     </div>
   );
 };

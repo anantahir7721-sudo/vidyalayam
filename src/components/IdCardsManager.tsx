@@ -804,7 +804,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white transition-colors cursor-pointer active:scale-95"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-slate-800 dark:text-[#e4ded6] hover:text-[#9d512d] dark:hover:text-white transition-colors cursor-pointer active:scale-95"
           title="પાછળના મેનુ પર જાઓ (Go Back)"
         >
           <ArrowLeft className="w-4 h-4 text-[#f59c73]" />
@@ -815,7 +815,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
           {/* Header Background Toggle */}
           <button
             onClick={() => setHeaderTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card text-xs font-semibold text-[#e4ded6] hover:text-white transition-colors cursor-pointer border border-white/10"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card text-xs font-semibold text-slate-800 dark:text-[#e4ded6] hover:text-[#9d512d] dark:hover:text-white transition-colors cursor-pointer border border-stone-200 dark:border-white/10"
             title="હેડર બેકગ્રાઉન્ડ બદલો (ડાર્ક / વ્હાઇટ)"
           >
             <span
@@ -831,10 +831,10 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
           {/* Logo Invert / Contrast Toggle */}
           <button
             onClick={() => setLogoContrast((c) => (c === 'normal' ? 'contrast' : 'normal'))}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card text-xs font-semibold text-[#e4ded6] hover:text-white transition-colors cursor-pointer border border-white/10"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card text-xs font-semibold text-slate-800 dark:text-[#e4ded6] hover:text-[#9d512d] dark:hover:text-white transition-colors cursor-pointer border border-stone-200 dark:border-white/10"
             title="લોગો કલર (ડાર્ક બેકગ્રાઉન્ડમાં વ્હાઇટ અને વ્હાઇટ બેકગ્રાઉન્ડમાં બ્લેક)"
           >
-            <span className="font-bold text-[10px] px-1 py-0.2 rounded bg-white/20 text-[#f59c73]">
+            <span className="font-bold text-[10px] px-1 py-0.2 rounded bg-amber-500/20 text-[#9d512d] dark:text-[#f59c73]">
               B/W
             </span>
             <span>
@@ -856,7 +856,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
       </div>
 
       {/* Mode Switcher: Students ID vs Staff ID */}
-      <div className="glass-panel rounded-3xl border border-white/10 p-5 shadow-lg">
+      <div className="glass-panel rounded-3xl border border-stone-200 dark:border-white/10 p-5 shadow-lg">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
@@ -864,7 +864,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
               className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 cardType === 'students'
                   ? 'bg-[#9d512d] text-white shadow-lg'
-                  : 'glass-card text-[#a99f91] hover:text-white'
+                  : 'glass-card text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Users className="w-4 h-4" />
@@ -876,7 +876,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
               className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 cardType === 'staff'
                   ? 'bg-[#9d512d] text-white shadow-lg'
-                  : 'glass-card text-[#a99f91] hover:text-white'
+                  : 'glass-card text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <UserCheck className="w-4 h-4" />

@@ -50,32 +50,32 @@ export const SecurityAuditor: React.FC<SecurityAuditorProps> = ({ school, onBack
   return (
     <div className="space-y-6">
       {/* Overview Card */}
-      <div className="bg-slate-800/90 rounded-xl border border-slate-700/80 p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-6 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
             {onBack && (
               <button
                 type="button"
                 onClick={onBack}
-                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1"
+                className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1"
                 title="પાછળના મેનુ પર જાઓ (Go Back)"
               >
-                <ArrowLeft className="w-5 h-5 text-emerald-400" />
+                <ArrowLeft className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </button>
             )}
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="p-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="p-1 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                   <ShieldCheck className="w-4 h-4" />
                 </span>
-                <span className="text-xs font-semibold text-emerald-400">
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   Firestore Security Rules Deployed & Active
                 </span>
               </div>
-              <h2 className="text-xl font-bold text-white tracking-tight">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
                 Backend Tenant Isolation & Security Audit
               </h2>
-              <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
                 In this architecture, security is enforced directly at the Firebase Cloud Firestore database engine. A school can never access, query, or mutate another school&apos;s students or marks, even with modified client code.
               </p>
             </div>
@@ -85,7 +85,7 @@ export const SecurityAuditor: React.FC<SecurityAuditorProps> = ({ school, onBack
             id="btn-run-security-probe"
             onClick={runCrossSchoolSecurityProbe}
             disabled={testing}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
             {testing ? 'Executing Probe Query...' : 'Test Cross-School Breach'}
@@ -96,17 +96,17 @@ export const SecurityAuditor: React.FC<SecurityAuditorProps> = ({ school, onBack
         {testResult && (
           <div
             id="security-probe-result"
-            className={`mt-5 rounded-lg p-4 text-xs border ${
+            className={`mt-5 rounded-xl p-4 text-xs border ${
               testResult.blockedSuccessfully
-                ? 'bg-emerald-950/70 border-emerald-800/80 text-emerald-200'
-                : 'bg-red-950/70 border-red-800/80 text-red-200'
+                ? 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-200 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-200'
+                : 'bg-red-50 dark:bg-red-950/70 border-red-200 dark:border-red-800/80 text-red-900 dark:text-red-200'
             }`}
           >
             <div className="flex items-start gap-3">
               {testResult.blockedSuccessfully ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
               ) : (
-                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
               )}
               <div>
                 <div className="font-semibold text-sm mb-1">
@@ -114,10 +114,10 @@ export const SecurityAuditor: React.FC<SecurityAuditorProps> = ({ school, onBack
                     ? 'Security Rule Enforcement Confirmed (Pass)'
                     : 'Security Breach Detected!'}
                 </div>
-                <p className="text-slate-300 leading-relaxed mb-2">
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-2">
                   {testResult.message}
                 </p>
-                <div className="font-mono text-[11px] bg-black/40 px-2 py-1 rounded border border-white/10 inline-block text-slate-300">
+                <div className="font-mono text-[11px] bg-slate-100 dark:bg-black/40 px-2 py-1 rounded border border-slate-200 dark:border-white/10 inline-block text-slate-800 dark:text-slate-300">
                   Target: /schools/foreign_school_attacker_target_99999/students • Result: {testResult.errorName || 'PERMISSION_DENIED'}
                 </div>
               </div>
@@ -129,40 +129,40 @@ export const SecurityAuditor: React.FC<SecurityAuditorProps> = ({ school, onBack
       {/* Architecture Breakdown Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Active Binding Parameters */}
-        <div className="bg-slate-800/80 rounded-xl border border-slate-700/80 p-5">
-          <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
-            <Key className="w-4 h-4 text-emerald-400" />
+        <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-4">
+            <Key className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             Current School Authentication Binding
           </h3>
           <div className="space-y-3 text-xs">
-            <div className="bg-slate-900 p-3 rounded-lg border border-slate-700 font-mono">
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">
+            <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 font-mono">
+              <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">
                 Authenticated Firebase UID
               </span>
-              <span className="text-emerald-400 break-all">{school.id}</span>
+              <span className="text-emerald-600 dark:text-emerald-400 break-all">{school.id}</span>
             </div>
 
-            <div className="bg-slate-900 p-3 rounded-lg border border-slate-700 font-mono">
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">
+            <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 font-mono">
+              <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">
                 School DISE Code
               </span>
-              <span className="text-white">{school.diseCode}</span>
+              <span className="text-slate-900 dark:text-white">{school.diseCode}</span>
             </div>
 
-            <div className="bg-slate-900 p-3 rounded-lg border border-slate-700 font-mono">
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">
+            <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 font-mono">
+              <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">
                 Assigned Firestore Storage Path
               </span>
-              <span className="text-slate-200">
+              <span className="text-slate-700 dark:text-slate-200">
                 /schools/{school.id}/[students | marks]
               </span>
             </div>
 
-            <div className="bg-slate-900 p-3 rounded-lg border border-slate-700 font-mono">
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">
+            <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 font-mono">
+              <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">
                 Enforced Rule Condition
               </span>
-              <span className="text-emerald-300">
+              <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
                 request.auth.uid == schoolId
               </span>
             </div>
@@ -170,12 +170,12 @@ export const SecurityAuditor: React.FC<SecurityAuditorProps> = ({ school, onBack
         </div>
 
         {/* Live Ruleset Snippet */}
-        <div className="bg-slate-800/80 rounded-xl border border-slate-700/80 p-5">
-          <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
-            <FileCode className="w-4 h-4 text-blue-400" />
+        <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-4">
+            <FileCode className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             Active firestore.rules
           </h3>
-          <pre className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto leading-relaxed max-h-72">
+          <pre className="bg-slate-950 p-3 rounded-xl border border-slate-300 dark:border-slate-800 text-[11px] font-mono text-slate-200 overflow-x-auto leading-relaxed max-h-72">
 {`rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -223,8 +223,8 @@ service cloud.firestore {
   }
 }`}
           </pre>
-          <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-400">
-            <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400">
+            <Terminal className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>Deployed and verified on Google Cloud Firestore</span>
           </div>
         </div>

@@ -371,24 +371,24 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner: Examination & Mark Entry */}
-      <div className="glass-panel rounded-3xl border border-white/10 p-6 shadow-xl relative overflow-hidden">
+      <div className="glass-panel rounded-3xl border border-slate-200 dark:border-white/10 p-6 shadow-xl relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/25 text-[#f59c73] border border-[#9d512d]/40 mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/25 text-[#9d512d] dark:text-[#f59c73] border border-[#9d512d]/40 mb-2">
               <Award className="w-3.5 h-3.5" />
               <span>વિદ્યાલયમ પરિણામ સિસ્ટમ • ગુજરાત શિક્ષણ બોર્ડ પદ્ધતિ</span>
             </div>
-            <h2 className="text-2xl font-black text-[#e4ded6] tracking-tight">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-[#e4ded6] tracking-tight">
               વિષયવાર ગુણ નોંધણી કેન્દ્ર (Exam Mark Entry)
             </h2>
-            <p className="text-xs text-[#a99f91] mt-1 max-w-2xl leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-[#a99f91] mt-1 max-w-2xl leading-relaxed">
               ધોરણ 9 અને 11 માટે ૩ સત્રાંત કસોટીઓ (પ્રથમ, દ્વિતીય, વાર્ષિક) + આંતરિક મૂલ્યાંકન, તથા ધોરણ 10 માટે પ્રથમ અને પ્રિલિમિનરી પરીક્ષાના ગુણ અહીં સહેલાઈથી નોંધો.
             </p>
           </div>
 
           {/* Standard Selector */}
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-[#a99f91]">ધોરણ:</span>
+            <span className="text-xs font-bold text-slate-700 dark:text-[#a99f91]">ધોરણ:</span>
             <div className="flex gap-2">
               {(['9', '10', '11'] as AllowedStandard[]).map((std) => (
                 <button
@@ -397,7 +397,7 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
                   className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                     selectedStandard === std
                       ? 'bg-[#9d512d] text-white shadow-lg shadow-[#9d512d]/30 scale-105'
-                      : 'glass-card text-[#a99f91] hover:text-white'
+                      : 'glass-card text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   ધોરણ {std}
@@ -409,17 +409,17 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
       </div>
 
       {/* Selector Toolbar: Exam Selection, Subject Selection, and Actions */}
-      <div className="glass-card rounded-2xl border border-white/10 p-5 space-y-4">
+      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 p-5 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
           {/* 1. Exam Selector */}
           <div>
-            <label className="block text-[11px] font-bold text-[#a99f91] uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-[#a99f91] uppercase tracking-wider mb-1.5">
               પરીક્ષા પસંદ કરો (Select Exam):
             </label>
             <select
               value={selectedExamId}
               onChange={(e) => setSelectedExamId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-[#f59c73]"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#9d512d] dark:focus:border-[#f59c73]"
             >
               {availableExams.map((ex) => (
                 <option key={ex.id} value={ex.id}>
@@ -431,13 +431,13 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
 
           {/* 2. Subject Selector */}
           <div>
-            <label className="block text-[11px] font-bold text-[#a99f91] uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-[#a99f91] uppercase tracking-wider mb-1.5">
               વિષય પસંદ કરો (Select Subject):
             </label>
             <select
               value={selectedSubjectId}
               onChange={(e) => setSelectedSubjectId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-[#f59c73]"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#9d512d] dark:focus:border-[#f59c73]"
             >
               {availableSubjects.map((sub) => (
                 <option key={sub.id} value={sub.id}>
@@ -449,7 +449,7 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
 
           {/* 3. Search Filter */}
           <div>
-            <label className="block text-[11px] font-bold text-[#a99f91] uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-[#a99f91] uppercase tracking-wider mb-1.5">
               વિદ્યાર્થી શોધો (Search Student):
             </label>
             <div className="relative">
@@ -459,7 +459,7 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="નામ, રોલ નં, GR નંબર..."
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#f59c73]"
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#9d512d] dark:focus:border-[#f59c73]"
               />
             </div>
           </div>
@@ -469,17 +469,17 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
             <button
               onClick={handleDownloadExcelTemplate}
               title="વિદ્યાર્થીઓના નામ સાથે ગુણ નોંધણી શીટ ડાઉનલોડ કરો"
-              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white hover:border-[#f59c73] transition-all cursor-pointer"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl glass-card text-xs font-bold text-slate-700 dark:text-[#e4ded6] hover:text-slate-900 dark:hover:text-white hover:border-[#9d512d] dark:hover:border-[#f59c73] transition-all cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>એક્સેલ ફોર્મ</span>
             </button>
 
             <label
               title="ભરેલી એક્સેલ ફાઇલ અપલોડ કરી એકસાથે ગુણ લોડ કરો"
-              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white hover:border-[#f59c73] transition-all cursor-pointer"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl glass-card text-xs font-bold text-slate-700 dark:text-[#e4ded6] hover:text-slate-900 dark:hover:text-white hover:border-[#9d512d] dark:hover:border-[#f59c73] transition-all cursor-pointer"
             >
-              <Upload className="w-3.5 h-3.5 text-blue-400" />
+              <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>આયાત (Import)</span>
               <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="hidden" />
             </label>
@@ -487,27 +487,27 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
         </div>
 
         {/* Status Indicators & Summary Strip */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/5 text-xs text-[#a99f91]">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-white/5 text-xs text-slate-600 dark:text-[#a99f91]">
           <div className="flex flex-wrap items-center gap-4">
             <span className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-[#f59c73]" />
+              <Users className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
               કુલ વિદ્યાર્થીઓ:{' '}
-              <strong className="text-white">{standardStudents.length}</strong>
+              <strong className="text-slate-900 dark:text-white">{standardStudents.length}</strong>
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               ગુણ નોંધાયા:{' '}
-              <strong className="text-white">
+              <strong className="text-slate-900 dark:text-white">
                 {enteredCount} / {standardStudents.length}
               </strong>
             </span>
             {absentCount > 0 && (
-              <span className="text-amber-400 font-semibold">
+              <span className="text-amber-700 dark:text-amber-400 font-semibold">
                 ગેરહાજર (AB): {absentCount}
               </span>
             )}
             {averageMarks > 0 && (
-              <span className="text-blue-300 font-semibold">
+              <span className="text-blue-700 dark:text-blue-300 font-semibold">
                 વર્ગ સરેરાશ: {averageMarks} / {maxMarks}
               </span>
             )}
@@ -545,45 +545,45 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
       </div>
 
       {/* Interactive Mark Entry Table */}
-      <div className="glass-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
-        <div className="px-5 py-4 bg-slate-900/80 border-b border-white/10 flex items-center justify-between">
+      <div className="glass-card rounded-2xl border border-stone-200 dark:border-white/10 overflow-hidden shadow-2xl">
+        <div className="px-5 py-4 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-[#f59c73]" />
-            <h3 className="text-sm font-black text-white">
+            <BookOpen className="w-4 h-4 text-[#9d512d] dark:text-[#f59c73]" />
+            <h3 className="text-sm font-black text-slate-900 dark:text-white">
               {currentExam.nameGu} • {currentSubject.nameGu} (કુલ ગુણ: {maxMarks})
             </h3>
           </div>
-          <span className="text-xs text-[#a99f91]">
-            ટિપ: ગુણ લખીને <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-white">Tab</kbd> અથવા <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-white">Enter</kbd> દબાવો. ગેરહાજર માટે <strong className="text-amber-400">AB</strong> લખો.
+          <span className="text-xs text-slate-600 dark:text-[#a99f91]">
+            ટિપ: ગુણ લખીને <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-white">Tab</kbd> અથવા <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-white">Enter</kbd> દબાવો. ગેરહાજર માટે <strong className="text-amber-600 dark:text-amber-400">AB</strong> લખો.
           </span>
         </div>
 
         {/* Mobile Horizontal Scroll Tip */}
-        <div className="sm:hidden px-3.5 py-2 bg-slate-950/90 text-[11px] text-[#f59c73] flex items-center justify-between border-b border-white/5">
+        <div className="sm:hidden px-3.5 py-2 bg-slate-100 dark:bg-slate-950/90 text-[11px] text-[#9d512d] dark:text-[#f59c73] flex items-center justify-between border-b border-slate-200 dark:border-white/5">
           <span className="font-semibold">📱 મોબાઇલ ટિપ: ગુણ જોવા અને ભરવા માટે ડાબે-જમણે સ્ક્રોલ કરો</span>
-          <span className="text-[10px] text-slate-400 font-mono">↔️ Swipe</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">↔️ Swipe</span>
         </div>
 
         <div className="overflow-x-auto mobile-table-scroll max-h-[600px] overflow-y-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-900 text-[#a99f91] sticky top-0 z-10 shadow border-b border-slate-800">
+            <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-[#a99f91] sticky top-0 z-10 shadow-xs border-b border-slate-200 dark:border-slate-800">
               <tr>
-                <th className="py-3 px-4 w-12 text-center">રોલ</th>
-                <th className="py-3 px-4 w-28">G.R. નંબર</th>
-                <th className="py-3 px-4">વિદ્યાર્થીનું પૂરું નામ (GR મુજબ)</th>
-                <th className="py-3 px-4 w-16 text-center">વર્ગ</th>
-                <th className="py-3 px-4 w-44 text-center">
+                <th className="py-3 px-4 w-12 text-center font-bold">રોલ</th>
+                <th className="py-3 px-4 w-28 font-bold">G.R. નંબર</th>
+                <th className="py-3 px-4 font-bold text-slate-900 dark:text-white">વિદ્યાર્થીનું પૂરું નામ (GR મુજબ)</th>
+                <th className="py-3 px-4 w-16 text-center font-bold">વર્ગ</th>
+                <th className="py-3 px-4 w-44 text-center font-bold">
                   મેળવેલ ગુણ (/{maxMarks})
                 </th>
-                <th className="py-3 px-4 w-24 text-center">ગેરહાજર (AB)</th>
-                <th className="py-3 px-4 w-24 text-center">ગ્રેડ</th>
-                <th className="py-3 px-4 w-28 text-center">પરિણામ સ્થિતિ</th>
+                <th className="py-3 px-4 w-24 text-center font-bold">ગેરહાજર (AB)</th>
+                <th className="py-3 px-4 w-24 text-center font-bold">ગ્રેડ</th>
+                <th className="py-3 px-4 w-28 text-center font-bold">પરિણામ સ્થિતિ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-slate-200 dark:divide-white/5">
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-500 dark:text-slate-400">
                     ધોરણ {selectedStandard} માં કોઈ વિદ્યાર્થી મળ્યા નથી.
                   </td>
                 </tr>
@@ -599,20 +599,20 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
                   return (
                     <tr
                       key={st.id}
-                      className={`hover:bg-white/5 transition-colors ${
-                        isAbsent ? 'bg-amber-500/5' : ''
+                      className={`hover:bg-slate-50 dark:hover:bg-white/5 transition-colors ${
+                        isAbsent ? 'bg-amber-500/10' : ''
                       }`}
                     >
-                      <td className="py-2.5 px-4 text-center font-bold text-white">
+                      <td className="py-2.5 px-4 text-center font-bold text-slate-900 dark:text-white">
                         {st.rollNumber || '-'}
                       </td>
-                      <td className="py-2.5 px-4 font-mono text-[#f59c73]">
+                      <td className="py-2.5 px-4 font-mono text-[#9d512d] dark:text-[#f59c73]">
                         {st.grNumber || '-'}
                       </td>
-                      <td className="py-2.5 px-4 font-bold text-white">
+                      <td className="py-2.5 px-4 font-bold text-slate-900 dark:text-white">
                         {st.studentName}
                       </td>
-                      <td className="py-2.5 px-4 text-center text-[#a99f91]">
+                      <td className="py-2.5 px-4 text-center text-slate-600 dark:text-[#a99f91]">
                         {st.section || st.division || 'A'}
                       </td>
                       <td className="py-2.5 px-4 text-center">
@@ -625,12 +625,12 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
                             placeholder={`0-${maxMarks}`}
                             className={`w-24 text-center py-1.5 px-2 rounded-lg font-black text-sm border focus:outline-none transition-all ${
                               isAbsent
-                                ? 'bg-amber-500/20 border-amber-500/40 text-amber-400 cursor-not-allowed'
+                                ? 'bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-500/20 dark:border-amber-500/40 dark:text-amber-400 cursor-not-allowed'
                                 : hasMark
                                 ? isPass
-                                  ? 'bg-slate-900 border-emerald-500/50 text-emerald-400'
-                                  : 'bg-slate-900 border-red-500/50 text-red-400'
-                                : 'bg-slate-900 border-slate-700 text-white focus:border-[#f59c73]'
+                                  ? 'bg-emerald-50 border-emerald-400 text-emerald-800 dark:bg-slate-900 dark:border-emerald-500/50 dark:text-emerald-400'
+                                  : 'bg-red-50 border-red-400 text-red-800 dark:bg-slate-900 dark:border-red-500/50 dark:text-red-400'
+                                : 'bg-white border-slate-300 text-slate-900 dark:bg-slate-900 dark:border-slate-700 dark:text-white focus:border-[#9d512d] dark:focus:border-[#f59c73]'
                             }`}
                           />
                           <span className="text-[11px] text-slate-500 font-bold">
@@ -645,7 +645,7 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
                           className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
                             isAbsent
                               ? 'bg-amber-500 text-slate-950 font-black'
-                              : 'bg-slate-800 text-slate-400 hover:text-white'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-white'
                           }`}
                         >
                           {isAbsent ? 'ગેરહાજર' : 'હાજર'}
@@ -688,8 +688,8 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
         </div>
 
         {/* Bottom Save Bar */}
-        <div className="p-4 bg-slate-900/90 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
-          <div className="text-xs text-[#a99f91]">
+        <div className="p-4 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-4">
+          <div className="text-xs text-slate-600 dark:text-[#a99f91]">
             બધા ગુણ દાખલ કર્યા પછી સાચવવાનું ભૂલશો નહીં. આ ગુણ ઓટોમેટિકલી વાર્ષિક પરિણામમાં ગણાઈ જશે.
           </div>
           <button

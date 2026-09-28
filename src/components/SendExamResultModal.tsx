@@ -438,22 +438,22 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
-        <div className="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-slate-100">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-slate-800 dark:text-slate-100">
           {/* Header */}
-          <div className="shrink-0 px-6 py-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+          <div className="shrink-0 px-6 py-4 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-900/30">
                 <Send className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base sm:text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
                   <span>વાલીઓને પરીક્ષા પરિણામ મોકલો</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30">
                     WhatsApp & SMS
                   </span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   પસંદ કરેલ પરીક્ષાના ગુણ અને પરિણામ દરેક વાલીના મોબાઈલ પર વ્યક્તિગત મેસેજ તરીકે મોકલો
                 </p>
               </div>
@@ -461,22 +461,22 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Exam Category Switcher (Offline vs Online Exam) */}
-          <div className="shrink-0 px-6 py-3 bg-slate-950/40 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center p-1 bg-slate-900 rounded-2xl border border-slate-800 w-full sm:w-auto">
+          <div className="shrink-0 px-6 py-3 bg-slate-100/70 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full sm:w-auto shadow-xs">
               <button
                 type="button"
                 onClick={() => setExamCategory('offline')}
                 className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
                   examCategory === 'offline'
                     ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Award className="w-4 h-4" />
@@ -489,7 +489,7 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
                 className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
                   examCategory === 'online'
                     ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Sparkles className="w-4 h-4" />
@@ -497,24 +497,24 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
               </button>
             </div>
 
-            <div className="text-xs text-slate-400 font-medium">
-              શાળા: <span className="text-slate-200 font-bold">{school.schoolName}</span>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              શાળા: <span className="text-slate-800 dark:text-slate-200 font-bold">{school.schoolName}</span>
             </div>
           </div>
 
           {/* Filter Bar */}
-          <div className="shrink-0 p-4 sm:px-6 bg-slate-900/90 border-b border-slate-800/80 space-y-3">
+          <div className="shrink-0 p-4 sm:px-6 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800/80 space-y-3">
             {examCategory === 'offline' ? (
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
                 {/* Standard */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
                     ધોરણ (Standard):
                   </label>
                   <select
                     value={selectedStandard}
                     onChange={(e) => setSelectedStandard(e.target.value as AllowedStandard)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-emerald-500 shadow-xs"
                   >
                     <option value="9">ધોરણ ૯ (Standard 9)</option>
                     <option value="10">ધોરણ ૧૦ (Standard 10)</option>
@@ -525,13 +525,13 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
 
                 {/* Section */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
                     વર્ગ (Section):
                   </label>
                   <select
                     value={selectedSection}
                     onChange={(e) => setSelectedSection(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-emerald-500 shadow-xs"
                   >
                     <option value="all">બધા વર્ગ (All Sections)</option>
                     {availableSections.map((sec) => (
@@ -544,7 +544,7 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
 
                 {/* Exam Type */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
                     પરીક્ષા (Exam):
                   </label>
                   <select
@@ -553,7 +553,7 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
                       setOfflineExamType(e.target.value);
                       setOfflineSubject('all');
                     }}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-emerald-400 font-semibold focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-emerald-700 dark:text-emerald-400 font-semibold focus:outline-none focus:border-emerald-500 shadow-xs"
                   >
                     {availableOfflineExams.map((ex) => (
                       <option key={ex} value={ex}>
@@ -565,13 +565,13 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
 
                 {/* Subject filter (helpful for Ekam Kasoti) */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
                     વિષય (Subject):
                   </label>
                   <select
                     value={offlineSubject}
                     onChange={(e) => setOfflineSubject(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-emerald-500 shadow-xs"
                   >
                     <option value="all">તમામ વિષયો (All Subjects)</option>
                     {availableSubjectsForOffline.map((sub) => (
@@ -586,13 +586,13 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
               /* Online Exam Selector */
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
                     ઓનલાઇન કસોટી પસંદ કરો:
                   </label>
                   <select
                     value={selectedOnlineExamId}
                     onChange={(e) => setSelectedOnlineExamId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-cyan-300 font-semibold focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-cyan-700 dark:text-cyan-300 font-semibold focus:outline-none focus:border-cyan-500 shadow-xs"
                   >
                     {onlineExams.length === 0 ? (
                       <option value="">કોઈ ઓનલાઇન કસોટી ઉપલબ્ધ નથી</option>
@@ -607,15 +607,15 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
                 </div>
 
                 {activeOnlineExam && (
-                  <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs shadow-xs">
                     <div>
-                      <div className="font-bold text-white">{activeOnlineExam.title}</div>
-                      <div className="text-slate-400 text-[11px]">
+                      <div className="font-bold text-slate-900 dark:text-white">{activeOnlineExam.title}</div>
+                      <div className="text-slate-500 dark:text-slate-400 text-[11px]">
                         વિષય: {activeOnlineExam.subject} | કુલ ગુણ: {activeOnlineExam.totalMarks} |
                         સબમિટ કરેલ: {onlineAttempts.filter((a) => a.status === 'submitted').length}
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-lg bg-cyan-100 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-300 text-[10px] font-bold">
                       {activeOnlineExam.status.toUpperCase()}
                     </span>
                   </div>
@@ -633,14 +633,14 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
                     placeholder="વિદ્યાર્થી, રોલ નં અથવા GR થી શોધો..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 shadow-xs"
                   />
                 </div>
 
                 <select
                   value={phoneFilter}
                   onChange={(e) => setPhoneFilter(e.target.value as any)}
-                  className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-[11px] text-slate-300 focus:outline-none"
+                  className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 focus:outline-none shadow-xs"
                 >
                   <option value="all">બધા વિદ્યાર્થીઓ</option>
                   <option value="has_phone">માત્ર ફોન નંબર ધરાવતા</option>
@@ -652,14 +652,14 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
                 <button
                   type="button"
                   onClick={handleSelectAll}
-                  className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold cursor-pointer"
+                  className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-[11px] font-semibold cursor-pointer transition-colors"
                 >
                   બધા પસંદ કરો ({eligibleStudents.length})
                 </button>
                 <button
                   type="button"
                   onClick={handleDeselectAll}
-                  className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-[11px] font-semibold cursor-pointer"
+                  className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 text-[11px] font-semibold cursor-pointer transition-colors"
                 >
                   પસંદગી રદ
                 </button>
@@ -675,7 +675,7 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
               </div>
             ) : (
               <div className="space-y-1.5">
-                <div className="px-3 py-2 bg-slate-950/60 rounded-xl border border-slate-800 grid grid-cols-12 gap-2 text-[11px] font-bold text-slate-400">
+                <div className="px-3 py-2 bg-slate-100 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 grid grid-cols-12 gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-400">
                   <div className="col-span-1 flex items-center">
                     <input
                       type="checkbox"
@@ -700,8 +700,8 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
                       onClick={() => handleToggleStudent(st.id)}
                       className={`px-3 py-2.5 rounded-xl border transition-all cursor-pointer grid grid-cols-12 gap-2 items-center text-xs ${
                         isSelected
-                          ? 'bg-slate-850 border-emerald-500/60 shadow-sm'
-                          : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-850/60 text-slate-300'
+                          ? 'bg-emerald-50 border-emerald-500 text-slate-900 dark:bg-slate-850 dark:border-emerald-500/60 dark:text-slate-100 shadow-sm'
+                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-900/40 dark:border-slate-800/80 dark:hover:bg-slate-850/60 dark:text-slate-300'
                       }`}
                     >
                       {/* Checkbox */}
@@ -716,8 +716,8 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
 
                       {/* Student info */}
                       <div className="col-span-4 min-w-0">
-                        <div className="font-bold text-white truncate">{st.studentName}</div>
-                        <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+                        <div className="font-bold text-slate-900 dark:text-white truncate">{st.studentName}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
                           <span>ધો. {st.standard}</span>
                           {(st.section || st.division) && <span>({st.section || st.division})</span>}
                           {st.rollNumber && <span>• રોલ: {st.rollNumber}</span>}
@@ -728,12 +728,12 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
                       {/* Parent Phone */}
                       <div className="col-span-3">
                         {phone ? (
-                          <div className="flex items-center gap-1 text-slate-200 font-mono text-xs">
-                            <Smartphone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <div className="flex items-center gap-1 text-slate-700 dark:text-slate-200 font-mono text-xs">
+                            <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                             <span>{phone}</span>
                           </div>
                         ) : (
-                          <span className="px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] font-semibold">
+                          <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 text-[10px] font-semibold">
                             ⚠️ નંબર નથી
                           </span>
                         )}
@@ -743,18 +743,18 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
                       <div className="col-span-4 text-right">
                         {res?.hasMarks ? (
                           <div>
-                            <span className="font-bold text-emerald-400 font-mono text-xs">
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-xs">
                               {res.obtainedMarks} / {res.totalMarks}
                             </span>
-                            <span className="text-slate-400 text-[11px] ml-1.5">
+                            <span className="text-slate-500 dark:text-slate-400 text-[11px] ml-1.5">
                               ({res.percentage.toFixed(1)}%)
                             </span>
-                            <div className="text-[10px] text-slate-400 mt-0.5">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                               {res.statusText}
                             </div>
                           </div>
                         ) : (
-                          <span className="text-[11px] text-slate-500 italic">
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">
                             {res?.statusText || 'ગુણ નથી'}
                           </span>
                         )}
@@ -768,15 +768,15 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
 
           {/* Selection Error Banner */}
           {selectionError && (
-            <div className="shrink-0 px-6 py-2.5 bg-rose-500/15 border-t border-rose-500/30 flex items-center justify-between text-xs text-rose-300">
+            <div className="shrink-0 px-6 py-2.5 bg-rose-50 dark:bg-rose-500/15 border-t border-rose-200 dark:border-rose-500/30 flex items-center justify-between text-xs text-rose-800 dark:text-rose-300">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                 <span>{selectionError}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectionError(null)}
-                className="text-rose-400 hover:text-white p-0.5 rounded cursor-pointer"
+                className="text-rose-600 dark:text-rose-400 hover:text-slate-900 dark:hover:text-white p-0.5 rounded cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -784,14 +784,14 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
           )}
 
           {/* Bottom Action Bar */}
-          <div className="shrink-0 px-6 py-4 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-3 text-slate-400">
-              <span className="font-semibold text-slate-200">
-                પસંદ કરેલ વિદ્યાર્થીઓ: <strong className="text-emerald-400 font-mono">{selectedCount}</strong> / {eligibleStudents.length}
+          <div className="shrink-0 px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                પસંદ કરેલ વિદ્યાર્થીઓ: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{selectedCount}</strong> / {eligibleStudents.length}
               </span>
               <span>•</span>
               <span>
-                પરીક્ષા: <strong className="text-white">{examTitleForBroadcast}</strong>
+                પરીક્ષા: <strong className="text-slate-900 dark:text-white">{examTitleForBroadcast}</strong>
               </span>
             </div>
 
@@ -799,7 +799,7 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold cursor-pointer transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold cursor-pointer transition-colors"
               >
                 રદ કરો
               </button>

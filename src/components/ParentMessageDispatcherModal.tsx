@@ -384,27 +384,27 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn select-none">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[96vh] overflow-hidden text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 dark:bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn select-none">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[96vh] overflow-hidden text-slate-800 dark:text-slate-100">
         
         {/* HEADER */}
-        <div className="shrink-0 px-4 sm:px-6 py-3.5 bg-slate-950 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="shrink-0 px-4 sm:px-6 py-3.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-950/50 shrink-0">
               <MessageSquare className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm sm:text-base font-bold text-white tracking-wide">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide">
                   {title}
                 </h3>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                   <span>૧૦૦% પ્રાઇવેટ (દરેક વાલીને ફક્ત પોતાના બાળકની વિગત)</span>
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-                કુલ <strong className="text-white font-mono">{recipients.length}</strong> વિદ્યાર્થીઓ • ધોરણ: <strong className="text-emerald-400">{standard || 'બધા'}</strong>
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                કુલ <strong className="text-slate-900 dark:text-white font-mono">{recipients.length}</strong> વિદ્યાર્થીઓ • ધોરણ: <strong className="text-emerald-600 dark:text-emerald-400">{standard || 'બધા'}</strong>
               </p>
             </div>
           </div>
@@ -412,23 +412,23 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <button
               onClick={handleExportExcel}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-700 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-xs"
               title="Excel ડાઉનલોડ"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span className="hidden sm:inline">Excel</span>
             </button>
             <button
               onClick={handleCopyAllPhoneNumbers}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-700 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-xs"
               title="બધા વાલીઓના નંબરો કૉપી કરો"
             >
-              {numbersCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Smartphone className="w-3.5 h-3.5 text-cyan-400" />}
+              {numbersCopied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Smartphone className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />}
               <span className="hidden sm:inline">{numbersCopied ? 'નંબરો કૉપી!' : 'નંબરો કૉપી'}</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer ml-1"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer ml-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -436,8 +436,8 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
         </div>
 
         {/* THREE WORKFLOW TABS */}
-        <div className="shrink-0 px-4 sm:px-6 py-2 bg-slate-950/70 border-b border-slate-800 flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs w-full lg:w-auto overflow-x-auto">
+        <div className="shrink-0 px-4 sm:px-6 py-2 bg-slate-100/80 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1 p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs w-full lg:w-auto overflow-x-auto shadow-xs">
             {/* TAB 1: Auto Personal Send */}
             <button
               type="button"
@@ -448,10 +448,10 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
               className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap ${
                 dispatcherTab === 'auto_personal'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-950/40'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <RotateCcw className="w-3.5 h-3.5 text-emerald-300" />
+              <RotateCcw className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-300" />
               <span>⚡ ઓટો-પર્સનલ સેન્ડર (ખાનગી મેસેજ)</span>
             </button>
 
@@ -465,10 +465,10 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
               className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap ${
                 dispatcherTab === 'group_notice'
                   ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-950/40'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Radio className="w-3.5 h-3.5 text-cyan-300" />
+              <Radio className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-300" />
               <span>📢 વાલી ગ્રૂપ સિક્યોર નોટિસ</span>
             </button>
 
@@ -482,18 +482,18 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
               className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap ${
                 dispatcherTab === 'individual'
                   ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-950/40'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Users className="w-3.5 h-3.5 text-purple-300" />
+              <Users className="w-3.5 h-3.5 text-purple-500 dark:text-purple-300" />
               <span>👤 એક-એક વિદ્યાર્થી ચકાસો</span>
             </button>
           </div>
 
           <div className="flex items-center gap-2 text-xs w-full lg:w-auto justify-between lg:justify-end">
             <div className="flex items-center gap-2">
-              <span className="text-slate-400">પ્રગતિ:</span>
-              <strong className="text-emerald-400 font-mono text-sm">
+              <span className="text-slate-500 dark:text-slate-400">પ્રગતિ:</span>
+              <strong className="text-emerald-600 dark:text-emerald-400 font-mono text-sm">
                 {sentCount} / {recipients.length}
               </strong>
               <span className="text-slate-500 font-mono">({progressPercent}%)</span>
@@ -503,16 +503,16 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
               type="button"
               disabled={isSavingHistory || historySaved}
               onClick={handleSaveToHistory}
-              className="px-3 py-1.5 rounded-xl bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 border border-teal-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-60 cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-600/20 dark:hover:bg-teal-600/30 dark:text-teal-300 dark:border-teal-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-60 cursor-pointer border"
             >
               {historySaved ? (
                 <>
-                  <CheckCheck className="w-3.5 h-3.5 text-teal-400" />
+                  <CheckCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                   <span>ઇતિહાસ સેવ થયો</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-3.5 h-3.5 text-teal-400" />
+                  <Save className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                   <span>ઇતિહાસ સેવ</span>
                 </>
               )}
@@ -549,30 +549,30 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
         {/* TAB 1: ⚡ AUTO-PERSONAL SENDER (Every Parent Gets ONLY Their Child's Marks!) */}
         {/* ========================================================================= */}
         {dispatcherTab === 'auto_personal' && (
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-900/60">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50 dark:bg-slate-900/60">
             
             {/* PRIVACY GUARANTEE BANNER */}
-            <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/40 flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
               <div className="text-xs space-y-1">
-                <h4 className="font-bold text-emerald-300">
+                <h4 className="font-bold text-emerald-800 dark:text-emerald-300">
                   ૧૦૦% પ્રાઇવેટ & સુરક્ષિત પર્સનલ મેસેજિંગ:
                 </h4>
-                <p className="text-slate-300 leading-relaxed">
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
                   દરેક વાલીને <strong>ફક્ત અને ફક્ત એમના જ બાળકના ગુણ, ટકાવારી અને રિઝલ્ટ</strong> મળશે. કોઈપણ વાલી બીજા વિદ્યાર્થીના માર્ક્સ જોઈ શકશે નહીં.
                 </p>
               </div>
             </div>
 
             {/* ZERO BACK-AND-FORTH 1-CLICK SHORTCUT BANNER */}
-            <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="p-4 rounded-2xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div className="flex items-start gap-2.5">
-                <Sparkles className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+                <Sparkles className="w-5 h-5 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
-                  <h5 className="font-bold text-cyan-300">
+                  <h5 className="font-bold text-cyan-900 dark:text-cyan-300">
                     વારંવાર WhatsApp ખોલીને Back ન જવું હોય તો? (૧-ક્લિક રીત)
                   </h5>
-                  <p className="text-slate-300 leading-relaxed text-[11px]">
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[11px]">
                     વર્ગના WhatsApp ગ્રૂપમાં ફક્ત ૧ જ વાર સિક્યોર લિંક મોકલો. વાલીઓ લિંક પર ક્લિક કરી રોલ નંબર નાખીને ફક્ત પોતાના જ બાળકની માર્કશીટ જોઈ શકશે (૧૦૦% ખાનગી).
                   </p>
                 </div>
@@ -588,22 +588,22 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
             </div>
 
             {/* AUTO RUNNER CONTROLLER CARD */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-slate-950 border border-slate-800 space-y-4 shadow-xl">
+            <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-4 shadow-md dark:shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-base font-bold text-white flex items-center gap-2">
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <span>⚡ બધા વાલીઓને આપમેળે પર્સનલ મેસેજ મોકલો (Auto-Dispatch Queue)</span>
-                    {autoRunning && <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />}
+                    {autoRunning && <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />}
                   </h4>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     નીચેનું બટન દબાવતા સિસ્ટમ ક્રમશઃ દરેક વાલીનું WhatsApp ખોલશે જેમાં ફક્ત તેમના જ બાળકના માર્ક્સ તૈયાર હશે.
                   </p>
                 </div>
 
                 {/* Speed selector */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[11px]">
-                    <span className="text-slate-400 px-1.5">સમય વિરામ:</span>
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px]">
+                    <span className="text-slate-600 dark:text-slate-400 px-1.5">સમય વિરામ:</span>
                     {[1, 2, 3].map((sec) => (
                       <button
                         key={sec}
@@ -611,8 +611,8 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                         onClick={() => setAutoDelay(sec)}
                         className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
                           autoDelay === sec
-                            ? 'bg-emerald-500 text-slate-950'
-                            : 'text-slate-400 hover:text-white'
+                            ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         {sec} સેકન્ડ
@@ -648,14 +648,14 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
 
               {/* Live Auto-Send Status */}
               {autoRunning && nextPendingRecipient && (
-                <div className="p-3.5 rounded-2xl bg-emerald-950/50 border border-emerald-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2 text-emerald-300">
+                <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
                     <span className="font-bold">આગામી વાલી:</span>
-                    <strong className="text-white text-sm">{nextPendingRecipient.studentName}</strong>
-                    <span className="font-mono text-emerald-400">({nextPendingRecipient.parentPhone})</span>
+                    <strong className="text-slate-900 dark:text-white text-sm">{nextPendingRecipient.studentName}</strong>
+                    <span className="font-mono text-emerald-700 dark:text-emerald-400">({nextPendingRecipient.parentPhone})</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-emerald-300 font-bold">
+                    <span className="font-mono text-emerald-800 dark:text-emerald-300 font-bold">
                       {autoCountdown} સેકન્ડમાં આપમેળે WhatsApp ખુલશે...
                     </span>
                     <button
@@ -665,7 +665,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                         handleLaunchWhatsApp(nextPendingRecipient, idx);
                         setAutoCountdown(autoDelay);
                       }}
-                      className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer"
+                      className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-xs"
                     >
                       તુરંત મોકલો ➡️
                     </button>
@@ -674,15 +674,15 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
               )}
 
               {autoSuccess && (
-                <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between text-xs text-emerald-300">
+                <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/40 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
                   <div className="flex items-center gap-2">
-                    <CheckCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <CheckCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>🎉 તમામ વાલીઓને તેમના બાળકના વ્યક્તિગત ગુણ સફળતાપૂર્વક મોકલાઈ ગયા છે!</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setAutoSuccess(false)}
-                    className="text-emerald-400 hover:text-white p-0.5 rounded cursor-pointer"
+                    className="text-emerald-600 dark:text-emerald-400 hover:text-slate-900 dark:hover:text-white p-0.5 rounded cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -692,29 +692,29 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
 
             {/* ACTIVE STUDENT PERSONAL PREVIEW CARD */}
             {nextPendingRecipient && (
-              <div className="p-4 sm:p-5 rounded-3xl bg-slate-950/80 border border-slate-800 space-y-3">
+              <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-3 shadow-md dark:shadow-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                    <h5 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                       આગામી વાલીને જનાર પર્સનલ મેસેજનું પ્રિવ્યૂ (Sample Preview):
                     </h5>
                   </div>
-                  <span className="text-xs font-mono text-emerald-400 font-bold">
+                  <span className="text-xs font-mono text-emerald-700 dark:text-emerald-400 font-bold">
                     વિદ્યાર્થી: {nextPendingRecipient.studentName}
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-200 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
                   {nextPendingRecipient.messageText}
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                   <span>
-                    વાલી નંબર: <strong className="font-mono text-white">{nextPendingRecipient.parentPhone || 'નંબર નથી'}</strong>
+                    વાલી નંબર: <strong className="font-mono text-slate-900 dark:text-white">{nextPendingRecipient.parentPhone || 'નંબર નથી'}</strong>
                   </span>
                   <span>
-                    ગુણ વિગત: <strong className="text-emerald-400 font-mono">
+                    ગુણ વિગત: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">
                       {nextPendingRecipient.examScore ? `${nextPendingRecipient.examScore.obtainedMarks}/${nextPendingRecipient.examScore.totalMarks} (${nextPendingRecipient.examScore.percentage.toFixed(1)}%)` : 'પરિણામ ઉપલબ્ધ'}
                     </strong>
                   </span>
@@ -728,17 +728,17 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
         {/* TAB 2: 📢 CLASS WHATSAPP GROUP NOTICE (With Secure Student Portal Link) */}
         {/* ========================================================================= */}
         {dispatcherTab === 'group_notice' && (
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-slate-900/60">
-            <div className="p-4 sm:p-6 rounded-3xl bg-gradient-to-br from-cyan-950/70 via-slate-900 to-blue-950/60 border border-cyan-500/40 shadow-xl space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-slate-50 dark:bg-slate-900/60">
+            <div className="p-4 sm:p-6 rounded-3xl bg-gradient-to-br from-cyan-50 via-white to-blue-50 dark:from-cyan-950/70 dark:via-slate-900 dark:to-blue-950/60 border border-cyan-200 dark:border-cyan-500/40 shadow-xl space-y-4">
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                  <Radio className="w-3.5 h-3.5 text-cyan-400" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-100 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/30">
+                  <Radio className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                   <span>૧-ક્લિક સમગ્ર વર્ગ વાલી ગ્રૂપ શેરિંગ (Class Parents Group Notice)</span>
                 </div>
-                <h4 className="text-base sm:text-lg font-bold text-white tracking-wide">
+                <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-wide">
                   WhatsApp વાલી ગ્રૂપમાં સત્તાવાર પરિણામ નોટિસ ૧-ક્લિકથી મોકલો
                 </h4>
-                <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
                   આ મેસેજમાં કોઈપણ વિદ્યાર્થીના માર્ક્સ જાહેર દેખાશે <strong>નહીં</strong>. દરેક વાલીશ્રી લિંક પર ક્લિક કરી પોતાના બાળકના રોલ નંબર / G.R. નંબર દ્વારા <strong>ફક્ત પોતાના બાળકના જ ગુણ અને પ્રગતિપત્રક</strong> ખાનગી રીતે જોઈ શકશે.
                 </p>
               </div>
@@ -757,20 +757,20 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                 <button
                   type="button"
                   onClick={handleSendGroupSms}
-                  className="py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-750 text-slate-100 font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all cursor-pointer"
+                  className="py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-100 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-xs"
                 >
-                  <Smartphone className="w-4 h-4 text-cyan-400" />
+                  <Smartphone className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                   <span>📱 સામૂહિક SMS મોકલો</span>
                 </button>
               </div>
             </div>
 
             {/* NOTICE PREVIEW BOX */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-slate-950 border border-slate-800 space-y-3">
+            <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 shadow-md dark:shadow-xl">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
-                  <h5 className="text-xs font-bold text-white uppercase tracking-wider">
+                  <FileSpreadsheet className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <h5 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                     વાલી ગ્રૂપ સિક્યોર નોટિસ લખાણ (Group Notice Text)
                   </h5>
                 </div>
@@ -779,9 +779,9 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                   <button
                     type="button"
                     onClick={() => setIsEditingNoticeText(!isEditingNoticeText)}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    <Edit2 className="w-3 h-3 text-cyan-400" />
+                    <Edit2 className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
                     <span>{isEditingNoticeText ? 'પ્રિવ્યૂ જુઓ' : 'મેસેજ એડિટ કરો'}</span>
                   </button>
 
@@ -792,19 +792,19 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                       setNoticeCopied(true);
                       setTimeout(() => setNoticeCopied(false), 3000);
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    {noticeCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-cyan-400" />}
+                    {noticeCopied ? <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />}
                     <span>{noticeCopied ? 'કૉપી થયું!' : 'લખાણ કૉપી'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleDownloadVcf}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                     title="વાલીઓના નંબરો તમારા ફોનમાં સેવ કરો"
                   >
-                    <Download className="w-3 h-3 text-emerald-400" />
+                    <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>વાલી નંબરો (.VCF)</span>
                   </button>
                 </div>
@@ -816,27 +816,27 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                     rows={10}
                     value={activeNoticeText}
                     onChange={(e) => setCustomNoticeText(e.target.value)}
-                    className="w-full p-3 rounded-2xl bg-slate-900 border border-slate-700 text-xs font-sans text-slate-100 focus:outline-none focus:border-cyan-500 leading-relaxed"
+                    className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-sans text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500 leading-relaxed"
                   />
                   <div className="flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => setCustomNoticeText('')}
-                      className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs hover:text-white cursor-pointer"
+                      className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs hover:text-slate-900 dark:hover:text-white cursor-pointer"
                     >
                       ડિફોલ્ટ રીસેટ
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsEditingNoticeText(false)}
-                      className="px-3 py-1 rounded-lg bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 cursor-pointer"
+                      className="px-3 py-1 rounded-lg bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 cursor-pointer shadow-xs"
                     >
                       સેવ કરો
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs font-mono text-slate-200 whitespace-pre-wrap max-h-56 overflow-y-auto leading-relaxed">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200 whitespace-pre-wrap max-h-56 overflow-y-auto leading-relaxed">
                   {activeNoticeText}
                 </div>
               )}
@@ -850,21 +850,21 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
         {dispatcherTab === 'individual' && (
           <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-0">
             {/* LEFT: Featured Student Dispatch Card (7 cols) */}
-            <div className="lg:col-span-7 p-4 sm:p-6 overflow-y-auto flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/60 space-y-4">
+            <div className="lg:col-span-7 p-4 sm:p-6 overflow-y-auto flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 space-y-4">
               {currentRecipient ? (
                 <div className="space-y-4">
                   {/* Student Identity Header */}
-                  <div className="flex items-center justify-between gap-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+                  <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-950/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-base flex items-center justify-center font-mono shrink-0">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold text-base flex items-center justify-center font-mono shrink-0">
                         {currentIndex + 1}
                       </div>
                       <div>
-                        <h4 className="text-base font-bold text-white tracking-wide">
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white tracking-wide">
                           {currentRecipient.studentName}
                         </h4>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400 flex-wrap">
-                          <span className="font-semibold text-slate-300">
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">
                             ધોરણ: {currentRecipient.standard}
                             {currentRecipient.section ? ` (${currentRecipient.section})` : ''}
                           </span>
@@ -880,17 +880,17 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
 
                     <div className="text-right shrink-0">
                       {currentRecipient.status === 'sent' ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>મોકલાયેલ</span>
                         </span>
                       ) : !currentRecipient.parentPhone ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30">
                           <AlertCircle className="w-3.5 h-3.5" />
                           <span>મોબાઇલ નથી</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">
                           <Clock className="w-3.5 h-3.5" />
                           <span>બાકી</span>
                         </span>
@@ -899,16 +899,16 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                   </div>
 
                   {/* Parent Contact Details */}
-                  <div className="bg-slate-950/40 p-4 rounded-2xl border border-slate-800 text-xs space-y-2">
+                  <div className="bg-white dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs space-y-2 shadow-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">વાલીનું નામ:</span>
-                      <strong className="text-white font-medium">
+                      <span className="text-slate-500 dark:text-slate-400">વાલીનું નામ:</span>
+                      <strong className="text-slate-900 dark:text-white font-medium">
                         {currentRecipient.parentName || 'વાલીશ્રી'}
                       </strong>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">મોબાઇલ નંબર (WhatsApp):</span>
+                      <span className="text-slate-500 dark:text-slate-400">મોબાઇલ નંબર (WhatsApp):</span>
                       {isEditingPhone ? (
                         <div className="flex items-center gap-1.5">
                           <input
@@ -917,19 +917,19 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                             value={tempPhone}
                             onChange={(e) => setTempPhone(e.target.value)}
                             placeholder="10 અંકનો નંબર"
-                            className="w-32 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                            className="w-32 px-2 py-1 rounded bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
                           />
                           <button
                             type="button"
                             onClick={() => handleSavePhone(currentIndex)}
-                            className="px-2 py-1 rounded bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 cursor-pointer"
+                            className="px-2 py-1 rounded bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 cursor-pointer shadow-xs"
                           >
                             સેવ
                           </button>
                           <button
                             type="button"
                             onClick={() => setIsEditingPhone(false)}
-                            className="px-1.5 py-1 rounded bg-slate-800 text-slate-400 text-xs hover:text-white cursor-pointer"
+                            className="px-1.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-xs hover:text-slate-900 dark:hover:text-white cursor-pointer"
                           >
                             રદ
                           </button>
@@ -938,7 +938,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                         <div className="flex items-center gap-2">
                           <span
                             className={`font-mono font-bold ${
-                              currentRecipient.parentPhone ? 'text-emerald-400' : 'text-red-400 italic'
+                              currentRecipient.parentPhone ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-red-400 italic'
                             }`}
                           >
                             {currentRecipient.parentPhone || 'નંબર ઉપલબ્ધ નથી'}
@@ -949,7 +949,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                               setTempPhone(currentRecipient.parentPhone || '');
                               setIsEditingPhone(true);
                             }}
-                            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                            className="p-1 rounded text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                             title="નંબર બદલો"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -962,19 +962,19 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                   {/* Message Preview Box */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400 font-semibold flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-slate-600 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>આ બાળકના વાલીને જતો પર્સનલ મેસેજ:</span>
                       </span>
                       <button
                         type="button"
                         onClick={() => handleCopySingle(currentRecipient.messageText, currentIndex)}
-                        className="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer"
+                        className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 flex items-center gap-1 cursor-pointer font-medium"
                       >
                         {copiedIndex === currentIndex ? (
                           <>
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            <span className="text-emerald-400 font-bold">કૉપી થયું!</span>
+                            <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-emerald-700 dark:text-emerald-400 font-bold">કૉપી થયું!</span>
                           </>
                         ) : (
                           <>
@@ -985,7 +985,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                       </button>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/90 text-xs font-mono text-slate-200 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                    <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800/90 text-xs font-mono text-slate-800 dark:text-slate-200 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed shadow-xs">
                       {currentRecipient.messageText}
                     </div>
                   </div>
@@ -1007,36 +1007,36 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                         type="button"
                         disabled={!currentRecipient.parentPhone}
                         onClick={() => handleLaunchSms(currentRecipient, currentIndex)}
-                        className="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-700 transition-colors cursor-pointer disabled:opacity-40"
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-40 shadow-xs"
                       >
-                        <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
+                        <Smartphone className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                         <span>SMS મોકલો</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleMarkAsSentAndNext(currentIndex)}
-                        className="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-700 transition-colors cursor-pointer"
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-xs"
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>મોકલાયેલ માર્ક કરો</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Navigation Footer */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
                     <button
                       type="button"
                       disabled={currentIndex === 0}
                       onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-30 cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-30 cursor-pointer transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                       <span>અગાઉનો</span>
                     </button>
 
-                    <span className="font-mono text-slate-400">
+                    <span className="font-mono text-slate-500 dark:text-slate-400">
                       વિદ્યાર્થી {currentIndex + 1} / {recipients.length}
                     </span>
 
@@ -1044,7 +1044,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                       type="button"
                       disabled={currentIndex >= recipients.length - 1}
                       onClick={() => setCurrentIndex((prev) => Math.min(recipients.length - 1, prev + 1))}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-30 cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-30 cursor-pointer transition-colors"
                     >
                       <span>આગામી</span>
                       <ChevronRight className="w-4 h-4" />
@@ -1059,13 +1059,13 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
             </div>
 
             {/* RIGHT: All Students Queue List (5 cols) */}
-            <div className="lg:col-span-5 p-4 flex flex-col overflow-hidden bg-slate-950/40">
-              <div className="shrink-0 flex items-center justify-between gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 text-[11px] mb-3">
+            <div className="lg:col-span-5 p-4 flex flex-col overflow-hidden bg-slate-100/50 dark:bg-slate-950/40">
+              <div className="shrink-0 flex items-center justify-between gap-1 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] mb-3 shadow-xs">
                 <button
                   type="button"
                   onClick={() => setFilterMode('all')}
                   className={`flex-1 py-1 px-2 rounded-lg font-bold transition-colors cursor-pointer ${
-                    filterMode === 'all' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                    filterMode === 'all' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   બધા ({recipients.length})
@@ -1074,7 +1074,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                   type="button"
                   onClick={() => setFilterMode('pending')}
                   className={`flex-1 py-1 px-2 rounded-lg font-bold transition-colors cursor-pointer ${
-                    filterMode === 'pending' ? 'bg-amber-500/20 text-amber-300' : 'text-slate-400 hover:text-white'
+                    filterMode === 'pending' ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   બાકી ({pendingCount})
@@ -1083,7 +1083,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                   type="button"
                   onClick={() => setFilterMode('sent')}
                   className={`flex-1 py-1 px-2 rounded-lg font-bold transition-colors cursor-pointer ${
-                    filterMode === 'sent' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400 hover:text-white'
+                    filterMode === 'sent' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   મોકલેલ ({sentCount})
@@ -1102,8 +1102,8 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                       onClick={() => setCurrentIndex(originalIndex)}
                       className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
                         isActive
-                          ? 'bg-slate-800 border-emerald-500/80 shadow-md ring-1 ring-emerald-500/40'
-                          : 'bg-slate-900/60 hover:bg-slate-850 border-slate-800/80 text-slate-300'
+                          ? 'bg-emerald-50 border-emerald-500 text-slate-900 dark:bg-slate-800 dark:border-emerald-500/80 dark:text-slate-100 shadow-md ring-1 ring-emerald-500/40'
+                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-900/60 dark:hover:bg-slate-850 dark:border-slate-800/80 dark:text-slate-300'
                       }`}
                     >
                       <div className="min-w-0 flex-1">
@@ -1111,14 +1111,14 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                           <span className="font-mono text-[11px] text-slate-500">
                             #{originalIndex + 1}
                           </span>
-                          <h5 className="text-xs font-bold text-white truncate">
+                          <h5 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                             {rec.studentName}
                           </h5>
                         </div>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                           <span>ધો. {rec.standard}</span>
                           {rec.rollNumber && <span>| રોલ: {rec.rollNumber}</span>}
-                          <span className={`font-mono ${rec.parentPhone ? 'text-slate-300' : 'text-red-400 italic'}`}>
+                          <span className={`font-mono ${rec.parentPhone ? 'text-slate-700 dark:text-slate-300' : 'text-rose-600 dark:text-red-400 italic'}`}>
                             • {rec.parentPhone || 'મોબાઇલ નથી'}
                           </span>
                         </div>
@@ -1126,11 +1126,11 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
 
                       <div className="shrink-0 flex items-center gap-1.5">
                         {rec.status === 'sent' ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                         ) : !rec.parentPhone ? (
-                          <AlertCircle className="w-4 h-4 text-red-400" />
+                          <AlertCircle className="w-4 h-4 text-rose-500 dark:text-red-400" />
                         ) : (
-                          <Clock className="w-4 h-4 text-amber-400/80" />
+                          <Clock className="w-4 h-4 text-amber-500 dark:text-amber-400/80" />
                         )}
 
                         {rec.parentPhone && (
@@ -1140,7 +1140,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                               e.stopPropagation();
                               handleLaunchWhatsApp(rec, originalIndex);
                             }}
-                            className="p-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white transition-colors cursor-pointer ml-1"
+                            className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-600/30 dark:hover:bg-emerald-600 dark:text-emerald-300 dark:hover:text-white transition-colors cursor-pointer ml-1"
                             title="WhatsApp મોકલો"
                           >
                             <Send className="w-3 h-3" />
@@ -1157,14 +1157,14 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
 
         {/* 1-TAP THUMB QUICK SEND BAR (Persistent bottom bar for rapid 1-tap dispatch) */}
         {nextPendingRecipient && (
-          <div className="shrink-0 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border-t border-emerald-500/40 flex items-center justify-between gap-3 shadow-2xl">
+          <div className="shrink-0 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-emerald-100 via-teal-50 to-emerald-100 dark:from-emerald-950 dark:via-slate-900 dark:to-teal-950 border-t border-emerald-300 dark:border-emerald-500/40 flex items-center justify-between gap-3 shadow-lg dark:shadow-2xl">
             <div className="flex items-center gap-2 text-xs truncate min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span className="text-slate-400 hidden sm:inline">આગામી વાલી:</span>
-              <strong className="text-white font-bold truncate text-xs sm:text-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-slate-600 dark:text-slate-400 hidden sm:inline">આગામી વાલી:</span>
+              <strong className="text-slate-900 dark:text-white font-bold truncate text-xs sm:text-sm">
                 {nextPendingRecipient.studentName}
               </strong>
-              <span className="font-mono text-emerald-400 text-xs shrink-0">
+              <span className="font-mono text-emerald-700 dark:text-emerald-400 text-xs shrink-0">
                 ({nextPendingRecipient.parentPhone})
               </span>
             </div>
@@ -1184,9 +1184,9 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
         )}
 
         {/* FOOTER */}
-        <div className="shrink-0 px-4 sm:px-6 py-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+        <div className="shrink-0 px-4 sm:px-6 py-3 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400">
           <div className="flex items-center gap-2 text-center sm:text-left">
-            <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>
               {dispatcherTab === 'auto_personal'
                 ? 'દરેક વાલીના ફોન પર ૧૦૦% પ્રાઇવેટ મેસેજ જશે જેમાં ફક્ત તેમના બાળકના જ ગુણ અને ટકાવારી હશે.'
@@ -1197,7 +1197,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
           </div>
           <button
             onClick={onClose}
-            className="w-full sm:w-auto px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold cursor-pointer transition-colors"
+            className="w-full sm:w-auto px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-semibold cursor-pointer transition-colors"
           >
             બંધ કરો
           </button>

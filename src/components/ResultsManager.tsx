@@ -893,13 +893,13 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
       {/* View Switcher & Action Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         {/* Toggle between Gazette and Individual Progress Card */}
-        <div className="flex gap-2 p-1 rounded-2xl bg-slate-900 border border-slate-800">
+        <div className="flex gap-2 p-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
           <button
             onClick={() => setViewMode('gazette')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewMode === 'gazette'
                 ? 'bg-[#9d512d] text-white shadow'
-                : 'text-[#a99f91] hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -911,7 +911,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewMode === 'progress_card'
                 ? 'bg-[#9d512d] text-white shadow'
-                : 'text-[#a99f91] hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -973,7 +973,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
       {viewMode === 'gazette' && (
         <div className="glass-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
           {/* Table Search & Filter Bar */}
-          <div className="p-4 bg-slate-900/80 border-b border-white/10 flex flex-wrap items-center justify-between gap-4">
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-1 min-w-[280px]">
               <div className="relative flex-1">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
@@ -982,20 +982,20 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="નામ, રોલ નંબર અથવા G.R. નંબરથી શોધો..."
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#f59c73]"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#9d512d] dark:focus:border-[#f59c73]"
                 />
               </div>
             </div>
 
             {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-slate-400 mr-1 text-[11px]">સ્થિતિ:</span>
+            <div className="flex items-center gap-1.5 text-xs flex-wrap">
+              <span className="text-slate-600 dark:text-slate-400 mr-1 text-[11px]">સ્થિતિ:</span>
               <button
                 onClick={() => setStatusFilter('ALL')}
                 className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   statusFilter === 'ALL'
-                    ? 'bg-[#9d512d] text-white'
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                    ? 'bg-[#9d512d] text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-transparent'
                 }`}
               >
                 બધા ({classResults.length})
@@ -1004,8 +1004,8 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                 onClick={() => setStatusFilter('PASS')}
                 className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   statusFilter === 'PASS'
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-transparent'
                 }`}
               >
                 સીધા પાસ ({stats.directPassCount})
@@ -1014,8 +1014,8 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                 onClick={() => setStatusFilter('PASS_WITH_SIDDHI')}
                 className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   statusFilter === 'PASS_WITH_SIDDHI'
-                    ? 'bg-teal-600 text-white'
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                    ? 'bg-teal-600 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-transparent'
                 }`}
               >
                 સિદ્ધિ (#) ({stats.siddhiCount})
@@ -1024,8 +1024,8 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                 onClick={() => setStatusFilter('PASS_WITH_KRUPA')}
                 className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   statusFilter === 'PASS_WITH_KRUPA'
-                    ? 'bg-amber-600 text-white'
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-transparent'
                 }`}
               >
                 કૃપા (*) ({stats.krupaCount})
@@ -1034,8 +1034,8 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                 onClick={() => setStatusFilter('FAIL')}
                 className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   statusFilter === 'FAIL'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                    ? 'bg-red-600 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-transparent'
                 }`}
               >
                 સુધારણા ({stats.failCount})
@@ -1044,74 +1044,74 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           </div>
 
           {/* Mobile Horizontal Scroll Tip */}
-          <div className="sm:hidden px-3.5 py-2 bg-slate-950/90 text-[11px] text-[#f59c73] flex items-center justify-between border-b border-white/5">
+          <div className="sm:hidden px-3.5 py-2 bg-slate-100 dark:bg-slate-950/90 text-[11px] text-[#9d512d] dark:text-[#f59c73] flex items-center justify-between border-b border-slate-200 dark:border-white/5">
             <span className="font-semibold">📱 મોબાઇલ ટિપ: વિષયવાર ગુણ અને પરિણામ જોવા ડાબે-જમણે સ્ક્રોલ કરો</span>
-            <span className="text-[10px] text-slate-400 font-mono">↔️ Swipe</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">↔️ Swipe</span>
           </div>
 
           {/* Master Table */}
           <div className="overflow-x-auto mobile-table-scroll max-h-[620px] overflow-y-auto">
             <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-slate-900 text-[#a99f91] sticky top-0 z-10 shadow border-b border-slate-800">
+              <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-[#a99f91] sticky top-0 z-10 shadow-xs border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="py-3 px-3 text-center w-12">રોલ</th>
-                  <th className="py-3 px-3 w-24">G.R. નં</th>
-                  <th className="py-3 px-4 min-w-[160px]">વિદ્યાર્થીનું નામ</th>
+                  <th className="py-3 px-3 text-center w-12 font-bold">રોલ</th>
+                  <th className="py-3 px-3 w-24 font-bold">G.R. નં</th>
+                  <th className="py-3 px-4 min-w-[160px] font-bold text-slate-900 dark:text-white">વિદ્યાર્થીનું નામ</th>
                   {subjects.map((sub) => (
-                    <th key={sub.id} className="py-3 px-3 text-center min-w-[75px]">
-                      <div className="font-bold text-white">{sub.nameGu.split(' ')[0]}</div>
+                    <th key={sub.id} className="py-3 px-3 text-center min-w-[75px] font-bold">
+                      <div className="text-slate-900 dark:text-white">{sub.nameGu.split(' ')[0]}</div>
                       <div className="text-[10px] text-slate-500 font-normal">(૧૦૦ ગુણ)</div>
                     </th>
                   ))}
-                  <th className="py-3 px-3 text-center w-24">કુલ ગુણ</th>
-                  <th className="py-3 px-3 text-center w-16">ટકા</th>
-                  <th className="py-3 px-3 text-center w-16">ગ્રેડ</th>
-                  <th className="py-3 px-3 text-center w-32">પરિણામ</th>
-                  <th className="py-3 px-3 text-center w-16">ક્રમ</th>
-                  <th className="py-3 px-3 text-center w-16">ક્રિયા</th>
+                  <th className="py-3 px-3 text-center w-24 font-bold">કુલ ગુણ</th>
+                  <th className="py-3 px-3 text-center w-16 font-bold">ટકા</th>
+                  <th className="py-3 px-3 text-center w-16 font-bold">ગ્રેડ</th>
+                  <th className="py-3 px-3 text-center w-32 font-bold">પરિણામ</th>
+                  <th className="py-3 px-3 text-center w-16 font-bold">ક્રમ</th>
+                  <th className="py-3 px-3 text-center w-16 font-bold">ક્રિયા</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                 {filteredResults.length === 0 ? (
                   <tr>
-                    <td colSpan={subjects.length + 7} className="py-12 text-center text-slate-400">
+                    <td colSpan={subjects.length + 7} className="py-12 text-center text-slate-500 dark:text-slate-400">
                       કોઈ વિદ્યાર્થી મળ્યા નથી.
                     </td>
                   </tr>
                 ) : (
                   filteredResults.map((r, idx) => (
-                    <tr key={r.student.id} className="hover:bg-white/5 transition-colors">
-                      <td className="py-2.5 px-3 text-center font-bold text-white">
+                    <tr key={r.student.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="py-2.5 px-3 text-center font-bold text-slate-900 dark:text-white">
                         {r.student.rollNumber || idx + 1}
                       </td>
-                      <td className="py-2.5 px-3 font-mono text-[#f59c73]">
+                      <td className="py-2.5 px-3 font-mono text-[#9d512d] dark:text-[#f59c73]">
                         {r.student.grNumber || '-'}
                       </td>
-                      <td className="py-2.5 px-4 font-bold text-white">
+                      <td className="py-2.5 px-4 font-bold text-slate-900 dark:text-white">
                         {r.student.studentName}
                       </td>
                       {/* Each Subject Marks */}
                       {r.subjectScores.map((sc) => (
                         <td key={sc.subjectId} className="py-2 px-3 text-center">
-                          <div className="font-extrabold text-sm text-white">
+                          <div className="font-extrabold text-sm text-slate-900 dark:text-white">
                             {sc.siddhiMarksGiven > 0 && sc.krupaMarksGiven > 0 ? (
                               <span>
                                 {sc.total100}
-                                <span className="text-teal-400 text-xs">+{sc.siddhiMarksGiven}#</span>
-                                <span className="text-amber-400 text-xs">+{sc.krupaMarksGiven}*</span>
+                                <span className="text-teal-600 dark:text-teal-400 text-xs">+{sc.siddhiMarksGiven}#</span>
+                                <span className="text-amber-600 dark:text-amber-400 text-xs">+{sc.krupaMarksGiven}*</span>
                               </span>
                             ) : sc.siddhiMarksGiven > 0 ? (
                               <span>
                                 {sc.total100}
-                                <span className="text-teal-400 text-xs">+{sc.siddhiMarksGiven}#</span>
+                                <span className="text-teal-600 dark:text-teal-400 text-xs">+{sc.siddhiMarksGiven}#</span>
                               </span>
                             ) : sc.krupaMarksGiven > 0 ? (
                               <span>
                                 {sc.total100}
-                                <span className="text-amber-400 text-xs">+{sc.krupaMarksGiven}*</span>
+                                <span className="text-amber-600 dark:text-amber-400 text-xs">+{sc.krupaMarksGiven}*</span>
                               </span>
                             ) : (
-                              <span className={sc.needsReExam ? 'text-red-400 font-bold' : ''}>
+                              <span className={sc.needsReExam ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
                                 {sc.total100}
                               </span>
                             )}
@@ -1119,49 +1119,49 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                           <div
                             className={`text-[10px] font-bold ${
                               sc.grade.startsWith('A')
-                                ? 'text-emerald-400'
+                                ? 'text-emerald-600 dark:text-emerald-400'
                                 : sc.grade.startsWith('B')
-                                ? 'text-blue-400'
+                                ? 'text-blue-600 dark:text-blue-400'
                                 : sc.grade.startsWith('C') || sc.grade === 'D'
-                                ? 'text-amber-400'
-                                : 'text-red-400'
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-red-600 dark:text-red-400'
                             }`}
                           >
                             {sc.grade}
                           </div>
                         </td>
                       ))}
-                      <td className="py-2.5 px-3 text-center font-black text-white">
+                      <td className="py-2.5 px-3 text-center font-black text-slate-900 dark:text-white">
                         {r.totalObtained}/{r.totalMax}
                       </td>
-                      <td className="py-2.5 px-3 text-center font-black text-[#f59c73]">
+                      <td className="py-2.5 px-3 text-center font-black text-[#9d512d] dark:text-[#f59c73]">
                         {r.percentage}%
                       </td>
-                      <td className="py-2.5 px-3 text-center font-bold text-white">
-                        <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+                      <td className="py-2.5 px-3 text-center font-bold text-slate-900 dark:text-white">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white">
                           {r.overallGrade}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-center font-semibold">
                         {r.resultStatus === 'PASS' ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30">
                             ઉત્તીર્ણ
                           </span>
                         ) : r.resultStatus === 'PASS_WITH_SIDDHI' ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-teal-500/15 text-teal-300 border border-teal-500/30" title="સિદ્ધિ ગુણ (રેન્ક પાત્ર)">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-teal-100 text-teal-800 border border-teal-300 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30" title="સિદ્ધિ ગુણ (રેન્ક પાત્ર)">
                             સિદ્ધિ ({r.totalSiddhiGiven}#)
                           </span>
                         ) : r.resultStatus === 'PASS_WITH_KRUPA' ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30" title="કૃપા ગુણ (આચાર્ય ક્વોટા)">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30" title="કૃપા ગુણ (આચાર્ય ક્વોટા)">
                             કૃપા ({r.totalKrupaGiven}*)
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/15 text-red-400 border border-red-500/30">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-800 border border-red-300 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30">
                             સુધારણા ({r.failedSubjectsCount})
                           </span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 text-center font-bold text-slate-300">
+                      <td className="py-2.5 px-3 text-center font-bold text-slate-700 dark:text-slate-300">
                         {r.rankInClass ? `#${r.rankInClass}` : '-'}
                       </td>
                       <td className="py-2.5 px-3 text-center">
@@ -1170,7 +1170,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                             setSelectedStudentId(r.student.id);
                             setViewMode('progress_card');
                           }}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-[#9d512d] text-slate-300 hover:text-white transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-[#9d512d] text-slate-700 hover:text-white dark:bg-slate-800 dark:hover:bg-[#9d512d] dark:text-slate-300 dark:hover:text-white transition-colors cursor-pointer"
                           title="પ્રગતિ પત્રક જુઓ"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -1184,12 +1184,12 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           </div>
 
           {/* Quick Legend at bottom of table */}
-          <div className="p-3 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between text-[11px] text-slate-400">
-            <div className="flex items-center gap-4">
+          <div className="p-3 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between text-[11px] text-slate-600 dark:text-slate-400">
+            <div className="flex items-center gap-4 flex-wrap">
               <span><strong>સંકેતો:</strong></span>
-              <span className="text-teal-400 font-bold"># = સિદ્ધિ ગુણ (33% થી ઉપરના ટકા દીઠ 1M, મહત્તમ 15M - રેન્ક પાત્ર)</span>
-              <span className="text-amber-400 font-bold">* = કૃપા ગુણ (આચાર્યશ્રી ક્વોટા મહત્તમ 10M - રેન્ક અપાતો નથી)</span>
-              <span className="text-slate-300">નિયમ: વિષયમાં લઘુત્તમ 25% ગુણ હોવા જરૂરી</span>
+              <span className="text-teal-700 dark:text-teal-400 font-bold"># = સિદ્ધિ ગુણ (33% થી ઉપરના ટકા દીઠ 1M, મહત્તમ 15M - રેન્ક પાત્ર)</span>
+              <span className="text-amber-700 dark:text-amber-400 font-bold">* = કૃપા ગુણ (આચાર્યશ્રી ક્વોટા મહત્તમ 10M - રેન્ક અપાતો નથી)</span>
+              <span className="text-slate-700 dark:text-slate-300">નિયમ: વિષયમાં લઘુત્તમ 25% ગુણ હોવા જરૂરી</span>
             </div>
             <span>કુલ ગુણમાં સિદ્ધિ/કૃપા ગુણ ઉમેરાતા નથી</span>
           </div>
@@ -1200,13 +1200,13 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
       {viewMode === 'progress_card' && activeStudentResult && (
         <div className="space-y-4">
           {/* Student Selector Carousel Bar */}
-          <div className="glass-card rounded-2xl border border-white/10 p-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="glass-card rounded-2xl border border-stone-200 dark:border-white/10 p-4 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-[#a99f91]">વિદ્યાર્થી પસંદ કરો:</span>
+              <span className="text-xs font-bold text-slate-700 dark:text-[#a99f91]">વિદ્યાર્થી પસંદ કરો:</span>
               <select
                 value={activeStudentResult.student.id}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
-                className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-[#f59c73]"
+                className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#9d512d] dark:focus:border-[#f59c73]"
               >
                 {classResults.map((r) => (
                   <option key={r.student.id} value={r.student.id}>
@@ -1435,30 +1435,30 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
 
       {/* GSEB Official Rules Modal */}
       {showRulesModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-white/20 rounded-3xl max-w-2xl w-full p-6 text-white space-y-5 shadow-2xl animate-in fade-in">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/20 rounded-3xl max-w-2xl w-full p-6 text-slate-800 dark:text-white space-y-5 shadow-2xl animate-in fade-in">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                   <Award className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-white">GSEB પરિણામ, સિદ્ધિ અને કૃપા ગુણના નિયમો</h3>
-                  <p className="text-xs text-slate-400">ગુજરાત માધ્યમિક અને ઉચ્ચતર માધ્યમિક શિક્ષણ બોર્ડ (ધોરણ ૯ અને ૧૧)</p>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">GSEB પરિણામ, સિદ્ધિ અને કૃપા ગુણના નિયમો</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">ગુજરાત માધ્યમિક અને ઉચ્ચતર માધ્યમિક શિક્ષણ બોર્ડ (ધોરણ ૯ અને ૧૧)</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowRulesModal(false)}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer"
+                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-white cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-4 text-xs leading-relaxed text-slate-300 max-h-[460px] overflow-y-auto pr-2">
-              <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700">
-                <h4 className="font-bold text-[#f59c73] text-sm mb-1.5">૧. વાર્ષિક પરિણામ ગુણભાર (Weightage Formula)</h4>
-                <ul className="list-disc list-inside space-y-1 text-slate-300">
+            <div className="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300 max-h-[460px] overflow-y-auto pr-2">
+              <div className="bg-slate-50 dark:bg-slate-800/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <h4 className="font-bold text-[#9d512d] dark:text-[#f59c73] text-sm mb-1.5">૧. વાર્ષિક પરિણામ ગુણભાર (Weightage Formula)</h4>
+                <ul className="list-disc list-inside space-y-1 text-slate-700 dark:text-slate-300">
                   <li><strong>પ્રથમ સત્રાંત પરીક્ષા (૫૦ ગુણ):</strong> ૧૦% ગુણભાર (મેળવેલ ગુણ / ૫)</li>
                   <li><strong>દ્વિતીય સત્રાંત પરીક્ષા (૫૦ ગુણ):</strong> ૧૦% ગુણભાર (મેળવેલ ગુણ / ૫)</li>
                   <li><strong>વાર્ષિક પરીક્ષા (૮૦ ગુણ):</strong> ૬૦% ગુણભાર (મેળવેલ ગુણ / ૮૦ × ૬૦)</li>
@@ -1467,19 +1467,19 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                 </ul>
               </div>
 
-              <div className="bg-teal-950/40 p-3.5 rounded-xl border border-teal-500/30">
-                <h4 className="font-bold text-teal-300 text-sm mb-1.5">૨. સિદ્ધિ ગુણ (Siddhi Marks - #) ના નિયમો</h4>
-                <ul className="list-disc list-inside space-y-1 text-teal-100">
+              <div className="bg-teal-50 dark:bg-teal-950/40 p-3.5 rounded-xl border border-teal-200 dark:border-teal-500/30">
+                <h4 className="font-bold text-teal-800 dark:text-teal-300 text-sm mb-1.5">૨. સિદ્ધિ ગુણ (Siddhi Marks - #) ના નિયમો</h4>
+                <ul className="list-disc list-inside space-y-1 text-teal-900 dark:text-teal-100">
                   <li>જો વિદ્યાર્થીને એકંદરે ૩૩% થી વધુ ગુણ મળ્યા હોય, તો ૩૩% થી ઉપરના <strong>દરેક ટકા દીઠ ૧ ગુણ</strong>, વધુમાં વધુ <strong>૧૫ ગુણની મર્યાદામાં</strong> સિદ્ધિ ગુણ મળે છે.</li>
-                  <li>સૂત્ર: <code className="bg-black/40 px-1.5 py-0.5 rounded text-teal-300">Siddhi Pool = Min(15, Floor(Overall Percentage - 33))</code></li>
+                  <li>સૂત્ર: <code className="bg-teal-100 dark:bg-black/40 px-1.5 py-0.5 rounded text-teal-800 dark:text-teal-300 font-mono">Siddhi Pool = Min(15, Floor(Overall Percentage - 33))</code></li>
                   <li><strong>રેન્ક પાત્રતા:</strong> સિદ્ધિ ગુણ મેળવનાર વિદ્યાર્થીઓ વર્ગમાં <strong>રેન્ક (Rank) મેળવવા માટે પાત્ર ગણાય છે</strong>.</li>
                   <li>સિદ્ધિ ગુણ પરિણામ પત્રકમાં <strong>#</strong> ચિહ્ન સાથે અલગથી દર્શાવાય છે.</li>
                 </ul>
               </div>
 
-              <div className="bg-amber-950/40 p-3.5 rounded-xl border border-amber-500/30">
-                <h4 className="font-bold text-amber-300 text-sm mb-1.5">૩. કૃપા ગુણ (Grace Marks - *) ના નિયમો</h4>
-                <ul className="list-disc list-inside space-y-1 text-amber-100">
+              <div className="bg-amber-50 dark:bg-amber-950/40 p-3.5 rounded-xl border border-amber-200 dark:border-amber-500/30">
+                <h4 className="font-bold text-amber-800 dark:text-amber-300 text-sm mb-1.5">૩. કૃપા ગુણ (Grace Marks - *) ના નિયમો</h4>
+                <ul className="list-disc list-inside space-y-1 text-amber-900 dark:text-amber-100">
                   <li>સિદ્ધિ ગુણ વાપર્યા પછી પણ જો વિદ્યાર્થી કોઈ વિષયમાં નાપાસ થતો હોય, તો આચાર્યશ્રી દ્વારા <strong>કુલ ૧૦ ગુણની મર્યાદામાં</strong> કૃપા ગુણ આપી શકાય છે.</li>
                   <li><strong>રેન્ક અપાત્રતા:</strong> કૃપા ગુણ મેળવનાર વિદ્યાર્થીઓ વર્ગમાં <strong>રેન્ક (Rank) મેળવવા માટે પાત્ર રહેતા નથી</strong> (રેન્ક સ્થાને '-' દર્શાવાય છે).</li>
                   <li>કૃપા ગુણ પરિણામ પત્રકમાં <strong>*</strong> ચિહ્ન સાથે અલગથી દર્શાવાય છે.</li>

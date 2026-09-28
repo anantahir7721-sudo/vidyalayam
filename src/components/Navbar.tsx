@@ -178,11 +178,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="app-header bg-[#f7f5f0] dark:bg-[#121921] border-b border-[#d8d0c5] dark:border-white/10 text-[#141d24] dark:text-[#e4ded6] sticky top-0 z-40 shadow-xl transition-colors duration-200">
       {/* Top institutional strip */}
-      <div className="top-strip bg-[#ede8e0]/95 dark:bg-[#090c10]/95 px-3 sm:px-4 py-1.5 border-b border-[#d8d0c5] dark:border-white/10 text-xs flex justify-between items-center text-[#635848] dark:text-[#a99f91] transition-colors duration-200">
+      <div className="top-strip bg-[#f1f5f9] dark:bg-[#090c10]/95 px-3 sm:px-4 py-1.5 border-b border-slate-200 dark:border-white/10 text-xs flex justify-between items-center text-slate-700 dark:text-[#a99f91] transition-colors duration-200">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-[#9d512d] animate-pulse"></span>
           <span className="font-bold text-[#141d24] dark:text-[#e4ded6] text-[11px] sm:text-xs">Vidyalayam</span>
-          <span className="text-[#635848]/40 dark:text-[#a99f91]/40 hidden sm:inline">•</span>
+          <span className="text-slate-400 dark:text-[#a99f91]/40 hidden sm:inline">•</span>
           <span className="text-[#9d512d] dark:text-[#f59c73] font-semibold text-[10px] sm:text-xs hidden sm:inline">by NRChad</span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2.5">
@@ -280,7 +280,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       className={`px-2.5 py-2 rounded-xl font-bold transition-all touch-manipulation min-h-[38px] flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                         isActive
                           ? 'bg-[#9d512d] text-white shadow-md'
-                          : 'text-[#635848] dark:text-[#a99f91] hover:text-[#141d24] dark:hover:text-[#e4ded6] hover:bg-black/5 dark:hover:bg-white/5'
+                          : 'text-slate-700 dark:text-[#a99f91] hover:text-slate-950 dark:hover:text-[#e4ded6] hover:bg-black/5 dark:hover:bg-white/5'
                       }`}
                     >
                       {tab.icon}
@@ -304,7 +304,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className={`px-2.5 py-2 rounded-xl font-bold transition-all touch-manipulation min-h-[38px] flex items-center gap-1 cursor-pointer ${
                       isMoreActive
                         ? 'bg-[#9d512d] text-white shadow-md'
-                        : 'text-[#635848] dark:text-[#a99f91] hover:text-[#141d24] dark:hover:text-[#e4ded6] hover:bg-black/5 dark:hover:bg-white/5'
+                        : 'text-slate-700 dark:text-[#a99f91] hover:text-slate-950 dark:hover:text-[#e4ded6] hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                   >
                     <span>વધુ</span>

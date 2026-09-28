@@ -377,22 +377,22 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="glass-panel w-full max-w-2xl rounded-3xl border border-white/20 shadow-2xl my-auto text-[#e4ded6] max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden">
+      <div className="glass-panel w-full max-w-2xl rounded-3xl border border-stone-200 dark:border-white/20 shadow-2xl my-auto text-stone-900 dark:text-[#e4ded6] max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="shrink-0 flex items-center justify-between border-b border-white/10 p-4 sm:p-6 bg-slate-900/60">
+        <div className="shrink-0 flex items-center justify-between border-b border-stone-200 dark:border-white/10 p-4 sm:p-6 bg-stone-100 dark:bg-slate-900/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#9d512d]/25 border border-[#9d512d]/40 flex items-center justify-center text-[#f59c73] shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-[#9d512d]/15 text-[#7a3b1a] border border-[#9d512d]/30 dark:bg-[#9d512d]/25 dark:border-[#9d512d]/40 flex items-center justify-center dark:text-[#f59c73] shrink-0">
               <Briefcase className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-bold text-white">સ્ટાફ પ્રોફાઇલ (Staff Profile)</h3>
-              <p className="text-xs text-[#a99f91]">શિક્ષક / સ્ટાફ સભ્ય સંપૂર્ણ વિગત અને ફોટો</p>
+              <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white">સ્ટાફ પ્રોફાઇલ (Staff Profile)</h3>
+              <p className="text-xs text-stone-600 dark:text-[#a99f91]">શિક્ષક / સ્ટાફ સભ્ય સંપૂર્ણ વિગત અને ફોટો</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-stone-200 dark:bg-white/10 hover:bg-stone-300 dark:hover:bg-white/20 text-stone-700 dark:text-slate-300 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -403,26 +403,26 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {/* Notifications */}
           {error && (
-            <div className="p-3 rounded-2xl bg-rose-950/60 border border-rose-800/60 text-xs text-rose-300 flex items-center gap-2">
+            <div className="p-3 rounded-2xl bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/60 dark:border-rose-800/60 text-xs dark:text-rose-300 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
           {success && (
-            <div className="p-3 rounded-2xl bg-emerald-950/60 border border-emerald-800/60 text-xs text-emerald-300 flex items-center gap-2">
+            <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:border-emerald-800/60 text-xs dark:text-emerald-300 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{success}</span>
             </div>
           )}
 
         {/* Hero Card: Photo & Key Badges */}
-        <div className="bg-black/35 rounded-2xl border border-white/10 p-4 sm:p-5 flex flex-col sm:flex-row items-center sm:items-start gap-5">
+        <div className="bg-stone-50 dark:bg-black/35 rounded-2xl border border-stone-200 dark:border-white/10 p-4 sm:p-5 flex flex-col sm:flex-row items-center sm:items-start gap-5">
           {/* Photo Container with Direct Actions */}
           <div className="flex flex-col items-center gap-2 shrink-0">
             <div className="relative group">
-              <div className="w-28 h-36 rounded-2xl border-2 border-[#9d512d]/50 bg-black/60 overflow-hidden flex items-center justify-center shadow-xl">
+              <div className="w-28 h-36 rounded-2xl border-2 border-[#9d512d]/50 bg-white dark:bg-black/60 overflow-hidden flex items-center justify-center shadow-xl">
                 {photoUploading ? (
-                  <div className="flex flex-col items-center gap-1.5 text-xs text-[#f59c73]">
+                  <div className="flex flex-col items-center gap-1.5 text-xs text-[#9d512d] dark:text-[#f59c73]">
                     <Loader2 className="w-6 h-6 animate-spin" />
                     <span>સેવિંગ...</span>
                   </div>
@@ -433,8 +433,8 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="flex flex-col items-center gap-1 text-[#8e8579]">
-                    <Camera className="w-8 h-8 text-[#f59c73]" />
+                  <div className="flex flex-col items-center gap-1 text-stone-500 dark:text-[#8e8579]">
+                    <Camera className="w-8 h-8 text-[#9d512d] dark:text-[#f59c73]" />
                     <span className="text-[10px] font-medium">ફોટો નથી</span>
                   </div>
                 )}
@@ -474,27 +474,27 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
           {/* Core Info & Badges */}
           <div className="flex-1 text-center sm:text-left space-y-3 w-full">
             <div>
-              <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+              <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-white tracking-tight">
                 {staff.fullName}
               </h2>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1.5">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#9d512d]/30 text-[#f59c73] border border-[#9d512d]/50">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#9d512d]/15 text-[#7a3b1a] border border-[#9d512d]/30 dark:bg-[#9d512d]/30 dark:text-[#f59c73] dark:border-[#9d512d]/50">
                   {staff.designation}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40">
                   વિભાગ: {staff.section || staff.vibhag || 'માધ્યમિક'}
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
                     staff.category === 'non_teaching'
-                      ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
-                      : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                      ? 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30'
+                      : 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30'
                   }`}
                 >
                   {staff.category === 'non_teaching' ? 'બિન-શૈક્ષણિક સ્ટાફ' : 'શૈક્ષણિક સ્ટાફ'}
                 </span>
                 {staff.bloodGroup && (
-                  <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                  <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30">
                     રક્ત જૂથ: {staff.bloodGroup}
                   </span>
                 )}
@@ -502,23 +502,23 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             </div>
 
             {/* Teacher Code & HRPN Number Highlight */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-white/10">
-              <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/10">
-                <div className="text-[10px] text-[#8e8579] font-medium flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-stone-200 dark:border-white/10">
+              <div className="p-2.5 rounded-xl bg-stone-100 dark:bg-white/[0.04] border border-stone-200 dark:border-white/10">
+                <div className="text-[10px] text-stone-600 dark:text-[#8e8579] font-medium flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                   <span>શિક્ષક કોડ (Teacher Code)</span>
                 </div>
-                <div className="text-sm font-bold text-white font-mono mt-0.5">
+                <div className="text-sm font-bold text-stone-900 dark:text-white font-mono mt-0.5">
                   {staff.teacherCode || '-'}
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/10">
-                <div className="text-[10px] text-[#8e8579] font-medium flex items-center gap-1">
-                  <FileSpreadsheet className="w-3 h-3 text-cyan-400" />
+              <div className="p-2.5 rounded-xl bg-stone-100 dark:bg-white/[0.04] border border-stone-200 dark:border-white/10">
+                <div className="text-[10px] text-stone-600 dark:text-[#8e8579] font-medium flex items-center gap-1">
+                  <FileSpreadsheet className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
                   <span>HRPN નંબર</span>
                 </div>
-                <div className="text-sm font-bold text-white font-mono mt-0.5">
+                <div className="text-sm font-bold text-stone-900 dark:text-white font-mono mt-0.5">
                   {staff.hrpnNumber || '-'}
                 </div>
               </div>
@@ -535,16 +535,16 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
                   <>
                     <a
                       href={`tel:${staff.mobile}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#e4ded6] border border-white/10"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-bold text-stone-900 dark:text-[#e4ded6] border border-stone-300 dark:border-white/10"
                     >
-                      <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{staff.mobile}</span>
+                      <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="font-mono">{staff.mobile}</span>
                     </a>
                     <a
                       href={waUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/30 text-xs font-bold"
                       title="WhatsApp પર ઓટો-ટાઈપ મેસેજ સાથે ચેટ શરૂ કરો"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
@@ -556,9 +556,9 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
               {staff.email && (
                 <a
                   href={`mailto:${staff.email}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#e4ded6] border border-white/10"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold text-stone-800 dark:text-[#e4ded6] border border-stone-300 dark:border-white/10"
                 >
-                  <Mail className="w-3.5 h-3.5 text-blue-400" />
+                  <Mail className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                   <span className="truncate max-w-[180px]">{staff.email}</span>
                 </a>
               )}
@@ -569,69 +569,69 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         {/* Detailed Sections Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* 1. Academic & Service */}
-          <div className="p-4 rounded-2xl bg-black/25 border border-white/10 space-y-2.5">
-            <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider flex items-center gap-1.5">
+          <div className="p-4 rounded-2xl bg-stone-50 dark:bg-black/25 border border-stone-200 dark:border-white/10 space-y-2.5">
+            <h4 className="text-xs font-bold text-[#9d512d] dark:text-[#f59c73] uppercase tracking-wider flex items-center gap-1.5">
               <GraduationCap className="w-3.5 h-3.5" />
               <span>૧. શૈક્ષણિક & સેવા વિગતો</span>
             </h4>
 
-            <div className="space-y-2 text-xs divide-y divide-white/5">
+            <div className="space-y-2 text-xs divide-y divide-stone-200 dark:divide-white/5">
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">વિભાગ (Section):</span>
-                <span className="text-white font-bold text-amber-300">{staff.section || staff.vibhag || 'માધ્યમિક'}</span>
+                <span className="text-stone-600 dark:text-[#8e8579]">વિભાગ (Section):</span>
+                <span className="text-stone-900 dark:text-white font-bold">{staff.section || staff.vibhag || 'માધ્યમિક'}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">મુખ્ય વિષય:</span>
-                <span className="text-white font-medium">{staff.subject || '-'}</span>
+                <span className="text-stone-600 dark:text-[#8e8579]">મુખ્ય વિષય:</span>
+                <span className="text-stone-900 dark:text-white font-medium">{staff.subject || '-'}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">શૈક્ષણિક લાયકાત:</span>
-                <span className="text-white font-medium">{staff.qualification || '-'}</span>
+                <span className="text-stone-600 dark:text-[#8e8579]">શૈક્ષણિક લાયકાત:</span>
+                <span className="text-stone-900 dark:text-white font-medium">{staff.qualification || '-'}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">જન્મ તારીખ:</span>
-                <span className="text-white font-medium">{staff.dob || '-'}</span>
+                <span className="text-stone-600 dark:text-[#8e8579]">જન્મ તારીખ:</span>
+                <span className="text-stone-900 dark:text-white font-medium">{staff.dob || '-'}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">ખાતામાં દાખલ તારીખ:</span>
-                <span className="text-white font-medium">{staff.serviceJoiningDate || staff.joiningDate || '-'}</span>
+                <span className="text-stone-600 dark:text-[#8e8579]">ખાતામાં દાખલ તારીખ:</span>
+                <span className="text-stone-900 dark:text-white font-medium">{staff.serviceJoiningDate || staff.joiningDate || '-'}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">આ શાળામાં દાખલ તારીખ:</span>
-                <span className="text-white font-medium">{staff.schoolJoiningDate || staff.joiningDate || '-'}</span>
+                <span className="text-stone-600 dark:text-[#8e8579]">આ શાળામાં દાખલ તારીખ:</span>
+                <span className="text-stone-900 dark:text-white font-medium">{staff.schoolJoiningDate || staff.joiningDate || '-'}</span>
               </div>
             </div>
           </div>
 
           {/* 2. Identity & Bank Details */}
-          <div className="p-4 rounded-2xl bg-black/25 border border-white/10 space-y-2.5">
-            <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider flex items-center gap-1.5">
+          <div className="p-4 rounded-2xl bg-stone-50 dark:bg-black/25 border border-stone-200 dark:border-white/10 space-y-2.5">
+            <h4 className="text-xs font-bold text-[#9d512d] dark:text-[#f59c73] uppercase tracking-wider flex items-center gap-1.5">
               <Landmark className="w-3.5 h-3.5" />
               <span>૨. ઓળખ & બેંક વિગતો</span>
             </h4>
 
-            <div className="space-y-2 text-xs divide-y divide-white/5">
+            <div className="space-y-2 text-xs divide-y divide-stone-200 dark:divide-white/5">
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">આધાર કાર્ડ નં.:</span>
-                <span className="text-white font-mono font-medium">
+                <span className="text-stone-600 dark:text-[#8e8579]">આધાર કાર્ડ નં.:</span>
+                <span className="text-stone-900 dark:text-white font-mono font-medium">
                   {staff.aadhaarNumber ? `XXXX-XXXX-${staff.aadhaarNumber.slice(-4)}` : '-'}
                 </span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">PAN કાર્ડ નં.:</span>
-                <span className="text-white font-mono font-medium">{staff.panNumber || '-'}</span>
+                <span className="text-stone-600 dark:text-[#8e8579]">PAN કાર્ડ નં.:</span>
+                <span className="text-stone-900 dark:text-white font-mono font-medium">{staff.panNumber || '-'}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">બેંકનું નામ:</span>
-                <span className="text-white font-medium">{staff.bankName || '-'}</span>
+                <span className="text-stone-600 dark:text-[#8e8579]">બેંકનું નામ:</span>
+                <span className="text-stone-900 dark:text-white font-medium">{staff.bankName || '-'}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">ખાતા નંબર:</span>
-                <span className="text-white font-mono font-medium">{staff.bankAccountNo || '-'}</span>
+                <span className="text-stone-600 dark:text-[#8e8579]">ખાતા નંબર:</span>
+                <span className="text-stone-900 dark:text-white font-mono font-medium">{staff.bankAccountNo || '-'}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#8e8579]">IFSC / શાખા:</span>
-                <span className="text-white font-mono font-medium">
+                <span className="text-stone-600 dark:text-[#8e8579]">IFSC / શાખા:</span>
+                <span className="text-stone-900 dark:text-white font-mono font-medium">
                   {staff.bankIfsc || '-'} {staff.bankBranch ? `(${staff.bankBranch})` : ''}
                 </span>
               </div>
@@ -640,11 +640,11 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
 
           {/* 3. Address */}
           {staff.address && (
-            <div className="sm:col-span-2 p-3.5 rounded-2xl bg-black/25 border border-white/10 flex items-start gap-2.5 text-xs">
-              <MapPin className="w-4 h-4 text-[#f59c73] shrink-0 mt-0.5" />
+            <div className="sm:col-span-2 p-3.5 rounded-2xl bg-stone-50 dark:bg-black/25 border border-stone-200 dark:border-white/10 flex items-start gap-2.5 text-xs">
+              <MapPin className="w-4 h-4 text-[#9d512d] dark:text-[#f59c73] shrink-0 mt-0.5" />
               <div>
-                <span className="text-[#8e8579] font-medium block">રહેઠાણનું સરનામું:</span>
-                <span className="text-white font-medium mt-0.5 block">{staff.address}</span>
+                <span className="text-stone-600 dark:text-[#8e8579] font-medium block">રહેઠાણનું સરનામું:</span>
+                <span className="text-stone-900 dark:text-white font-medium mt-0.5 block">{staff.address}</span>
               </div>
             </div>
           )}
@@ -652,14 +652,14 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         </div>
 
         {/* Modal Actions Footer (Pinned at bottom) */}
-        <div className="shrink-0 p-4 sm:p-5 border-t border-white/10 bg-slate-900/90 flex flex-wrap items-center justify-between gap-3">
+        <div className="shrink-0 p-4 sm:p-5 border-t border-stone-200 dark:border-white/10 bg-stone-100 dark:bg-slate-900/90 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={handlePrintProfile}
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 dark:bg-white/10 dark:hover:bg-white/20 text-stone-800 dark:text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5 text-[#f59c73]" />
+              <Printer className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
               <span>પ્રોફાઇલ પ્રિન્ટ / બાયોડેટા</span>
             </button>
 

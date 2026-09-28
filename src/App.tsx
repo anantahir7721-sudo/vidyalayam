@@ -296,14 +296,14 @@ export default function App() {
             onStudentAuthSuccess={(sess) => setStudentSession(sess)}
           />
         </main>
-        <footer className="bg-[#0e141b]/90 border-t border-white/10 py-4 text-center text-xs text-slate-400 space-y-1">
-          <div className="font-bold text-white tracking-wide">
+        <footer className="bg-white/95 dark:bg-[#0e141b]/90 border-t border-slate-200 dark:border-white/10 py-4 text-center text-xs text-slate-600 dark:text-slate-400 space-y-1 transition-colors">
+          <div className="font-bold text-slate-900 dark:text-white tracking-wide">
             Vidyalayam (વિદ્યાલયમ)
           </div>
-          <div className="text-emerald-400 font-medium">
+          <div className="text-emerald-600 dark:text-emerald-400 font-medium">
             Created by NR Chad
           </div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
             General School Management System • Powered by Google Firebase
           </div>
         </footer>
@@ -328,7 +328,7 @@ export default function App() {
     // Pending, Rejected, or Inactive status notice screens
     if (status !== 'approved') {
       return (
-        <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+        <div className="min-h-screen bg-[#f8f6f2] dark:bg-slate-900 text-slate-900 dark:text-white flex flex-col transition-colors">
           <Navbar
             school={school}
             onLogout={handleLogout}
@@ -384,6 +384,9 @@ export default function App() {
               staffList={staffList}
               onNavigate={(tab) => navigateToTab(tab)}
               onStudentUpdated={() => loadSchoolData()}
+              onSchoolUpdated={(updated) =>
+                setSchool((prev) => (prev ? { ...prev, ...updated } : prev))
+              }
             />
           )}
 

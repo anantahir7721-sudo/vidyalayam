@@ -876,6 +876,9 @@ export async function updateSchoolProfile(
     contactPhone?: string;
     establishedYear?: string;
     logoUrl?: string;
+    dailyNewsEnabled?: boolean;
+    dailyJanvaJevuEnabled?: boolean;
+    dailySuvicharEnabled?: boolean;
   }
 ): Promise<void> {
   const schoolRef = doc(db, 'schools', schoolId);

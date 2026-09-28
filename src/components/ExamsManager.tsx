@@ -124,13 +124,13 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
         </button>
 
         {/* Sub-view switcher tabs */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-900/90 border border-white/10 shadow-lg text-xs">
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-lg text-xs">
           <button
             onClick={() => setSubView('overview')}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all cursor-pointer ${
               subView === 'overview'
                 ? 'bg-[#9d512d] text-white shadow-md'
-                : 'text-[#a99f91] hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -142,7 +142,7 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all cursor-pointer ${
               subView === 'ekam_kasoti'
                 ? 'bg-[#9d512d] text-white shadow-md'
-                : 'text-[#a99f91] hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             <Award className="w-3.5 h-3.5" />
@@ -154,7 +154,7 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all cursor-pointer ${
               subView === 'term_exams'
                 ? 'bg-[#9d512d] text-white shadow-md'
-                : 'text-[#a99f91] hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -165,7 +165,7 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
         {onNavigateToResults && (
           <button
             onClick={onNavigateToResults}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-400 dark:border-emerald-500/30 text-xs font-bold transition-all cursor-pointer shadow-xs"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>વાર્ષિક પરિણામ જુઓ (Results)</span>
@@ -177,29 +177,29 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
       {subView === 'overview' && (
         <div className="space-y-6">
           {/* Hero Banner */}
-          <div className="glass-panel rounded-3xl border border-white/10 p-6 shadow-xl">
+          <div className="glass-panel rounded-3xl border border-stone-200 dark:border-white/10 p-6 shadow-xl">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/25 text-[#f59c73] border border-[#9d512d]/40 mb-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/15 text-[#7a3b1a] border border-[#9d512d]/30 dark:bg-[#9d512d]/25 dark:text-[#f59c73] dark:border-[#9d512d]/40 mb-2">
                   <Award className="w-3.5 h-3.5" />
                   <span>પરીક્ષા & મૂલ્યાંકન સંચાલન (GSEB Standard)</span>
                 </div>
-                <h2 className="text-2xl font-black text-[#e4ded6] tracking-tight">
+                <h2 className="text-2xl font-black text-stone-900 dark:text-[#e4ded6] tracking-tight">
                   શાળા પરીક્ષાઓ અને એકમ કસોટી કેન્દ્ર
                 </h2>
-                <p className="text-xs text-[#a99f91] mt-1">
+                <p className="text-xs text-stone-600 dark:text-[#a99f91] mt-1">
                   શૈક્ષણિક વર્ષ ૨૦૨૬–૨૭ • એકમ કસોટી (૨૫ ગુણ), પ્રથમ સત્રાંત (૫૦ ગુણ), દ્વિતીય સત્રાંત (૫૦ ગુણ) અને વાર્ષિક (૮૦ ગુણ) ગુણ નોંધણી.
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="glass-card border border-white/10 px-4 py-2 rounded-2xl text-center">
-                  <div className="text-[10px] text-[#a99f91] font-bold">એકમ કસોટી રેકોર્ડ્સ</div>
-                  <div className="text-lg font-black text-emerald-400">{ekamKasotiMarksCount}</div>
+                <div className="glass-card border border-stone-200 dark:border-white/10 px-4 py-2 rounded-2xl text-center">
+                  <div className="text-[10px] text-stone-500 dark:text-[#a99f91] font-bold">એકમ કસોટી રેકોર્ડ્સ</div>
+                  <div className="text-lg font-black text-emerald-600 dark:text-emerald-400">{ekamKasotiMarksCount}</div>
                 </div>
-                <div className="glass-card border border-white/10 px-4 py-2 rounded-2xl text-center">
-                  <div className="text-[10px] text-[#a99f91] font-bold">સત્રાંત પરીક્ષા એન્ટ્રી</div>
-                  <div className="text-lg font-black text-blue-400">{termMarksCount}</div>
+                <div className="glass-card border border-stone-200 dark:border-white/10 px-4 py-2 rounded-2xl text-center">
+                  <div className="text-[10px] text-stone-500 dark:text-[#a99f91] font-bold">સત્રાંત પરીક્ષા એન્ટ્રી</div>
+                  <div className="text-lg font-black text-blue-600 dark:text-blue-400">{termMarksCount}</div>
                 </div>
               </div>
             </div>
@@ -213,7 +213,7 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
               return (
                 <div
                   key={exam.id}
-                  className="glass-card rounded-3xl border border-white/10 p-6 shadow-xl flex flex-col justify-between hover:border-white/20 transition-all"
+                  className="glass-card rounded-3xl border border-stone-200 dark:border-white/10 p-6 shadow-xl flex flex-col justify-between hover:border-[#9d512d]/40 transition-all"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-3">
@@ -221,32 +221,32 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
                         <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${exam.badgeColor}`}>
                           {exam.term}
                         </span>
-                        <h3 className="text-lg font-black text-[#e4ded6] mt-2">
+                        <h3 className="text-lg font-black text-stone-900 dark:text-[#e4ded6] mt-2">
                           {exam.titleGujarati}
                         </h3>
-                        <div className="text-xs text-[#a99f91] font-medium">
+                        <div className="text-xs text-stone-500 dark:text-[#a99f91] font-medium">
                           {exam.titleEnglish}
                         </div>
                       </div>
 
-                      <div className="glass-card px-3 py-1.5 rounded-xl text-center shrink-0 border border-white/10">
-                        <div className="text-[10px] uppercase text-[#a99f91] font-semibold">કુલ ગુણ</div>
-                        <div className="text-base font-black text-[#f59c73]">{exam.maxMarks}</div>
+                      <div className="glass-card px-3 py-1.5 rounded-xl text-center shrink-0 border border-stone-200 dark:border-white/10">
+                        <div className="text-[10px] uppercase text-stone-500 dark:text-[#a99f91] font-semibold">કુલ ગુણ</div>
+                        <div className="text-base font-black text-[#9d512d] dark:text-[#f59c73]">{exam.maxMarks}</div>
                       </div>
                     </div>
 
-                    <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-300">
-                      <span className="text-[#f59c73]">ગુણભાર:</span> {exam.weightage}
+                    <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-stone-700 dark:text-slate-300">
+                      <span className="text-[#9d512d] dark:text-[#f59c73]">ગુણભાર:</span> {exam.weightage}
                     </div>
 
-                    <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                    <p className="text-xs text-stone-600 dark:text-slate-300 mt-2 leading-relaxed">
                       {exam.description}
                     </p>
 
                     {isEkam && (
-                      <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center justify-between">
+                      <div className="mt-3 p-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300 text-xs flex items-center justify-between">
                         <span>નોંધાયેલ એકમ કસોટી રેકોર્ડ્સ:</span>
-                        <strong className="font-mono text-sm">{ekamKasotiMarksCount}</strong>
+                        <strong className="font-mono text-sm font-bold">{ekamKasotiMarksCount}</strong>
                       </div>
                     )}
                   </div>

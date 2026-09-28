@@ -27,7 +27,9 @@
         "contactNumber": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "active", "rejected"] },
         "ownerUid": { "type": "string" },
-        "createdAt": { "type": "string" }
+        "createdAt": { "type": "string" },
+        "dailyNewsEnabled": { "type": "boolean" },
+        "dailyJanvaJevuEnabled": { "type": "boolean" }
       },
       "required": ["schoolName", "diseCode", "status", "ownerUid"]
     },
@@ -172,9 +174,45 @@
         "registeredAt": { "type": "string" }
       },
       "required": ["diseCode", "schoolId"]
+    },
+    "DailyNews": {
+      "title": "DailyNews",
+      "description": "Daily 10-point news bulletin updated at 5 AM for Kutch, Gujarat, India, World and Students",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "headlines": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["date"]
+    },
+    "DailyJanvaJevu": {
+      "title": "DailyJanvaJevu",
+      "description": "Daily 20 GK and textbook questions updated at 1 PM for Class 9-12 students",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "questions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["date"]
     }
   },
   "firestore": {
+    "/daily_news/{newsId}": {
+      "schema": { "$ref": "#/entities/DailyNews" },
+      "description": "Daily morning news bulletins"
+    },
+    "/daily_janva_jevu/{jevuId}": {
+      "schema": { "$ref": "#/entities/DailyJanvaJevu" },
+      "description": "Daily afternoon GK and Janva Jevu question sets"
+    },
     "/dise_registry/{diseCode}": {
       "schema": { "$ref": "#/entities/DiseRegistryEntry" },
       "description": "Unique DISE code reservation and registry preventing duplicate school registration"

@@ -98,11 +98,11 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto animate-fadeIn"
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-2xl bg-[#1e2430] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden my-auto">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-[#1e2430] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden my-auto text-slate-800 dark:text-slate-100">
         {/* Top Accent Gradient Header */}
         <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 px-5 py-4 text-white flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -131,10 +131,10 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
         </div>
 
         {/* Informative Guidance Banner */}
-        <div className="bg-amber-950/40 border-b border-amber-500/20 px-5 py-3 text-xs sm:text-sm text-amber-200/90 leading-relaxed">
+        <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-500/20 px-5 py-3 text-xs sm:text-sm text-amber-900 dark:text-amber-200/90 leading-relaxed">
           <p>
             ગુજરાત સરકાર અને વિદ્યાલયમ્ પોર્ટલના નિયમ મુજબ{' '}
-            <strong className="text-amber-100 font-semibold">એક વિદ્યાર્થી (Child UID) એક જ શાળામાં નોંધાઈ શકે છે.</strong>{' '}
+            <strong className="text-amber-950 dark:text-amber-100 font-semibold">એક વિદ્યાર્થી (Child UID) એક જ શાળામાં નોંધાઈ શકે છે.</strong>{' '}
             આ વિદ્યાર્થીનું નામ જ્યાં સુધી જૂની શાળામાંથી કમી (Delete) ન થાય ત્યાં સુધી તેમને નવી શાળામાં ઉમેરી શકાતા નથી.
           </p>
         </div>
@@ -152,31 +152,31 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
             return (
               <div
                 key={c.studentUid + index}
-                className="bg-[#151922] border border-slate-700/70 rounded-xl p-4 sm:p-5 shadow-sm space-y-4"
+                className="bg-slate-50 dark:bg-[#151922] border border-slate-200 dark:border-slate-700/70 rounded-xl p-4 sm:p-5 shadow-sm space-y-4"
               >
                 {/* Student Info Row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-cyan-950/80 text-cyan-400 border border-cyan-800/40 flex items-center justify-center font-bold text-sm shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-950/80 dark:text-cyan-400 border dark:border-cyan-800/40 flex items-center justify-center font-bold text-sm shrink-0">
                       <GraduationCap className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="text-xs text-slate-400 font-medium">વિદ્યાર્થીનું નામ</div>
-                      <div className="text-sm sm:text-base font-bold text-white">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">વિદ્યાર્થીનું નામ</div>
+                      <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                         {c.studentName}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 font-medium border border-slate-700">
-                      ધોરણ: <strong className="text-white">{c.standard || '—'}</strong>
+                    <span className="px-2.5 py-1 rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700 shadow-xs">
+                      ધોરણ: <strong className="text-slate-900 dark:text-white">{c.standard || '—'}</strong>
                     </span>
-                    <span className="px-2.5 py-1 rounded-md bg-cyan-950/60 text-cyan-300 font-mono font-semibold border border-cyan-800/50">
+                    <span className="px-2.5 py-1 rounded-md bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 font-mono font-semibold border dark:border-cyan-800/50">
                       UID: {c.studentUid}
                     </span>
                     {c.grNumber && (
-                      <span className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 font-medium border border-slate-700">
+                      <span className="px-2.5 py-1 rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700 shadow-xs">
                         GR: {c.grNumber}
                       </span>
                     )}
@@ -184,16 +184,16 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
                 </div>
 
                 {/* Currently Registered School Details */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-2">
-                  <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2 shadow-xs">
+                  <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
                     <Building2 className="w-3.5 h-3.5" />
                     <span>હાલ નોંધાયેલ શાળાની વિગત (Currently Registered School)</span>
                   </div>
 
-                  <div className="text-sm font-bold text-slate-100 flex flex-wrap items-center gap-2">
+                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
                     <span>{c.registeredSchool.schoolName}</span>
                     {c.registeredSchool.diseCode && (
-                      <span className="text-xs font-mono font-normal text-slate-400">
+                      <span className="text-xs font-mono font-normal text-slate-500 dark:text-slate-400">
                         (DISE: {c.registeredSchool.diseCode})
                       </span>
                     )}
@@ -201,7 +201,7 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
 
                   {/* Location snippet if available */}
                   {(c.registeredSchool.village || c.registeredSchool.taluka || c.registeredSchool.district) && (
-                    <div className="text-xs text-slate-400">
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
                       સ્થળ:{' '}
                       {[c.registeredSchool.village, c.registeredSchool.taluka, c.registeredSchool.district]
                         .filter(Boolean)
@@ -210,22 +210,22 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
                   )}
 
                   {/* Principal Info */}
-                  <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2 text-slate-300">
-                      <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                      <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                       <span>
                         આચાર્યશ્રી:{' '}
-                        <strong className="text-white">
+                        <strong className="text-slate-900 dark:text-white">
                           {c.registeredSchool.principalName || 'નોંધાયેલ નથી'}
                         </strong>
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-slate-300">
-                      <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <span>
                         મોબાઈલ:{' '}
-                        <strong className="text-emerald-300 font-mono">
+                        <strong className="text-emerald-700 dark:text-emerald-300 font-mono">
                           {activePhone || 'ઉપલબ્ધ નથી'}
                         </strong>
                       </span>
@@ -235,8 +235,8 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
 
                 {/* If Principal phone is not registered, allow entering it manually */}
                 {!c.registeredSchool.principalPhone && !c.registeredSchool.contactPhone && (
-                  <div className="p-3 bg-amber-950/30 border border-amber-500/20 rounded-xl space-y-1.5 text-xs">
-                    <label className="block text-amber-300 font-medium">
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/20 rounded-xl space-y-1.5 text-xs">
+                    <label className="block text-amber-900 dark:text-amber-300 font-medium">
                       આ શાળાનો આચાર્ય મોબાઇલ નંબર પ્રોફાઇલમાં નોંધાયેલ નથી. જો આપની પાસે હોય તો અહીં દાખલ કરો:
                     </label>
                     <div className="flex gap-2">
@@ -251,7 +251,7 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
                             [c.studentUid]: e.target.value.replace(/\D/g, ''),
                           })
                         }
-                        className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                        className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500 shadow-xs"
                       />
                     </div>
                   </div>
@@ -282,10 +282,10 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
                   {cleanPhone && (
                     <a
                       href={`tel:${activePhone}`}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors shadow-xs"
                       title="આચાર્યશ્રીને સીધો કૉલ કરો"
                     >
-                      <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                      <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>કૉલ કરો</span>
                     </a>
                   )}
@@ -293,13 +293,13 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
                   {/* Copy Message Button */}
                   <button
                     onClick={() => handleCopyMessage(c)}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-xs"
                     title="આખો સંદેશ કૉપી કરો"
                   >
                     {isCopied ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-emerald-400">કૉપી થઈ ગયો!</span>
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold">કૉપી થઈ ગયો!</span>
                       </>
                     ) : (
                       <>
@@ -314,7 +314,7 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
                     onClick={() =>
                       setShowPreviewFor(isPreviewOpen ? null : c.studentUid)
                     }
-                    className="inline-flex items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs transition-colors cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800/60 dark:hover:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-xs transition-colors cursor-pointer"
                     title="સંદેશનું લખાણ જુઓ"
                   >
                     <FileText className="w-3.5 h-3.5" />
@@ -328,11 +328,11 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
 
                 {/* Collapsible WhatsApp Message Preview */}
                 {isPreviewOpen && (
-                  <div className="p-3 bg-black/40 border border-slate-800 rounded-xl space-y-1 text-xs">
-                    <div className="font-semibold text-slate-400 text-[11px] uppercase tracking-wider">
+                  <div className="p-3 bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1 text-xs">
+                    <div className="font-semibold text-slate-600 dark:text-slate-400 text-[11px] uppercase tracking-wider">
                       મોકલવામાં આવનાર WhatsApp સંદેશનું લખાણ:
                     </div>
-                    <pre className="whitespace-pre-wrap font-sans text-slate-200 text-xs bg-slate-950/70 p-3 rounded-lg border border-slate-800 leading-relaxed select-all">
+                    <pre className="whitespace-pre-wrap font-sans text-slate-800 dark:text-slate-200 text-xs bg-white dark:bg-slate-950/70 p-3 rounded-lg border border-slate-200 dark:border-slate-800 leading-relaxed select-all">
                       {waData.message}
                     </pre>
                   </div>
@@ -343,13 +343,13 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
         </div>
 
         {/* Action Steps Explainer Footer */}
-        <div className="bg-[#181d28] border-t border-slate-800 px-5 py-4 space-y-3">
-          <div className="flex items-start gap-2.5 text-xs text-slate-300">
-            <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+        <div className="bg-slate-50 dark:bg-[#181d28] border-t border-slate-200 dark:border-slate-800 px-5 py-4 space-y-3">
+          <div className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
+            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
               ✓
             </div>
             <div>
-              <span className="font-semibold text-white">પ્રક્રિયા (Process): </span>
+              <span className="font-semibold text-slate-900 dark:text-white">પ્રક્રિયા (Process): </span>
               ઉપરોક્ત શાળાના આચાર્યશ્રી દ્વારા તેમના વિદ્યાલયમ્ પોર્ટલમાંથી આ વિદ્યાર્થીનું નામ ડિલીટ કરવામાં આવશે, ત્યારબાદ જ આપ આ વિદ્યાર્થીને આપની શાળામાં દાખલ કરી શકશો.
             </div>
           </div>
@@ -367,7 +367,7 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
                 >
                   આયાત રદ કરો
                 </button>
@@ -377,7 +377,7 @@ export const StudentConflictModal: React.FC<StudentConflictModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs sm:text-sm transition-colors cursor-pointer border border-slate-700"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-semibold text-xs sm:text-sm transition-colors cursor-pointer border border-slate-300 dark:border-slate-700 shadow-xs"
                 >
                   સમજાયું (બંધ કરો)
                 </button>

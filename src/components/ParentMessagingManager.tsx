@@ -170,8 +170,7 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
   const [previewThemeOverride, setPreviewThemeOverride] = useState<'auto' | 'light' | 'dark'>('auto');
   const [previewCopied, setPreviewCopied] = useState(false);
 
-  const isLightWhatsApp =
-    previewThemeOverride === 'auto' ? theme === 'light' : previewThemeOverride === 'light';
+  const isLightWhatsApp = previewThemeOverride === 'light';
 
   const formattedCurrentTime = useMemo(() => {
     const d = new Date();
@@ -250,34 +249,34 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-md dark:shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start sm:items-center gap-3">
             {onBack && (
               <button
                 type="button"
                 onClick={onBack}
-                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+                className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
                 title="પાછળના મેનુ પર જાઓ (Go Back)"
               >
-                <ArrowLeft className="w-5 h-5 text-emerald-400" />
+                <ArrowLeft className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </button>
             )}
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-900/40 shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-900/30 shrink-0">
               <MessageSquare className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-wide">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-wide">
                   વાલી સંચાર અને મેસેજિંગ કેન્દ્ર
                 </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30">
                   WhatsApp & SMS
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                 પરીક્ષાના પરિણામ અને સામાન્ય સૂચનાઓ એક જ ક્લિકથી દરેક વાલીના મોબાઇલ પર પર્સનલી પહોંચાડો
               </p>
             </div>
@@ -287,7 +286,7 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
             <button
               type="button"
               onClick={() => setExamResultModalOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/40 transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/20 transition-all cursor-pointer"
             >
               <Award className="w-4 h-4" />
               <span>પરીક્ષા પરિણામ મોકલો 🚀</span>
@@ -296,17 +295,17 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 mt-6 pt-4 border-t border-slate-800">
+        <div className="flex items-center gap-2 mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 overflow-x-auto pb-1 scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab('notice')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'notice'
-                ? 'bg-slate-800 text-white shadow-md border border-slate-700'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs border border-slate-300 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50'
             }`}
           >
-            <MessageSquare className="w-4 h-4 text-emerald-400" />
+            <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>વાલી સૂચના / કસ્ટમ મેસેજ (Notice)</span>
           </button>
 
@@ -316,26 +315,26 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
               setActiveTab('results');
               setExamResultModalOpen(true);
             }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'results'
-                ? 'bg-slate-800 text-white shadow-md border border-slate-700'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs border border-slate-300 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50'
             }`}
           >
-            <Award className="w-4 h-4 text-amber-400" />
+            <Award className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             <span>પરીક્ષા પરિણામ મેસેજિંગ (Exam Results)</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('history')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'history'
-                ? 'bg-slate-800 text-white shadow-md border border-slate-700'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs border border-slate-300 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50'
             }`}
           >
-            <History className="w-4 h-4 text-cyan-400" />
+            <History className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
             <span>મેસેજિંગ ઇતિહાસ (History)</span>
           </button>
         </div>
@@ -347,13 +346,13 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
           {/* LEFT COLUMN: Template Selection & Message Editor (7 cols) */}
           <div className="lg:col-span-7 space-y-5">
             {/* Ready-made Gujarati Templates */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-3">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                   <span>તૈયાર નમૂના પસંદ કરો (Preset Templates):</span>
                 </h3>
-                <span className="text-[11px] text-slate-400">ક્લિક કરીને લખાણ ઓટો-ફિલ કરો</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">ક્લિક કરીને લખાણ ઓટો-ફિલ કરો</span>
               </div>
 
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
@@ -366,8 +365,8 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
                       onClick={() => handleSelectTemplate(tmpl)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                         isSelected
-                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/50'
-                          : 'bg-slate-950 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/20'
+                          : 'bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       <span>{tmpl.title}</span>
@@ -378,9 +377,9 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
             </div>
 
             {/* Message Editor */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-800 dark:text-slate-300 mb-1.5">
                   સૂચનાનો વિષય / શીર્ષક (Subject):
                 </label>
                 <input
@@ -388,16 +387,16 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
                   value={noticeSubject}
                   onChange={(e) => setNoticeSubject(e.target.value)}
                   placeholder="દા.ત. વાલી-શિક્ષક મિટિંગ અંગે સૂચના"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-300">
+                  <label className="block text-xs font-semibold text-slate-800 dark:text-slate-300">
                     મેસેજનું લખાણ (Message Body):
                   </label>
-                  <span className="text-[11px] text-emerald-400">
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                     {noticeText.length} અક્ષરો
                   </span>
                 </div>
@@ -406,13 +405,13 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
                   value={noticeText}
                   onChange={(e) => setNoticeText(e.target.value)}
                   placeholder="અહીં વાલીઓને મોકલવાનો મેસેજ ટાઇપ કરો..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-200 leading-relaxed font-sans placeholder-slate-600 focus:outline-none focus:border-emerald-500 resize-none shadow-inner"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-2xl p-4 text-xs text-slate-900 dark:text-slate-200 leading-relaxed font-sans placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none shadow-xs"
                 />
               </div>
 
               {/* Dynamic Variables Pill Cloud */}
-              <div className="p-3 bg-slate-950/60 rounded-2xl border border-slate-800 space-y-2">
-                <span className="text-[11px] font-semibold text-slate-400 block">
+              <div className="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block">
                   સ્માર્ટ વેરિએબલ (આ ટેગ્સ દરેક વિદ્યાર્થી મુજબ આપમેળે બદલાઈ જશે):
                 </span>
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -429,7 +428,7 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
                       key={tag}
                       type="button"
                       onClick={() => setNoticeText((prev) => prev + ` ${tag} `)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-teal-400 border border-teal-500/20 text-[11px] font-mono cursor-pointer transition-colors"
+                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-teal-700 dark:text-teal-400 border border-slate-300 dark:border-teal-500/20 text-[11px] font-mono cursor-pointer transition-colors shadow-xs"
                       title="મેસેજમાં ઉમેરો"
                     >
                       + {tag}
@@ -440,7 +439,7 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
             </div>
 
             {/* Live Interactive WhatsApp Preview Card */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-lg space-y-3.5">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm space-y-3.5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                   <Eye className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -581,13 +580,13 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
 
           {/* RIGHT COLUMN: Student Selection & Dispatch Trigger (5 cols) */}
           <div className="lg:col-span-5 space-y-5">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Users className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>વિદ્યાર્થીઓની પસંદગી (Select Recipients):</span>
                 </h3>
-                <span className="font-mono text-xs text-emerald-400 font-bold">
+                <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/60">
                   {selectedStudentIds.size} / {filteredStudents.length}
                 </span>
               </div>
@@ -595,11 +594,11 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
               {/* Filters */}
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">ધોરણ:</label>
+                  <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-1 font-medium">ધોરણ:</label>
                   <select
                     value={filterStandard}
                     onChange={(e) => setFilterStandard(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   >
                     <option value="all">તમામ ધોરણ</option>
                     <option value="9">ધોરણ ૯</option>
@@ -610,11 +609,11 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">વર્ગ/સેક્શન:</label>
+                  <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-1 font-medium">વર્ગ/સેક્શન:</label>
                   <select
                     value={filterSection}
                     onChange={(e) => setFilterSection(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   >
                     <option value="all">બધા વર્ગ</option>
                     {availableSections.map((sec) => (
@@ -628,29 +627,29 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
 
               {/* Search Bar */}
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="નામ, રોલ નં અથવા GR થી શોધો..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               {/* Select All / Deselect All */}
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={handleSelectAll}
-                  className="text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer text-[11px]"
+                  className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-semibold cursor-pointer text-[11px]"
                 >
                   બધા પસંદ કરો ({filteredStudents.length})
                 </button>
                 <button
                   type="button"
                   onClick={handleDeselectAll}
-                  className="text-slate-400 hover:text-slate-300 font-semibold cursor-pointer text-[11px]"
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-semibold cursor-pointer text-[11px]"
                 >
                   પસંદગી રદ કરો
                 </button>
@@ -659,7 +658,7 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
               {/* Student Checklist */}
               <div className="max-h-80 overflow-y-auto space-y-1.5 pr-1">
                 {filteredStudents.length === 0 ? (
-                  <div className="py-8 text-center text-slate-500 text-xs">
+                  <div className="py-8 text-center text-slate-400 text-xs">
                     કોઈ વિદ્યાર્થી મળ્યા નથી.
                   </div>
                 ) : (
@@ -673,8 +672,8 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
                         onClick={() => handleToggleStudent(st.id)}
                         className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 text-xs ${
                           isSelected
-                            ? 'bg-slate-850 border-emerald-500/60 shadow-sm'
-                            : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-900 text-slate-400'
+                            ? 'bg-emerald-50/80 dark:bg-slate-800 border-emerald-500/60 shadow-xs'
+                            : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -682,13 +681,13 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => {}}
-                            className="rounded accent-emerald-500 w-3.5 h-3.5 cursor-pointer"
+                            className="rounded accent-emerald-600 w-3.5 h-3.5 cursor-pointer"
                           />
                           <div className="min-w-0">
-                            <div className="font-bold text-white truncate text-xs">
+                            <div className="font-bold text-slate-900 dark:text-white truncate text-xs">
                               {st.studentName}
                             </div>
-                            <div className="text-[10px] text-slate-400 flex items-center gap-1.5">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                               <span>ધો. {st.standard}</span>
                               {st.rollNumber && <span>• રોલ: {st.rollNumber}</span>}
                               {st.grNumber && <span>• GR: {st.grNumber}</span>}
@@ -698,11 +697,11 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
 
                         <div className="shrink-0 text-right">
                           {phone ? (
-                            <span className="font-mono text-[11px] text-slate-300">
+                            <span className="font-mono text-[11px] text-slate-700 dark:text-slate-300">
                               {phone}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-red-400 italic">
+                            <span className="text-[10px] text-red-500 dark:text-red-400 italic">
                               નંબર નથી
                             </span>
                           )}
@@ -715,15 +714,15 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
 
               {/* Notice Error Banner */}
               {noticeError && (
-                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                     <span>{noticeError}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setNoticeError(null)}
-                    className="text-rose-400 hover:text-white p-0.5 rounded cursor-pointer"
+                    className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-white p-0.5 rounded cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -736,7 +735,7 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
                   type="button"
                   disabled={selectedStudentIds.size === 0 || !noticeText.trim()}
                   onClick={handleLaunchNoticeDispatcher}
-                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/60 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transform active:scale-98"
+                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transform active:scale-98"
                 >
                   <Send className="w-4 h-4" />
                   <span>📢 સામૂહિક બ્રોડકાસ્ટ / મોકલો ({selectedStudentIds.size}) 🚀</span>
@@ -749,22 +748,22 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
 
       {/* TAB 3: BROADCAST HISTORY */}
       {activeTab === 'history' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <History className="w-5 h-5 text-cyan-400" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <History className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
               <span>વાલી મેસેજિંગ ઇતિહાસ (Broadcast Log)</span>
             </h3>
             <button
               onClick={loadHistory}
-              className="text-xs text-slate-400 hover:text-white cursor-pointer"
+              className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
             >
               રિફ્રેશ કરો
             </button>
           </div>
 
           {isLoadingHistory ? (
-            <div className="py-16 text-center text-slate-500 text-xs">
+            <div className="py-16 text-center text-slate-400 text-xs">
               ઇતિહાસ લોડ થઈ રહ્યો છે...
             </div>
           ) : historyList.length === 0 ? (
@@ -776,17 +775,17 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
               {historyList.map((rec) => (
                 <div
                   key={rec.id}
-                  className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                  className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-sm">{rec.title}</span>
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <span className="font-bold text-slate-900 dark:text-white text-sm">{rec.title}</span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30">
                         {rec.broadcastType === 'exam_result' ? 'પરીક્ષા પરિણામ' : 'વાલી સૂચના'}
                       </span>
                     </div>
                     {rec.previewMessage && (
-                      <p className="text-slate-400 text-xs line-clamp-2 italic">
+                      <p className="text-slate-600 dark:text-slate-400 text-xs line-clamp-2 italic">
                         "{rec.previewMessage}..."
                       </p>
                     )}
@@ -798,10 +797,10 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
 
                   <div className="shrink-0 flex items-center gap-4">
                     <div className="text-right">
-                      <div className="font-bold text-emerald-400 font-mono text-sm">
+                      <div className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">
                         {rec.sentCount} / {rec.totalRecipients}
                       </div>
-                      <div className="text-[10px] text-slate-400">સફળ મોકલાયેલ</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">સફળ મોકલાયેલ</div>
                     </div>
                   </div>
                 </div>

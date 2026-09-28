@@ -50,6 +50,18 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Daily News Bulletin (Class 9-12 Kutch, Gujarat, India, World news updated at 5 AM)
+    match /daily_news/{newsId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    // Daily Janva Jevu & 20 GK Textbook questions (updated at 1 PM)
+    match /daily_janva_jevu/{jevuId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
     // School profile document: /schools/{schoolId}
     match /schools/{schoolId} {
       // Public directory read: enables students and public to verify school by 11-digit DISE code

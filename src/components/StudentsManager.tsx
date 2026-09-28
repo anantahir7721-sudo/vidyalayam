@@ -942,19 +942,19 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             )}
             <div>
               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800/80 inline-flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80 inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse"></span>
                   વિદ્યાર્થી માસ્ટર ઇન્ફોર્મેશન સિસ્ટમ
                 </span>
-                <span className="text-xs text-slate-400 font-mono">
+                <span className="text-xs text-slate-600 dark:text-slate-400 font-mono">
                   DISE: {school.diseCode || 'N/A'}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
                 <Users className="w-6 h-6 text-terracotta shrink-0" />
                 <span>વિદ્યાર્થી સંચાલન (Student Master Management)</span>
               </h1>
-              <p className="text-xs sm:text-sm text-slate-300 mt-1">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
                 સંપૂર્ણ મૂળભૂત વિગતો, G.R. નંબર, ફોટો, Excel આયાત/નિકાસ તથા ડિજિટલ આઈડી કાર્ડ જનરેશન
               </p>
             </div>
@@ -976,10 +976,10 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setMobileToolsOpen((prev) => !prev)}
-                className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold border transition-all min-h-[44px] cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold border transition-all min-h-[44px] cursor-pointer shadow-xs ${
                   mobileToolsOpen
                     ? 'bg-[#9d512d] text-white border-transparent'
-                    : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
                 title="આયાત, નિકાસ અને ટેમ્પ્લેટ્સ સાધનો"
               >
@@ -991,7 +991,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setViewLayout((prev) => (isCardView ? 'table' : 'cards'))}
-                className="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+                className="p-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white dark:border-slate-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
                 title={isCardView ? 'કોષ્ટક વ્યુમાં બદલો' : 'કાર્ડ વ્યુમાં બદલો'}
               >
                 {isCardView ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
@@ -1000,8 +1000,8 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
             {/* Mobile Dropdown Menu for Excel / Tools */}
             {mobileToolsOpen && (
-              <div className="sm:hidden p-3 rounded-2xl bg-slate-950 border border-slate-800 shadow-xl space-y-2 animate-fadeIn w-full">
-                <div className="text-[11px] font-bold text-[#f59c73] uppercase tracking-wider px-1">
+              <div className="sm:hidden p-3 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-xl space-y-2 animate-fadeIn w-full">
+                <div className="text-[11px] font-bold text-[#9d512d] dark:text-[#f59c73] uppercase tracking-wider px-1">
                   એક્સેલ આયાત & નિકાસ સાધનો
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -1010,14 +1010,14 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       setMobileToolsOpen(false);
                       setIsDualImportModalOpen(true);
                     }}
-                    className="flex items-center gap-1.5 p-2 rounded-xl bg-emerald-950/60 border border-emerald-800/80 text-emerald-300 text-xs font-bold text-left cursor-pointer"
+                    className="flex items-center gap-1.5 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 text-xs font-bold text-left cursor-pointer"
                   >
-                    <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                    <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-300 shrink-0" />
                     <span>દ્વિ-ફાઇલ (CTS+UDISE)</span>
                   </button>
 
-                  <label className="flex items-center gap-1.5 p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold cursor-pointer">
-                    <Upload className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <label className="flex items-center gap-1.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer">
+                    <Upload className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>એક ફાઇલ આયાત</span>
                     <input
                       type="file"
@@ -1038,29 +1038,29 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       setMobileToolsOpen(false);
                       exportStudentsExcel(students, school.schoolName, school.diseCode);
                     }}
-                    className="flex items-center gap-1.5 p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold text-left cursor-pointer"
+                    className="flex items-center gap-1.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold text-left cursor-pointer"
                   >
-                    <FileSpreadsheet className="w-4 h-4 text-amber-400 shrink-0" />
+                    <FileSpreadsheet className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                     <span>Excel એક્સપોર્ટ</span>
                   </button>
 
-                  <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 col-span-2 justify-between">
-                    <span className="text-[10px] font-bold text-slate-400 pl-1">ટેમ્પ્લેટ્સ:</span>
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 col-span-2 justify-between">
+                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 pl-1">ટેમ્પ્લેટ્સ:</span>
                     <button
                       onClick={() => downloadCtsTemplate(school.diseCode, school.schoolName)}
-                      className="px-2 py-1 bg-slate-800 text-emerald-300 rounded text-[11px] font-bold"
+                      className="px-2 py-1 bg-emerald-100 dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-transparent rounded text-[11px] font-bold"
                     >
                       CTS
                     </button>
                     <button
                       onClick={() => downloadUdisePlusTemplate(school.diseCode, school.schoolName)}
-                      className="px-2 py-1 bg-slate-800 text-cyan-300 rounded text-[11px] font-bold"
+                      className="px-2 py-1 bg-cyan-100 dark:bg-slate-800 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-transparent rounded text-[11px] font-bold"
                     >
                       UDISE+
                     </button>
                     <button
                       onClick={() => downloadStudentTemplate(school.diseCode, school.schoolName)}
-                      className="px-2 py-1 bg-slate-800 text-slate-300 rounded text-[11px] font-bold"
+                      className="px-2 py-1 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-transparent rounded text-[11px] font-bold"
                     >
                       સામાન્ય
                     </button>
@@ -1086,9 +1086,9 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       setIsDeleteAllModalOpen(true);
                     }}
                     disabled={students.length === 0}
-                    className="col-span-2 flex items-center justify-center gap-1.5 p-2 rounded-xl bg-red-950/60 border border-red-800 text-red-300 text-xs font-bold cursor-pointer disabled:opacity-40"
+                    className="col-span-2 flex items-center justify-center gap-1.5 p-2 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-bold cursor-pointer disabled:opacity-40"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                    <Trash2 className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
                     <span>બધા વિદ્યાર્થી કાઢી નાખો</span>
                   </button>
                 </div>
@@ -1118,11 +1118,11 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               </button>
 
               {/* Secondary 1: Single File Upload Excel */}
-              <label className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-sm cursor-pointer min-h-[44px]">
+              <label className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-xs cursor-pointer min-h-[44px]">
                 {isParsingExcel ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Upload className="w-4 h-4 text-emerald-400" />
+                  <Upload className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 )}
                 <span>એક ફાઇલ આયાત</span>
                 <input
@@ -1142,36 +1142,36 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               {/* Secondary 2: Export to Excel */}
               <button
                 onClick={() => exportStudentsExcel(students, school.schoolName, school.diseCode)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-sm min-h-[44px] cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors shadow-xs min-h-[44px] cursor-pointer"
                 title="Export all students to Excel"
               >
-                <FileSpreadsheet className="w-4 h-4 text-amber-400" />
+                <FileSpreadsheet className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span>એક્સપોર્ટ</span>
               </button>
 
               {/* Template Downloads Menu / Buttons */}
-              <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-700/80">
-                <span className="text-[11px] font-semibold text-slate-400 px-1.5 flex items-center gap-1">
-                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 px-1.5 flex items-center gap-1">
+                  <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   ટેમ્પ્લેટ:
                 </span>
                 <button
                   onClick={() => downloadCtsTemplate(school.diseCode, school.schoolName)}
-                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-xs font-semibold transition-colors border border-emerald-700/40"
+                  className="px-2 py-1 bg-white hover:bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-emerald-300 dark:border-emerald-700/40 rounded-lg text-xs font-semibold transition-colors border"
                   title="CTS Excel Template (GR No. & AadhaarUID)"
                 >
                   CTS
                 </button>
                 <button
                   onClick={() => downloadUdisePlusTemplate(school.diseCode, school.schoolName)}
-                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg text-xs font-semibold transition-colors border border-cyan-700/40"
+                  className="px-2 py-1 bg-white hover:bg-cyan-50 text-cyan-800 border-cyan-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-cyan-300 dark:border-cyan-700/40 rounded-lg text-xs font-semibold transition-colors border"
                   title="UDISE+ Excel Template (Col 1 to 61)"
                 >
                   UDISE+
                 </button>
                 <button
                   onClick={() => downloadStudentTemplate(school.diseCode, school.schoolName)}
-                  className="px-2 py-1 hover:bg-slate-800 text-slate-300 rounded-lg text-xs transition-colors"
+                  className="px-2 py-1 bg-white hover:bg-slate-200 text-slate-700 dark:bg-transparent dark:hover:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-transparent rounded-lg text-xs transition-colors"
                   title="General Student Master Template"
                 >
                   સામાન્ય
@@ -1198,20 +1198,20 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   setIsDeleteAllModalOpen(true);
                 }}
                 disabled={students.length === 0}
-                className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-red-950/50 hover:bg-red-900/80 text-red-300 border border-red-800/60 hover:border-red-700 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed min-h-[44px]"
+                className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 border-red-200 dark:bg-red-950/50 dark:hover:bg-red-900/80 dark:text-red-300 border dark:border-red-800/60 dark:hover:border-red-700 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed min-h-[44px]"
                 title="બધા અથવા ફિલ્ટર કરેલા વિદ્યાર્થીઓ કાઢી નાખો (Delete All / Bulk Delete)"
               >
-                <Trash2 className="w-4 h-4 text-red-400" />
+                <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
                 <span>બધા કાઢી નાખો</span>
               </button>
 
               {/* View Layout Toggle Button */}
-              <div className="flex items-center p-1 bg-slate-900 border border-slate-700 rounded-xl">
+              <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
                 <button
                   type="button"
                   onClick={() => setViewLayout('cards')}
                   className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                    isCardView ? 'bg-[#9d512d] text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                    isCardView ? 'bg-[#9d512d] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                   }`}
                   title="કાર્ડ વ્યુ"
                 >
@@ -1221,7 +1221,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   type="button"
                   onClick={() => setViewLayout('table')}
                   className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                    !isCardView ? 'bg-[#9d512d] text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                    !isCardView ? 'bg-[#9d512d] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                   }`}
                   title="કોષ્ટક વ્યુ"
                 >
@@ -1234,12 +1234,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
         {/* Global Import Notification Banner */}
         {importStatusMessage && (
-          <div className="mt-4 bg-emerald-950/80 border border-emerald-700/80 text-emerald-200 rounded-xl p-3.5 text-xs sm:text-sm flex items-center gap-2.5 animate-fadeIn">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <div className="mt-4 bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-700/80 text-emerald-800 dark:text-emerald-200 rounded-xl p-3.5 text-xs sm:text-sm flex items-center gap-2.5 animate-fadeIn">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span className="flex-1">{importStatusMessage}</span>
             <button
               onClick={() => setImportStatusMessage(null)}
-              className="text-emerald-400 hover:text-white p-1"
+              className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-white p-1"
             >
               <X className="w-4 h-4" />
             </button>
@@ -1250,12 +1250,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       {/* Standard Counts Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: 'ધોરણ 9', key: '9', count: counts.std9, color: 'border-blue-500/40 text-blue-400' },
-          { label: 'ધોરણ 10', key: '10', count: counts.std10, color: 'border-emerald-500/40 text-emerald-400' },
-          { label: 'ધોરણ 11', key: '11', count: counts.std11, color: 'border-purple-500/40 text-purple-400' },
-          { label: 'ધોરણ 12', key: '12', count: counts.std12, color: 'border-indigo-500/40 text-indigo-400' },
-          { label: 'કુમાર / કન્યા', key: 'GENDER', count: `${counts.boys} / ${counts.girls}`, color: 'border-pink-500/40 text-pink-400', noFilter: true },
-          { label: 'કુલ સંખ્યા', key: 'ALL', count: counts.total, color: 'border-amber-500/40 text-amber-400' },
+          { label: 'ધોરણ 9', key: '9', count: counts.std9, color: 'border-blue-500/40 text-blue-600 dark:text-blue-400' },
+          { label: 'ધોરણ 10', key: '10', count: counts.std10, color: 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400' },
+          { label: 'ધોરણ 11', key: '11', count: counts.std11, color: 'border-purple-500/40 text-purple-600 dark:text-purple-400' },
+          { label: 'ધોરણ 12', key: '12', count: counts.std12, color: 'border-indigo-500/40 text-indigo-600 dark:text-indigo-400' },
+          { label: 'કુમાર / કન્યા', key: 'GENDER', count: `${counts.boys} / ${counts.girls}`, color: 'border-pink-500/40 text-pink-600 dark:text-pink-400', noFilter: true },
+          { label: 'કુલ સંખ્યા', key: 'ALL', count: counts.total, color: 'border-amber-500/40 text-amber-600 dark:text-amber-400' },
         ].map((item) => (
           <button
             key={item.key}
@@ -1267,15 +1267,15 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             }}
             className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
               selectedStandardFilter === item.key
-                ? 'bg-slate-800 border-terracotta ring-2 ring-terracotta/40'
-                : 'bg-slate-900/60 border-white/5 hover:border-white/15'
+                ? 'bg-amber-50 dark:bg-slate-800 border-terracotta ring-2 ring-terracotta/40'
+                : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/15'
             }`}
           >
-            <div className="text-[11px] font-semibold text-slate-400 flex justify-between items-center">
+            <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex justify-between items-center">
               <span>{item.label}</span>
             </div>
             <div className="mt-2 flex items-baseline justify-between">
-              <span className={`text-2xl font-bold font-mono ${item.color.split(' ')[1]}`}>
+              <span className={`text-2xl font-bold font-mono ${item.color.split(' ')[1]} ${item.color.split(' ')[2]}`}>
                 {item.count}
               </span>
               <span className="text-[10px] text-slate-500">વિદ્યાર્થીઓ</span>
@@ -1285,7 +1285,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       </div>
 
       {/* Search & Comprehensive Filters Toolbar */}
-      <div className="bg-slate-900/80 rounded-2xl border border-white/10 p-4 shadow-sm space-y-3">
+      <div className="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-white/10 p-4 shadow-sm space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
           {/* Search Box */}
           <div className="sm:col-span-4 relative">
@@ -1295,13 +1295,13 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="નામ, GR નં, રોલ નં અથવા ફોનથી શોધો..."
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-terracotta min-h-[44px]"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-terracotta min-h-[44px]"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-3 text-slate-400 hover:text-white"
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1313,7 +1313,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             <select
               value={selectedStandardFilter}
               onChange={(e) => setSelectedStandardFilter(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-terracotta min-h-[44px]"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-terracotta min-h-[44px]"
             >
               <option value="ALL">બધા ધોરણ (Std)</option>
               <option value="9">ધોરણ 9</option>
@@ -1328,7 +1328,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             <select
               value={selectedSectionFilter}
               onChange={(e) => setSelectedSectionFilter(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-terracotta min-h-[44px]"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-terracotta min-h-[44px]"
             >
               <option value="ALL">બધા વર્ગ (Section)</option>
               {availableSections.map((sec) => (
@@ -1344,7 +1344,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             <select
               value={selectedGenderFilter}
               onChange={(e) => setSelectedGenderFilter(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-terracotta min-h-[44px]"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-terracotta min-h-[44px]"
             >
               <option value="ALL">બધી જાતિ (Gender)</option>
               <option value="Boy">કુમાર (Boys)</option>
@@ -1358,7 +1358,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             <select
               value={selectedBloodFilter}
               onChange={(e) => setSelectedBloodFilter(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-terracotta min-h-[44px]"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-terracotta min-h-[44px]"
             >
               <option value="ALL">બ્લડ ગ્રૂપ (All)</option>
               {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((bg) => (
@@ -1372,7 +1372,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
         {/* Multi-selection Context Bar */}
         {selectedStudentIds.size > 0 && (
-          <div className="flex items-center justify-between p-2.5 bg-terracotta/15 border border-terracotta/30 rounded-xl text-xs text-amber-200 animate-fadeIn flex-wrap gap-2">
+          <div className="flex items-center justify-between p-2.5 bg-amber-50 dark:bg-terracotta/15 border border-amber-200 dark:border-terracotta/30 rounded-xl text-xs text-amber-900 dark:text-amber-200 animate-fadeIn flex-wrap gap-2">
             <div className="flex items-center gap-2 font-semibold">
               <CheckSquare className="w-4 h-4 text-terracotta" />
               <span>{selectedStudentIds.size} વિદ્યાર્થીઓ પસંદ કર્યા છે</span>
@@ -1383,7 +1383,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   const targetList = students.filter((s) => selectedStudentIds.has(s.id));
                   handleGenerateIdCards(targetList);
                 }}
-                className="px-3 py-1.5 rounded-lg bg-terracotta hover:bg-terracotta-hover text-white font-bold flex items-center gap-1.5 shadow-sm"
+                className="px-3 py-1.5 rounded-lg bg-terracotta hover:bg-terracotta-hover text-white font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <CreditCard className="w-3.5 h-3.5" />
                 <span>પસંદ કરેલ આઈડી કાર્ડ પ્રિન્ટ</span>
@@ -1404,7 +1404,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
               <button
                 onClick={() => setSelectedStudentIds(new Set())}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium"
+                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 font-medium cursor-pointer"
               >
                 પસંદગી રદ કરો
               </button>
@@ -1414,12 +1414,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       </div>
 
       {/* Main Student List Table / Card View */}
-      <div className="bg-slate-900/90 rounded-2xl border border-white/10 overflow-hidden shadow-xl">
+      <div className="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden shadow-xl">
         {filteredStudents.length === 0 ? (
           <div className="p-12 text-center">
-            <GraduationCap className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-white">કોઈ વિદ્યાર્થી મળ્યા નથી</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            <GraduationCap className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">કોઈ વિદ્યાર્થી મળ્યા નથી</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
               શોધ અથવા પસંદ કરેલા ફિલ્ટર્સ અનુસાર કોઈ પરિણામ નથી. ફિલ્ટર્સ રીસેટ કરો અથવા નવો વિદ્યાર્થી ઉમેરો.
             </p>
             <button
@@ -1430,7 +1430,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 setSelectedGenderFilter('ALL');
                 setSelectedBloodFilter('ALL');
               }}
-              className="mt-4 px-4 py-2 rounded-xl bg-slate-800 text-terracotta text-xs font-semibold hover:bg-slate-700"
+              className="mt-4 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#9d512d] dark:bg-slate-800 dark:text-terracotta dark:hover:bg-slate-700 text-xs font-semibold cursor-pointer"
             >
               બધા ફિલ્ટર્સ સાફ કરો
             </button>
@@ -1438,12 +1438,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
         ) : (
           <div>
             {/* View Mode Bar */}
-            <div className="px-4 py-2.5 bg-slate-950/80 border-b border-white/10 flex items-center justify-between text-xs flex-wrap gap-2">
+            <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/10 flex items-center justify-between text-xs flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleToggleSelectAll}
-                  className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white font-medium cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white font-medium cursor-pointer"
                 >
                   {selectedStudentIds.size === filteredStudents.length && filteredStudents.length > 0 ? (
                     <CheckSquare className="w-4 h-4 text-terracotta" />
@@ -1454,12 +1454,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 </button>
               </div>
 
-              <div className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 p-0.5 rounded-lg">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 p-0.5 rounded-lg">
                 <button
                   type="button"
                   onClick={() => setViewLayout('cards')}
                   className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
-                    isCardView ? 'bg-[#9d512d] text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                    isCardView ? 'bg-[#9d512d] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                   }`}
                   title="કાર્ડ વ્યુ (મોબાઇલ માટે સરળ)"
                 >
@@ -1496,7 +1496,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       className={`glass-card rounded-2xl border p-3.5 transition-all shadow-xs ${
                         isSelected
                           ? 'border-terracotta bg-terracotta/10'
-                          : 'border-white/10 bg-slate-900/90 hover:border-white/20'
+                          : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/90 hover:border-slate-300 dark:hover:border-white/20'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2.5">
@@ -1505,7 +1505,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                           <button
                             type="button"
                             onClick={() => handleToggleSelectStudent(st.id)}
-                            className="p-1 text-slate-400 hover:text-white shrink-0 cursor-pointer"
+                            className="p-1 text-slate-400 hover:text-slate-900 dark:hover:text-white shrink-0 cursor-pointer"
                           >
                             {isSelected ? (
                               <CheckSquare className="w-5 h-5 text-terracotta" />
@@ -1517,12 +1517,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                           {/* Photo Avatar */}
                           <div
                             onClick={() => setViewingProfileStudent(st)}
-                            className="w-11 h-11 rounded-xl border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
+                            className="w-11 h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
                           >
                             {st.photoUrl ? (
                               <img src={st.photoUrl} alt={st.studentName} className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-sm font-bold text-slate-400">
+                              <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
                                 {(st.studentName || 'S').trim().charAt(0)}
                               </span>
                             )}
@@ -1532,26 +1532,26 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                           <div className="min-w-0 flex-1">
                             <div
                               onClick={() => setViewingProfileStudent(st)}
-                              className="font-bold text-white text-sm truncate hover:text-amber-300 cursor-pointer leading-tight"
+                              className="font-bold text-slate-900 dark:text-white text-sm truncate hover:text-[#9d512d] dark:hover:text-amber-300 cursor-pointer leading-tight"
                             >
                               {st.studentName}
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-200 border border-slate-700">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
                                 ધો. {stdClean} {st.section || st.division ? `(${st.section || st.division})` : ''}
                               </span>
                               {st.rollNumber && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-300 bg-slate-800/80">
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800/80">
                                   રોલ: {st.rollNumber}
                                 </span>
                               )}
                               {st.grNumber && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-amber-300 bg-slate-950 border border-slate-800">
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-amber-700 bg-amber-50 border border-amber-200 dark:text-amber-300 dark:bg-slate-950 dark:border-slate-800">
                                   GR: {st.grNumber}
                                 </span>
                               )}
                               {cleanBg && (
-                                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold text-red-300 bg-red-950/60 border border-red-800/60">
+                                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold text-red-700 bg-red-50 border border-red-200 dark:text-red-300 dark:bg-red-950/60 dark:border-red-800/60">
                                   {cleanBg}
                                 </span>
                               )}
@@ -1562,30 +1562,30 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
                       {/* Father / Address subtitle if present */}
                       {(st.fatherName || st.address) && (
-                        <div className="text-[11px] text-slate-400 mt-2 pl-9 truncate">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 pl-9 truncate">
                           {st.fatherName ? `વાલી: ${st.fatherName}` : `સરનામું: ${st.address}`}
                         </div>
                       )}
 
                       {/* Card Actions Bottom Strip */}
-                      <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between gap-1 text-xs">
+                      <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-white/5 flex items-center justify-between gap-1 text-xs">
                         {/* Quick Call / WhatsApp */}
                         <div className="flex items-center gap-1.5">
                           {cleanPhone ? (
                             <>
                               <a
                                 href={`tel:${cleanPhone}`}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800/80 text-emerald-300 font-mono text-[11px]"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 text-emerald-800 dark:bg-emerald-950/80 dark:hover:bg-emerald-900 dark:border-emerald-800/80 dark:text-emerald-300 font-mono text-[11px] font-medium transition-colors"
                                 title="કૉલ કરો"
                               >
-                                <Phone className="w-3 h-3 text-emerald-400" />
+                                <Phone className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
                                 <span>{cleanPhone}</span>
                               </a>
                               <a
                                 href={`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(`નમસ્તે વાલીશ્રી, ${school.schoolName} તરફથી આપના પાલ્ય ${st.studentName} સંદર્ભે સંદેશ.`)}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-1 rounded-lg bg-[#25D366]/20 hover:bg-[#25D366]/30 text-[#25D366] border border-[#25D366]/30"
+                                className="p-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 dark:bg-[#25D366]/20 dark:hover:bg-[#25D366]/30 dark:text-[#25D366] dark:border-[#25D366]/30 transition-colors"
                                 title="WhatsApp મેસેજ"
                               >
                                 <MessageSquare className="w-3.5 h-3.5" />
@@ -1601,18 +1601,18 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                           <button
                             type="button"
                             onClick={() => setViewingProfileStudent(st)}
-                            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                             title="વિદ્યાર્થી પ્રોફાઇલ જુઓ"
                           >
-                            <Eye className="w-4 h-4 text-emerald-400" />
+                            <Eye className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           </button>
                           <button
                             type="button"
                             onClick={() => printStudentIdCards(school, [st])}
-                            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                             title="ID કાર્ડ પ્રિન્ટ"
                           >
-                            <CreditCard className="w-4 h-4 text-amber-400" />
+                            <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                           </button>
                           <button
                             type="button"
@@ -1632,15 +1632,15 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                                 aadhaarNo: st.aadhaarNo || '',
                               });
                             }}
-                            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                             title="સુધારો કરો"
                           >
-                            <Edit3 className="w-4 h-4 text-blue-400" />
+                            <Edit3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                           </button>
                           <button
                             type="button"
                             onClick={() => setDeletingStudent(st)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
                             title="કાઢી નાખો"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1653,14 +1653,14 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               </div>
             ) : (
               <div className="overflow-x-auto mobile-table-scroll">
-                <table className="w-full text-left text-xs sm:text-sm text-slate-200">
-                  <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-white/10 text-[11px]">
+                <table className="w-full text-left text-xs sm:text-sm text-slate-800 dark:text-slate-200">
+                  <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-white/10 text-[11px]">
                     <tr>
                       <th className="px-4 py-3.5 w-10 text-center">
                         <button
                           type="button"
                           onClick={handleToggleSelectAll}
-                          className="text-slate-400 hover:text-white"
+                          className="text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                           title="Select / Deselect all"
                         >
                           {selectedStudentIds.size === filteredStudents.length && filteredStudents.length > 0 ? (
@@ -1681,7 +1681,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       <th className="px-4 py-3.5 text-right">ક્રિયાઓ</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                     {filteredStudents.map((st, idx) => {
                       const isSelected = selectedStudentIds.has(st.id);
                       const stdClean = String(st.standard).replace(/^class\s*/i, '').trim();
@@ -1689,7 +1689,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       return (
                         <tr
                           key={st.id}
-                          className={`hover:bg-slate-850/60 transition-colors ${
+                          className={`hover:bg-slate-50 dark:hover:bg-slate-850/60 transition-colors ${
                             isSelected ? 'bg-terracotta/10' : ''
                           }`}
                         >
@@ -1698,7 +1698,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                             <button
                               type="button"
                               onClick={() => handleToggleSelectStudent(st.id)}
-                              className="text-slate-400 hover:text-white"
+                              className="text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                             >
                               {isSelected ? (
                                 <CheckSquare className="w-4 h-4 text-terracotta" />
@@ -1712,13 +1712,13 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                           <td className="px-4 py-3 text-center">
                             <div
                               onClick={() => setViewingProfileStudent(st)}
-                              className="w-9 h-11 rounded-lg border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center cursor-pointer shadow-sm mx-auto hover:border-terracotta transition-colors"
+                              className="w-9 h-11 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 overflow-hidden flex items-center justify-center cursor-pointer shadow-xs mx-auto hover:border-terracotta transition-colors"
                               title="Click to view profile"
                             >
                               {st.photoUrl ? (
                                 <img src={st.photoUrl} alt={st.studentName} className="w-full h-full object-cover" />
                               ) : (
-                                <span className="text-xs font-bold text-slate-500">
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-500">
                                   {(st.studentName || 'S').trim().charAt(0)}
                                 </span>
                               )}
@@ -1729,19 +1729,19 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                           <td className="px-4 py-3">
                             <div
                               onClick={() => setViewingProfileStudent(st)}
-                              className="font-bold text-white hover:text-amber-300 cursor-pointer flex items-center gap-1.5 transition-colors"
+                              className="font-bold text-slate-900 dark:text-white hover:text-[#9d512d] dark:hover:text-amber-300 cursor-pointer flex items-center gap-1.5 transition-colors"
                             >
                               <span>{st.studentName}</span>
                             </div>
-                            <div className="text-[11px] text-slate-400 mt-0.5">
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                               {st.fatherName ? `વાલી: ${st.fatherName}` : st.address ? `સરનામું: ${st.address}` : ''}
                             </div>
                           </td>
 
                           {/* GR Number */}
-                          <td className="px-4 py-3 font-mono font-bold text-amber-300 text-xs">
+                          <td className="px-4 py-3 font-mono font-bold text-amber-700 dark:text-amber-300 text-xs">
                             {st.grNumber ? (
-                              <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
+                              <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-slate-950 border border-amber-200 dark:border-slate-800">
                                 {st.grNumber}
                               </span>
                             ) : (
@@ -1751,18 +1751,18 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
                           {/* Standard & Section */}
                           <td className="px-4 py-3">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-800 border border-slate-700 text-slate-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
                               ધોરણ {stdClean} {st.section || st.division ? `(${st.section || st.division})` : ''}
                             </span>
                           </td>
 
                           {/* Roll Number */}
-                          <td className="px-4 py-3 font-mono text-xs text-slate-300">
+                          <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">
                             {st.rollNumber || '-'}
                           </td>
 
                           {/* DOB */}
-                          <td className="px-4 py-3 text-xs text-slate-300 font-mono">
+                          <td className="px-4 py-3 text-xs text-slate-700 dark:text-slate-300 font-mono">
                             {st.dob || '-'}
                           </td>
 
@@ -1772,7 +1772,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                               const cleanBg = cleanAndNormalizeBloodGroup(st.bloodGroup);
                               if (cleanBg) {
                                 return (
-                                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-950/60 border border-red-800/60 text-red-300">
+                                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-300">
                                     {cleanBg}
                                   </span>
                                 );
@@ -1780,7 +1780,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                               if (st.bloodGroup && st.bloodGroup.trim()) {
                                 return (
                                   <span
-                                    className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300"
+                                    className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
                                     title={st.bloodGroup}
                                   >
                                     {st.bloodGroup}
@@ -1792,7 +1792,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                           </td>
 
                           {/* Contact Mobile */}
-                          <td className="px-4 py-3 font-mono text-xs text-emerald-400">
+                          <td className="px-4 py-3 font-mono text-xs text-emerald-700 dark:text-emerald-400">
                             {st.contactNumber || st.mobileNumber || '-'}
                           </td>
 
@@ -1803,20 +1803,20 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                               <button
                                 type="button"
                                 onClick={() => setViewingProfileStudent(st)}
-                                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                 title="View Full Profile"
                               >
-                                <Eye className="w-4 h-4 text-emerald-400" />
+                                <Eye className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                               </button>
 
                               {/* Print Single ID Card */}
                               <button
                                 type="button"
                                 onClick={() => printStudentIdCards(school, [st])}
-                                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                 title="Generate ID Card"
                               >
-                                <CreditCard className="w-4 h-4 text-amber-400" />
+                                <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                               </button>
 
                               {/* Quick Edit */}
@@ -1838,17 +1838,17 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                                     aadhaarNo: st.aadhaarNo || '',
                                   });
                                 }}
-                                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                 title="Quick Edit"
                               >
-                                <Edit3 className="w-4 h-4 text-blue-400" />
+                                <Edit3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                               </button>
 
                               {/* Delete */}
                               <button
                                 type="button"
                                 onClick={() => setDeletingStudent(st)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-colors"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
                                 title="Delete Student"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -2499,21 +2499,21 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       {/* MODAL 3.5: DUAL-FILE (CTS + UDISE+) SMART IMPORT MODAL */}
       {isDualImportModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md">
-          <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-white my-auto animate-fadeIn overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-emerald-500/30 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-slate-800 dark:text-white my-auto animate-fadeIn overflow-hidden">
             {/* Modal Header */}
-            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-800 flex items-start justify-between gap-4 bg-gradient-to-r from-emerald-950/50 to-slate-900">
+            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between gap-4 bg-gradient-to-r from-emerald-50/80 to-white dark:from-emerald-950/50 dark:to-slate-900">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-300" />
                     સ્માર્ટ ડ્યુઅલ આયાત (CTS + UDISE+)
                   </span>
-                  <span className="text-xs text-slate-400 font-mono">DISE: {school.diseCode}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">DISE: {school.diseCode}</span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mt-1.5 flex items-center gap-2">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1.5 flex items-center gap-2">
                   <span>બે એક્સેલ ફાઇલ મર્જ કરી વિદ્યાર્થીઓ આયાત કરો</span>
                 </h3>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed max-w-3xl">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed max-w-3xl">
                   <strong>CTS એક્સેલ</strong> માંથી G.R. નંબર &amp; બાળ આઈડી (AadhaarUID) લેવાશે. 
                   <strong> UDISE+ એક્સેલ</strong> (કોલમ 61 Student State Code સાથે મેચ કરીને) માંથી વિદ્યાર્થીનું પૂરું નામ 
                   તથા તમામ શૈક્ષણિક વિગતો (ધોરણ, રોલ નં, જન્મ, પ્રવેશ તારીખ, બ્લડ ગ્રૂપ, દિવ્યાંગતા વગેરે) આપમેળે મર્જ થશે.
@@ -2525,7 +2525,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   setIsDualImportModalOpen(false);
                   setDualParseResult(null);
                 }}
-                className="p-1.5 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 dark:bg-slate-800/80 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700 transition-colors cursor-pointer"
                 title="બંધ કરો"
               >
                 <X className="w-5 h-5" />
@@ -2533,16 +2533,16 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             </div>
 
             {/* Template Download Help Bar */}
-            <div className="shrink-0 px-5 py-2.5 bg-slate-950/70 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <span className="text-slate-400 flex items-center gap-1.5">
-                <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <div className="shrink-0 px-5 py-2.5 bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 નમૂનારૂપ એક્સેલ ફાઇલ ટેમ્પ્લેટ્સ:
               </span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => downloadCtsTemplate(school.diseCode, school.schoolName)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 font-medium transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/80 dark:hover:bg-emerald-900 dark:text-emerald-300 dark:border-emerald-700/60 font-medium transition-colors cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>CTS નમૂનો (GR &amp; AadhaarUID)</span>
@@ -2550,7 +2550,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => downloadUdisePlusTemplate(school.diseCode, school.schoolName)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 font-medium transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-300 dark:bg-cyan-950/80 dark:hover:bg-cyan-900 dark:text-cyan-300 dark:border-cyan-700/60 font-medium transition-colors cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>UDISE+ નમૂનો (Col 1 to 61)</span>
@@ -2561,38 +2561,38 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             {/* Scrollable Modal Body */}
             <div className="flex-1 overflow-y-auto">
               {/* Two File Upload Cards */}
-              <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-800 bg-slate-900/40">
+              <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40">
               {/* File 1: CTS File */}
               <div className={`p-4 rounded-xl border transition-all ${
                 ctsFile
-                  ? 'bg-emerald-950/20 border-emerald-500/50'
-                  : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'
+                  ? 'bg-emerald-50/60 border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-500/50'
+                  : 'bg-white dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
               }`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-900/50 text-emerald-300 flex items-center justify-center font-bold text-xs border border-emerald-700/40">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-xs border border-emerald-300 dark:border-emerald-700/40">
                       ૧
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white">CTS એક્સેલ ફાઇલ</h4>
-                      <p className="text-[11px] text-emerald-400 font-medium">G.R. નંબર અને AadhaarUID (DISE Code)</p>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">CTS એક્સેલ ફાઇલ</h4>
+                      <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">G.R. નંબર અને AadhaarUID (DISE Code)</p>
                     </div>
                   </div>
                   {ctsFile && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       પસંદ કરેલ
                     </span>
                   )}
                 </div>
 
                 {ctsFile ? (
-                  <div className="mt-3 p-3 rounded-lg bg-slate-900 border border-emerald-900/50 flex items-center justify-between">
+                  <div className="mt-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-between">
                     <div className="flex items-center gap-2 overflow-hidden">
-                      <FileSpreadsheet className="w-5 h-5 text-emerald-400 shrink-0" />
+                      <FileSpreadsheet className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <div className="truncate">
-                        <div className="text-xs font-semibold text-white truncate">{ctsFile.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">
+                        <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">{ctsFile.name}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                           {(ctsFile.size / 1024).toFixed(1)} KB
                         </div>
                       </div>
@@ -2604,16 +2604,16 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                         setDualParseResult(null);
                         if (ctsInputRef.current) ctsInputRef.current.value = '';
                       }}
-                      className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded bg-red-950/50 border border-red-900/50 ml-2 shrink-0"
+                      className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 px-2 py-1 rounded bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 ml-2 shrink-0 cursor-pointer"
                     >
                       બદલો
                     </button>
                   </div>
                 ) : (
-                  <label className="mt-3 border-2 border-dashed border-slate-700 hover:border-emerald-500/60 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-900/50">
-                    <Upload className="w-6 h-6 text-emerald-400 mb-1.5" />
-                    <span className="text-xs font-bold text-white">CTS ફાઇલ પસંદ કરો (.xlsx / .xls)</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">ક્લિક કરો અથવા ફાઇલ ખેંચીને મૂકો</span>
+                  <label className="mt-3 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500/60 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-white dark:bg-slate-900/50">
+                    <Upload className="w-6 h-6 text-emerald-600 dark:text-emerald-400 mb-1.5" />
+                    <span className="text-xs font-bold text-slate-800 dark:text-white">CTS ફાઇલ પસંદ કરો (.xlsx / .xls)</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">ક્લિક કરો અથવા ફાઇલ ખેંચીને મૂકો</span>
                     <input
                       ref={ctsInputRef}
                       type="file"
@@ -2633,34 +2633,34 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               {/* File 2: UDISE+ File */}
               <div className={`p-4 rounded-xl border transition-all ${
                 udiseFile
-                  ? 'bg-cyan-950/20 border-cyan-500/50'
-                  : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'
+                  ? 'bg-cyan-50/60 border-cyan-300 dark:bg-cyan-950/20 dark:border-cyan-500/50'
+                  : 'bg-white dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
               }`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-cyan-900/50 text-cyan-300 flex items-center justify-center font-bold text-xs border border-cyan-700/40">
+                    <div className="w-7 h-7 rounded-lg bg-cyan-100 dark:bg-cyan-900/50 text-cyan-800 dark:text-cyan-300 flex items-center justify-center font-bold text-xs border border-cyan-300 dark:border-cyan-700/40">
                       ૨
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white">UDISE+ એક્સેલ ફાઇલ</h4>
-                      <p className="text-[11px] text-cyan-400 font-medium">Col 4 પૂરું નામ, Col 61 બાળ આઈડી &amp; વિગતો</p>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">UDISE+ એક્સેલ ફાઇલ</h4>
+                      <p className="text-[11px] text-cyan-700 dark:text-cyan-400 font-medium">Col 4 પૂરું નામ, Col 61 બાળ આઈડી &amp; વિગતો</p>
                     </div>
                   </div>
                   {udiseFile && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-cyan-400" />
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-300 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/40 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
                       પસંદ કરેલ
                     </span>
                   )}
                 </div>
 
                 {udiseFile ? (
-                  <div className="mt-3 p-3 rounded-lg bg-slate-900 border border-cyan-900/50 flex items-center justify-between">
+                  <div className="mt-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-900/50 flex items-center justify-between">
                     <div className="flex items-center gap-2 overflow-hidden">
-                      <FileSpreadsheet className="w-5 h-5 text-cyan-400 shrink-0" />
+                      <FileSpreadsheet className="w-5 h-5 text-cyan-600 dark:text-cyan-400 shrink-0" />
                       <div className="truncate">
-                        <div className="text-xs font-semibold text-white truncate">{udiseFile.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">
+                        <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">{udiseFile.name}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                           {(udiseFile.size / 1024).toFixed(1)} KB
                         </div>
                       </div>
@@ -2672,16 +2672,16 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                         setDualParseResult(null);
                         if (udiseInputRef.current) udiseInputRef.current.value = '';
                       }}
-                      className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded bg-red-950/50 border border-red-900/50 ml-2 shrink-0"
+                      className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 px-2 py-1 rounded bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 ml-2 shrink-0 cursor-pointer"
                     >
                       બદલો
                     </button>
                   </div>
                 ) : (
-                  <label className="mt-3 border-2 border-dashed border-slate-700 hover:border-cyan-500/60 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-900/50">
-                    <Upload className="w-6 h-6 text-cyan-400 mb-1.5" />
-                    <span className="text-xs font-bold text-white">UDISE+ ફાઇલ પસંદ કરો (.xlsx / .xls)</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">ક્લિક કરો અથવા ફાઇલ ખેંચીને મૂકો</span>
+                  <label className="mt-3 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-cyan-500/60 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-white dark:bg-slate-900/50">
+                    <Upload className="w-6 h-6 text-cyan-600 dark:text-cyan-400 mb-1.5" />
+                    <span className="text-xs font-bold text-slate-800 dark:text-white">UDISE+ ફાઇલ પસંદ કરો (.xlsx / .xls)</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">ક્લિક કરો અથવા ફાઇલ ખેંચીને મૂકો</span>
                     <input
                       ref={udiseInputRef}
                       type="file"
@@ -2702,7 +2702,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             {/* Compare & Merge Trigger Bar */}
             {!dualParseResult && (
               <div className="p-5 flex flex-col items-center justify-center text-center space-y-3">
-                <p className="text-xs text-slate-400 max-w-lg">
+                <p className="text-xs text-slate-600 dark:text-slate-400 max-w-lg">
                   બંને ફાઇલો પસંદ કર્યા બાદ નીચેના બટન પર ક્લિક કરો. સિસ્ટમ બંને ફાઇલોમાંથી બાળ આઈડી (AadhaarUID = Student State Code)
                   સરખાવીને દરેક વિદ્યાર્થીના G.R. નંબર સાથે UDISE+ નું પૂરું નામ અને વિગતો ઓટો-મર્જ કરશે.
                 </p>
@@ -2731,35 +2731,35 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             {dualParseResult && (
               <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 {/* Stats cards */}
-                <div className="p-4 grid grid-cols-2 sm:grid-cols-6 gap-2 border-b border-slate-800 bg-slate-950/40 text-center">
-                  <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2">
-                    <div className="text-white font-bold text-base font-mono">{dualParseResult.totalCtsRows}</div>
-                    <div className="text-slate-400 text-[10px]">CTS વિદ્યાર્થીઓ</div>
+                <div className="p-4 grid grid-cols-2 sm:grid-cols-6 gap-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-center">
+                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl p-2">
+                    <div className="text-slate-900 dark:text-white font-bold text-base font-mono">{dualParseResult.totalCtsRows}</div>
+                    <div className="text-slate-600 dark:text-slate-400 text-[10px]">CTS વિદ્યાર્થીઓ</div>
                   </div>
-                  <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2">
-                    <div className="text-white font-bold text-base font-mono">{dualParseResult.totalUdiseRows}</div>
-                    <div className="text-slate-400 text-[10px]">UDISE+ રેકોર્ડ્સ</div>
+                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl p-2">
+                    <div className="text-slate-900 dark:text-white font-bold text-base font-mono">{dualParseResult.totalUdiseRows}</div>
+                    <div className="text-slate-600 dark:text-slate-400 text-[10px]">UDISE+ રેકોર્ડ્સ</div>
                   </div>
-                  <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-2">
-                    <div className="text-emerald-400 font-bold text-base font-mono">{dualParseResult.matchedCount}</div>
-                    <div className="text-emerald-300 text-[10px]">DISE મેચ (બંને ફાઇલ)</div>
+                  <div className="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 rounded-xl p-2">
+                    <div className="text-emerald-700 dark:text-emerald-400 font-bold text-base font-mono">{dualParseResult.matchedCount}</div>
+                    <div className="text-emerald-800 dark:text-emerald-300 text-[10px]">DISE મેચ (બંને ફાઇલ)</div>
                   </div>
-                  <div className="bg-cyan-950/60 border border-cyan-800/80 rounded-xl p-2">
-                    <div className="text-cyan-400 font-bold text-base font-mono">{dualParseResult.validRows.length}</div>
-                    <div className="text-cyan-300 text-[10px]">આયાત માટે માન્ય</div>
+                  <div className="bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/80 rounded-xl p-2">
+                    <div className="text-cyan-700 dark:text-cyan-400 font-bold text-base font-mono">{dualParseResult.validRows.length}</div>
+                    <div className="text-cyan-800 dark:text-cyan-300 text-[10px]">આયાત માટે માન્ય</div>
                   </div>
-                  <div className="bg-blue-950/60 border border-blue-800/80 rounded-xl p-2">
-                    <div className="text-blue-400 font-bold text-base font-mono">{dualParseResult.existingUpdateRows.length}</div>
-                    <div className="text-blue-300 text-[10px]">ડેટાબેઝ અપડેટ</div>
+                  <div className="bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/80 rounded-xl p-2">
+                    <div className="text-blue-700 dark:text-blue-400 font-bold text-base font-mono">{dualParseResult.existingUpdateRows.length}</div>
+                    <div className="text-blue-800 dark:text-blue-300 text-[10px]">ડેટાબેઝ અપડેટ</div>
                   </div>
-                  <div className="bg-red-950/60 border border-red-800/80 rounded-xl p-2">
-                    <div className="text-red-400 font-bold text-base font-mono">{dualParseResult.invalidRows.length}</div>
-                    <div className="text-red-300 text-[10px]">અપૂર્ણ / ક્ષતિ</div>
+                  <div className="bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800/80 rounded-xl p-2">
+                    <div className="text-red-700 dark:text-red-400 font-bold text-base font-mono">{dualParseResult.invalidRows.length}</div>
+                    <div className="text-red-800 dark:text-red-300 text-[10px]">અપૂર્ણ / ક્ષતિ</div>
                   </div>
                 </div>
 
                 {/* Filter Tabs */}
-                <div className="flex border-b border-slate-800 px-4 pt-2 gap-2 text-xs overflow-x-auto">
+                <div className="flex border-b border-slate-200 dark:border-slate-800 px-4 pt-2 gap-2 text-xs overflow-x-auto bg-slate-50/50 dark:bg-transparent">
                   {[
                     { id: 'all', label: `બધા રેકોર્ડ્સ (${dualParseResult.allRows.length})` },
                     { id: 'matched', label: `મેળવેલ (CTS + UDISE+) (${dualParseResult.matchedCount})` },
@@ -2772,8 +2772,8 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       onClick={() => setDualFilterTab(tab.id as any)}
                       className={`px-3 py-2 border-b-2 font-medium transition-colors whitespace-nowrap ${
                         dualFilterTab === tab.id
-                          ? 'border-emerald-400 text-emerald-300'
-                          : 'border-transparent text-slate-400 hover:text-slate-200'
+                          ? 'border-emerald-600 dark:border-emerald-400 text-emerald-700 dark:text-emerald-300'
+                          : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                       }`}
                     >
                       {tab.label}
@@ -2784,7 +2784,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 {/* Merged Table */}
                 <div className="flex-1 overflow-y-auto p-4 max-h-80">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] sticky top-0 z-10">
+                    <thead className="bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-400 uppercase text-[10px] sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800">
                       <tr>
                         <th className="p-2 w-10">#</th>
                         <th className="p-2">સ્થિતિ</th>
@@ -2800,7 +2800,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                         <th className="p-2">CWSN દિવ્યાંગતા</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                       {dualParseResult.allRows
                         .filter((r) => {
                           if (dualFilterTab === 'matched') return r.matchSource === 'both' && r.isValid;
@@ -2810,13 +2810,13 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                           return true;
                         })
                         .map((r) => (
-                          <tr key={r.rowNumber} className="hover:bg-slate-800/40">
-                            <td className="p-2 font-mono text-slate-400">#{r.rowNumber}</td>
+                          <tr key={r.rowNumber} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                            <td className="p-2 font-mono text-slate-500 dark:text-slate-400">#{r.rowNumber}</td>
                             <td className="p-2">
                               {r.isValid ? (
                                 r.isExistingUpdate ? (
                                   <div className="space-y-1">
-                                    <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-blue-950 text-blue-300 border border-blue-800 inline-flex items-center gap-1">
+                                    <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800 inline-flex items-center gap-1">
                                       <RefreshCw className="w-2.5 h-2.5" />
                                       અપડેટ થશે
                                     </span>
@@ -2825,48 +2825,48 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                                         {r.changes.slice(0, 3).map((ch, cIdx) => (
                                           <span
                                             key={cIdx}
-                                            className="text-[9px] bg-slate-950 text-blue-300 border border-blue-900/60 px-1 py-0.2 rounded"
+                                            className="text-[9px] bg-slate-100 text-blue-900 border border-slate-200 dark:bg-slate-950 dark:text-blue-300 dark:border-blue-900/60 px-1 py-0.2 rounded"
                                             title={`${ch.fieldLabel}: ${ch.oldValue || '(ખાલી)'} ➔ ${ch.newValue}`}
                                           >
-                                            {ch.fieldLabel}: <strong className="text-emerald-300">{ch.newValue}</strong>
+                                            {ch.fieldLabel}: <strong className="text-emerald-700 dark:text-emerald-300">{ch.newValue}</strong>
                                           </span>
                                         ))}
                                         {r.changes.length > 3 && (
-                                          <span className="text-[9px] text-slate-400">+{r.changes.length - 3} વધુ</span>
+                                          <span className="text-[9px] text-slate-500 dark:text-slate-400">+{r.changes.length - 3} વધુ</span>
                                         )}
                                       </div>
                                     )}
                                   </div>
                                 ) : r.matchSource === 'both' ? (
-                                  <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1 w-fit">
-                                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+                                  <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 flex items-center gap-1 w-fit">
+                                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
                                     મેચ (નવો)
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-amber-950 text-amber-300 border border-amber-800">
+                                  <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800">
                                     માત્ર CTS
                                   </span>
                                 )
                               ) : (
-                                <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-red-950 text-red-300 border border-red-800" title={r.errorReason}>
+                                <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-red-100 text-red-800 border border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800" title={r.errorReason}>
                                   {r.errorReason || 'ક્ષતિ'}
                                 </span>
                               )}
                             </td>
-                            <td className="p-2 font-bold text-white max-w-[180px] truncate" title={r.name}>
+                            <td className="p-2 font-bold text-slate-900 dark:text-white max-w-[180px] truncate" title={r.name}>
                               {r.name || '(નામ નથી)'}
                             </td>
-                            <td className="p-2 font-mono text-amber-300 font-bold">{r.grNumber || '-'}</td>
-                            <td className="p-2 font-mono text-slate-300 text-[11px]">{r.studentStateCode || r.diseCode || '-'}</td>
-                            <td className="p-2 font-semibold text-emerald-400">
+                            <td className="p-2 font-mono text-amber-700 dark:text-amber-300 font-bold">{r.grNumber || '-'}</td>
+                            <td className="p-2 font-mono text-slate-600 dark:text-slate-300 text-[11px]">{r.studentStateCode || r.diseCode || '-'}</td>
+                            <td className="p-2 font-semibold text-emerald-700 dark:text-emerald-400">
                               ધો. {r.standard} {r.section ? `(${r.section})` : ''}
                             </td>
-                            <td className="p-2 font-mono">{r.rollNumber || '-'}</td>
-                            <td className="p-2 text-sky-300 font-medium">{r.doa || '-'}</td>
-                            <td className="p-2 text-slate-300">{r.dob || '-'}</td>
-                            <td className="p-2 text-red-300 font-bold">{r.bloodGroup || '-'}</td>
-                            <td className="p-2 text-slate-300">{r.caste || '-'}</td>
-                            <td className="p-2 text-[11px] text-amber-200">{r.cwsnDisability || '-'}</td>
+                            <td className="p-2 font-mono text-slate-700 dark:text-white">{r.rollNumber || '-'}</td>
+                            <td className="p-2 text-sky-700 dark:text-sky-300 font-medium">{r.doa || '-'}</td>
+                            <td className="p-2 text-slate-600 dark:text-slate-300">{r.dob || '-'}</td>
+                            <td className="p-2 text-red-700 dark:text-red-300 font-bold">{r.bloodGroup || '-'}</td>
+                            <td className="p-2 text-slate-600 dark:text-slate-300">{r.caste || '-'}</td>
+                            <td className="p-2 text-[11px] text-amber-700 dark:text-amber-200">{r.cwsnDisability || '-'}</td>
                           </tr>
                         ))}
                     </tbody>
@@ -2877,7 +2877,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             </div>
 
             {/* Modal Bottom Actions */}
-            <div className="shrink-0 p-4 border-t border-slate-800 flex items-center justify-between gap-3 bg-slate-950/90">
+            <div className="shrink-0 p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/90">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -2885,7 +2885,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     setIsDualImportModalOpen(false);
                     setDualParseResult(null);
                   }}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 text-xs font-semibold transition-colors cursor-pointer"
                 >
                   બંધ કરો
                 </button>
@@ -2895,7 +2895,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     onClick={() => {
                       setDualParseResult(null);
                     }}
-                    className="px-3 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs transition-colors"
+                    className="px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-white text-xs transition-colors cursor-pointer"
                   >
                     ફરીથી ફાઇલ પસંદ કરો
                   </button>
@@ -2953,42 +2953,42 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       {/* MODAL 4: QUICK EDIT MODAL */}
       {editingStudent && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col p-5 text-white animate-fadeIn my-auto overflow-hidden">
-            <div className="shrink-0 flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
-              <h3 className="text-base font-bold flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-blue-400" />
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl max-w-md w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col p-5 text-slate-800 dark:text-white animate-fadeIn my-auto overflow-hidden">
+            <div className="shrink-0 flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3 mb-4">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>ઝડપી સુધારો (Quick Edit)</span>
               </h3>
-              <button onClick={() => setEditingStudent(null)} className="text-slate-400 hover:text-white p-1 rounded-lg">
+              <button onClick={() => setEditingStudent(null)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {editError && (
-              <div className="shrink-0 mb-3 p-2.5 bg-red-950/70 border border-red-800 rounded-lg text-xs text-red-200">
+              <div className="shrink-0 mb-3 p-2.5 bg-red-50 dark:bg-red-950/70 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-700 dark:text-red-200">
                 {editError}
               </div>
             )}
 
             <form onSubmit={handleSaveQuickEdit} className="flex-1 overflow-y-auto space-y-3 text-xs sm:text-sm pr-1">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">વિદ્યાર્થીનું નામ (Name as in GR) *</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">વિદ્યાર્થીનું નામ (Name as in GR) *</label>
                 <input
                   type="text"
                   required
                   value={editForm.studentName || ''}
                   onChange={(e) => setEditForm({ ...editForm, studentName: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">ધોરણ (Standard) *</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">ધોરણ (Standard) *</label>
                   <select
                     value={String(editForm.standard || '9')}
                     onChange={(e) => setEditForm({ ...editForm, standard: e.target.value as any })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   >
                     <option value="9">ધોરણ 9</option>
                     <option value="10">ધોરણ 10</option>
@@ -2998,55 +2998,55 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">G.R. નંબર</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">G.R. નંબર</label>
                   <input
                     type="text"
                     value={editForm.grNumber || ''}
                     onChange={(e) => setEditForm({ ...editForm, grNumber: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">વર્ગ / સેક્શન</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">વર્ગ / સેક્શન</label>
                   <input
                     type="text"
                     value={editForm.section || ''}
                     onChange={(e) => setEditForm({ ...editForm, section: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">રોલ નંબર</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">રોલ નંબર</label>
                   <input
                     type="text"
                     value={editForm.rollNumber || ''}
                     onChange={(e) => setEditForm({ ...editForm, rollNumber: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">સંપર્ક / Mobile</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">સંપર્ક / Mobile</label>
                   <input
                     type="tel"
                     value={editForm.contactNumber || ''}
                     onChange={(e) => setEditForm({ ...editForm, contactNumber: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">બ્લડ ગ્રૂપ (Blood Group)</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">બ્લડ ગ્રૂપ (Blood Group)</label>
                   <select
                     value={editForm.bloodGroup || ''}
                     onChange={(e) => setEditForm({ ...editForm, bloodGroup: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
                   >
                     <option value="">ખાલી રાખો (-)</option>
                     {COMMON_BLOOD_GROUPS.map((bg) => (
@@ -3060,7 +3060,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                     વિદ્યાર્થી Child UID (૧૮ અંક)
                   </label>
                   <input
@@ -3074,27 +3074,27 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                       })
                     }
                     placeholder="દા.ત. 240104015021720076"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta font-mono text-xs"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">આધાર નંબર (Aadhaar No)</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">આધાર નંબર (Aadhaar No)</label>
                   <input
                     type="text"
                     value={editForm.aadhaarNo || ''}
                     onChange={(e) => setEditForm({ ...editForm, aadhaarNo: e.target.value })}
                     placeholder="૧૨ અંકનો આધાર નંબર"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-terracotta font-mono text-xs"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-terracotta font-mono text-xs"
                   />
                 </div>
               </div>
 
-              <div className="shrink-0 pt-3 border-t border-slate-800 flex justify-end gap-2 sticky bottom-0 bg-slate-900">
+              <div className="shrink-0 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2 sticky bottom-0 bg-white dark:bg-slate-900">
                 <button
                   type="button"
                   onClick={() => setEditingStudent(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 text-xs font-semibold cursor-pointer"
                 >
                   રદ કરો
                 </button>
@@ -3114,21 +3114,21 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       {/* MODAL 5: DELETE CONFIRMATION MODAL */}
       {deletingStudent && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-red-900/60 rounded-2xl shadow-2xl max-w-sm w-full max-h-[88dvh] overflow-y-auto p-5 text-white animate-fadeIn my-auto">
-            <div className="w-12 h-12 rounded-2xl bg-red-950/80 border border-red-800 text-red-400 flex items-center justify-center mx-auto mb-3">
+          <div className="bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/60 rounded-2xl shadow-2xl max-w-sm w-full max-h-[88dvh] overflow-y-auto p-5 text-slate-800 dark:text-white animate-fadeIn my-auto">
+            <div className="w-12 h-12 rounded-2xl bg-red-100 border border-red-200 text-red-600 dark:bg-red-950/80 dark:border-red-800 dark:text-red-400 flex items-center justify-center mx-auto mb-3">
               <Trash2 className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-center">વિદ્યાર્થીને કાઢી નાખવાની પુષ્ટિ</h3>
-            <p className="text-xs text-slate-300 text-center mt-2 leading-relaxed">
+            <h3 className="text-base font-bold text-center text-slate-900 dark:text-white">વિદ્યાર્થીને કાઢી નાખવાની પુષ્ટિ</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-300 text-center mt-2 leading-relaxed">
               શું તમે ખરેખર ધોરણ {String(deletingStudent.standard).replace(/^class\s*/i, '')} ના વિદ્યાર્થી{' '}
-              <strong className="text-white">&ldquo;{deletingStudent.studentName}&rdquo;</strong> ને શાળા રેકોર્ડમાંથી કાયમ માટે કાઢી નાખવા માંગો છો?
+              <strong className="text-slate-900 dark:text-white">&ldquo;{deletingStudent.studentName}&rdquo;</strong> ને શાળા રેકોર્ડમાંથી કાયમ માટે કાઢી નાખવા માંગો છો?
             </p>
 
             <div className="mt-5 flex items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={() => setDeletingStudent(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 text-xs font-semibold cursor-pointer"
               >
                 રદ કરો
               </button>
@@ -3136,7 +3136,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 type="button"
                 disabled={deleteSubmitting}
                 onClick={handleConfirmDelete}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center justify-center gap-1.5"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 {deleteSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 <span>હા, કાઢી નાખો</span>
@@ -3149,15 +3149,15 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
       {/* MODAL 5.5: BULK / DELETE ALL CONFIRMATION MODAL */}
       {isDeleteAllModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
-          <div className="bg-slate-900 border border-red-800/80 rounded-2xl shadow-2xl max-w-lg w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col p-5 sm:p-6 text-white my-auto animate-fadeIn overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-red-200 dark:border-red-800/80 rounded-2xl shadow-2xl max-w-lg w-full max-h-[86dvh] sm:max-h-[90dvh] flex flex-col p-5 sm:p-6 text-slate-800 dark:text-white my-auto animate-fadeIn overflow-hidden">
             {/* Header */}
-            <div className="shrink-0 flex items-start gap-3.5 mb-4 pb-3 border-b border-slate-800">
-              <div className="w-12 h-12 rounded-2xl bg-red-950/90 border border-red-700/80 text-red-400 flex items-center justify-center shrink-0 shadow-lg">
+            <div className="shrink-0 flex items-start gap-3.5 mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="w-12 h-12 rounded-2xl bg-red-100 border border-red-200 text-red-600 dark:bg-red-950/90 dark:border-red-700/80 dark:text-red-400 flex items-center justify-center shrink-0 shadow-sm">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-950 text-red-300 border border-red-800">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 border border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800">
                     અત્યંત સાવચેતી જરૂરી (Destructive Action)
                   </span>
                   <button
@@ -3167,12 +3167,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                         setDeleteAllConfirmInput('');
                       }
                     }}
-                    className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+                    className="text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-1">
                   વિદ્યાર્થીઓ કાઢી નાખો (Delete Students)
                 </h3>
               </div>
@@ -3182,7 +3182,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             <div className="flex-1 overflow-y-auto pr-1">
               {/* Scope Selection */}
               <div className="space-y-2 mb-4">
-              <label className="block text-xs font-semibold text-slate-300">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                 કાઢી નાખવાનો વ્યાપ પસંદ કરો (Select Scope):
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -3191,12 +3191,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   onClick={() => setDeleteAllScope('all')}
                   className={`p-2.5 rounded-xl border text-left transition-all text-xs flex flex-col justify-between cursor-pointer ${
                     deleteAllScope === 'all'
-                      ? 'bg-red-950/70 border-red-500 text-white ring-1 ring-red-500'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                      ? 'bg-red-50 dark:bg-red-950/70 border-red-500 text-red-900 dark:text-white ring-1 ring-red-500'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
                   <span className="font-bold">શાળાના તમામ</span>
-                  <span className="text-[11px] font-mono mt-1 text-red-400">
+                  <span className="text-[11px] font-mono mt-1 text-red-600 dark:text-red-400 font-bold">
                     {students.length} વિદ્યાર્થીઓ
                   </span>
                 </button>
@@ -3206,12 +3206,12 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   onClick={() => setDeleteAllScope('filtered')}
                   className={`p-2.5 rounded-xl border text-left transition-all text-xs flex flex-col justify-between cursor-pointer ${
                     deleteAllScope === 'filtered'
-                      ? 'bg-red-950/70 border-red-500 text-white ring-1 ring-red-500'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                      ? 'bg-red-50 dark:bg-red-950/70 border-red-500 text-red-900 dark:text-white ring-1 ring-red-500'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
                   <span className="font-bold">ફિલ્ટર થયેલા</span>
-                  <span className="text-[11px] font-mono mt-1 text-amber-400">
+                  <span className="text-[11px] font-mono mt-1 text-amber-700 dark:text-amber-400 font-bold">
                     {filteredStudents.length} વિદ્યાર્થીઓ
                   </span>
                 </button>
@@ -3222,14 +3222,14 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   onClick={() => setDeleteAllScope('selected')}
                   className={`p-2.5 rounded-xl border text-left transition-all text-xs flex flex-col justify-between ${
                     selectedStudentIds.size === 0
-                      ? 'opacity-30 cursor-not-allowed bg-slate-950/40 border-slate-850 text-slate-500'
+                      ? 'opacity-30 cursor-not-allowed bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-850 text-slate-400 dark:text-slate-500'
                       : deleteAllScope === 'selected'
-                      ? 'bg-red-950/70 border-red-500 text-white ring-1 ring-red-500 cursor-pointer'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 cursor-pointer'
+                      ? 'bg-red-50 dark:bg-red-950/70 border-red-500 text-red-900 dark:text-white ring-1 ring-red-500 cursor-pointer'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer'
                   }`}
                 >
                   <span className="font-bold">પસંદ કરેલા</span>
-                  <span className="text-[11px] font-mono mt-1 text-emerald-400">
+                  <span className="text-[11px] font-mono mt-1 text-emerald-700 dark:text-emerald-400 font-bold">
                     {selectedStudentIds.size} વિદ્યાર્થીઓ
                   </span>
                 </button>
@@ -3237,14 +3237,14 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             </div>
 
             {/* Warning Message Box */}
-            <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-800/80 mb-4 space-y-1.5 text-xs text-red-200">
-              <div className="font-bold text-red-300 flex items-center gap-1.5">
+            <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/80 mb-4 space-y-1.5 text-xs text-red-800 dark:text-red-200">
+              <div className="font-bold text-red-700 dark:text-red-300 flex items-center gap-1.5">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>
                   કુલ {targetDeleteStudents.length} વિદ્યાર્થીઓ કાયમ માટે ડિલીટ થશે
                 </span>
               </div>
-              <p className="text-[11px] text-red-300/80 leading-relaxed">
+              <p className="text-[11px] text-red-600 dark:text-red-300/80 leading-relaxed">
                 આ ક્રિયાથી પસંદ કરેલ તમામ વિદ્યાર્થીઓનો ડેટા (નામ, G.R. નંબર, સરનામું, જન્મ તારીખ, ફોટો વગેરે) Firestore ડેટાબેઝમાંથી સંપૂર્ણપણે કાઢી નાખવામાં આવશે. આ પ્રક્રિયા પાછી વાળી શકાશે નહીં.
               </p>
             </div>
@@ -3252,21 +3252,21 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
             {/* Quick Preview of Students being deleted */}
             {targetDeleteStudents.length > 0 && (
               <div className="mb-4">
-                <div className="text-[11px] font-semibold text-slate-400 mb-1.5 flex justify-between">
+                <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5 flex justify-between">
                   <span>કાઢી નાખવામાં આવનાર વિદ્યાર્થીઓ (નમૂનો):</span>
-                  <span className="font-mono text-red-400 font-bold">{targetDeleteStudents.length} કુલ</span>
+                  <span className="font-mono text-red-600 dark:text-red-400 font-bold">{targetDeleteStudents.length} કુલ</span>
                 </div>
-                <div className="max-h-28 overflow-y-auto p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1 text-xs">
+                <div className="max-h-28 overflow-y-auto p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1 text-xs">
                   {targetDeleteStudents.slice(0, 8).map((st) => (
-                    <div key={st.id} className="flex items-center justify-between text-slate-300 py-0.5 border-b border-slate-900 last:border-0">
+                    <div key={st.id} className="flex items-center justify-between text-slate-700 dark:text-slate-300 py-0.5 border-b border-slate-200 dark:border-slate-900 last:border-0">
                       <span className="truncate max-w-[240px] font-medium">{st.studentName}</span>
-                      <span className="font-mono text-[11px] text-slate-400 shrink-0">
+                      <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
                         ધો. {String(st.standard).replace(/^class\s*/i, '')} {st.grNumber ? `| GR: ${st.grNumber}` : ''}
                       </span>
                     </div>
                   ))}
                   {targetDeleteStudents.length > 8 && (
-                    <div className="text-[10px] text-slate-400 text-center pt-1 italic">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center pt-1 italic">
                       + બીજા {targetDeleteStudents.length - 8} વિદ્યાર્થીઓ...
                     </div>
                   )}
@@ -3276,8 +3276,8 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
 
             {/* Confirmation input */}
             <div className="space-y-1.5 mb-5">
-              <label className="block text-xs font-semibold text-slate-300">
-                ચોક્કસ પુષ્ટિ કરવા માટે નીચેના બોક્સમાં <strong className="text-red-400 font-mono">DELETE</strong> લખો:
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                ચોક્કસ પુષ્ટિ કરવા માટે નીચેના બોક્સમાં <strong className="text-red-600 dark:text-red-400 font-mono">DELETE</strong> લખો:
               </label>
               <input
                 type="text"
@@ -3285,13 +3285,13 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                 onChange={(e) => setDeleteAllConfirmInput(e.target.value)}
                 placeholder='DELETE લખો'
                 disabled={isDeletingAll}
-                className="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2 text-white font-mono text-sm focus:outline-none uppercase placeholder-slate-600"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-red-500 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono text-sm focus:outline-none uppercase placeholder-slate-400 dark:placeholder-slate-600"
               />
             </div>
             </div>
 
             {/* Action buttons */}
-            <div className="shrink-0 flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="shrink-0 flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 disabled={isDeletingAll}
@@ -3299,7 +3299,7 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                   setIsDeleteAllModalOpen(false);
                   setDeleteAllConfirmInput('');
                 }}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
               >
                 રદ કરો
               </button>

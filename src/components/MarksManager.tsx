@@ -536,7 +536,7 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
   return (
     <div className="space-y-6">
       {/* Top System Switcher: Term & Annual Exams vs Ekam Kasoti */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-2xl bg-slate-900/90 border border-white/10 shadow-lg">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-lg">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -544,7 +544,7 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               examSystem === 'term_exams'
                 ? 'bg-[#9d512d] text-white shadow-md shadow-[#9d512d]/30'
-                : 'text-[#a99f91] hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -556,7 +556,7 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               examSystem === 'ekam_kasoti'
                 ? 'bg-[#9d512d] text-white shadow-md shadow-[#9d512d]/30'
-                : 'text-[#a99f91] hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             <Award className="w-4 h-4" />
@@ -588,8 +588,8 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/5 text-slate-300 border border-white/10">
                 કુલ ગુણ: {currentTotalMaxMarks}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/70 text-emerald-300 border border-emerald-700/60 flex items-center gap-1">
-                <Users className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 flex items-center gap-1">
+                <Users className="w-3 h-3 text-emerald-700 dark:text-emerald-400 shrink-0" />
                 <span>મલ્ટિ-ડિવાઇસ લાઇવ સિંક</span>
               </span>
             </div>
@@ -753,7 +753,7 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
                     ({q.description})
                   </span>
                 )}
-                <span className="bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded font-mono">
+                <span className="bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded font-mono">
                   {typeof q.maxMarks === 'number' ? `Max: ${q.maxMarks}` : 'નિયત નથી'}
                 </span>
               </div>
@@ -763,7 +763,7 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
       )}
 
       {/* Filter and Search Strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-800/90 p-3.5 rounded-xl border border-slate-700">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800/90 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 flex-1">
           {/* Search box */}
           <div className="relative flex-1 min-w-[200px]">
@@ -774,7 +774,7 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
               placeholder="વિદ્યાર્થીનું નામ શોધો (Search Student Name)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
             />
           </div>
         </div>
@@ -786,41 +786,41 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
             id="status-autosave-badge"
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
               autoSaveStatus === 'saving'
-                ? 'bg-amber-950/70 border-amber-800/80 text-amber-300'
+                ? 'bg-amber-100 dark:bg-amber-950/70 border-amber-300 dark:border-amber-800/80 text-amber-900 dark:text-amber-300'
                 : autoSaveStatus === 'saved'
-                ? 'bg-emerald-950/70 border-emerald-800/80 text-emerald-300'
+                ? 'bg-emerald-100 dark:bg-emerald-950/70 border-emerald-300 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-300'
                 : autoSaveStatus === 'error'
-                ? 'bg-red-950/70 border-red-800/80 text-red-300'
-                : 'bg-slate-900/90 border-slate-700 text-slate-300'
+                ? 'bg-red-100 dark:bg-red-950/70 border-red-300 dark:border-red-800/80 text-red-900 dark:text-red-300'
+                : 'bg-slate-100 dark:bg-slate-900/90 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
             }`}
           >
             {autoSaveStatus === 'saving' ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin shrink-0" />
+                <Loader2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 animate-spin shrink-0" />
                 <span>સાચવી રહ્યું છે... (Saving)</span>
               </>
             ) : autoSaveStatus === 'saved' ? (
               <>
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>
                   {lastSavedTime ? `આપોઆપ સાચવાઈ ગયું (${lastSavedTime})` : 'બધા ગુણ સાચવેલ છે (Auto-saved)'}
                 </span>
               </>
             ) : autoSaveStatus === 'error' ? (
               <>
-                <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                <AlertCircle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0" />
                 <span>ઓટો-સેવમાં ક્ષતિ આવી</span>
               </>
             ) : (
               <>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shrink-0"></span>
                 <span>ઓટો-સેવ સક્રિય છે (Auto-save Active)</span>
               </>
             )}
           </div>
 
-          <span className="text-xs text-slate-400 hidden sm:inline">
-            વિદ્યાર્થીઓ: <strong className="text-white font-mono">{standardStudents.length}</strong>
+          <span className="text-xs text-slate-600 dark:text-slate-400 hidden sm:inline">
+            વિદ્યાર્થીઓ: <strong className="text-slate-900 dark:text-white font-mono">{standardStudents.length}</strong>
           </span>
 
           <button
@@ -831,7 +831,7 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all touch-manipulation min-h-[38px] ${
               hasUnsavedChanges
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg ring-2 ring-emerald-500/50'
-                : 'bg-slate-700/80 hover:bg-slate-700 text-slate-300'
+                : 'bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300 dark:bg-slate-700/80 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-transparent'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
             title="બધા વિદ્યાર્થીઓના ગુણ એકસાથે ક્લાઉડમાં સાચવો"
           >
@@ -883,34 +883,34 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
           ) : (
             <div>
               {/* Mobile Horizontal Scroll Indicator */}
-              <div className="sm:hidden px-3.5 py-2 bg-slate-950/90 text-[11px] text-[#f59c73] flex items-center justify-between border-b border-white/5">
+              <div className="sm:hidden px-3.5 py-2 bg-slate-100 dark:bg-slate-950/90 text-[11px] text-[#9d512d] dark:text-[#f59c73] flex items-center justify-between border-b border-slate-200 dark:border-white/5">
                 <span className="font-semibold">📱 મોબાઇલ ટિપ: પ્રશ્નો અને ગુણ ભરવા માટે ડાબે-જમણે સ્ક્રોલ કરો</span>
-                <span className="text-[10px] text-slate-400 font-mono">↔️ Swipe</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">↔️ Swipe</span>
               </div>
               <div className="overflow-x-auto mobile-table-scroll">
                 <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-950/80 border-b border-white/10 text-slate-400">
+                  <tr className="bg-slate-100 dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-400">
                     <th className="py-3.5 px-3 w-12 text-center font-bold">ક્રમ</th>
-                    <th className="py-3.5 px-4 min-w-[200px] font-bold text-white">વિદ્યાર્થીનું નામ</th>
+                    <th className="py-3.5 px-4 min-w-[200px] font-bold text-slate-900 dark:text-white">વિદ્યાર્થીનું નામ</th>
                     {/* Question Column Headers */}
                     {currentSubject.questions.map((q) => (
                       <th
                         key={q.id}
-                        className="py-2.5 px-2 text-center min-w-[80px] font-bold text-slate-200 border-l border-white/5"
+                        className="py-2.5 px-2 text-center min-w-[80px] font-bold text-slate-700 dark:text-slate-200 border-l border-slate-200 dark:border-white/5"
                       >
-                        <div className="text-[11px] leading-tight text-emerald-400">{q.label}</div>
-                        <div className="text-[9.5px] text-slate-400 font-normal">
+                        <div className="text-[11px] leading-tight text-emerald-700 dark:text-emerald-400 font-bold">{q.label}</div>
+                        <div className="text-[9.5px] text-slate-500 dark:text-slate-400 font-normal">
                           {typeof q.maxMarks === 'number' ? `Max: ${q.maxMarks}` : 'નિયત નથી'}
                         </div>
                       </th>
                     ))}
-                    <th className="py-3.5 px-4 w-28 text-center font-black text-white bg-slate-900/90 border-l border-white/10">
+                    <th className="py-3.5 px-4 w-28 text-center font-black text-slate-900 dark:text-white bg-slate-200/80 dark:bg-slate-900/90 border-l border-slate-200 dark:border-white/10">
                       કુલ / {currentTotalMaxMarks}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                   {standardStudents.map((student, idx) => {
                     const studentMarks = marksData[student.id] || {};
                     const total = getStudentTotal(student.id);
@@ -919,16 +919,16 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
                     return (
                       <tr
                         key={student.id}
-                        className="hover:bg-white/5 transition-colors group"
+                        className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
                       >
                         {/* Serial Number */}
-                        <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-300">
+                        <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-600 dark:text-slate-300">
                           {idx + 1}
                         </td>
 
                         {/* Student Name */}
                         <td className="py-2.5 px-4">
-                          <div className="font-bold text-white text-xs tracking-tight">
+                          <div className="font-bold text-slate-900 dark:text-white text-xs tracking-tight">
                             {student.studentName}
                           </div>
                         </td>
@@ -946,7 +946,7 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
                           return (
                             <td
                               key={q.id}
-                              className="py-1.5 px-1.5 text-center border-l border-white/5"
+                              className="py-1.5 px-1.5 text-center border-l border-slate-200 dark:border-white/5"
                             >
                               <div className="relative inline-block w-full max-w-[72px]">
                                 <input
@@ -961,10 +961,10 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
                                   onBlur={() => handleInputBlur(student.id)}
                                   className={`w-full text-center py-2 px-1 rounded-xl text-xs font-mono font-bold transition-all border outline-none touch-manipulation min-h-[40px] ${
                                     isInvalid
-                                      ? 'bg-red-950/80 border-red-500 text-red-200'
+                                      ? 'bg-red-50 dark:bg-red-950/80 border-red-400 dark:border-red-500 text-red-800 dark:text-red-200'
                                       : isFilled
-                                      ? 'bg-slate-900 border-emerald-500/50 text-emerald-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
-                                      : 'bg-slate-900/60 border-white/10 text-slate-400 focus:border-emerald-500'
+                                      ? 'bg-white dark:bg-slate-900 border-emerald-500/60 dark:border-emerald-500/50 text-emerald-800 dark:text-emerald-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+                                      : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-400 focus:border-emerald-500'
                                   }`}
                                 />
                               </div>
@@ -973,19 +973,19 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
                         })}
 
                         {/* Total Marks Column with Auto-Save Row Status */}
-                        <td className="py-2.5 px-3 text-center border-l border-white/10 bg-slate-900/40">
+                        <td className="py-2.5 px-3 text-center border-l border-slate-200 dark:border-white/10 bg-slate-50/60 dark:bg-slate-900/40">
                           <div className="flex items-center justify-center gap-1.5">
                             <div
                               className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-mono font-extrabold ${
                                 total === currentTotalMaxMarks
-                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/40'
                                   : total > 0
-                                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                                  : 'bg-white/5 text-slate-400 border border-white/10'
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/40'
+                                  : 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-white/5 dark:text-slate-400 dark:border-white/10'
                               }`}
                             >
                               <span>{total}</span>
-                              <span className="text-[10px] text-slate-400 ml-0.5">/ {currentTotalMaxMarks}</span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 ml-0.5">/ {currentTotalMaxMarks}</span>
                             </div>
 
                             {/* Live Per-Student Save Indicator */}

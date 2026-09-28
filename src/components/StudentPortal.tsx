@@ -25,6 +25,8 @@ import {
   History,
   Timer,
   Play,
+  Newspaper,
+  Lightbulb,
 } from 'lucide-react';
 import { StudentSession, OnlineExam, MarkRecord } from '../types';
 import {
@@ -35,6 +37,10 @@ import {
   clearStudentSession,
 } from '../services/onlineExamService';
 import { StudentExamScreen } from './StudentExamScreen';
+import { DailyNewsTab } from './DailyNewsTab';
+import { DailyJanvaJevuTab } from './DailyJanvaJevuTab';
+import { DailySuvicharTab } from './DailySuvicharTab';
+import { subscribeToSchoolProfile } from '../services/authService';
 import { calculateClassResults } from '../utils/resultFormulaUtils';
 import { getStudentDiseCode } from '../utils/idCardPdf';
 import { VidyalayamLogo } from './VidyalayamLogo';
@@ -44,7 +50,16 @@ interface StudentPortalProps {
   onLogout: () => void;
 }
 
-type StudentTab = 'upcoming_exams' | 'marks' | 'result' | 'idcard' | 'profile' | 'history';
+type StudentTab =
+  | 'upcoming_exams'
+  | 'samachar'
+  | 'janva_jevu'
+  | 'suvichar'
+  | 'marks'
+  | 'result'
+  | 'idcard'
+  | 'profile'
+  | 'history';
 
 export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout }) => {
   const [activeTab, setActiveTab] = useState<StudentTab>('upcoming_exams');
@@ -59,12 +74,54 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
   const autoStartTriggeredRef = React.useRef<{ [examId: string]: boolean }>({});
 
   const student = session.student;
-  const school = session.school || {
+  const initialSchool = session.school || {
     id: session.schoolId || '',
     schoolName: session.schoolName || 'શાળા પોર્ટલ',
     diseCode: session.diseCode || '',
     logoUrl: session.schoolLogo || '',
   };
+
+  const [school, setSchool] = useState<any>(() => {
+    try {
+      const cached = localStorage.getItem(`school_toggles_${initialSchool.id}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return { ...initialSchool, ...parsed };
+      }
+    } catch (e) {}
+    return initialSchool;
+  });
+
+  // Real-time synchronization of school toggles for student view
+  useEffect(() => {
+    const schoolId = session.schoolId || session.school?.id;
+    if (!schoolId) return;
+
+    const unsub = subscribeToSchoolProfile(schoolId, (updatedProfile) => {
+      if (updatedProfile) {
+        setSchool((prev: any) => ({ ...prev, ...updatedProfile }));
+      }
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [session.schoolId, session.school?.id]);
+
+  // Auto-switch away from tab if school principal disables it
+  useEffect(() => {
+    const isNews = school?.dailyNewsEnabled !== false;
+    const isJanva = school?.dailyJanvaJevuEnabled !== false;
+    const isSuv = school?.dailySuvicharEnabled !== false;
+
+    if (activeTab === 'samachar' && !isNews) {
+      setActiveTab('upcoming_exams');
+    } else if (activeTab === 'janva_jevu' && !isJanva) {
+      setActiveTab('upcoming_exams');
+    } else if (activeTab === 'suvichar' && !isSuv) {
+      setActiveTab('upcoming_exams');
+    }
+  }, [school?.dailyNewsEnabled, school?.dailyJanvaJevuEnabled, school?.dailySuvicharEnabled, activeTab]);
 
   // Load Exams and Marks
   const loadPortalData = async () => {
@@ -445,39 +502,50 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
       {/* Navigation Tabs (Direct Upcoming Exams, No Exam Type Tabs) */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-          {[
-            { id: 'upcoming_exams', label: '📝 આગામી પરીક્ષાઓ (Upcoming Exams)', count: upcomingExams.length },
-            { id: 'marks', label: '📊 મારા ગુણ (My Marks)' },
-            { id: 'result', label: '📄 પ્રગતિપત્રક (My Result)' },
-            { id: 'idcard', label: '🪪 ID Card' },
-            { id: 'profile', label: '👤 પ્રોફાઇલ (Profile)' },
-            { id: 'history', label: '📜 પરીક્ષા ઇતિહાસ (History)', count: historyExams.length },
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as StudentTab)}
-                className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
-                  isActive
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
-                    : 'bg-white dark:bg-[#121921] border border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white shadow-sm'
-                }`}
-              >
-                <span>{tab.label}</span>
-                {tab.count !== undefined && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                      isActive ? 'bg-black/20 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          {(() => {
+            const isNewsEnabled = (school as any).dailyNewsEnabled !== false;
+            const isJanvaJevuEnabled = (school as any).dailyJanvaJevuEnabled !== false;
+            const isSuvicharEnabled = (school as any).dailySuvicharEnabled !== false;
+
+            const portalTabs = [
+              { id: 'upcoming_exams', label: '📝 આગામી પરીક્ષાઓ (Upcoming Exams)', count: upcomingExams.length },
+              ...(isNewsEnabled ? [{ id: 'samachar', label: '📰 આજના સમાચાર (Daily News)' }] : []),
+              ...(isJanvaJevuEnabled ? [{ id: 'janva_jevu', label: '💡 આજનું જાણવા જેવું (Daily GK)' }] : []),
+              ...(isSuvicharEnabled ? [{ id: 'suvichar', label: '✨ આજનો સુવિચાર (Daily Suvichar)' }] : []),
+              { id: 'marks', label: '📊 મારા ગુણ (My Marks)' },
+              { id: 'result', label: '📄 પ્રગતિપત્રક (My Result)' },
+              { id: 'idcard', label: '🪪 ID Card' },
+              { id: 'profile', label: '👤 પ્રોફાઇલ (Profile)' },
+              { id: 'history', label: '📜 પરીક્ષા ઇતિહાસ (History)', count: historyExams.length },
+            ];
+
+            return portalTabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as StudentTab)}
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
+                      : 'bg-white dark:bg-[#121921] border border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white shadow-sm'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {tab.count !== undefined && (
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                        isActive ? 'bg-black/20 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            });
+          })()}
         </div>
       </div>
 
@@ -993,6 +1061,24 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
               </div>
             </div>
           </div>
+        ) : activeTab === 'samachar' ? (
+          <DailyNewsTab
+            schoolName={school.schoolName}
+            diseCode={school.diseCode}
+            district={school.district}
+          />
+        ) : activeTab === 'janva_jevu' ? (
+          <DailyJanvaJevuTab
+            schoolName={school.schoolName}
+            diseCode={school.diseCode}
+            district={school.district}
+          />
+        ) : activeTab === 'suvichar' ? (
+          <DailySuvicharTab
+            schoolName={school.schoolName}
+            diseCode={school.diseCode}
+            district={school.district}
+          />
         ) : (
           /* Exam History View */
           <div className="space-y-4">
