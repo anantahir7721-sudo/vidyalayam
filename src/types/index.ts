@@ -81,9 +81,10 @@ export interface DailySuvicharItem {
   id: string;
   thought: string; // The inspiring quote / thought
   authorOrSource: string; // Personality or source
-  explanation: string; // ટૂંકી સમજૂતી
-  example: string; // વ્યવહારિક ઉદાહરણ
-  moralValue: string; // પાયાનું મૂલ્ય
+  explanation: string; // વિસ્તૃત સમજૂતી (Speech / Explanation)
+  example: string; // વ્યવહારિક ઉદાહરણ (Real-Life Example)
+  moralValue: string; // પાયાનું મૂલ્ય (Moral Value)
+  keyPoints?: string[]; // સભા વક્તવ્ય માટેના મુખ્ય મુદ્દાઓ
 }
 
 export interface DailySuvicharBulletin {

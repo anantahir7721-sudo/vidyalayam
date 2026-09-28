@@ -452,6 +452,54 @@ export async function shareDailySuvicharAsPdf(
 
   await waitForFontsToRender();
 
+  const { thought, authorOrSource, explanation, example, moralValue, keyPoints } = bulletin.suvichar;
+
+  // Calculate total characters to dynamically and intelligently size fonts
+  const totalTextLength =
+    (thought?.length || 0) +
+    (explanation?.length || 0) +
+    (example?.length || 0) +
+    (keyPoints ? keyPoints.join('').length : 0);
+
+  // Dynamic layout calculations so fonts are large, legible, and fill the A4 page without awkward whitespace
+  let bodyFontSize = '15px';
+  let bodyLineHeight = '1.65';
+  let thoughtFontSize = '23px';
+  let cardPadding = '14px 18px';
+  let cardGap = '11px';
+  let headingFontSize = '15.5px';
+
+  if (totalTextLength > 1200) {
+    bodyFontSize = '13.2px';
+    bodyLineHeight = '1.52';
+    thoughtFontSize = '19.5px';
+    cardPadding = '10px 14px';
+    cardGap = '8px';
+    headingFontSize = '14px';
+  } else if (totalTextLength > 950) {
+    bodyFontSize = '14px';
+    bodyLineHeight = '1.58';
+    thoughtFontSize = '21px';
+    cardPadding = '12px 16px';
+    cardGap = '9px';
+    headingFontSize = '14.5px';
+  } else if (totalTextLength > 700) {
+    bodyFontSize = '14.8px';
+    bodyLineHeight = '1.64';
+    thoughtFontSize = '23px';
+    cardPadding = '14px 18px';
+    cardGap = '10px';
+    headingFontSize = '15.5px';
+  } else {
+    // Shorter text: larger fonts and generous line height to fill the page beautifully
+    bodyFontSize = '16px';
+    bodyLineHeight = '1.7';
+    thoughtFontSize = '25px';
+    cardPadding = '16px 20px';
+    cardGap = '13px';
+    headingFontSize = '16.5px';
+  }
+
   // Standard A4 dimensions at 96 DPI: 794px width x 1120px height
   const container = document.createElement('div');
   container.style.position = 'fixed';
@@ -468,48 +516,47 @@ export async function shareDailySuvicharAsPdf(
   container.style.fontFamily = GUJARATI_FONT_FAMILY;
   container.style.letterSpacing = '0px';
   container.style.lineHeight = '1.4';
-  container.style.padding = '24px 28px';
+  container.style.padding = '18px 20px';
   container.style.boxSizing = 'border-box';
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
-  container.style.justifyContent = 'space-between';
-
-  const { thought, authorOrSource, explanation, example, moralValue } = bulletin.suvichar;
 
   container.innerHTML = `
-    <div style="border: 3px double #9d512d; border-radius: 12px; padding: 24px 28px; background: #ffffff; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+    <div style="border: 3px double #9d512d; outline: 1px solid #d97706; border-radius: 14px; padding: 14px 18px; background: #ffffff; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
       
       <!-- School Header -->
-      <div style="text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px;">
-        <h1 style="font-size: 22px; font-weight: 800; color: #1e293b; margin: 0 0 4px 0; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY};">
+      <div style="text-align: center; border-bottom: 2.5px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 4px;">
+        <h1 style="font-size: 24px; font-weight: 900; color: #1e293b; margin: 0 0 3px 0; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY}; letter-spacing: -0.2px;">
           ${schoolName}
         </h1>
-        <div style="font-size: 11.5px; color: #64748b; font-weight: 600;">
-          ${options.diseCode ? `DISE કોડ: ${options.diseCode} • ` : ''}${options.district ? `${options.district} જિલ્લો, ગુજરાત • ` : ''}શાળા પ્રાર્થના સંમેલન & પ્રેરણા વાણી
+        <div style="font-size: 12.5px; color: #64748b; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          ${options.diseCode ? `<span>DISE કોડ: <strong style="color: #334155;">${options.diseCode}</strong></span> • ` : ''}
+          ${options.district ? `<span>${options.district} જિલ્લો, ગુજરાત</span> • ` : ''}
+          <span style="color: #9d512d; font-weight: 800;">શાળા પ્રાર્થના સંમેલન & પ્રેરણા વાણી</span>
         </div>
       </div>
 
       <!-- Title & Date Strip -->
-      <div style="background: linear-gradient(135deg, #9d512d, #b55f37); color: #ffffff; border-radius: 8px; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; margin: 14px 0;">
-        <div style="font-size: 16px; font-weight: 800; letter-spacing: 0.3px; font-family: ${GUJARATI_FONT_FAMILY};">
-          ✨ આજનો સુવિચાર (Ajno Suvichar)
+      <div style="background: linear-gradient(135deg, #9d512d 0%, #c05d2c 50%, #7e3618 100%); color: #ffffff; border-radius: 8px; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(157, 81, 45, 0.15);">
+        <div style="font-size: 15px; font-weight: 900; letter-spacing: 0.3px; font-family: ${GUJARATI_FONT_FAMILY}; display: flex; align-items: center; gap: 6px;">
+          <span>✨ આજનો સુવિચાર અને સંસ્કાર વાણી (Assembly Speech Script)</span>
         </div>
-        <div style="font-size: 12px; font-weight: 700; background: rgba(0,0,0,0.25); padding: 3px 10px; border-radius: 5px;">
-          ${bulletin.editionDate}
+        <div style="font-size: 12px; font-weight: 800; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.25); padding: 3px 10px; border-radius: 5px;">
+          📅 ${bulletin.editionDate}
         </div>
       </div>
 
-      <!-- Main Thought Card -->
-      <div style="background: #fdfaf6; border: 2px solid #f59c73; border-radius: 12px; padding: 22px 24px; text-align: center; margin: 12px 0;">
-        <div style="font-size: 32px; color: #9d512d; line-height: 1; margin-bottom: 4px;">❝</div>
-        <div style="font-size: 20px; font-weight: 800; color: #1e293b; line-height: 1.5; font-family: ${GUJARATI_FONT_FAMILY};">
+      <!-- Main Thought Card (Prominent & Inspiring) -->
+      <div style="background: #fffcf9; border: 2px solid #f59c73; border-radius: 12px; padding: 12px 18px; text-align: center; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(245, 156, 115, 0.12);">
+        <div style="font-size: 28px; color: #9d512d; line-height: 0.7; margin-bottom: 4px; font-family: Georgia, serif;">❝</div>
+        <div style="font-size: ${thoughtFontSize}; font-weight: 900; color: #0f172a; line-height: 1.45; font-family: ${GUJARATI_FONT_FAMILY}; letter-spacing: 0.1px;">
           ${thought}
         </div>
-        <div style="font-size: 32px; color: #9d512d; line-height: 1; margin-top: 4px;">❞</div>
+        <div style="font-size: 28px; color: #9d512d; line-height: 0.7; margin-top: 4px; font-family: Georgia, serif;">❞</div>
         ${
           authorOrSource
             ? `
-          <div style="margin-top: 10px; font-size: 13px; font-weight: 700; color: #9d512d; font-family: ${GUJARATI_FONT_FAMILY};">
+          <div style="margin-top: 4px; font-size: 14.5px; font-weight: 800; color: #9d512d; font-family: ${GUJARATI_FONT_FAMILY};">
             — ${authorOrSource}
           </div>
         `
@@ -517,45 +564,87 @@ export async function shareDailySuvicharAsPdf(
         }
       </div>
 
-      <!-- Explanations & Examples Section -->
-      <div style="display: flex; flex-direction: column; gap: 14px; margin: 10px 0;">
-        <!-- Short Explanation -->
-        <div style="background: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 6px; padding: 12px 16px;">
-          <div style="font-size: 12.5px; font-weight: 800; color: #1d4ed8; margin-bottom: 4px; font-family: ${GUJARATI_FONT_FAMILY};">
-            📖 ટૂંકી સમજૂતી (Explanation):
+      <!-- Assembly Guide Pill -->
+      <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 4.5px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #92400e; font-weight: 700;">
+        <span>🎙️ શાળા પ્રાર્થના સભા માર્ગદર્શિકા: શિક્ષક અથવા વિદ્યાર્થી દ્વારા ૨ થી ૩ મિનિટ વક્તવ્ય માટે તૈયાર સામગ્રી</span>
+        <span style="background: #fde047; color: #78350f; padding: 1px 7px; border-radius: 4px; font-weight: 800;">⏱️ સમય: ૨-૩ મિનિટ</span>
+      </div>
+
+      <!-- Detailed Explanation & Example Section (Comfortably and Fully filling the Page) -->
+      <div style="display: flex; flex-direction: column; gap: ${cardGap}; flex: 1; justify-content: space-between; margin-bottom: 8px;">
+        
+        <!-- Detailed Explanation (વિસ્તૃત સમજૂતી) -->
+        <div style="background: #f8fbff; border: 1.5px solid #bfdbfe; border-left: 5px solid #2563eb; border-radius: 8px; padding: ${cardPadding}; flex: 1; display: flex; flex-direction: column; justify-content: flex-start;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #dbeafe; padding-bottom: 4px;">
+            <div style="font-size: ${headingFontSize}; font-weight: 900; color: #1d4ed8; font-family: ${GUJARATI_FONT_FAMILY}; display: flex; align-items: center; gap: 6px;">
+              <span>📖 વિસ્તૃત સમજૂતી (Speech Explanation):</span>
+            </div>
+            <span style="font-size: 11px; font-weight: 800; background: #dbeafe; color: #1e40af; padding: 1.5px 8px; border-radius: 4px;">
+              વક્તવ્ય સમય: ~૧.૫ મિનિટ
+            </span>
           </div>
-          <div style="font-size: 12px; color: #334155; line-height: 1.5; font-family: ${GUJARATI_FONT_FAMILY};">
+          <div style="font-size: ${bodyFontSize}; color: #1e293b; line-height: ${bodyLineHeight}; font-weight: 500; text-align: justify; font-family: ${GUJARATI_FONT_FAMILY};">
             ${explanation}
           </div>
         </div>
 
-        <!-- Practical Example -->
-        <div style="background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 6px; padding: 12px 16px;">
-          <div style="font-size: 12.5px; font-weight: 800; color: #047857; margin-bottom: 4px; font-family: ${GUJARATI_FONT_FAMILY};">
-            🌟 વ્યવહારિક ઉદાહરણ (Real-Life Example):
+        <!-- Real-Life Example & Inspiring Story (વ્યવહારિક ઉદાહરણ અને પ્રેરણા પ્રસંગ) -->
+        <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-left: 5px solid #059669; border-radius: 8px; padding: ${cardPadding}; flex: 1; display: flex; flex-direction: column; justify-content: flex-start;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #dcfce7; padding-bottom: 4px;">
+            <div style="font-size: ${headingFontSize}; font-weight: 900; color: #047857; font-family: ${GUJARATI_FONT_FAMILY}; display: flex; align-items: center; gap: 6px;">
+              <span>🌟 વ્યવહારિક ઉદાહરણ અને પ્રેરણા પ્રસંગ (Real-Life Example & Story):</span>
+            </div>
+            <span style="font-size: 11px; font-weight: 800; background: #dcfce7; color: #065f46; padding: 1.5px 8px; border-radius: 4px;">
+              વક્તવ્ય સમય: ~૧ થી ૧.૫ મિનિટ
+            </span>
           </div>
-          <div style="font-size: 12px; color: #1e293b; line-height: 1.5; font-family: ${GUJARATI_FONT_FAMILY};">
+          <div style="font-size: ${bodyFontSize}; color: #1e293b; line-height: ${bodyLineHeight}; font-weight: 500; text-align: justify; font-family: ${GUJARATI_FONT_FAMILY};">
             ${example}
           </div>
         </div>
 
-        <!-- Moral Value Badge -->
-        <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 11.5px; font-weight: 800; color: #b45309;">🎯 આજનું પાયાનું જીવનમૂલ્ય:</span>
-          <span style="font-size: 12px; font-weight: 800; background: #fde68a; color: #78350f; padding: 2px 10px; border-radius: 6px; font-family: ${GUJARATI_FONT_FAMILY};">
-            ${moralValue}
+        ${
+          keyPoints && keyPoints.length > 0
+            ? `
+          <!-- Assembly Speech Highlights (સભામાં બોલવાના ૩ મુખ્ય મુદ્દા) -->
+          <div style="background: #faf5ff; border: 1.5px solid #e9d5ff; border-left: 5px solid #7c3aed; border-radius: 8px; padding: 8px 14px;">
+            <div style="font-size: 12.5px; font-weight: 900; color: #6d28d9; margin-bottom: 4px; font-family: ${GUJARATI_FONT_FAMILY};">
+              🎤 સભા વક્તવ્યના મુખ્ય ૩ સૂત્રો (Speech Highlights):
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+              ${keyPoints
+                .map(
+                  (pt, idx) => `
+                <div style="background: #ffffff; border: 1px solid #ddd6fe; border-radius: 6px; padding: 4px 8px; font-size: 11.5px; color: #4c1d95; font-weight: 700; line-height: 1.35; font-family: ${GUJARATI_FONT_FAMILY}; display: flex; align-items: flex-start; gap: 4px;">
+                  <span style="color: #7c3aed; font-weight: 900;">•</span>
+                  <span>${pt}</span>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+          </div>
+        `
+            : ''
+        }
+
+        <!-- Moral Value Badge Banner -->
+        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 7px 14px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12.5px; font-weight: 900; color: #92400e;">🎯 આજનું પાયાનું સંસ્કાર મૂલ્ય:</span>
+            <span style="font-size: 13.5px; font-weight: 900; background: #fde047; color: #78350f; padding: 2px 12px; border-radius: 5px; font-family: ${GUJARATI_FONT_FAMILY}; border: 1px solid #facc15;">
+              ${moralValue}
+            </span>
+          </div>
+          <span style="font-size: 11px; color: #78350f; font-weight: 700; font-family: ${GUJARATI_FONT_FAMILY};">
+            વિદ્યાર્થીઓએ જીવનમાં ઉતારવા યોગ્ય પવિત્ર વિચાર
           </span>
         </div>
       </div>
 
-      <!-- Inspirational Assembly Message -->
-      <div style="text-align: center; padding: 8px; color: #64748b; font-size: 11px; font-style: italic; font-family: ${GUJARATI_FONT_FAMILY};">
-        "વિદ્યાર્થીઓ માટે આજના દિવસે મનન કરવા અને જીવનમાં ઉતારવા યોગ્ય પવિત્ર વિચાર."
-      </div>
-
       <!-- Footer Note -->
-      <div style="padding-top: 10px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #64748b;">
-        <span>વિદ્યાલયમ શૈક્ષણિક પોર્ટલ • પ્રેરણા વાણી શ્રેણી</span>
+      <div style="padding-top: 6px; border-top: 1.5px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: #64748b; font-weight: 600;">
+        <span>વિદ્યાલયમ શૈક્ષણિક પોર્ટલ • શાળા સંસ્કાર વાણી શ્રેણી (Daily Moral Values Series)</span>
         <span>${bulletin.editionDate}</span>
       </div>
     </div>
@@ -617,10 +706,10 @@ export async function shareDailySuvicharAsPdf(
       `*આજનો સુવિચાર* (${bulletin.editionDate})\n\n` +
       `❝ *${thought}* ❞\n` +
       (authorOrSource ? `— ${authorOrSource}\n\n` : '\n') +
-      `📖 *ટૂંકી સમજૂતી:* ${explanation}\n` +
-      `🌟 *ઉદાહરણ:* ${example}\n` +
+      `📖 *વિસ્તૃત સમજૂતી:* ${explanation}\n\n` +
+      `🌟 *ઉદાહરણ:* ${example}\n\n` +
       `🎯 *જીવનમૂલ્ય:* ${moralValue}\n\n` +
-      `📎 *નોંધ:* આ સુવિચારની 1-Page PDF ફાઇલ આપના ડિવાઇસમાં *"${fileName}"* નામથી સેવ થઈ ગઈ છે.\n` +
+      `📎 *નોંધ:* આ સુવિચાર અને ૨-૩ મિનિટ વક્તવ્યની 1-Page PDF ફાઇલ આપના ડિવાઇસમાં *"${fileName}"* નામથી સેવ થઈ ગઈ છે.\n` +
       `✨ સૌજન્ય: વિદ્યાલયમ શૈક્ષણિક પોર્ટલ`
     );
     window.open(`https://api.whatsapp.com/send?text=${waText}`, '_blank');

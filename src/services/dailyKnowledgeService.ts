@@ -359,6 +359,7 @@ export async function getDailySuvicharBulletin(
       explanation: raw.explanation,
       example: raw.example,
       moralValue: raw.moralValue,
+      keyPoints: raw.keyPoints,
     },
   };
 }

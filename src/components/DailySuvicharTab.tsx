@@ -4,15 +4,16 @@ import {
   Calendar,
   Volume2,
   VolumeX,
-  Share2,
   Copy,
   CheckCircle2,
   BookOpen,
-  Heart,
   RotateCw,
   Lightbulb,
   Award,
   Loader2,
+  Mic,
+  Clock,
+  ListChecks,
 } from 'lucide-react';
 import { DailySuvicharBulletin } from '../types';
 import { getDailySuvicharBulletin } from '../services/dailyKnowledgeService';
@@ -63,7 +64,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
     };
   }, [offsetIndex]);
 
-  // Audio Read Aloud
+  // Audio Read Aloud for full 2-3 minute assembly speech
   const handleToggleSpeak = () => {
     if (!bulletin) return;
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
@@ -74,11 +75,21 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
       return;
     }
 
-    const { thought, authorOrSource, explanation, example } = bulletin.suvichar;
-    const textToSpeak = `આજનો સુવિચાર. ${thought}. ${authorOrSource ? `લેખક: ${authorOrSource}.` : ''} ટૂંકી સમજૂતી: ${explanation}. ઉદાહરણ: ${example}.`;
+    const { thought, authorOrSource, explanation, example, moralValue, keyPoints } = bulletin.suvichar;
+    
+    let speechScript = `પ્રાર્થના સભા સંસ્કાર વાણી. આજનો સુવિચાર: ${thought}. `;
+    if (authorOrSource) {
+      speechScript += `વિચારકના શબ્દો: ${authorOrSource}. `;
+    }
+    speechScript += `વિસ્તૃત સમજૂતી: ${explanation}. `;
+    speechScript += `વ્યવહારિક ઉદાહરણ: ${example}. `;
+    if (keyPoints && keyPoints.length > 0) {
+      speechScript += `મુખ્ય મુદ્દાઓ: ${keyPoints.join('. ')}. `;
+    }
+    speechScript += `આજનું જીવનમૂલ્ય: ${moralValue}. આભાર.`;
 
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    const utterance = new SpeechSynthesisUtterance(speechScript);
     utterance.lang = 'gu-IN';
     utterance.rate = 0.9;
 
@@ -89,19 +100,25 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
     setIsSpeaking(true);
   };
 
-  // Copy full suvichar text
+  // Copy full suvichar and speech script
   const handleCopy = () => {
     if (!bulletin) return;
-    const { thought, authorOrSource, explanation, example, moralValue } = bulletin.suvichar;
-    const text =
+    const { thought, authorOrSource, explanation, example, moralValue, keyPoints } = bulletin.suvichar;
+    
+    let text =
       `✨ *${schoolName || 'શાળા સંસ્કાર વાણી'} — આજનો સુવિચાર* ✨\n` +
-      `📅 *તારીખ:* ${bulletin.editionDate}\n\n` +
+      `📅 *તારીખ:* ${bulletin.editionDate}\n` +
+      `🎙️ *શાળા પ્રાર્થના સંમેલન વક્તવ્ય (૨-૩ મિનિટ)*\n\n` +
       `❝ *${thought}* ❞\n` +
       (authorOrSource ? `— *${authorOrSource}*\n\n` : '\n') +
-      `📖 *ટૂંકી સમજૂતી:* ${explanation}\n\n` +
-      `🌟 *વ્યવહારિક ઉદાહરણ:* ${example}\n\n` +
-      `🎯 *જીવનમૂલ્ય:* ${moralValue}\n\n` +
-      `💫 સૌજન્ય: વિદ્યાલયમ શૈક્ષણિક પોર્ટલ`;
+      `📖 *વિસ્તૃત સમજૂતી (Explanation):*\n${explanation}\n\n` +
+      `🌟 *વ્યવહારિક ઉદાહરણ (Real-Life Example):*\n${example}\n\n`;
+
+    if (keyPoints && keyPoints.length > 0) {
+      text += `🎤 *સભા વક્તવ્યના મુખ્ય મુદ્દા:*\n` + keyPoints.map((pt, i) => `${i + 1}. ${pt}`).join('\n') + `\n\n`;
+    }
+
+    text += `🎯 *જીવનમૂલ્ય:* ${moralValue}\n\n💫 સૌજન્ય: વિદ્યાલયમ શૈક્ષણિક પોર્ટલ`;
 
     navigator.clipboard?.writeText(text);
     setCopied(true);
@@ -141,7 +158,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
     return (
       <div className="flex flex-col items-center justify-center p-12 space-y-3 min-h-[300px]">
         <Loader2 className="w-8 h-8 text-[#9d512d] animate-spin" />
-        <p className="text-xs text-stone-500 font-bold">આજનો સુવિચાર લોડ થઈ રહ્યો છે...</p>
+        <p className="text-xs text-stone-500 font-bold">આજનો સુવિચાર અને વક્તવ્ય લોડ થઈ રહ્યું છે...</p>
       </div>
     );
   }
@@ -154,7 +171,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
     );
   }
 
-  const { thought, authorOrSource, explanation, example, moralValue } = bulletin.suvichar;
+  const { thought, authorOrSource, explanation, example, moralValue, keyPoints } = bulletin.suvichar;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -177,6 +194,10 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
               <span className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-amber-200" />
                 {bulletin.editionDate}
+              </span>
+              <span className="flex items-center gap-1 bg-black/20 px-2 py-0.5 rounded-md text-[11px]">
+                <Clock className="w-3 h-3 text-amber-300" />
+                ૨ થી ૩ મિનિટ સભા વક્તવ્ય માટે તૈયાર
               </span>
               {schoolName && (
                 <span>• {schoolName}</span>
@@ -210,6 +231,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
               type="button"
               onClick={handleCopy}
               className="px-3.5 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 cursor-pointer"
+              title="સંપૂર્ણ વક્તવ્ય સ્ક્રિપ્ટ કોપી કરો"
             >
               {copied ? (
                 <>
@@ -219,7 +241,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
               ) : (
                 <>
                   <Copy className="w-4 h-4" />
-                  <span>કોપી</span>
+                  <span>કોપી વક્તવ્ય</span>
                 </>
               )}
             </button>
@@ -228,7 +250,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
               type="button"
               onClick={handleToggleSpeak}
               className="px-3 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 cursor-pointer"
-              title="સુવિચાર સાંભળો"
+              title="૨-૩ મિનિટ વક્તવ્ય સાંભળો"
             >
               {isSpeaking ? (
                 <>
@@ -238,7 +260,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
               ) : (
                 <>
                   <Volume2 className="w-4 h-4" />
-                  <span>સાંભળો</span>
+                  <span>સાંભળો (Audio)</span>
                 </>
               )}
             </button>
@@ -267,9 +289,9 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
       </div>
 
       {/* Main Suvichar Card */}
-      <div className="glass-panel rounded-3xl border border-stone-200 dark:border-white/10 p-6 sm:p-9 shadow-xl relative overflow-hidden bg-white dark:bg-[#121921]">
-        <div className="text-center space-y-4 max-w-2xl mx-auto">
-          <div className="text-4xl sm:text-5xl text-[#9d512d] dark:text-[#f59c73] font-serif leading-none opacity-60">
+      <div className="glass-panel rounded-3xl border border-stone-200 dark:border-white/10 p-6 sm:p-8 shadow-xl relative overflow-hidden bg-white dark:bg-[#121921]">
+        <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <div className="text-3xl sm:text-4xl text-[#9d512d] dark:text-[#f59c73] font-serif leading-none opacity-60">
             ❝
           </div>
 
@@ -277,7 +299,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
             {thought}
           </h1>
 
-          <div className="text-4xl sm:text-5xl text-[#9d512d] dark:text-[#f59c73] font-serif leading-none opacity-60">
+          <div className="text-3xl sm:text-4xl text-[#9d512d] dark:text-[#f59c73] font-serif leading-none opacity-60">
             ❞
           </div>
 
@@ -291,29 +313,68 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
         </div>
       </div>
 
-      {/* Two Column Detailed Breakdown: Explanation & Example */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Short Explanation Card */}
-        <div className="glass-panel rounded-3xl border border-blue-500/20 bg-blue-50/50 dark:bg-blue-950/20 p-5 sm:p-6 space-y-2.5 shadow-sm">
-          <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-black text-sm">
-            <BookOpen className="w-4 h-4 shrink-0" />
-            <span>📖 ટૂંકી સમજૂતી (Short Explanation)</span>
+      {/* Speech Guide Banner */}
+      <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-bold">
+        <Mic className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <span>શાળા પ્રાર્થના સંમેલનમાં શિક્ષક અથવા વિદ્યાર્થી દ્વારા ૨ થી ૩ મિનિટ વક્તવ્ય માટે નીચેની વિસ્તૃત સમજૂતી અને ઉદાહરણ બોલી શકાય છે:</span>
+      </div>
+
+      {/* Detailed Speech Sections: Explanation & Example */}
+      <div className="space-y-4">
+        {/* Detailed Explanation Card (૧.૫ થી ૨ મિનિટ બોલી શકાય તેવી સમજૂતી) */}
+        <div className="glass-panel rounded-3xl border border-blue-500/20 bg-blue-50/50 dark:bg-blue-950/20 p-5 sm:p-7 space-y-3 shadow-sm">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-black text-sm">
+              <BookOpen className="w-4 h-4 shrink-0" />
+              <span>📖 વિસ્તૃત સમજૂતી (Speech Explanation)</span>
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
+              બોલવાનો સમય: ~૧.૫ મિનિટ
+            </span>
           </div>
-          <p className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed font-medium">
+          <p className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed font-normal text-justify sm:text-left">
             {explanation}
           </p>
         </div>
 
-        {/* Practical Example Card */}
-        <div className="glass-panel rounded-3xl border border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20 p-5 sm:p-6 space-y-2.5 shadow-sm">
-          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-black text-sm">
-            <Lightbulb className="w-4 h-4 shrink-0" />
-            <span>🌟 વ્યવહારિક ઉદાહરણ (Real-Life Example)</span>
+        {/* Practical Example Card (૧ થી ૧.૫ મિનિટ બોલી શકાય તેવું જીવંત ઉદાહરણ) */}
+        <div className="glass-panel rounded-3xl border border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20 p-5 sm:p-7 space-y-3 shadow-sm">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-black text-sm">
+              <Lightbulb className="w-4 h-4 shrink-0" />
+              <span>🌟 વ્યવહારિક ઉદાહરણ અને પ્રેરણા પ્રસંગ (Real-Life Example)</span>
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200">
+              બોલવાનો સમય: ~૧ મિનિટ
+            </span>
           </div>
-          <p className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed font-medium">
+          <p className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed font-normal text-justify sm:text-left">
             {example}
           </p>
         </div>
+
+        {/* Key Highlights / Talking Points for Assembly */}
+        {keyPoints && keyPoints.length > 0 && (
+          <div className="glass-panel rounded-3xl border border-purple-500/20 bg-purple-50/50 dark:bg-purple-950/20 p-5 sm:p-6 space-y-3 shadow-sm">
+            <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-black text-sm">
+              <ListChecks className="w-4 h-4 shrink-0" />
+              <span>🎤 સભા વક્તવ્ય માટેના ૩ મુખ્ય સૂત્રો (Assembly Speech Highlights)</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {keyPoints.map((point, index) => (
+                <div
+                  key={index}
+                  className="p-3 rounded-2xl bg-white dark:bg-white/5 border border-purple-200 dark:border-white/10 text-xs font-semibold text-stone-800 dark:text-stone-200 leading-relaxed shadow-xs flex items-start gap-2"
+                >
+                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center shrink-0 text-[10px] mt-0.5">
+                    {index + 1}
+                  </span>
+                  <span>{point}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Core Life Value (જીવનમૂલ્ય) Banner */}
@@ -354,7 +415,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
               📲 શાળા કે વર્ગખંડ WhatsApp ગ્રૂપમાં PDF મોકલો
             </h4>
             <p className="text-xs text-stone-300">
-              આજના સુવિચાર, સમજૂતી અને ઉદાહરણની સુંદર ૧-પાનાની PDF ડાઉનલોડ કરીને શેર કરો.
+              આજના સુવિચાર, ૨-૩ મિનિટ વક્તવ્ય સમજૂતી અને ઉદાહરણની સુંદર ૧-પાનાની PDF ડાઉનલોડ કરીને શેર કરો.
             </p>
           </div>
         </div>
