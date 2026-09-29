@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { StaffProfileModal } from './StaffProfileModal';
 import { compressStudentPhoto } from '../utils/imageUtils';
+import { IosDateInput } from './IosDatePicker';
 
 interface StaffManagerProps {
   schoolId: string;
@@ -900,11 +901,11 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                     <label className="block text-xs font-semibold text-[#a99f91] mb-1">
                       જન્મ તારીખ (Date of Birth)
                     </label>
-                    <input
-                      type="date"
+                    <IosDateInput
                       value={formData.dob}
                       onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      placeholder="જન્મ તારીખ પસંદ કરો"
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
                     />
                   </div>
                 </div>
@@ -918,11 +919,11 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                     <label className="block text-xs font-semibold text-[#a99f91] mb-1">
                       ખાતામાં દાખલ તારીખ *
                     </label>
-                    <input
-                      type="date"
+                    <IosDateInput
                       value={formData.serviceJoiningDate}
                       onChange={(e) => setFormData({ ...formData, serviceJoiningDate: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      placeholder="ખાતામાં દાખલ તારીખ"
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
                     />
                     <span className="text-[10px] text-[#8e8579] mt-0.5 block">સરકારી ખાતામાં પ્રથમ નિમણૂક તારીખ</span>
                   </div>
@@ -931,11 +932,11 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                     <label className="block text-xs font-semibold text-[#a99f91] mb-1">
                       આ શાળામાં દાખલ તારીખ *
                     </label>
-                    <input
-                      type="date"
+                    <IosDateInput
                       value={formData.schoolJoiningDate}
                       onChange={(e) => setFormData({ ...formData, schoolJoiningDate: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      placeholder="શાળામાં દાખલ તારીખ"
+                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
                     />
                     <span className="text-[10px] text-[#8e8579] mt-0.5 block">હાજર શાળામાં હાજર થયા તારીખ</span>
                   </div>

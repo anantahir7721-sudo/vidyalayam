@@ -38,7 +38,9 @@ import {
 } from '../services/onlineExamService';
 import { StudentExamScreen } from './StudentExamScreen';
 import { DailyNewsTab } from './DailyNewsTab';
+import { DailyPrashnotariTab } from './DailyPrashnotariTab';
 import { DailyJanvaJevuTab } from './DailyJanvaJevuTab';
+import { DailyAbhivyaktiTab } from './DailyAbhivyaktiTab';
 import { DailySuvicharTab } from './DailySuvicharTab';
 import { subscribeToSchoolProfile } from '../services/authService';
 import { calculateClassResults } from '../utils/resultFormulaUtils';
@@ -53,7 +55,9 @@ interface StudentPortalProps {
 type StudentTab =
   | 'upcoming_exams'
   | 'samachar'
+  | 'prashnotari'
   | 'janva_jevu'
+  | 'abhivyakti'
   | 'suvichar'
   | 'marks'
   | 'result'
@@ -504,13 +508,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
           {(() => {
             const isNewsEnabled = (school as any).dailyNewsEnabled !== false;
+            const isPrashnotariEnabled = (school as any).dailyPrashnotariEnabled !== false;
             const isJanvaJevuEnabled = (school as any).dailyJanvaJevuEnabled !== false;
+            const isAbhivyaktiEnabled = (school as any).dailyAbhivyaktiEnabled !== false;
             const isSuvicharEnabled = (school as any).dailySuvicharEnabled !== false;
 
             const portalTabs = [
               { id: 'upcoming_exams', label: '📝 આગામી પરીક્ષાઓ (Upcoming Exams)', count: upcomingExams.length },
               ...(isNewsEnabled ? [{ id: 'samachar', label: '📰 આજના સમાચાર (Daily News)' }] : []),
-              ...(isJanvaJevuEnabled ? [{ id: 'janva_jevu', label: '💡 આજનું જાણવા જેવું (Daily GK)' }] : []),
+              ...(isPrashnotariEnabled ? [{ id: 'prashnotari', label: '❓ આજની પ્રશ્નોત્તરી (Daily Q&A)' }] : []),
+              ...(isJanvaJevuEnabled ? [{ id: 'janva_jevu', label: '💡 આજનું જાણવા જેવું (12 Facts)' }] : []),
+              ...(isAbhivyaktiEnabled ? [{ id: 'abhivyakti', label: '🎭 અભિવ્યક્તિ (Assembly Ideas)' }] : []),
               ...(isSuvicharEnabled ? [{ id: 'suvichar', label: '✨ આજનો સુવિચાર (Daily Suvichar)' }] : []),
               { id: 'marks', label: '📊 મારા ગુણ (My Marks)' },
               { id: 'result', label: '📄 પ્રગતિપત્રક (My Result)' },
@@ -1067,8 +1075,20 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
             diseCode={school.diseCode}
             district={school.district}
           />
+        ) : activeTab === 'prashnotari' ? (
+          <DailyPrashnotariTab
+            schoolName={school.schoolName}
+            diseCode={school.diseCode}
+            district={school.district}
+          />
         ) : activeTab === 'janva_jevu' ? (
           <DailyJanvaJevuTab
+            schoolName={school.schoolName}
+            diseCode={school.diseCode}
+            district={school.district}
+          />
+        ) : activeTab === 'abhivyakti' ? (
+          <DailyAbhivyaktiTab
             schoolName={school.schoolName}
             diseCode={school.diseCode}
             district={school.district}

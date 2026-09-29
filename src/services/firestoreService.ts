@@ -877,7 +877,9 @@ export async function updateSchoolProfile(
     establishedYear?: string;
     logoUrl?: string;
     dailyNewsEnabled?: boolean;
+    dailyPrashnotariEnabled?: boolean;
     dailyJanvaJevuEnabled?: boolean;
+    dailyAbhivyaktiEnabled?: boolean;
     dailySuvicharEnabled?: boolean;
   }
 ): Promise<void> {

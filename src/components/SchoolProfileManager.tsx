@@ -24,6 +24,8 @@ import {
   Newspaper,
   Lightbulb,
   Sparkles,
+  HelpCircle,
+  Drama,
   ToggleLeft,
   ToggleRight,
 } from 'lucide-react';
@@ -55,7 +57,9 @@ export const SchoolProfileManager: React.FC<SchoolProfileManagerProps> = ({
     establishedYear: school.establishedYear || '',
     logoUrl: school.logoUrl || '',
     dailyNewsEnabled: school.dailyNewsEnabled !== false,
+    dailyPrashnotariEnabled: school.dailyPrashnotariEnabled !== false,
     dailyJanvaJevuEnabled: school.dailyJanvaJevuEnabled !== false,
+    dailyAbhivyaktiEnabled: school.dailyAbhivyaktiEnabled !== false,
     dailySuvicharEnabled: school.dailySuvicharEnabled !== false,
   });
 
@@ -534,17 +538,59 @@ export const SchoolProfileManager: React.FC<SchoolProfileManagerProps> = ({
                 </button>
               </div>
 
-              {/* Feature 2: આજનું જાણવા જેવું Toggle */}
+              {/* Feature 2: આજની પ્રશ્નોત્તરી (Daily Q&A) Toggle */}
+              <div className="p-3.5 rounded-xl bg-white dark:bg-black/20 border border-stone-200 dark:border-white/10 flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-sky-500" />
+                    <span className="text-xs font-bold text-stone-900 dark:text-white">
+                      આજની પ્રશ્નોત્તરી (Daily 1 PM - 20 Q&A)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 dark:text-[#a99f91] leading-relaxed">
+                    ચાલુ રાખવાથી વિદ્યાર્થીઓ પાઠ્યપુસ્તક આધારિત ૨૦ દૈનિક પ્રશ્નોત્તરી, સ્વ-મૂલ્યાંકન અને અભ્યાસ મોડ દરરોજ બપોરે ૧:૦૦ વાગ્યે જોઈ શકશે.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      dailyPrashnotariEnabled: !prev.dailyPrashnotariEnabled,
+                    }))
+                  }
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+                    formData.dailyPrashnotariEnabled
+                      ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
+                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                  }`}
+                >
+                  {formData.dailyPrashnotariEnabled ? (
+                    <>
+                      <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>ચાલુ (ON)</span>
+                    </>
+                  ) : (
+                    <>
+                      <ToggleLeft className="w-4 h-4 text-stone-500 dark:text-rose-400" />
+                      <span>બંધ (OFF)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Feature 3: આજનું જાણવા જેવું (12 Facts) Toggle */}
               <div className="p-3.5 rounded-xl bg-white dark:bg-black/20 border border-stone-200 dark:border-white/10 flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <Lightbulb className="w-4 h-4 text-amber-500" />
                     <span className="text-xs font-bold text-stone-900 dark:text-white">
-                      આજનું જાણવા જેવું (Daily 1 PM GK)
+                      આજનું જાણવા જેવું (Daily 1 PM - 12 Facts ધોરણ ૯ થી ૧૨)
                     </span>
                   </div>
                   <p className="text-[11px] text-stone-600 dark:text-[#a99f91] leading-relaxed">
-                    ચાલુ રાખવાથી વિદ્યાર્થીઓ પાઠ્યપુસ્તક આધારિત ૨૦ સામાન્ય જ્ઞાન પ્રશ્નો અને સાપ્તાહિક પુનરાવર્તન દરરોજ બપોરે ૧:૦૦ વાગ્યે જોઈ શકશે.
+                    ચાલુ રાખવાથી વિદ્યાર્થીઓ માટે ખાસ તૈયાર કરાયેલ ૧૨ રોચક તથ્યો (વિજ્ઞાન, ગણિત, અવકાશ, ભાષા અને ઇતિહાસ) દરરોજ બપોરે ૧:૦૦ વાગ્યે અપડેટ થશે.
                   </p>
                 </div>
 
@@ -576,7 +622,49 @@ export const SchoolProfileManager: React.FC<SchoolProfileManagerProps> = ({
                 </button>
               </div>
 
-              {/* Feature 3: આજનો સુવિચાર Toggle */}
+              {/* Feature 4: અભિવ્યક્તિ (Assembly Presentation & AI) Toggle */}
+              <div className="p-3.5 rounded-xl bg-white dark:bg-black/20 border border-stone-200 dark:border-white/10 flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Drama className="w-4 h-4 text-purple-500" />
+                    <span className="text-xs font-bold text-stone-900 dark:text-white">
+                      અભિવ્યક્તિ & AI સહાયક (Assembly 5-Min Talent Ideas)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 dark:text-[#a99f91] leading-relaxed">
+                    પ્રાર્થના સભામાં વિદ્યાર્થીઓની ૫ મિનિટની રજૂઆત: સંગીત, ઢોલ વાદન, એકપાત્રીય અભિનય, મિમિક્રી, હિન્દી સંવાદો, કાવ્ય પઠન, રમતો અને AI આઈડિયા જનરેટર.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      dailyAbhivyaktiEnabled: !prev.dailyAbhivyaktiEnabled,
+                    }))
+                  }
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+                    formData.dailyAbhivyaktiEnabled
+                      ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
+                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                  }`}
+                >
+                  {formData.dailyAbhivyaktiEnabled ? (
+                    <>
+                      <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>ચાલુ (ON)</span>
+                    </>
+                  ) : (
+                    <>
+                      <ToggleLeft className="w-4 h-4 text-stone-500 dark:text-rose-400" />
+                      <span>બંધ (OFF)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Feature 5: આજનો સુવિચાર Toggle */}
               <div className="p-3.5 rounded-xl bg-white dark:bg-black/20 border border-stone-200 dark:border-white/10 flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">

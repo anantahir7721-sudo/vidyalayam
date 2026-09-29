@@ -4,10 +4,14 @@ import {
   Newspaper,
   Lightbulb,
   Sparkles,
+  HelpCircle,
+  Drama,
 } from 'lucide-react';
 import { School } from '../types';
 import { DailyNewsTab } from './DailyNewsTab';
 import { DailyJanvaJevuTab } from './DailyJanvaJevuTab';
+import { DailyPrashnotariTab } from './DailyPrashnotariTab';
+import { DailyAbhivyaktiTab } from './DailyAbhivyaktiTab';
 import { DailySuvicharTab } from './DailySuvicharTab';
 
 interface DailyKnowledgeModalProps {
@@ -15,7 +19,7 @@ interface DailyKnowledgeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSchoolUpdated?: (updated: Partial<School>) => void;
-  initialTab?: 'news' | 'janva_jevu' | 'suvichar';
+  initialTab?: 'news' | 'prashnotari' | 'janva_jevu' | 'abhivyakti' | 'suvichar';
 }
 
 export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
@@ -24,7 +28,9 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
   onClose,
   initialTab = 'news',
 }) => {
-  const [activeTab, setActiveTab] = useState<'news' | 'janva_jevu' | 'suvichar'>(initialTab);
+  const [activeTab, setActiveTab] = useState<
+    'news' | 'prashnotari' | 'janva_jevu' | 'abhivyakti' | 'suvichar'
+  >(initialTab);
 
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -37,7 +43,7 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-[#090c10] border border-white/15 shadow-2xl text-white overflow-hidden"
+        className="relative w-full max-w-5xl max-h-[92vh] flex flex-col rounded-3xl bg-[#090c10] border border-white/15 shadow-2xl text-white overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -46,8 +52,12 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
             <div className="w-10 h-10 rounded-2xl bg-[#9d512d]/25 border border-[#9d512d]/40 flex items-center justify-center text-[#f59c73]">
               {activeTab === 'news' ? (
                 <Newspaper className="w-5 h-5" />
+              ) : activeTab === 'prashnotari' ? (
+                <HelpCircle className="w-5 h-5 text-sky-400" />
               ) : activeTab === 'janva_jevu' ? (
-                <Lightbulb className="w-5 h-5" />
+                <Lightbulb className="w-5 h-5 text-amber-400" />
+              ) : activeTab === 'abhivyakti' ? (
+                <Drama className="w-5 h-5 text-purple-400" />
               ) : (
                 <Sparkles className="w-5 h-5" />
               )}
@@ -58,40 +68,9 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
               </h2>
               <div className="flex items-center gap-2 text-xs text-[#a99f91]">
                 <span>{school.schoolName}</span>
-                {/* Clear status badge showing student visibility */}
-                {activeTab === 'news' && (
-                  school.dailyNewsEnabled === false ? (
-                    <span className="text-[10px] text-rose-400 font-bold bg-rose-500/15 px-2 py-0.5 rounded-full border border-rose-500/30">
-                      વિદ્યાર્થીઓ માટે: બંધ (OFF)
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                      વિદ્યાર્થીઓ માટે: ચાલુ (ON)
-                    </span>
-                  )
-                )}
-                {activeTab === 'janva_jevu' && (
-                  school.dailyJanvaJevuEnabled === false ? (
-                    <span className="text-[10px] text-rose-400 font-bold bg-rose-500/15 px-2 py-0.5 rounded-full border border-rose-500/30">
-                      વિદ્યાર્થીઓ માટે: બંધ (OFF)
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                      વિદ્યાર્થીઓ માટે: ચાલુ (ON)
-                    </span>
-                  )
-                )}
-                {activeTab === 'suvichar' && (
-                  school.dailySuvicharEnabled === false ? (
-                    <span className="text-[10px] text-rose-400 font-bold bg-rose-500/15 px-2 py-0.5 rounded-full border border-rose-500/30">
-                      વિદ્યાર્થીઓ માટે: બંધ (OFF)
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                      વિદ્યાર્થીઓ માટે: ચાલુ (ON)
-                    </span>
-                  )
-                )}
+                <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  દૈનિક સંસ્કાર & જ્ઞાન ધારા
+                </span>
               </div>
             </div>
           </div>
@@ -122,15 +101,41 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
 
           <button
             type="button"
+            onClick={() => setActiveTab('prashnotari')}
+            className={`px-4 py-2.5 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'prashnotari'
+                ? 'border-sky-500 text-sky-400'
+                : 'border-transparent text-[#a99f91] hover:text-white'
+            }`}
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span>આજની પ્રશ્નોત્તરી (Daily Q&A)</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('janva_jevu')}
             className={`px-4 py-2.5 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'janva_jevu'
-                ? 'border-[#9d512d] text-[#f59c73]'
+                ? 'border-amber-500 text-amber-400'
                 : 'border-transparent text-[#a99f91] hover:text-white'
             }`}
           >
             <Lightbulb className="w-4 h-4" />
-            <span>આજનું જાણવા જેવું (Daily GK)</span>
+            <span>આજનું જાણવા જેવું (12 Facts)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('abhivyakti')}
+            className={`px-4 py-2.5 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'abhivyakti'
+                ? 'border-purple-500 text-purple-400'
+                : 'border-transparent text-[#a99f91] hover:text-white'
+            }`}
+          >
+            <Drama className="w-4 h-4" />
+            <span>અભિવ્યક્તિ & AI (Abhivyakti)</span>
           </button>
 
           <button
@@ -158,8 +163,26 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
             />
           )}
 
+          {activeTab === 'prashnotari' && (
+            <DailyPrashnotariTab
+              schoolName={school.schoolName}
+              diseCode={school.diseCode}
+              district={school.district}
+              isSchoolView
+            />
+          )}
+
           {activeTab === 'janva_jevu' && (
             <DailyJanvaJevuTab
+              schoolName={school.schoolName}
+              diseCode={school.diseCode}
+              district={school.district}
+              isSchoolView
+            />
+          )}
+
+          {activeTab === 'abhivyakti' && (
+            <DailyAbhivyaktiTab
               schoolName={school.schoolName}
               diseCode={school.diseCode}
               district={school.district}

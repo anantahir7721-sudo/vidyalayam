@@ -40,6 +40,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { getSchoolApprovalWhatsApp } from '../utils/whatsappUtils';
+import { IosDateInput } from './IosDatePicker';
 
 interface AdmissionManagerProps {
   school: School;
@@ -687,12 +688,12 @@ export const AdmissionManager: React.FC<AdmissionManagerProps> = ({
               <label className="block text-xs font-bold text-stone-800 dark:text-[#e4ded6]">
                 પ્રવેશ તારીખ (Admission Date - DOA) *
               </label>
-              <input
-                type="date"
+              <IosDateInput
                 required
                 value={admissionDate}
                 onChange={(e) => setAdmissionDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-stone-300 dark:border-white/10 text-stone-900 dark:text-[#e4ded6] font-mono font-bold focus:ring-2 focus:ring-emerald-500 text-sm"
+                placeholder="પ્રવેશ તારીખ પસંદ કરો"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-stone-300 dark:border-white/10 text-stone-900 dark:text-[#e4ded6] font-mono font-bold text-sm"
               />
               <span className="text-[11px] text-stone-500 dark:text-[#a99f91] block">
                 * આ તારીખ સાથે વિદ્યાર્થી શાળાના વિદ્યાર્થી લિસ્ટમાં ઉમેરાઈ જશે.
@@ -836,11 +837,11 @@ export const AdmissionManager: React.FC<AdmissionManagerProps> = ({
                     <label className="block text-xs font-bold text-stone-800 dark:text-[#e4ded6] mb-1">
                       પ્રવેશ શરૂ થવાની તારીખ (Admission Start Date):
                     </label>
-                    <input
-                      type="date"
+                    <IosDateInput
                       required
                       value={settingsForm.startDate}
                       onChange={(e) => setSettingsForm({ ...settingsForm, startDate: e.target.value })}
+                      placeholder="શરૂ તારીખ પસંદ કરો"
                       className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-[#1a232d] border border-stone-300 dark:border-white/10 text-stone-900 dark:text-[#e4ded6] font-medium"
                     />
                     <span className="text-[10.5px] text-stone-500 dark:text-[#a99f91] mt-1 block">
@@ -901,12 +902,12 @@ export const AdmissionManager: React.FC<AdmissionManagerProps> = ({
                         <label className="block text-xs font-bold text-amber-900 dark:text-amber-300">
                           અંતિમ તારીખ પસંદ કરો (End Date):
                         </label>
-                        <input
-                          type="date"
+                        <IosDateInput
                           required={hasEndDate}
                           min={settingsForm.startDate || undefined}
                           value={settingsForm.endDate}
                           onChange={(e) => setSettingsForm({ ...settingsForm, endDate: e.target.value })}
+                          placeholder="અંતિમ તારીખ પસંદ કરો"
                           className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#1a232d] border border-amber-300 dark:border-amber-500/30 text-stone-900 dark:text-[#e4ded6] font-medium"
                         />
                         <span className="text-[10px] text-amber-700 dark:text-amber-400 block">
@@ -1029,11 +1030,11 @@ export const AdmissionManager: React.FC<AdmissionManagerProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold mb-1">જન્મ તારીખ:</label>
-                  <input
-                    type="date"
+                  <IosDateInput
                     required
                     value={editingApp.dob}
                     onChange={(e) => setEditingApp({ ...editingApp, dob: e.target.value })}
+                    placeholder="જન્મ તારીખ પસંદ કરો"
                     className="w-full px-3 py-2 rounded-xl bg-white dark:bg-white/5 border border-stone-300 dark:border-white/10 text-stone-900 dark:text-[#e4ded6]"
                   />
                 </div>

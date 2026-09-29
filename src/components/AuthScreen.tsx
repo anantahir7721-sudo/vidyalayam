@@ -43,6 +43,8 @@ import {
 import { SetNewPasswordModal } from './SetNewPasswordModal';
 import { VidyalayamLogo } from './VidyalayamLogo';
 import { OnlineAdmissionPortal, getSchoolAdmissionStatus } from './OnlineAdmissionPortal';
+import { IosDatePickerModal } from './IosDatePicker';
+import { haptic } from '../utils/haptics';
 import { getSchoolsForAdmissionDirectory } from '../services/firestoreService';
 
 const GUJARAT_DISTRICTS = [
@@ -158,7 +160,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [studentDiseCode, setStudentDiseCode] = useState('');
   const [studentDob, setStudentDob] = useState('');
   const [studentGrNumber, setStudentGrNumber] = useState('');
-  const [dobInputMode, setDobInputMode] = useState<'date' | 'text'>('date');
+  const [dobInputMode, setDobInputMode] = useState<'date' | 'text'>('text');
+  const [iosStudentDobPickerOpen, setIosStudentDobPickerOpen] = useState(false);
   const [showExtraStudentFields, setShowExtraStudentFields] = useState(false);
 
   // Admin Form states (No hardcoded credentials!)
@@ -942,29 +945,69 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   </label>
                   <button
                     type="button"
-                    onClick={() => setDobInputMode(dobInputMode === 'date' ? 'text' : 'date')}
-                    className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors font-medium cursor-pointer"
+                    onClick={() => {
+                      haptic.light();
+                      setIosStudentDobPickerOpen(true);
+                    }}
+                    className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors font-bold cursor-pointer flex items-center gap-1"
                   >
-                    {dobInputMode === 'date' ? '✎ DD/MM/YYYY લખો' : '📅 કેલેન્ડર વાપરો'}
+                    <span>📅 કેલેન્ડર</span>
                   </button>
                 </div>
                 <div className="relative rounded-xl shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-500 dark:text-emerald-400">
-                    <Calendar className="w-4 h-4" />
+                  <div
+                    onClick={() => {
+                      haptic.light();
+                      setIosStudentDobPickerOpen(true);
+                    }}
+                    className="absolute inset-y-0 left-0 pl-3.5 flex items-center cursor-pointer text-emerald-500 dark:text-emerald-400"
+                    title="કેલેન્ડર ખોલો"
+                  >
+                    <Calendar className="w-4 h-4 hover:scale-110 transition-transform" />
                   </div>
                   <input
                     id="input-student-dob"
-                    type={dobInputMode}
+                    type="text"
                     required
                     value={studentDob}
                     onChange={(e) => setStudentDob(e.target.value)}
-                    placeholder={dobInputMode === 'date' ? undefined : 'DD/MM/YYYY (દા.ત. 15/08/2010)'}
-                    className="glass-input block w-full pl-10 pr-3 py-3 rounded-xl text-sm placeholder-[#a99f91]/60 font-mono tracking-wide focus:border-emerald-500"
+                    placeholder="DD/MM/YYYY (દા.ત. 15/08/2012)"
+                    className="glass-input block w-full pl-10 pr-24 py-3 rounded-xl text-sm placeholder-[#a99f91]/60 font-mono tracking-wide focus:border-emerald-500"
                   />
+                  <div className="absolute inset-y-0 right-0 pr-2 flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic.light();
+                        setIosStudentDobPickerOpen(true);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>પસંદ કરો</span>
+                    </button>
+                  </div>
                 </div>
                 <p className="mt-1 text-[11px] text-slate-500 dark:text-[#a99f91]">
-                  પાસવર્ડ તરીકે શાળાના રેકોર્ડ મુજબની જન્મ તારીખ (DD/MM/YYYY અથવા YYYY-MM-DD)
+                  તમે હાથેથી લખી શકો છો અથવા <strong>'પસંદ કરો'</strong> દબાવી કેલેન્ડરમાંથી પસંદ કરી શકો છો.
                 </p>
+
+                {/* iPhone Drum Picker Modal */}
+                <IosDatePickerModal
+                  isOpen={iosStudentDobPickerOpen}
+                  onClose={() => setIosStudentDobPickerOpen(false)}
+                  value={
+                    studentDob.includes('/')
+                      ? studentDob.split('/').reverse().join('-')
+                      : studentDob
+                  }
+                  onChange={(dateStr) => {
+                    const parts = dateStr.split('-');
+                    setStudentDob(`${parts[2]}/${parts[1]}/${parts[0]}`);
+                  }}
+                  title="વિદ્યાર્થી જન્મ તારીખ (DOB)"
+                  quickYearsPresets={true}
+                />
               </div>
 
               {/* Optional GR Number (if multiple students have same DISE code) */}

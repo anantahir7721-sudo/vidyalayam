@@ -12,6 +12,11 @@ import { db } from '../firebase/config';
 import {
   DailyNewsBulletin,
   DailyJanvaJevuBulletin,
+  DailyPrashnotariBulletin,
+  DailyInterestingFactsBulletin,
+  DailyInterestingFact,
+  DailyAbhivyaktiBulletin,
+  DailyAbhivyaktiIdea,
   DailySuvicharBulletin,
   DailySuvicharItem,
   NewsItem,
@@ -20,6 +25,8 @@ import {
 import { MASTER_JANVA_JEVU_POOL, WEEKLY_CORE_QUESTIONS } from '../data/janvaJevuData';
 import { MASTER_NEWS_TOPICS } from '../data/newsTopicsData';
 import { SUVICHAR_COLLECTION, RawSuvichar } from '../data/suvicharData';
+import { MASTER_INTERESTING_FACTS_POOL } from '../data/interestingFactsData';
+import { MASTER_ABHIVYAKTI_POOL } from '../data/abhivyaktiData';
 
 // Gujarati numbers conversion helper
 export function toGujaratiDigits(num: number | string): string {
@@ -415,6 +422,154 @@ export async function getDailyJanvaJevuBulletin(now = new Date()): Promise<Daily
   } catch (e) {
     // Ignore cache error
   }
+
+  return bulletin;
+}
+
+// Alias for 20-Questions Daily Quiz (આજની પ્રશ્નોત્તરી)
+export const getDailyPrashnotariBulletin = getDailyJanvaJevuBulletin;
+
+/**
+ * Generate exactly 12 interesting facts specifically tailored for Std 9 to 12
+ * Rotates deterministically by dateKey
+ */
+export function generateDailyInterestingFacts(dateKey: string): DailyInterestingFact[] {
+  const hash = stringToHash(`vidyalayam-facts-12-${dateKey}`);
+  const pool = MASTER_INTERESTING_FACTS_POOL;
+  const selected: DailyInterestingFact[] = [];
+  const usedIndices = new Set<number>();
+
+  for (let i = 0; i < pool.length && selected.length < 12; i++) {
+    const idx = (hash + i * 17) % pool.length;
+    if (!usedIndices.has(idx)) {
+      usedIndices.add(idx);
+      const item = pool[idx];
+      selected.push({
+        id: `fact-${dateKey}-${selected.length + 1}`,
+        factNumber: selected.length + 1,
+        title: item.title,
+        fact: item.fact,
+        category: item.category,
+        whyItMatters: item.whyItMatters,
+        relatedClass: item.relatedClass,
+      });
+    }
+  }
+
+  return selected.slice(0, 12);
+}
+
+/**
+ * Fetch or generate Daily Interesting Facts Bulletin:
+ * Updates daily at 1:00 PM (13:00) exactly as requested.
+ */
+export async function getDailyInterestingFactsBulletin(
+  now = new Date()
+): Promise<DailyInterestingFactsBulletin> {
+  const { dateKey, editionDate, nextUpdateTime } = getJanvaJevuCycleDateKey(now);
+
+  try {
+    const docRef = doc(db, 'daily_interesting_facts', dateKey);
+    const snap = await getDoc(docRef);
+
+    if (snap.exists()) {
+      const data = snap.data();
+      if (Array.isArray(data.facts) && data.facts.length >= 12) {
+        return {
+          id: dateKey,
+          editionDate: data.editionDate || editionDate,
+          dateKey,
+          cycleTime: 'બપોરે ૧:૦૦ વાગ્યે પ્રકાશિત (રોજના ૧૨ રોમાંચક તથ્યો)',
+          nextCycleTime: 'આવતીકાલે બપોરે ૧:૦૦ વાગ્યે',
+          nextUpdateTimeTimestamp: nextUpdateTime.getTime(),
+          facts: data.facts,
+          dailyMotto: data.dailyMotto || 'જ્ઞાન એ જ સર્વોચ્ચ શક્તિ છે — રોજ ૧૨ નવા તથ્યો શીખો!',
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read from firestore daily_interesting_facts, generating:', err);
+  }
+
+  const facts = generateDailyInterestingFacts(dateKey);
+  const bulletin: DailyInterestingFactsBulletin = {
+    id: dateKey,
+    editionDate,
+    dateKey,
+    cycleTime: 'બપોરે ૧:૦૦ વાગ્યે પ્રકાશિત (રોજના ૧૨ રોમાંચક તથ્યો)',
+    nextCycleTime: 'આવતીકાલે બપોરે ૧:૦૦ વાગ્યે',
+    nextUpdateTimeTimestamp: nextUpdateTime.getTime(),
+    facts,
+    dailyMotto: 'જ્ઞાન એ જ સર્વોચ્ચ શક્તિ છે — રોજ ૧૨ નવા તથ્યો શીખો!',
+  };
+
+  try {
+    setDoc(doc(db, 'daily_interesting_facts', dateKey), bulletin, { merge: true }).catch(() => {});
+  } catch (e) {}
+
+  return bulletin;
+}
+
+/**
+ * Generate Daily Abhivyakti Ideas for Prayer Assembly
+ */
+export function generateDailyAbhivyaktiIdeas(dateKey: string): DailyAbhivyaktiIdea[] {
+  const hash = stringToHash(`vidyalayam-abhivyakti-${dateKey}`);
+  const pool = MASTER_ABHIVYAKTI_POOL;
+  const selected: DailyAbhivyaktiIdea[] = [];
+  const used = new Set<number>();
+
+  for (let i = 0; i < pool.length; i++) {
+    const idx = (hash + i * 3) % pool.length;
+    if (!used.has(idx)) {
+      used.add(idx);
+      selected.push(pool[idx]);
+    }
+  }
+
+  return selected;
+}
+
+/**
+ * Fetch or generate Daily Abhivyakti Bulletin
+ */
+export async function getDailyAbhivyaktiBulletin(
+  now = new Date()
+): Promise<DailyAbhivyaktiBulletin> {
+  const { dateKey, editionDate } = getNewsCycleDateKey(now);
+
+  try {
+    const docRef = doc(db, 'daily_abhivyakti', dateKey);
+    const snap = await getDoc(docRef);
+
+    if (snap.exists()) {
+      const data = snap.data();
+      if (Array.isArray(data.ideas) && data.ideas.length > 0) {
+        return {
+          id: dateKey,
+          editionDate: data.editionDate || editionDate,
+          dateKey,
+          cycleTime: 'દૈનિક પ્રાર્થના સભા અભિવ્યક્તિ વિચારો',
+          ideas: data.ideas,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read from firestore daily_abhivyakti, generating:', err);
+  }
+
+  const ideas = generateDailyAbhivyaktiIdeas(dateKey);
+  const bulletin: DailyAbhivyaktiBulletin = {
+    id: dateKey,
+    editionDate,
+    dateKey,
+    cycleTime: 'દૈનિક પ્રાર્થના સભા અભિવ્યક્તિ વિચારો',
+    ideas,
+  };
+
+  try {
+    setDoc(doc(db, 'daily_abhivyakti', dateKey), bulletin, { merge: true }).catch(() => {});
+  } catch (e) {}
 
   return bulletin;
 }

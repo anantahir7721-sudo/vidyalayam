@@ -31,6 +31,7 @@ import {
 import { findConflictingExam } from '../services/onlineExamService';
 import { AiQuestionImporterModal } from './AiQuestionImporterModal';
 import { QuestionBankModal } from './QuestionBankModal';
+import { IosDateInput } from './IosDatePicker';
 
 interface OnlineExamEditorProps {
   schoolId: string;
@@ -546,11 +547,11 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
                 <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                 પરીક્ષા તારીખ (Date):
               </label>
-              <input
-                type="date"
+              <IosDateInput
                 value={scheduledDate}
                 onChange={(e) => setScheduledDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-teal-500"
+                placeholder="પરીક્ષા તારીખ પસંદ કરો"
+                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold"
               />
             </div>
 

@@ -28,7 +28,9 @@ export interface School {
   temporaryPasswordCreatedAt?: string;
   admissionSettings?: SchoolAdmissionSettings;
   dailyNewsEnabled?: boolean; // Toggle for students to see 5 AM Daily News
-  dailyJanvaJevuEnabled?: boolean; // Toggle for students to see 1 PM Daily GK
+  dailyPrashnotariEnabled?: boolean; // Toggle for students to see 1 PM Daily Q&A (20 Questions)
+  dailyJanvaJevuEnabled?: boolean; // Toggle for students to see 1 PM Daily Interesting Facts (12 Facts)
+  dailyAbhivyaktiEnabled?: boolean; // Toggle for students to see Daily Abhivyakti (Assembly Ideas & AI)
   dailySuvicharEnabled?: boolean; // Toggle for students to see Daily Suvichar
 }
 
@@ -66,6 +68,9 @@ export interface JanvaJevuQuestion {
   isWeeklyCoreRevision?: boolean;
 }
 
+// Alias for clarity
+export type PrashnotariQuestion = JanvaJevuQuestion;
+
 export interface DailyJanvaJevuBulletin {
   id: string; // YYYY-MM-DD
   editionDate: string;
@@ -75,6 +80,72 @@ export interface DailyJanvaJevuBulletin {
   nextUpdateTimeTimestamp: number;
   questions: JanvaJevuQuestion[];
   suvichar?: string;
+}
+
+export type DailyPrashnotariBulletin = DailyJanvaJevuBulletin;
+
+/**
+ * 12 Daily Interesting Facts (Std 9 to 12) - Updated daily at 1:00 PM
+ */
+export interface DailyInterestingFact {
+  id: string;
+  factNumber: number;
+  title: string;
+  fact: string;
+  category: string;
+  whyItMatters?: string;
+  relatedClass?: string;
+}
+
+export interface DailyInterestingFactsBulletin {
+  id: string; // YYYY-MM-DD
+  editionDate: string;
+  dateKey: string;
+  cycleTime: string;
+  nextCycleTime: string;
+  nextUpdateTimeTimestamp: number;
+  facts: DailyInterestingFact[];
+  dailyMotto?: string;
+}
+
+/**
+ * Daily Abhivyakti - 5 Minute School Prayer Assembly Presentation Ideas & AI Coach
+ */
+export interface DailyAbhivyaktiIdea {
+  id: string;
+  title: string;
+  category:
+    | 'music_dhol'
+    | 'ekpatriya_abhinay'
+    | 'mimicry'
+    | 'hindi_dialogue'
+    | 'ramat'
+    | 'koydo_ukhana'
+    | 'varta'
+    | 'mahan_purush'
+    | 'dance'
+    | 'kavya_pathan'
+    | 'gyan_science';
+  categoryLabel: string;
+  duration: string;
+  targetAudience: string;
+  summary: string;
+  timeBreakdown?: {
+    timeRange: string;
+    activity: string;
+  }[];
+  fullScript: string;
+  deliveryTips: string;
+  keyPropsOrRequirements?: string;
+  aiGenerated?: boolean;
+}
+
+export interface DailyAbhivyaktiBulletin {
+  id: string;
+  editionDate: string;
+  dateKey: string;
+  cycleTime: string;
+  ideas: DailyAbhivyaktiIdea[];
 }
 
 export interface DailySuvicharItem {

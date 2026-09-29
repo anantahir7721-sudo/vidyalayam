@@ -27,6 +27,7 @@ import {
   UserPlus,
   Newspaper,
   Lightbulb,
+  HelpCircle,
   ToggleLeft,
   ToggleRight,
   Flame,
@@ -57,24 +58,44 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   onSchoolUpdated,
 }) => {
   const [knowledgeModalOpen, setKnowledgeModalOpen] = React.useState(false);
-  const [modalInitialTab, setModalInitialTab] = React.useState<'news' | 'janva_jevu' | 'suvichar'>('news');
+  const [modalInitialTab, setModalInitialTab] = React.useState<
+    'news' | 'prashnotari' | 'janva_jevu' | 'abhivyakti' | 'suvichar'
+  >('news');
   const [newsEnabled, setNewsEnabled] = React.useState(school.dailyNewsEnabled !== false);
+  const [prashnotariEnabled, setPrashnotariEnabled] = React.useState(school.dailyPrashnotariEnabled !== false);
   const [janvaJevuEnabled, setJanvaJevuEnabled] = React.useState(school.dailyJanvaJevuEnabled !== false);
+  const [abhivyaktiEnabled, setAbhivyaktiEnabled] = React.useState(school.dailyAbhivyaktiEnabled !== false);
   const [suvicharEnabled, setSuvicharEnabled] = React.useState(school.dailySuvicharEnabled !== false);
 
   React.useEffect(() => {
     setNewsEnabled(school.dailyNewsEnabled !== false);
+    setPrashnotariEnabled(school.dailyPrashnotariEnabled !== false);
     setJanvaJevuEnabled(school.dailyJanvaJevuEnabled !== false);
+    setAbhivyaktiEnabled(school.dailyAbhivyaktiEnabled !== false);
     setSuvicharEnabled(school.dailySuvicharEnabled !== false);
-  }, [school.dailyNewsEnabled, school.dailyJanvaJevuEnabled, school.dailySuvicharEnabled]);
+  }, [
+    school.dailyNewsEnabled,
+    school.dailyPrashnotariEnabled,
+    school.dailyJanvaJevuEnabled,
+    school.dailyAbhivyaktiEnabled,
+    school.dailySuvicharEnabled,
+  ]);
 
-  const saveTogglesToStorage = (news: boolean, janva: boolean, suv: boolean) => {
+  const saveTogglesToStorage = (
+    news: boolean,
+    prash: boolean,
+    janva: boolean,
+    abhi: boolean,
+    suv: boolean
+  ) => {
     try {
       localStorage.setItem(
         `school_toggles_${school.id}`,
         JSON.stringify({
           dailyNewsEnabled: news,
+          dailyPrashnotariEnabled: prash,
           dailyJanvaJevuEnabled: janva,
+          dailyAbhivyaktiEnabled: abhi,
           dailySuvicharEnabled: suv,
           updatedAt: Date.now(),
         })
@@ -84,7 +105,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   const handleToggleNews = async (nextVal: boolean) => {
     setNewsEnabled(nextVal);
-    saveTogglesToStorage(nextVal, janvaJevuEnabled, suvicharEnabled);
+    saveTogglesToStorage(nextVal, prashnotariEnabled, janvaJevuEnabled, abhivyaktiEnabled, suvicharEnabled);
     try {
       await updateSchoolProfile(school.id, { dailyNewsEnabled: nextVal });
       if (onSchoolUpdated) {
@@ -96,9 +117,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     }
   };
 
+  const handleTogglePrashnotari = async (nextVal: boolean) => {
+    setPrashnotariEnabled(nextVal);
+    saveTogglesToStorage(newsEnabled, nextVal, janvaJevuEnabled, abhivyaktiEnabled, suvicharEnabled);
+    try {
+      await updateSchoolProfile(school.id, { dailyPrashnotariEnabled: nextVal });
+      if (onSchoolUpdated) {
+        onSchoolUpdated({ dailyPrashnotariEnabled: nextVal });
+      }
+    } catch (e) {
+      console.error('Failed to toggle prashnotari:', e);
+      setPrashnotariEnabled(!nextVal);
+    }
+  };
+
   const handleToggleJanvaJevu = async (nextVal: boolean) => {
     setJanvaJevuEnabled(nextVal);
-    saveTogglesToStorage(newsEnabled, nextVal, suvicharEnabled);
+    saveTogglesToStorage(newsEnabled, prashnotariEnabled, nextVal, abhivyaktiEnabled, suvicharEnabled);
     try {
       await updateSchoolProfile(school.id, { dailyJanvaJevuEnabled: nextVal });
       if (onSchoolUpdated) {
@@ -110,9 +145,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     }
   };
 
+  const handleToggleAbhivyakti = async (nextVal: boolean) => {
+    setAbhivyaktiEnabled(nextVal);
+    saveTogglesToStorage(newsEnabled, prashnotariEnabled, janvaJevuEnabled, nextVal, suvicharEnabled);
+    try {
+      await updateSchoolProfile(school.id, { dailyAbhivyaktiEnabled: nextVal });
+      if (onSchoolUpdated) {
+        onSchoolUpdated({ dailyAbhivyaktiEnabled: nextVal });
+      }
+    } catch (e) {
+      console.error('Failed to toggle abhivyakti:', e);
+      setAbhivyaktiEnabled(!nextVal);
+    }
+  };
+
   const handleToggleSuvichar = async (nextVal: boolean) => {
     setSuvicharEnabled(nextVal);
-    saveTogglesToStorage(newsEnabled, janvaJevuEnabled, nextVal);
+    saveTogglesToStorage(newsEnabled, prashnotariEnabled, janvaJevuEnabled, abhivyaktiEnabled, nextVal);
     try {
       await updateSchoolProfile(school.id, { dailySuvicharEnabled: nextVal });
       if (onSchoolUpdated) {
@@ -608,21 +657,21 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
             <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-[#e4ded6] tracking-tight flex items-center gap-2.5">
               <Newspaper className="w-5 h-5 text-[#f59c73]" />
-              <span>આજના ૧૦ મુખ્ય સમાચાર & ૨૦ સામાન્ય જ્ઞાન પ્રશ્નો (Janva Jevu)</span>
+              <span>દૈનિક સમાચાર, પ્રશ્નોત્તરી, ૧૨ રોચક તથ્યો & અભિવ્યક્તિ</span>
             </h2>
 
             <p className="text-xs text-stone-600 dark:text-[#a99f91] max-w-2xl leading-relaxed">
-              કચ્છ, ગુજરાત, ભારત અને વિશ્વના ૧૦ ટૂંકા સમાચાર તેમજ ધોરણ ૯ થી ૧૨ના પાઠ્યપુસ્તક આધારિત ૨૦ પાયાના GK પ્રશ્નો. શાળા પ્રાર્થના સંમેલન (Morning Assembly) અને વિદ્યાર્થી પોર્ટલ માટે ઉપલબ્ધ.
+              કચ્છ-ગુજરાતના ૧૦ મુખ્ય સમાચાર, ૨૦ દૈનિક પ્રશ્નોત્તરી, ધો. ૯ થી ૧૨ના ૧૨ રોચક તથ્યો અને પ્રાર્થના સભા અભિવ્યક્તિ પ્રસ્તુતિ. દરરોજ નિયત સમયે આપોઆપ અપડેટ.
             </p>
 
             {/* Quick Toggles: Single central place for on/off controls */}
-            <div className="flex items-center gap-3 pt-1 flex-wrap text-xs">
+            <div className="flex items-center gap-2.5 pt-1 flex-wrap text-xs">
               <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-white/5 px-2.5 py-1 rounded-xl border border-stone-200 dark:border-white/10">
                 <span className="text-stone-700 dark:text-stone-300 font-semibold">સમાચાર:</span>
                 <button
                   type="button"
                   onClick={() => handleToggleNews(!newsEnabled)}
-                  className={`px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                  className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
                     newsEnabled
                       ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
                       : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
@@ -643,19 +692,69 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-white/5 px-2.5 py-1 rounded-xl border border-stone-200 dark:border-white/10">
+                <span className="text-stone-700 dark:text-stone-300 font-semibold">પ્રશ્નોત્તરી:</span>
+                <button
+                  type="button"
+                  onClick={() => handleTogglePrashnotari(!prashnotariEnabled)}
+                  className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                    prashnotariEnabled
+                      ? 'bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/40 shadow-xs'
+                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                  }`}
+                >
+                  {prashnotariEnabled ? (
+                    <>
+                      <ToggleRight className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                      <span>ચાલુ</span>
+                    </>
+                  ) : (
+                    <>
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-500 dark:text-rose-400" />
+                      <span>બંધ</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-white/5 px-2.5 py-1 rounded-xl border border-stone-200 dark:border-white/10">
                 <span className="text-stone-700 dark:text-stone-300 font-semibold">જાણવા જેવું:</span>
                 <button
                   type="button"
                   onClick={() => handleToggleJanvaJevu(!janvaJevuEnabled)}
-                  className={`px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                  className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
                     janvaJevuEnabled
-                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
+                      ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-xs'
                       : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
                   }`}
                 >
                   {janvaJevuEnabled ? (
                     <>
-                      <ToggleRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <ToggleRight className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>ચાલુ</span>
+                    </>
+                  ) : (
+                    <>
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-500 dark:text-rose-400" />
+                      <span>બંધ</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-white/5 px-2.5 py-1 rounded-xl border border-stone-200 dark:border-white/10">
+                <span className="text-stone-700 dark:text-stone-300 font-semibold">અભિવ્યક્તિ:</span>
+                <button
+                  type="button"
+                  onClick={() => handleToggleAbhivyakti(!abhivyaktiEnabled)}
+                  className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                    abhivyaktiEnabled
+                      ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40 shadow-xs'
+                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                  }`}
+                >
+                  {abhivyaktiEnabled ? (
+                    <>
+                      <ToggleRight className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                       <span>ચાલુ</span>
                     </>
                   ) : (
@@ -672,7 +771,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleToggleSuvichar(!suvicharEnabled)}
-                  className={`px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                  className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
                     suvicharEnabled
                       ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
                       : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
@@ -695,17 +794,29 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
 
           {/* Action buttons to preview and print */}
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0">
+          <div className="flex flex-wrap sm:flex-row lg:flex-col gap-2 shrink-0">
             <button
               type="button"
               onClick={() => {
                 setModalInitialTab('news');
                 setKnowledgeModalOpen(true);
               }}
-              className="px-4 py-2.5 rounded-xl bg-[#9d512d] hover:bg-[#b55f37] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
+              className="px-3.5 py-2 rounded-xl bg-[#9d512d] hover:bg-[#b55f37] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
             >
-              <Newspaper className="w-4 h-4" />
+              <Newspaper className="w-3.5 h-3.5" />
               <span>આજના ૧૦ સમાચાર</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setModalInitialTab('prashnotari');
+                setKnowledgeModalOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-sky-600/25 hover:bg-sky-600/35 text-sky-200 border border-sky-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-sky-400" />
+              <span>આજની પ્રશ્નોત્તરી (૨૦ Q&A)</span>
             </button>
 
             <button
@@ -714,10 +825,22 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 setModalInitialTab('janva_jevu');
                 setKnowledgeModalOpen(true);
               }}
-              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-[#e4ded6] border border-white/15 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-amber-600/25 hover:bg-amber-600/35 text-amber-200 border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
             >
-              <Lightbulb className="w-4 h-4 text-amber-400" />
-              <span>આજનું જાણવા જેવું (૨૦ GK)</span>
+              <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+              <span>આજનું જાણવા જેવું (૧૨ Facts)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setModalInitialTab('abhivyakti');
+                setKnowledgeModalOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-purple-600/25 hover:bg-purple-600/35 text-purple-200 border border-purple-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>અભિવ્યક્તિ & AI સહાયક</span>
             </button>
 
             <button
@@ -726,10 +849,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 setModalInitialTab('suvichar');
                 setKnowledgeModalOpen(true);
               }}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
             >
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span>✨ આજનો સુવિચાર & PDF</span>
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>આજનો સુવિચાર</span>
             </button>
           </div>
         </div>

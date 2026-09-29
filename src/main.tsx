@@ -3,7 +3,11 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { initializeGlobalHaptics } from './utils/haptics.ts';
 import './index.css';
+
+// Initialize professional haptic feedback engine across the entire app
+initializeGlobalHaptics();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

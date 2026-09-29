@@ -26,6 +26,7 @@ import { compressStudentPhoto } from '../utils/imageUtils';
 import { getStudentDiseCode } from '../utils/idCardPdf';
 import { printStudentIdCards } from '../utils/idCardPdf';
 import { cleanAndNormalizeBloodGroup } from '../utils/bloodGroupUtils';
+import { IosDateInput } from './IosDatePicker';
 
 interface StudentProfileModalProps {
   student: Student;
@@ -654,11 +655,11 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                     <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                       પ્રવેશ તારીખ (DOA)
                     </label>
-                    <input
-                      type="date"
+                    <IosDateInput
                       value={formData.doa}
                       onChange={(e) => setFormData({ ...formData, doa: e.target.value })}
-                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
+                      placeholder="પ્રવેશ તારીખ પસંદ કરો"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -675,12 +676,12 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                     <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                       જન્મ તારીખ (DOB) <span className="text-rose-500 font-bold">* (ફરજિયાત)</span>
                     </label>
-                    <input
-                      type="date"
+                    <IosDateInput
                       required
                       value={formData.dob}
                       onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-terracotta"
+                      placeholder="જન્મ તારીખ પસંદ કરો"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white"
                     />
                   </div>
 

@@ -950,9 +950,146 @@ Schema per question:
         userFriendlyMsg = 'Google AI કન્ફિગરેશન ચકાસો. કૃપા કરીને ફરી પ્રયાસ કરો.';
       }
 
-      return res.status(500).json({
+        return res.status(500).json({
         error: userFriendlyMsg,
         rawMessage: rawMsg,
+      });
+    }
+  });
+
+  // =========================================================================
+  // API: AI Abhivyakti Generator for School Prayer Assembly (Gemini 3.8 Flash)
+  // =========================================================================
+  app.post('/api/ai/abhivyakti-generate', async (req: Request, res: Response) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({
+          error: 'Gemini API Key is not configured. Please set GEMINI_API_KEY.',
+        });
+      }
+
+      const {
+        interest,
+        talentCategory,
+        standard = '10',
+        topic,
+        studentName,
+      } = req.body;
+
+      const userInterest = (interest || topic || talentCategory || 'સંગીત').toString().trim();
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+
+      const systemPrompt = `તમે ગુજરાતની માધ્યમિક અને ઉચ્ચતર માધ્યમિક શાળાઓ (ધોરણ ૯ થી ૧૨) ના નિષ્ણાત સાંસ્કૃતિક માર્ગદર્શક અને પ્રાર્થના સંમેલન કોચ (Assembly Presentation Coach) છો.
+તમારું કાર્ય વિદ્યાર્થીના રસ અને ટેલેન્ટ (જેમ કે સંગીત, ઢોલ વાદન, એકપાત્રીય અભિનય, મિમિક્રી, હિન્દી સંવાદો, કાવ્ય પઠન, પ્રાર્થના સભા રમતો, કોયડા-ઉખાણાં, પ્રેરણાદાયી વાર્તા, મહાન પુરુષ જીવનપ્રસંગ, નૃત્ય મુદ્રાઓ, રોચક વિજ્ઞાન ડેમો વગેરે) મુજબ પ્રાર્થના સભામાં સ્ટેજ પર બોલવા લાયક બરાબર ૫ મિનિટ (5 Minutes) ની સંપૂર્ણ ગુજરાતી પ્રસ્તુતિ તૈયાર કરવાનું છે.
+
+નિયમો:
+1. ભાષા શુદ્ધ, આદરણીય, રોચક અને પ્રેરક ગુજરાતી હોવી જોઈએ. (જરૂર મુજબ હિન્દી સંવાદ કે શ્લોક પણ સમાવી શકાય).
+2. પ્રસ્તુતિ પ્રાર્થના સભાના સ્ટેજ પર બોલવાની શબ્દશઃ સ્ક્રિપ્ટ (Word-by-word script) આપવી.
+3. ૫ મિનિટનું ચોક્કસ સમય વિભાજન આપવું (0:00 થી 5:00 મિનિટ).
+4. સભાના વિદ્યાર્થીઓ સાથે ઇન્ટરેક્શન (તાળીઓ, પ્રશ્નો, રિસ્પોન્સ) નો ભાગ અવશ્ય રાખવો.
+5. આઉટપુટ STRICTLY JSON ફોર્મેટમાં આપવું.
+
+JSON સ્કીમા:
+{
+  "title": string (આકર્ષક શીર્ષક),
+  "category": string (દા.ત. "સંગીત & ઢોલ વાદન", "એકપાત્રીય અભિનય", "મિમિક્રી & સંવાદ", "સભા રમત & કોયડા", "પ્રેરક વાર્તા", "કાવ્ય પઠન" વગેરે),
+  "duration": "૫ મિનિટ",
+  "targetAudience": "શાળા પ્રાર્થના સભા",
+  "summary": string (ટૂંકો સારાંશ ૨ લીટીમાં),
+  "timeBreakdown": [
+    { "timeRange": "0:00 - 0:45", "activity": string },
+    { "timeRange": "0:45 - 2:30", "activity": string },
+    { "timeRange": "2:30 - 4:15", "activity": string },
+    { "timeRange": "4:15 - 5:00", "activity": string }
+  ],
+  "fullScript": string (સ્ટેજ પર માઇક પાસે બોલવાની સંપૂર્ણ શબ્દશઃ સ્ક્રિપ્ટ, અભિનય/હાવભાવ કૌંસમાં દર્શાવવા),
+  "deliveryTips": string (અવાજ, શ્વાસ, નજર અને સ્ટેજ હાવભાવ વિશે સૂચનો),
+  "requiredProps": string (જો કોઈ સાધન જોઈએ તો, જેમ કે ઢોલક, પુસ્તક, ગ્લાસ, વગેરે)
+}`;
+
+      const userPrompt = `વિદ્યાર્થીનો રસ / ટેલેન્ટ: "${userInterest}"
+પસંદ કરેલ કેટેગરી: "${talentCategory || 'કોઈપણ'}"
+વિદ્યાર્થીનું ધોરણ: "ધોરણ ${standard}"
+${topic ? `ખાસ વિષય: "${topic}"` : ''}
+${studentName ? `વિદ્યાર્થીનું નામ: "${studentName}"` : ''}
+
+કૃપા કરીને આ રસ આધારિત પ્રાર્થના સભા માટે ૫ મિનિટની ખૂબ જ રોમાંચક અને અસરકારક અભિવ્યક્તિ પ્રસ્તુતિ તૈયાર કરી આપો.`;
+
+      const candidateModels = [
+        'gemini-3.8-flash',
+        'gemini-3.1-flash-lite',
+        'gemini-2.5-flash',
+        'gemini-flash-latest',
+      ];
+
+      let response: any = null;
+      let lastErr: any = null;
+
+      for (const modelName of candidateModels) {
+        try {
+          response = await ai.models.generateContent({
+            model: modelName,
+            contents: userPrompt,
+            config: {
+              systemInstruction: systemPrompt,
+              responseMimeType: 'application/json',
+              temperature: 0.7,
+            },
+          });
+          if (response && response.text) break;
+        } catch (mErr: any) {
+          lastErr = mErr;
+          console.warn(`Abhivyakti generation error on ${modelName}:`, mErr?.message || mErr);
+        }
+      }
+
+      if (!response || !response.text) {
+        throw lastErr || new Error('Failed to generate presentation with AI.');
+      }
+
+      let parsedData: any = {};
+      try {
+        parsedData = JSON.parse(response.text);
+      } catch (parseErr) {
+        const match = response.text.match(/\{[\s\S]*\}/);
+        if (match) {
+          parsedData = JSON.parse(match[0]);
+        } else {
+          throw new Error('Could not parse AI output as JSON.');
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          id: `ai-abhivyakti-${Date.now()}`,
+          title: parsedData.title || `અભિવ્યક્તિ: ${userInterest}`,
+          category: parsedData.category || talentCategory || 'સામાન્ય અભિવ્યક્તિ',
+          categoryLabel: parsedData.category || '✨ વિશિષ્ટ અભિવ્યક્તિ',
+          duration: parsedData.duration || '૫ મિનિટ',
+          targetAudience: parsedData.targetAudience || 'શાળા પ્રાર્થના સભા',
+          summary: parsedData.summary || '',
+          timeBreakdown: Array.isArray(parsedData.timeBreakdown) ? parsedData.timeBreakdown : [],
+          fullScript: parsedData.fullScript || '',
+          deliveryTips: parsedData.deliveryTips || '',
+          keyPropsOrRequirements: parsedData.requiredProps || '',
+          aiGenerated: true,
+        },
+      });
+    } catch (err: any) {
+      console.error('Abhivyakti AI error:', err);
+      return res.status(500).json({
+        error: 'AI અભિવ્યક્તિ જનરેશનમાં સમસ્યા આવી. કૃપા કરીને ફરી પ્રયાસ કરો.',
+        raw: String(err?.message || err),
       });
     }
   });

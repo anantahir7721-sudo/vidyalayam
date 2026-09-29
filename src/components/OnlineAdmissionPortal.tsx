@@ -9,6 +9,7 @@ import {
   submitAdmissionApplication,
 } from '../services/firestoreService';
 import { compressStudentPhoto } from '../utils/imageUtils';
+import { IosDateInput } from './IosDatePicker';
 import {
   Building2,
   Search,
@@ -727,12 +728,12 @@ export const OnlineAdmissionPortal: React.FC<OnlineAdmissionPortalProps> = ({
                   <label className="block font-bold text-stone-800 dark:text-[#e4ded6] mb-1">
                     જન્મ તારીખ (Birthdate) *
                   </label>
-                  <input
-                    type="date"
+                  <IosDateInput
                     required
                     value={formData.dob}
                     onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-white/5 border border-stone-300 dark:border-white/10 text-stone-900 dark:text-[#e4ded6] font-mono focus:ring-2 focus:ring-[#9d512d]"
+                    placeholder="જન્મ તારીખ પસંદ કરો (DD/MM/YYYY)"
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-white/5 border border-stone-300 dark:border-white/10 text-stone-900 dark:text-[#e4ded6] font-mono"
                   />
                 </div>
               </div>

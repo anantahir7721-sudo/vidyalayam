@@ -1,6 +1,13 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { DailyNewsBulletin, DailyJanvaJevuBulletin, DailySuvicharBulletin } from '../types';
+import {
+  DailyNewsBulletin,
+  DailyJanvaJevuBulletin,
+  DailySuvicharBulletin,
+  DailyInterestingFactsBulletin,
+  DailyAbhivyaktiBulletin,
+  DailyAbhivyaktiIdea,
+} from '../types';
 import { toGujaratiDigits } from '../services/dailyKnowledgeService';
 
 export interface ShareOptions {
@@ -719,6 +726,123 @@ export async function shareDailySuvicharAsPdf(
       document.body.removeChild(container);
     }
     console.error('Error generating suvichar PDF:', err);
+    throw err;
+  }
+}
+
+/**
+ * 1-PAGE A4 DAILY INTERESTING FACTS (12 FACTS) PDF
+ * For Std 9 to 12
+ */
+export async function shareDailyInterestingFactsAsPdf(
+  bulletin: DailyInterestingFactsBulletin,
+  options: ShareOptions
+): Promise<ShareResult> {
+  const schoolName = options.schoolName || 'શાળા શૈક્ષણિક પોર્ટલ';
+  const cleanSchool = schoolName.replace(/[^a-zA-Z0-9\u0A80-\u0AFF]/g, '_');
+  const fileName = `${cleanSchool}_Janva_Jevu_12Facts_${bulletin.dateKey}.pdf`;
+
+  await waitForFontsToRender();
+
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '794px';
+  container.style.height = '1120px';
+  container.style.backgroundColor = '#ffffff';
+  container.style.color = '#0f172a';
+  container.style.fontFamily = GUJARATI_FONT_FAMILY;
+  container.style.boxSizing = 'border-box';
+  container.style.padding = '18px 24px';
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.justifyContent = 'space-between';
+  container.style.overflow = 'hidden';
+
+  const factsHtml = bulletin.facts
+    .slice(0, 12)
+    .map((fact) => `
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-left:4px solid #f59e0b; border-radius:8px; padding:6px 10px; display:flex; flex-direction:column; gap:2px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="background:#fef3c7; color:#92400e; font-size:8pt; font-weight:800; border-radius:4px; padding:1px 5px;">
+              ${toGujaratiDigits(fact.factNumber)}
+            </span>
+            <span style="font-size:8.5pt; font-weight:800; color:#0f172a;">${fact.title}</span>
+          </div>
+          <span style="font-size:7pt; color:#64748b; font-weight:600;">${fact.category}</span>
+        </div>
+        <div style="font-size:7.5pt; color:#334155; line-height:1.25; margin-top:2px;">
+          ${fact.fact}
+        </div>
+        ${fact.whyItMatters ? `<div style="font-size:6.8pt; color:#0284c7; font-style:italic;">💡 ${fact.whyItMatters}</div>` : ''}
+      </div>
+    `)
+    .join('');
+
+  container.innerHTML = `
+    <div>
+      <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #0f172a; padding-bottom:8px; margin-bottom:10px;">
+        <div>
+          <div style="font-size:15pt; font-weight:900; color:#0f172a; letter-spacing:-0.3px;">${schoolName}</div>
+          <div style="font-size:9pt; font-weight:700; color:#d97706; margin-top:1px;">
+            💡 આજનું જાણવા જેવું — રોજના ૧૨ રોમાંચક તથ્યો (ધોરણ ૯ થી ૧૨ વિશેષ)
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:9pt; font-weight:800; color:#0f172a;">${bulletin.editionDate}</div>
+          <div style="font-size:7.5pt; color:#64748b;">બપોરે ૧:૦૦ વાગ્યાની આવૃત્તિ</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        ${factsHtml}
+      </div>
+    </div>
+
+    <div style="border-top:1px solid #e2e8f0; padding-top:6px; display:flex; align-items:center; justify-content:space-between; font-size:7.5pt; color:#64748b;">
+      <span>વિદ્યાલયમ શૈક્ષણિક પોર્ટલ • રોજ બપોરે ૧:૦૦ વાગ્યે ઓટો-અપડેટ</span>
+      <span>પાનું ૧ / ૧ • શાળા પ્રાર્થના સંમેલન & જ્ઞાન ચર્ચા</span>
+    </div>
+  `;
+
+  document.body.appendChild(container);
+
+  try {
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+    document.body.removeChild(container);
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
+
+    const pdfBlob = pdf.output('blob');
+    downloadBlob(pdfBlob, fileName);
+
+    if (navigator.canShare && navigator.canShare({ files: [new File([pdfBlob], fileName, { type: 'application/pdf' })] })) {
+      try {
+        await navigator.share({
+          files: [new File([pdfBlob], fileName, { type: 'application/pdf' })],
+          title: `${schoolName} — આજનું જાણવા જેવું (૧૨ તથ્યો)`,
+          text: `💡 *${schoolName}*\nઆજનું જાણવા જેવું (${bulletin.editionDate})\n૧૨ રોમાંચક તથ્યોની PDF ફાઇલ મોકલેલ છે.`,
+        });
+        return { success: true, method: 'native_share', fileName };
+      } catch (e) {}
+    }
+
+    const waText = encodeURIComponent(
+      `💡 *${schoolName}*\n*આજનું જાણવા જેવું — ૧૨ રોમાંચક તથ્યો* (${bulletin.editionDate})\n\n` +
+      `📎 આ તથ્યોની PDF ફાઇલ આપના ડિવાઇસમાં *"${fileName}"* સેવ થઈ ગઈ છે.\n✨ સૌજન્ય: વિદ્યાલયમ`
+    );
+    window.open(`https://api.whatsapp.com/send?text=${waText}`, '_blank');
+    return { success: true, method: 'whatsapp_web', fileName };
+  } catch (err) {
+    if (document.body.contains(container)) document.body.removeChild(container);
     throw err;
   }
 }
