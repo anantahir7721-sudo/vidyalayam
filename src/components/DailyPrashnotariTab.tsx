@@ -21,6 +21,8 @@ import { getDailyPrashnotariBulletin, toGujaratiDigits } from '../services/daily
 import { shareDailyJanvaJevuAsPdf } from '../utils/dailyPdfShareUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import { voiceService } from '../services/voiceService';
+import { useVoice } from '../context/VoiceContext';
+import { VoiceGenderSelector } from './VoiceGenderSelector';
 
 interface DailyPrashnotariTabProps {
   schoolName?: string;
@@ -41,10 +43,11 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
   const [studyMode, setStudyMode] = useState<'study' | 'test'>('study');
   const [revealedAnswers, setRevealedAnswers] = useState<{ [qId: string]: boolean }>({});
   const [copied, setCopied] = useState(false);
-  const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+
+  const { isSpeaking, activeId, loadingId, playSpeech, stopSpeech } = useVoice();
 
   useEffect(() => {
     let isMounted = true;
@@ -116,24 +119,15 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
   };
 
   const handleToggleSpeak = (q: PrashnotariQuestion) => {
-    if (speakingId === q.id) {
-      voiceService.stop();
-      setSpeakingId(null);
+    if (activeId === q.id && isSpeaking) {
+      stopSpeech();
       return;
     }
 
     const cleanQ = q.question.replace(/^[૦-૯0-9]+[.\-)]\s*/, '').trim();
     const cleanAns = q.answer.replace(/^[👉•\-]\s*/, '').trim();
     const textToSpeak = `પ્રશ્ન: ${cleanQ}. સાચો ઉત્તર છે: ${cleanAns}`;
-    setSpeakingId(q.id);
-
-    voiceService.speak(textToSpeak, {
-      rate: 0.96,
-      pitch: 1.0,
-      onStart: () => setSpeakingId(q.id),
-      onEnd: () => setSpeakingId(null),
-      onError: () => setSpeakingId(null),
-    });
+    playSpeech(q.id, textToSpeak);
   };
 
   const handleCopyBulletin = () => {
@@ -394,34 +388,39 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
           ))}
         </div>
 
-        {studyMode === 'test' && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleRevealAll(true)}
-              className="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-bold flex items-center gap-1 cursor-pointer"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>બધા જવાબો બતાવો</span>
-            </button>
-            <span className="text-slate-300 dark:text-white/20">|</span>
-            <button
-              type="button"
-              onClick={() => handleRevealAll(false)}
-              className="text-xs text-slate-500 dark:text-[#a99f91] hover:text-slate-800 dark:hover:text-white font-medium flex items-center gap-1 cursor-pointer"
-            >
-              <EyeOff className="w-3.5 h-3.5" />
-              <span>બધા જવાબો છુપાવો</span>
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          <VoiceGenderSelector compact />
+
+          {studyMode === 'test' && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleRevealAll(true)}
+                className="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>બધા જવાબો બતાવો</span>
+              </button>
+              <span className="text-slate-300 dark:text-white/20">|</span>
+              <button
+                type="button"
+                onClick={() => handleRevealAll(false)}
+                className="text-xs text-slate-500 dark:text-[#a99f91] hover:text-slate-800 dark:hover:text-white font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <EyeOff className="w-3.5 h-3.5" />
+                <span>બધા જવાબો છુપાવો</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Questions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
         {filteredQuestions.map((q) => {
           const isRevealed = studyMode === 'study' || revealedAnswers[q.id];
-          const isSpeaking = speakingId === q.id;
+          const isItemSpeaking = activeId === q.id && isSpeaking;
+          const isItemLoading = loadingId === q.id;
 
           return (
             <div
@@ -452,14 +451,23 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
                   <button
                     type="button"
                     onClick={() => handleToggleSpeak(q)}
+                    disabled={isItemLoading}
                     className={`p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
-                      isSpeaking
+                      isItemSpeaking
                         ? 'bg-sky-600 text-white animate-pulse'
+                        : isItemLoading
+                        ? 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300'
                         : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-[#a99f91] dark:hover:text-white dark:hover:bg-white/10'
                     }`}
                     title="સાંભળો (Audio Speech)"
                   >
-                    {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    {isItemLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-sky-600" />
+                    ) : isItemSpeaking ? (
+                      <VolumeX className="w-4 h-4" />
+                    ) : (
+                      <Volume2 className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
 

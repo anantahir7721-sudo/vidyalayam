@@ -1912,7 +1912,7 @@ Format: Return strictly a valid JSON array of 10 objects:
   // POST /api/tts: Generates ultra-realistic humanlike Gujarati audio using gemini-3.8-flash-lite-tts
   app.post('/api/tts', async (req: Request, res: Response) => {
     try {
-      const { text, voice } = req.body;
+      const { text, voice, gender } = req.body;
       if (!text || typeof text !== 'string') {
         return res.status(400).json({ error: 'Text is required', fallback: true });
       }
@@ -1922,13 +1922,11 @@ Format: Return strictly a valid JSON array of 10 objects:
         return res.status(400).json({ error: 'Text is empty', fallback: true });
       }
 
-      // Voice options: Aoede (warm female educator), Puck (energetic male), Zephyr (calm male), Kore (gentle female)
-      const selectedVoice = voice && ['Aoede', 'Kore', 'Puck', 'Zephyr', 'Fenrir', 'Charon'].includes(voice)
-        ? voice
-        : 'Aoede';
+      const isMale = gender === 'male' || voice === 'Zephyr' || voice === 'Puck' || voice === 'Charon' || voice === 'Fenrir';
+      const selectedVoice = isMale ? 'Zephyr' : 'Aoede';
 
-      // Cache lookup (key based on voice + text)
-      const cacheKey = `${selectedVoice}:${cleanText}`;
+      // Cache lookup (key based on voice gender + text)
+      const cacheKey = `${isMale ? 'male' : 'female'}:${selectedVoice}:${cleanText}`;
       const cached = ttsAudioCache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < 1000 * 60 * 60 * 24) {
         return res.json({
@@ -1941,7 +1939,10 @@ Format: Return strictly a valid JSON array of 10 objects:
       }
 
       // Helper function to synthesize native human Gujarati speech via high-fidelity pipeline
-      const synthesizeNativeGujaratiAudio = async (text: string): Promise<{ audioBase64: string; mimeType: string } | null> => {
+      const synthesizeNativeGujaratiAudio = async (
+        text: string,
+        isMaleVoice: boolean
+      ): Promise<{ audioBase64: string; mimeType: string } | null> => {
         try {
           const rawParts = text.split(/(?<=[.!?।\n])\s+/);
           const chunks: string[] = [];
@@ -1967,27 +1968,64 @@ Format: Return strictly a valid JSON array of 10 objects:
 
           if (chunks.length === 0) chunks.push(text.slice(0, 180));
 
-          const buffers: Buffer[] = [];
-          for (const chunk of chunks.slice(0, 10)) {
-            const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=gu&client=tw-ob`;
-            const ttsRes = await fetch(url, {
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-              },
-            });
-            if (ttsRes.ok) {
-              const ab = await ttsRes.arrayBuffer();
-              buffers.push(Buffer.from(ab));
+          // Fetch chunks in parallel for ultra-fast response (supports up to 25 chunks / ~3000 chars)
+          const targetChunks = chunks.slice(0, 25);
+          const chunkBuffers = await Promise.all(
+            targetChunks.map(async (chunk) => {
+              try {
+                const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=gu&client=tw-ob`;
+                const ttsRes = await fetch(url, {
+                  headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                  },
+                });
+                if (ttsRes.ok) {
+                  const ab = await ttsRes.arrayBuffer();
+                  return Buffer.from(ab);
+                }
+              } catch (e) {
+                console.warn('TTS chunk fetch failed:', e);
+              }
+              return null;
+            })
+          );
+
+          const validBuffers = chunkBuffers.filter((b): b is Buffer => b !== null && b.length > 0);
+          if (validBuffers.length === 0) return null;
+          let combined = Buffer.concat(validBuffers);
+
+          if (isMaleVoice) {
+            try {
+              const { spawn } = await import('child_process');
+              const ffmpeg = spawn('ffmpeg', [
+                '-i', 'pipe:0',
+                '-filter:a', 'asetrate=24000*0.82,aresample=24000,atempo=1.22',
+                '-f', 'mp3',
+                'pipe:1',
+              ]);
+
+              const ffmpegChunks: Buffer[] = [];
+              ffmpeg.stdout.on('data', (c) => ffmpegChunks.push(c));
+              ffmpeg.stdin.write(combined);
+              ffmpeg.stdin.end();
+
+              await new Promise<void>((resolve, reject) => {
+                ffmpeg.on('close', () => resolve());
+                ffmpeg.on('error', (e) => reject(e));
+              });
+
+              if (ffmpegChunks.length > 0) {
+                combined = Buffer.concat(ffmpegChunks);
+              }
+            } catch (ffmpegErr) {
+              console.warn('ffmpeg male audio transformation fallback:', ffmpegErr);
             }
           }
 
-          if (buffers.length > 0) {
-            const combined = Buffer.concat(buffers);
-            return {
-              audioBase64: combined.toString('base64'),
-              mimeType: 'audio/mpeg',
-            };
-          }
+          return {
+            audioBase64: combined.toString('base64'),
+            mimeType: 'audio/mpeg',
+          };
         } catch (nativeErr) {
           console.error('Native Gujarati audio pipeline error:', nativeErr);
         }
@@ -1997,7 +2035,7 @@ Format: Return strictly a valid JSON array of 10 objects:
       const apiKey = process.env.GEMINI_API_KEY;
       let audioBase64 = '';
       let mimeType = 'audio/wav';
-      let activeVoiceName = selectedVoice;
+      let activeVoiceName = isMale ? 'Zephyr' : 'Aoede';
 
       if (apiKey) {
         try {
@@ -2042,11 +2080,11 @@ Format: Return strictly a valid JSON array of 10 objects:
 
       // If Gemini TTS didn't return audio, generate via high-fidelity native Gujarati voice pipeline
       if (!audioBase64) {
-        const nativeResult = await synthesizeNativeGujaratiAudio(cleanText);
+        const nativeResult = await synthesizeNativeGujaratiAudio(cleanText, isMale);
         if (nativeResult) {
           audioBase64 = nativeResult.audioBase64;
           mimeType = nativeResult.mimeType;
-          activeVoiceName = 'ગુજરાતી માનવ વાણી (Native Human)';
+          activeVoiceName = isMale ? 'ગુજરાતી પુરુષ વાણી (Zephyr)' : 'ગુજરાતી મહિલા વાણી (Aoede)';
         }
       }
 

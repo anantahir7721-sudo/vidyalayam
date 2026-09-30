@@ -20,6 +20,8 @@ import { getDailySuvicharBulletin } from '../services/dailyKnowledgeService';
 import { shareDailySuvicharAsPdf } from '../utils/dailyPdfShareUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import { voiceService } from '../services/voiceService';
+import { useVoice } from '../context/VoiceContext';
+import { VoiceGenderSelector } from './VoiceGenderSelector';
 
 interface DailySuvicharTabProps {
   schoolName?: string;
@@ -37,10 +39,13 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
   const [bulletin, setBulletin] = useState<DailySuvicharBulletin | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [offsetIndex, setOffsetIndex] = useState(0);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+
+  const { isSpeaking, activeId, loadingId, playSpeech, stopSpeech } = useVoice();
+  const isSuvicharSpeaking = activeId === 'suvichar-main' && isSpeaking;
+  const isSuvicharLoading = loadingId === 'suvichar-main';
 
   useEffect(() => {
     let isMounted = true;
@@ -67,19 +72,18 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
   const handleToggleSpeak = () => {
     if (!bulletin) return;
 
-    if (isSpeaking) {
-      voiceService.stop();
-      setIsSpeaking(false);
+    if (isSuvicharSpeaking) {
+      stopSpeech();
       return;
     }
 
-    const { thought, authorOrSource, explanation, example, moralValue, keyPoints } = bulletin.suvichar;
+    const { thought, authorOrSource, explanation, example, moralValue } = bulletin.suvichar;
     
-    let speechScript = `નમસ્તે શિક્ષકગણ અને વહાલા વિદ્યાર્થી મિત્રો. આજની શાળા પ્રાર્થના સભામાં આજનો સુવિચાર છે: "${thought}". `;
+    let speechScript = `નમસ્તે શિક્ષકગણ અને વહાલા વિદ્યાર્થી મિત્રો. આજની શાળા પ્રાર્થના સભામાં આજનો પ્રેરક સુવિચાર છે: "${thought}". `;
     if (authorOrSource) {
       speechScript += `આ સુંદર પ્રેરક વિચાર આપણને ${authorOrSource} તરફથી મળ્યો છે. `;
     }
-    speechScript += `આ સુવિચારનો અર્થ સમજીએ: ${explanation}. `;
+    speechScript += `આ સુવિચારનો સરળ અર્થ સમજીએ: ${explanation}. `;
     if (example) {
       speechScript += `આપણા રોજિંદા જીવનમાં આનું ઉદાહરણ જોઈએ: ${example}. `;
     }
@@ -88,14 +92,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
     }
     speechScript += `આપ સૌનો ખૂબ ખૂબ આભાર, દિવસ શુભ રહે.`;
 
-    setIsSpeaking(true);
-    voiceService.speak(speechScript, {
-      rate: 0.96,
-      pitch: 1.0,
-      onStart: () => setIsSpeaking(true),
-      onEnd: () => setIsSpeaking(false),
-      onError: () => setIsSpeaking(false),
-    });
+    playSpeech('suvichar-main', speechScript);
   };
 
   // Copy full suvichar and speech script
@@ -244,15 +241,23 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
               )}
             </button>
 
+            <VoiceGenderSelector compact />
+
             <button
               type="button"
               onClick={handleToggleSpeak}
-              className="px-3 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 cursor-pointer"
+              disabled={isSuvicharLoading}
+              className="px-3 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
               title="૨-૩ મિનિટ વક્તવ્ય સાંભળો"
             >
-              {isSpeaking ? (
+              {isSuvicharLoading ? (
                 <>
-                  <VolumeX className="w-4 h-4 text-amber-300" />
+                  <Loader2 className="w-4 h-4 text-amber-300 animate-spin" />
+                  <span>અવાજ તૈયાર થાય છે...</span>
+                </>
+              ) : isSuvicharSpeaking ? (
+                <>
+                  <VolumeX className="w-4 h-4 text-amber-300 animate-pulse" />
                   <span>બંધ કરો</span>
                 </>
               ) : (

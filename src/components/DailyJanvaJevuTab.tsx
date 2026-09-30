@@ -20,6 +20,8 @@ import { getDailyInterestingFactsBulletin, toGujaratiDigits } from '../services/
 import { shareDailyInterestingFactsAsPdf } from '../utils/dailyPdfShareUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import { voiceService } from '../services/voiceService';
+import { useVoice } from '../context/VoiceContext';
+import { VoiceGenderSelector } from './VoiceGenderSelector';
 
 interface DailyJanvaJevuTabProps {
   schoolName?: string;
@@ -38,10 +40,11 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [copied, setCopied] = useState(false);
-  const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+
+  const { isSpeaking, activeId, loadingId, playSpeech, stopSpeech } = useVoice();
 
   useEffect(() => {
     let isMounted = true;
@@ -94,23 +97,14 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
   }, [bulletin, activeCategory]);
 
   const handleToggleSpeak = (fact: DailyInterestingFact) => {
-    if (speakingId === fact.id) {
-      voiceService.stop();
-      setSpeakingId(null);
+    if (activeId === fact.id && isSpeaking) {
+      stopSpeech();
       return;
     }
 
     const cleanTitle = fact.title.replace(/^[૦-૯0-9]+[.\-)]\s*/, '').trim();
     const textToSpeak = `રોમાંચક તથ્ય: ${cleanTitle}. ${fact.fact}`;
-    setSpeakingId(fact.id);
-
-    voiceService.speak(textToSpeak, {
-      rate: 0.96,
-      pitch: 1.0,
-      onStart: () => setSpeakingId(fact.id),
-      onEnd: () => setSpeakingId(null),
-      onError: () => setSpeakingId(null),
-    });
+    playSpeech(fact.id, textToSpeak);
   };
 
   const handleCopyBulletin = () => {
@@ -293,40 +287,45 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
         </div>
       </div>
 
-      {/* Category Filter Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 p-2 rounded-2xl bg-white/90 dark:bg-[#0c1218] border border-[#E2E8F0] dark:border-white/10 shadow-xs">
-        <button
-          type="button"
-          onClick={() => setActiveCategory('all')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-            activeCategory === 'all'
-              ? 'bg-amber-600 text-white shadow-xs'
-              : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 dark:bg-white/5 dark:text-[#a99f91] dark:hover:text-white dark:hover:bg-white/10'
-          }`}
-        >
-          તમામ ૧૨ તથ્યો
-        </button>
-
-        {['વિજ્ઞાન', 'અવકાશ', 'ગણિત', 'જીવવિજ્ઞાન', 'રસાયણ', 'ભૂગોળ', 'ટેકનોલોજી'].map((cat) => (
+      {/* Category Filter Pills and Voice Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-2xl bg-white/90 dark:bg-[#0c1218] border border-[#E2E8F0] dark:border-white/10 shadow-xs">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
           <button
-            key={cat}
             type="button"
-            onClick={() => setActiveCategory(cat)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
-              activeCategory === cat
-                ? 'bg-amber-600 text-white font-bold shadow-xs'
+            onClick={() => setActiveCategory('all')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+              activeCategory === 'all'
+                ? 'bg-amber-600 text-white shadow-xs'
                 : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 dark:bg-white/5 dark:text-[#a99f91] dark:hover:text-white dark:hover:bg-white/10'
             }`}
           >
-            {cat}
+            તમામ ૧૨ તથ્યો
           </button>
-        ))}
+
+          {['વિજ્ઞાન', 'અવકાશ', 'ગણિત', 'જીવવિજ્ઞાન', 'રસાયણ', 'ભૂગોળ', 'ટેકનોલોજી'].map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setActiveCategory(cat)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeCategory === cat
+                  ? 'bg-amber-600 text-white font-bold shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 dark:bg-white/5 dark:text-[#a99f91] dark:hover:text-white dark:hover:bg-white/10'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        <VoiceGenderSelector compact />
       </div>
 
       {/* 12 Facts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredFacts.map((fact) => {
-          const isSpeaking = speakingId === fact.id;
+          const isItemSpeaking = activeId === fact.id && isSpeaking;
+          const isItemLoading = loadingId === fact.id;
 
           return (
             <div
@@ -352,14 +351,23 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
                   <button
                     type="button"
                     onClick={() => handleToggleSpeak(fact)}
+                    disabled={isItemLoading}
                     className={`p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
-                      isSpeaking
+                      isItemSpeaking
                         ? 'bg-amber-600 text-white animate-pulse'
+                        : isItemLoading
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
                         : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-[#a99f91] dark:hover:text-white dark:hover:bg-white/10'
                     }`}
                     title="સાંભળો (Audio)"
                   >
-                    {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    {isItemLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                    ) : isItemSpeaking ? (
+                      <VolumeX className="w-4 h-4" />
+                    ) : (
+                      <Volume2 className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
 

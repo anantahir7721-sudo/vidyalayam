@@ -30,6 +30,8 @@ import { getDailyAbhivyaktiBulletin, toGujaratiDigits } from '../services/dailyK
 import { haptic } from '../utils/haptics';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import { voiceService } from '../services/voiceService';
+import { useVoice } from '../context/VoiceContext';
+import { VoiceGenderSelector } from './VoiceGenderSelector';
 
 interface DailyAbhivyaktiTabProps {
   schoolName?: string;
@@ -115,10 +117,9 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [presetGroupFilter, setPresetGroupFilter] = useState<'all' | 'abhinay' | 'purush' | 'science' | 'hindi' | 'math_game' | 'kavya' | 'mimicry' | 'music'>('all');
   const [activeIdeaModal, setActiveIdeaModal] = useState<DailyAbhivyaktiIdea | null>(null);
-  const [speakingId, setSpeakingId] = useState<string | null>(null);
-  const [voiceLoadingId, setVoiceLoadingId] = useState<string | null>(null);
-  const [selectedVoiceGender, setSelectedVoiceGender] = useState<'female' | 'male'>('female');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const { isSpeaking, activeId, loadingId, playSpeech, stopSpeech } = useVoice();
 
   // AI Prompt State
   const [aiInterestInput, setAiInterestInput] = useState('');
@@ -159,52 +160,72 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
     return bulletin.ideas.filter((idea) => idea.category === activeCategory);
   }, [bulletin, activeCategory]);
 
-  const handleToggleSpeak = (idea: DailyAbhivyaktiIdea) => {
-    if (speakingId === idea.id) {
-      voiceService.stop();
-      setSpeakingId(null);
-      setVoiceLoadingId(null);
-      return;
-    }
-
+  // Formats the script according to the genre so it sounds like an authentic human performance
+  const formatAbhivyaktiScriptForSpeech = (idea: DailyAbhivyaktiIdea): string => {
     const cleanTitle = idea.title.replace(/^[૦-૯0-9]+[.\-)]\s*/, '').trim();
+
     // Clean stage directions in brackets, bullet points, asterisks for authentic human delivery
     const cleanScript = idea.fullScript
       .replace(/\([^\)]*\)/g, ' ')
       .replace(/\[[^\]]*\]/g, ' ')
-      .replace(/[•\-\*#]/g, ' ')
+      .replace(/[•\-\*#❝❞👉🌟]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
-    // Natural human greeting for prayer assembly
-    const textToSpeak = `આદરણીય આચાર્યશ્રી, ગુરુજનો અને મારા વહાલા વિદ્યાર્થી મિત્રો. આજના વક્તવ્યનો વિષય છે: ${cleanTitle}. ${cleanScript}`;
+    const hasOpening = /^(નમસ્તે|નમસ્કાર|પ્રણામ|વંદે|જય|હું|મિત્રો|આદરણીય)/.test(cleanScript);
 
-    setVoiceLoadingId(idea.id);
+    if (idea.category === 'ekpatriya_abhinay') {
+      if (hasOpening) {
+        return `${cleanScript}. આપ સૌનો ખૂબ ખૂબ આભાર!`;
+      }
+      return `નમસ્કાર. હું આજે આપ સમક્ષ રજૂ કરું છું એકપાત્રીય અભિનય: ${cleanTitle}. ${cleanScript}. આપનો આભાર!`;
+    }
 
-    voiceService.speak(textToSpeak, {
-      rate: 0.94,
-      pitch: 1.0,
-      voiceGender: selectedVoiceGender,
-      onStart: () => {
-        setVoiceLoadingId(null);
-        setSpeakingId(idea.id);
-      },
-      onEnd: () => {
-        setSpeakingId(null);
-        setVoiceLoadingId(null);
-      },
-      onError: () => {
-        setSpeakingId(null);
-        setVoiceLoadingId(null);
-      },
-      onLoading: (isLoading) => {
-        if (isLoading) {
-          setVoiceLoadingId(idea.id);
-        } else {
-          setVoiceLoadingId(null);
-        }
-      },
-    });
+    if (idea.category === 'kavya_pathan') {
+      if (hasOpening) {
+        return `કાવ્ય પઠન: ${cleanTitle}. ${cleanScript}. ધન્યવાદ.`;
+      }
+      return `પ્રણામ. પ્રસ્તુત છે સુંદર કાવ્ય પઠન: ${cleanTitle}. ${cleanScript}. ધન્યવાદ!`;
+    }
+
+    if (idea.category === 'mimicry') {
+      return `નમસ્કાર મિત્રો, હવે રજૂ થાય છે ધ્વનિ અને અવાજ કલા: ${cleanTitle}. ${cleanScript}. આપ સૌનો આભાર!`;
+    }
+
+    if (idea.category === 'gyan_science') {
+      return `નમસ્તે મિત્રો. આજના સાયન્સ અને જ્ઞાન પ્રદર્શનનો વિષય છે: ${cleanTitle}. ${cleanScript}. આભાર!`;
+    }
+
+    if (idea.category === 'mahan_purush' || idea.category === 'varta') {
+      if (hasOpening) {
+        return `${cleanScript}. આ પ્રેરણા આપણને સૌને માર્ગદર્શન આપે. ધન્યવાદ.`;
+      }
+      return `આદરણીય ગુરુજનો અને વહાલા મિત્રો. આજે આપણે જાણીશું ${cleanTitle}. ${cleanScript}. આપનો દિવસ શુભ રહે.`;
+    }
+
+    if (idea.category === 'ramat' || idea.category === 'koydo_ukhana') {
+      return `નમસ્તે વિદ્યાર્થી મિત્રો, આજની રોચક રમત અને કોયડો: ${cleanTitle}. ${cleanScript}. આભાર!`;
+    }
+
+    if (idea.category === 'hindi_dialogue') {
+      return `નમસ્કાર. પ્રસ્તુત છે રાષ્ટ્રભાષા હિન્દી અભિવ્યક્તિ: ${cleanTitle}. ${cleanScript}. જય હિન્દ!`;
+    }
+
+    // General presentation / speech
+    if (hasOpening) {
+      return `${cleanScript}. જય હિન્દ, જય ભારત.`;
+    }
+    return `આદરણીય ગુરુજનો અને વહાલા વિદ્યાર્થી મિત્રો. આજના વક્તવ્યનો વિષય છે: ${cleanTitle}. ${cleanScript}. આપ સૌનો ખૂબ ખૂબ આભાર!`;
+  };
+
+  const handleToggleSpeak = (idea: DailyAbhivyaktiIdea) => {
+    if (activeId === idea.id && isSpeaking) {
+      stopSpeech();
+      return;
+    }
+
+    const textToSpeak = formatAbhivyaktiScriptForSpeech(idea);
+    playSpeech(idea.id, textToSpeak);
   };
 
   const handleCopyScript = (idea: DailyAbhivyaktiIdea) => {
@@ -604,44 +625,15 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
             </div>
 
             {/* Voice Gender Switcher */}
-            <div className="flex items-center gap-1.5 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 p-1 rounded-xl text-xs shrink-0 shadow-xs">
-              <span className="text-[11px] font-bold text-slate-600 dark:text-purple-200 px-1 flex items-center gap-1">
-                <Volume2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                વાણી:
-              </span>
-              <button
-                type="button"
-                onClick={() => setSelectedVoiceGender('female')}
-                className={`px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                  selectedVoiceGender === 'female'
-                    ? 'bg-purple-600 text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-purple-100 dark:hover:bg-purple-900/40'
-                }`}
-                title="મધુર મહિલા શિક્ષક વાણી"
-              >
-                👩 Aoede (મધુર)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedVoiceGender('male')}
-                className={`px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                  selectedVoiceGender === 'male'
-                    ? 'bg-purple-600 text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-purple-100 dark:hover:bg-purple-900/40'
-                }`}
-                title="પ્રભાવશાળી પુરુષ વાણી"
-              >
-                👨 Zephyr (પ્રભાવશાળી)
-              </button>
-            </div>
+            <VoiceGenderSelector />
           </div>
         </div>
 
         {/* Ideas Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredIdeas.map((idea) => {
-            const isSpeaking = speakingId === idea.id;
-            const isLoadingVoice = voiceLoadingId === idea.id;
+            const isSpeakingItem = activeId === idea.id && isSpeaking;
+            const isLoadingVoice = loadingId === idea.id;
             const isCopied = copiedId === idea.id;
 
             return (
@@ -661,20 +653,20 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
                         onClick={() => handleToggleSpeak(idea)}
                         disabled={isLoadingVoice}
                         className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          isSpeaking
+                          isSpeakingItem
                             ? 'bg-purple-600 text-white animate-pulse shadow-xs'
                             : isLoadingVoice
                             ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
                             : 'bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-500/10 dark:text-purple-300 dark:hover:bg-purple-500/20 border border-purple-200 dark:border-purple-500/30'
                         }`}
-                        title={isLoadingVoice ? 'અવાજ તૈયાર થઈ રહ્યો છે...' : isSpeaking ? 'અવાજ બંધ કરો' : 'ગુજરાતી વાણી સાંભળો'}
+                        title={isLoadingVoice ? 'અવાજ તૈયાર થઈ રહ્યો છે...' : isSpeakingItem ? 'અવાજ બંધ કરો' : 'ગુજરાતી વાણી સાંભળો'}
                       >
                         {isLoadingVoice ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600 dark:text-purple-400" />
                             <span className="text-[11px]">અવાજ બને છે...</span>
                           </>
-                        ) : isSpeaking ? (
+                        ) : isSpeakingItem ? (
                           <>
                             <VolumeX className="w-3.5 h-3.5" />
                             <span className="text-[11px]">અટકાવો</span>
@@ -839,15 +831,15 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
               <button
                 type="button"
                 onClick={() => handleToggleSpeak(activeIdeaModal)}
-                disabled={voiceLoadingId === activeIdeaModal.id}
+                disabled={loadingId === activeIdeaModal.id}
                 className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
               >
-                {voiceLoadingId === activeIdeaModal.id ? (
+                {loadingId === activeIdeaModal.id ? (
                   <>
                     <Loader2 className="w-4 h-4 text-purple-500 dark:text-purple-400 animate-spin" />
                     <span>અવાજ તૈયાર થાય છે...</span>
                   </>
-                ) : speakingId === activeIdeaModal.id ? (
+                ) : activeId === activeIdeaModal.id && isSpeaking ? (
                   <>
                     <VolumeX className="w-4 h-4 text-purple-500 dark:text-purple-400 animate-pulse" />
                     <span>અટકાવો</span>
@@ -855,7 +847,7 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
                 ) : (
                   <>
                     <Volume2 className="w-4 h-4 text-purple-500 dark:text-purple-400" />
-                    <span>સાંભળો ({selectedVoiceGender === 'male' ? 'પુરુષ' : 'મહિલા'} વાણી)</span>
+                    <span>વાણી સાંભળો (Listen Speech)</span>
                   </>
                 )}
               </button>

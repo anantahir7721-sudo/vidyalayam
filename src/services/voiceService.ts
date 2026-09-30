@@ -30,6 +30,13 @@ class VoiceService {
   private currentAudioElement: HTMLAudioElement | null = null;
   private keepAliveTimer: any = null;
   private clientAudioCache = new Map<string, string>(); // textHash -> audioObjectURL
+  private userVoiceGender: 'female' | 'male' = (() => {
+    try {
+      const saved = localStorage.getItem('ekam_voice_gender');
+      if (saved === 'male' || saved === 'female') return saved;
+    } catch {}
+    return 'female';
+  })();
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -40,6 +47,17 @@ class VoiceService {
         };
       }
     }
+  }
+
+  public setVoiceGender(gender: 'female' | 'male'): void {
+    this.userVoiceGender = gender;
+    try {
+      localStorage.setItem('ekam_voice_gender', gender);
+    } catch {}
+  }
+
+  public getVoiceGender(): 'female' | 'male' {
+    return this.userVoiceGender;
   }
 
   private initVoices(): void {
@@ -139,18 +157,17 @@ class VoiceService {
         if (isMicrosoft) score += 25;
         if (isApple) score += 20;
       } else if (isHindi) {
-        // High quality Neural Hindi shares identical sound inventory and sounds 100x more human
+        // High quality Neural Hindi shares identical sound inventory and sounds human
         score += 80;
         if (isNatural) score += 35;
         if (isGoogle) score += 25;
         if (isMicrosoft) score += 20;
-      } else if (isIndian && !lang.startsWith('en')) {
-        score += 40;
-      } else if (lang === 'en-in') {
-        score += 20;
+      } else {
+        // Never allow English voices to read Gujarati!
+        score = -1;
       }
 
-      if (score > highestScore) {
+      if (score > highestScore && score > 0) {
         highestScore = score;
         bestVoice = v;
       }
@@ -244,8 +261,11 @@ class VoiceService {
     this.currentlySpeaking = true;
     if (options.onStart) options.onStart();
 
+    const gender = options.voiceGender || this.userVoiceGender || 'female';
+    const cacheKey = `${gender}:${clean}`;
+
     // 1. Try playing from client audio cache first
-    const cachedUrl = this.clientAudioCache.get(clean);
+    const cachedUrl = this.clientAudioCache.get(cacheKey);
     if (cachedUrl) {
       const played = await this.playAudioUrl(cachedUrl, sessionId, options);
       if (played) return;
@@ -256,16 +276,17 @@ class VoiceService {
       try {
         if (options.onLoading) options.onLoading(true);
 
-        const preferredVoiceName = options.voiceGender === 'male' ? 'Zephyr' : 'Aoede';
+        const preferredVoiceName = gender === 'male' ? 'Zephyr' : 'Aoede';
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 16000); // 16s timeout for studio neural audio generation
+        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout for high-capacity synthesis
 
         const response = await fetch('/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text: clean.slice(0, 950), // optimal length for crisp delivery
+            text: clean.slice(0, 3000), // optimal length for full bulletin / complete speech
             voice: preferredVoiceName,
+            gender: gender,
           }),
           signal: controller.signal,
         });
@@ -279,7 +300,7 @@ class VoiceService {
           if (data.success && data.audioBase64) {
             const blob = this.base64ToBlob(data.audioBase64, data.mimeType || 'audio/wav');
             const audioUrl = URL.createObjectURL(blob);
-            this.clientAudioCache.set(clean, audioUrl);
+            this.clientAudioCache.set(cacheKey, audioUrl);
 
             if (options.onLoading) options.onLoading(false);
             const played = await this.playAudioUrl(audioUrl, sessionId, options);
@@ -297,7 +318,7 @@ class VoiceService {
     if (sessionId !== this.currentSessionId || !this.currentlySpeaking) return;
 
     // 3. Fallback: Ultra-enhanced client browser speech synthesis
-    this.speakViaBrowser(clean, sessionId, options);
+    this.speakViaBrowser(clean, sessionId, { ...options, voiceGender: gender });
   }
 
   private async playAudioUrl(
@@ -352,7 +373,15 @@ class VoiceService {
       return;
     }
 
-    const bestVoice = await this.getBestVoice(options.voiceGender || 'female');
+    const bestVoice = await this.getBestVoice(options.voiceGender || this.userVoiceGender || 'female');
+    if (!bestVoice) {
+      // Do NOT read Gujarati with an English browser voice!
+      console.warn('[VoiceService] No genuine Gujarati/Hindi voice available on device for browser speech.');
+      this.currentlySpeaking = false;
+      if (options.onEnd) options.onEnd();
+      return;
+    }
+
     // Golden ratio for natural Gujarati speech rhythm
     const rate = options.rate ?? 0.96;
     const pitch = options.pitch ?? 1.0;
@@ -378,13 +407,8 @@ class VoiceService {
       const chunkText = chunks[chunkIndex++];
       const utterance = new SpeechSynthesisUtterance(chunkText);
 
-      if (bestVoice) {
-        utterance.voice = bestVoice;
-        utterance.lang = bestVoice.lang;
-      } else {
-        utterance.lang = 'gu-IN';
-      }
-
+      utterance.voice = bestVoice;
+      utterance.lang = bestVoice.lang;
       utterance.rate = rate;
       utterance.pitch = pitch;
 
