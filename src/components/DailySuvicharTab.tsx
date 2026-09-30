@@ -2,26 +2,21 @@ import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Calendar,
-  Volume2,
-  VolumeX,
   Copy,
   CheckCircle2,
   BookOpen,
   RotateCw,
   Lightbulb,
   Award,
-  Loader2,
   Mic,
   Clock,
   ListChecks,
+  Loader2,
 } from 'lucide-react';
 import { DailySuvicharBulletin } from '../types';
 import { getDailySuvicharBulletin } from '../services/dailyKnowledgeService';
 import { shareDailySuvicharAsPdf } from '../utils/dailyPdfShareUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
-import { voiceService } from '../services/voiceService';
-import { useVoice } from '../context/VoiceContext';
-import { VoiceGenderSelector } from './VoiceGenderSelector';
 
 interface DailySuvicharTabProps {
   schoolName?: string;
@@ -43,10 +38,6 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
-  const { isSpeaking, activeId, loadingId, playSpeech, stopSpeech } = useVoice();
-  const isSuvicharSpeaking = activeId === 'suvichar-main' && isSpeaking;
-  const isSuvicharLoading = loadingId === 'suvichar-main';
-
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -64,36 +55,8 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
 
     return () => {
       isMounted = false;
-      voiceService.stop();
     };
   }, [offsetIndex]);
-
-  // Audio Read Aloud for full 2-3 minute assembly speech with humanlike pacing and voice
-  const handleToggleSpeak = () => {
-    if (!bulletin) return;
-
-    if (isSuvicharSpeaking) {
-      stopSpeech();
-      return;
-    }
-
-    const { thought, authorOrSource, explanation, example, moralValue } = bulletin.suvichar;
-    
-    let speechScript = `નમસ્તે શિક્ષકગણ અને વહાલા વિદ્યાર્થી મિત્રો. આજની શાળા પ્રાર્થના સભામાં આજનો પ્રેરક સુવિચાર છે: "${thought}". `;
-    if (authorOrSource) {
-      speechScript += `આ સુંદર પ્રેરક વિચાર આપણને ${authorOrSource} તરફથી મળ્યો છે. `;
-    }
-    speechScript += `આ સુવિચારનો સરળ અર્થ સમજીએ: ${explanation}. `;
-    if (example) {
-      speechScript += `આપણા રોજિંદા જીવનમાં આનું ઉદાહરણ જોઈએ: ${example}. `;
-    }
-    if (moralValue) {
-      speechScript += `આ સુવિચારમાંથી આપણને જીવનનું મૂલ્યવાન સંસ્કાર શીખવા મળે છે: ${moralValue}. ચાલો આપણે સૌ આ મૂલ્યને પોતાના આચરણમાં ઉતારીએ. `;
-    }
-    speechScript += `આપ સૌનો ખૂબ ખૂબ આભાર, દિવસ શુભ રહે.`;
-
-    playSpeech('suvichar-main', speechScript);
-  };
 
   // Copy full suvichar and speech script
   const handleCopy = () => {
@@ -237,33 +200,6 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
                 <>
                   <Copy className="w-4 h-4" />
                   <span>કોપી વક્તવ્ય</span>
-                </>
-              )}
-            </button>
-
-            <VoiceGenderSelector compact />
-
-            <button
-              type="button"
-              onClick={handleToggleSpeak}
-              disabled={isSuvicharLoading}
-              className="px-3 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-              title="૨-૩ મિનિટ વક્તવ્ય સાંભળો"
-            >
-              {isSuvicharLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 text-amber-300 animate-spin" />
-                  <span>અવાજ તૈયાર થાય છે...</span>
-                </>
-              ) : isSuvicharSpeaking ? (
-                <>
-                  <VolumeX className="w-4 h-4 text-amber-300 animate-pulse" />
-                  <span>બંધ કરો</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="w-4 h-4" />
-                  <span>સાંભળો (Audio)</span>
                 </>
               )}
             </button>

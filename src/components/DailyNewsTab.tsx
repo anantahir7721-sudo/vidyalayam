@@ -3,8 +3,6 @@ import {
   Newspaper,
   Calendar,
   Clock,
-  Volume2,
-  VolumeX,
   Printer,
   Sparkles,
   MapPin,
@@ -15,17 +13,14 @@ import {
   Copy,
   Flame,
   Info,
-  Loader2,
   Share2,
   RotateCw,
+  Loader2,
 } from 'lucide-react';
 import { DailyNewsBulletin, NewsItem, NewsCategory } from '../types';
 import { getDailyNewsBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
 import { shareDailyNewsAsPdf } from '../utils/dailyPdfShareUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
-import { voiceService } from '../services/voiceService';
-import { useVoice } from '../context/VoiceContext';
-import { VoiceGenderSelector } from './VoiceGenderSelector';
 
 interface DailyNewsTabProps {
   schoolName?: string;
@@ -48,9 +43,6 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const { isSpeaking, activeId, loadingId, playSpeech, stopSpeech } = useVoice();
-  const isSpeakingAll = activeId === 'all' && isSpeaking;
 
   const handleRefreshNews = async () => {
     setIsRefreshing(true);
@@ -84,7 +76,6 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
 
     return () => {
       isMounted = false;
-      voiceService.stop();
     };
   }, []);
 
@@ -117,47 +108,6 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
     if (activeCategory === 'all') return bulletin.items;
     return bulletin.items.filter((item) => item.category === activeCategory);
   }, [bulletin, activeCategory]);
-
-  // Audio Speech Synthesis for Individual News Item (Professional News Presenter Tone)
-  const handleToggleSpeak = (item: NewsItem) => {
-    if (activeId === item.id && isSpeaking) {
-      stopSpeech();
-      return;
-    }
-
-    const cleanHeadline = item.headline.replace(/^[૦-૯0-9]+[.\-)]\s*/, '').trim();
-    const cleanSummary = item.summary.replace(/^[૦-૯0-9]+[.\-)]\s*/, '').trim();
-    const catName = item.categoryLabel || 'તાજા સમાચાર';
-
-    // Professional TV/Radio news presenter tone with natural pauses
-    const textToSpeak = `નમસ્કાર. આજના મુખ્ય સમાચારમાં ${catName}ની વિગત. મુખ્ય સમાચાર: ${cleanHeadline}. વિગતવાર: ${cleanSummary}.`;
-
-    playSpeech(item.id, textToSpeak);
-  };
-
-  // Play Entire News Bulletin (All 10 Items Sequentially Like Morning Assembly News Anchor)
-  const handlePlayFullBulletin = () => {
-    if (isSpeakingAll) {
-      stopSpeech();
-      return;
-    }
-
-    if (!bulletin?.items || bulletin.items.length === 0) return;
-
-    const intro = `નમસ્કાર દર્શક મિત્રો. વિદ્યાલયમ દૈનિક સમાચાર બુલેટિનમાં આપનું હાર્દિક સ્વાગત છે. તારીખ ${bulletin.editionDate}, સવારે ૫:૦૦ વાગ્યાની આવૃત્તિ. આવો જાણીએ આજના મુખ્ય દસ સમાચાર. `;
-    
-    const itemsText = bulletin.items.slice(0, 10).map((it, idx) => {
-      const numGuj = toGujaratiDigits(idx + 1);
-      const cleanH = it.headline.replace(/^[૦-૯0-9]+[.\-)]\s*/, '').trim();
-      const cleanS = it.summary.replace(/^[૦-૯0-9]+[.\-)]\s*/, '').trim();
-      return `સમાચાર નંબર ${numGuj}, ${it.categoryLabel}: ${cleanH}. ${cleanS}. `;
-    }).join(' ');
-
-    const outro = `આ સાથે આજના મુખ્ય દસ સમાચારનું બુલેટિન અહીં સમાપ્ત થાય છે. આપનો દિવસ મંગલમય રહે. ધન્યવાદ.`;
-    const fullScript = `${intro} ${itemsText} ${outro}`;
-
-    playSpeech('all', fullScript);
-  };
 
   const handleCopyBulletin = () => {
     if (!bulletin) return;
@@ -397,51 +347,9 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
         })}
       </div>
 
-      {/* Audio Broadcast Bar: Full Bulletin Reading & Voice Persona Toggle */}
-      <div className="rounded-2xl p-3 sm:p-4 bg-gradient-to-r from-orange-50 via-amber-50/50 to-orange-50 dark:from-[#1a1412] dark:via-[#1f1917] dark:to-[#1a1412] border border-[#C45A2D]/30 dark:border-[#C45A2D]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-        <div className="flex items-center gap-3 flex-wrap">
-          <button
-            type="button"
-            onClick={handlePlayFullBulletin}
-            disabled={loadingId === 'all'}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shadow-sm ${
-              isSpeakingAll
-                ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
-                : 'btn-terracotta text-white'
-            }`}
-          >
-            {loadingId === 'all' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-white" />
-                <span>સમાચાર વાણી તૈયાર થાય છે...</span>
-              </>
-            ) : isSpeakingAll ? (
-              <>
-                <VolumeX className="w-4 h-4 text-white" />
-                <span>બુલેટિન બંધ કરો (Stop Bulletin)</span>
-              </>
-            ) : (
-              <>
-                <Volume2 className="w-4 h-4 text-white" />
-                <span>🎙️ સમગ્ર સમાચાર બુલેટિન સાંભળો (Play Full News)</span>
-              </>
-            )}
-          </button>
-
-          <span className="text-[11px] text-slate-600 dark:text-[#a99f91] hidden md:inline">
-            ન્યૂઝ રીડરની જેમ ૧૦ મુખ્ય સમાચારનું ક્રમબદ્ધ વાંચન
-          </span>
-        </div>
-
-        {/* Global Voice Persona Selector */}
-        <VoiceGenderSelector />
-      </div>
-
       {/* 10 News Items Grid / List: Headline + Short Summary only */}
       <div className="space-y-3.5">
         {filteredItems.map((item, idx) => {
-          const isItemSpeaking = activeId === item.id && isSpeaking;
-          const isLoadingItem = loadingId === item.id;
           return (
             <div
               key={item.id}
@@ -463,38 +371,6 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
                     {item.categoryLabel}
                   </span>
                 </div>
-
-                {/* Listen Audio Button */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleSpeak(item)}
-                  disabled={isLoadingItem}
-                  title={isLoadingItem ? 'અવાજ તૈયાર થાય છે...' : isItemSpeaking ? 'ઓડિયો બંધ કરો' : 'સાંભળો (Audio)'}
-                  className={`p-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer border ${
-                    isItemSpeaking
-                      ? 'btn-terracotta text-white border-transparent animate-pulse'
-                      : isLoadingItem
-                      ? 'bg-orange-100 text-[#C45A2D] dark:bg-orange-950 dark:text-orange-300 border-orange-200'
-                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white border-slate-200 dark:border-white/10'
-                  }`}
-                >
-                  {isLoadingItem ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C45A2D]" />
-                      <span className="text-[10px] hidden sm:inline">તૈયાર થાય છે...</span>
-                    </>
-                  ) : isItemSpeaking ? (
-                    <>
-                      <VolumeX className="w-3.5 h-3.5" />
-                      <span className="text-[10px] hidden sm:inline">બંધ કરો</span>
-                    </>
-                  ) : (
-                    <>
-                      <Volume2 className="w-3.5 h-3.5 text-[#C45A2D] dark:text-[#f59c73]" />
-                      <span className="text-[10px] hidden sm:inline">સાંભળો</span>
-                    </>
-                  )}
-                </button>
               </div>
 
               {/* Main Headline */}
