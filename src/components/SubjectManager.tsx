@@ -236,21 +236,21 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
   return (
     <div className="space-y-6">
       {/* Top Banner - iOS Style Glass Card */}
-      <div className="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden border border-white/10">
+      <div className="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden border border-[#E2E8F0] dark:border-white/10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="flex items-start gap-4">
             {onBack && (
               <button
                 type="button"
                 onClick={onBack}
-                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1"
+                className="p-2.5 rounded-2xl bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 text-slate-800 dark:text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1 border border-[#E2E8F0] dark:border-transparent"
                 title="પાછળના મેનુ પર જાઓ (Go Back)"
               >
-                <ArrowLeft className="w-5 h-5 text-emerald-400" />
+                <ArrowLeft className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </button>
             )}
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-semibold mb-3">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>વિષય અને વિભાગ સંચાલન (Subject & Section Management)</span>
               </div>
@@ -266,7 +266,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl btn-terracotta font-semibold text-sm shadow-lg shadow-[#9d512d]/25 active:scale-[0.98] transition-all min-h-[48px] shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl btn-terracotta font-semibold text-sm shadow-lg shadow-[#C45A2D]/25 active:scale-[0.98] transition-all min-h-[48px] shrink-0"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>નવો વિષય ઉમેરો (Add Subject)</span>
@@ -275,7 +275,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
       </div>
 
       {/* iOS Segmented Control for Standards */}
-      <div className="glass-pill p-1.5 rounded-2xl flex flex-wrap gap-1.5 border border-white/10 shadow-sm max-w-xl">
+      <div className="glass-pill p-1.5 rounded-2xl flex flex-wrap gap-1.5 border border-[#E2E8F0] dark:border-white/10 shadow-sm max-w-xl">
         {STANDARDS_LIST.map((std) => {
           const isActive = selectedStandard === std.id;
           return (
@@ -285,8 +285,8 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
               onClick={() => setSelectedStandard(std.id)}
               className={`flex-1 min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                 isActive
-                  ? 'bg-[#9d512d] text-white shadow-md'
-                  : 'text-[#a99f91] hover:text-[#e4ded6] hover:bg-white/5'
+                  ? 'btn-terracotta text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-[#e4ded6] hover:bg-slate-100 dark:hover:bg-white/5'
               }`}
             >
               <span>{std.label}</span>
@@ -298,11 +298,11 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
 
       {/* Subjects Overview Panel */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-          <span className="font-semibold text-slate-300">
+        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+          <span className="font-semibold text-slate-700 dark:text-slate-300">
             ધોરણ {selectedStandard} ના ઉપલબ્ધ વિષયો ({installedSubjects.length + customSubjects.length})
           </span>
-          <span className="text-slate-400">
+          <span className="text-slate-500 dark:text-slate-400">
             {installedSubjects.length} નિયત પેપર + {customSubjects.length} શાળા ઉમેરેલ
           </span>
         </div>
@@ -313,7 +313,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
           {installedSubjects.map((sub) => (
             <div
               key={sub.id}
-              className="glass-card rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between"
+              className="glass-card rounded-2xl p-5 border border-[#E2E8F0] dark:border-white/10 hover:border-[#C45A2D]/30 dark:hover:border-white/20 transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-2">
@@ -377,27 +377,27 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
                       )}
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 shrink-0">
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800/80 shrink-0">
                     શાળા વિષય (Custom)
                   </span>
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
-                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+                <div className="mt-3 pt-3 border-t border-[#E2E8F0] dark:border-white/5 space-y-2">
+                  <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                     વિભાગો અને મહત્તમ ગુણ (Sections & Max Marks):
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                     {sub.sections.map((sec, idx) => (
                       <div
                         key={idx}
-                        className="bg-slate-950/60 rounded-lg p-2 border border-white/5 text-center text-xs"
+                        className="bg-slate-50 dark:bg-slate-950/60 rounded-lg p-2 border border-slate-200 dark:border-white/5 text-center text-xs"
                       >
-                        <div className="font-semibold text-slate-200 truncate">{sec.name}</div>
+                        <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">{sec.name}</div>
                         <div className="text-[10px] font-mono font-medium">
                           {typeof sec.maxMarks === 'number' ? (
-                            <span className="text-emerald-400">{sec.maxMarks} ગુણ</span>
+                            <span className="text-emerald-700 dark:text-emerald-400 font-bold">{sec.maxMarks} ગુણ</span>
                           ) : (
-                            <span className="text-amber-400/90">(નિયત નથી / Blank)</span>
+                            <span className="text-amber-700 dark:text-amber-400/90 font-medium">(નિયત નથી / Blank)</span>
                           )}
                         </div>
                       </div>
@@ -406,15 +406,15 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
-                <div className="text-xs text-slate-400">
-                  કુલ ગુણ: <strong className="text-emerald-400 font-bold">{sub.totalMarks ? `${sub.totalMarks} ગુણ` : 'નિયત નથી'}</strong>
+              <div className="mt-4 pt-3 border-t border-[#E2E8F0] dark:border-white/5 flex items-center justify-between">
+                <div className="text-xs text-slate-600 dark:text-slate-400">
+                  કુલ ગુણ: <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{sub.totalMarks ? `${sub.totalMarks} ગુણ` : 'નિયત નથી'}</strong>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleOpenEdit(sub)}
-                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-300 dark:hover:text-white transition-colors cursor-pointer"
                     title="વિષય અને વિભાગ ગુણ એડિટ કરો"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
@@ -425,7 +425,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
                       setDeletingSubject(sub);
                       setIsDeleteModalOpen(true);
                     }}
-                    className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
+                    className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 transition-colors cursor-pointer"
                     title="વિષય ડિલીટ કરો"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -438,7 +438,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
 
         {/* Empty State when no subjects exist */}
         {installedSubjects.length === 0 && customSubjects.length === 0 && (
-          <div className="glass-card rounded-3xl p-12 text-center text-slate-500 dark:text-slate-400 space-y-3">
+          <div className="glass-card rounded-3xl p-12 text-center text-slate-500 dark:text-slate-400 space-y-3 border border-[#E2E8F0] dark:border-white/10">
             <BookOpen className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto" />
             <h4 className="text-base font-semibold text-slate-900 dark:text-white">ધોરણ {selectedStandard} માં કોઈ વિષય મળ્યો નથી</h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
@@ -451,8 +451,8 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
       {/* ADD SUBJECT MODAL (iOS Style Glass Dialog) */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md">
-          <div className="glass-panel w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-white/15 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
-            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="glass-panel bg-white/95 dark:bg-[#121921]/95 w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-[#E2E8F0] dark:border-white/15 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
+            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-white/10">
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">ધોરણ {selectedStandard} માં નવો વિષય ઉમેરો</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">વિષયનું નામ અને વિભાગો (Sections) દાખલ કરો</p>
@@ -460,7 +460,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -469,15 +469,15 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
             <form onSubmit={handleSaveNewSubject} className="flex-1 flex flex-col justify-between overflow-hidden mt-3">
               <div className="flex-1 overflow-y-auto pr-1 space-y-4">
               {errorMessage && (
-                <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-red-400" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               {successMessage && (
-                <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300 flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
                   <span>{successMessage}</span>
                 </div>
               )}
@@ -603,8 +603,8 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
       {/* EDIT SUBJECT MODAL */}
       {isEditModalOpen && editingSubject && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md">
-          <div className="glass-panel w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-white/15 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
-            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="glass-panel bg-white/95 dark:bg-[#121921]/95 w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-[#E2E8F0] dark:border-white/15 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
+            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-white/10">
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">વિષય & વિભાગ ગુણ એડિટ કરો</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">ધોરણ {selectedStandard} — {editingSubject.subjectName}</p>
@@ -612,7 +612,7 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
               <button
                 type="button"
                 onClick={() => setIsEditModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -621,15 +621,15 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
             <form onSubmit={handleUpdateSubject} className="flex-1 flex flex-col justify-between overflow-hidden mt-3">
               <div className="flex-1 overflow-y-auto pr-1 space-y-4">
               {errorMessage && (
-                <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-red-400" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               {successMessage && (
-                <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300 flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
                   <span>{successMessage}</span>
                 </div>
               )}

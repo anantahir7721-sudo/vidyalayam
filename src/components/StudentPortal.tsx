@@ -42,6 +42,7 @@ import { DailyPrashnotariTab } from './DailyPrashnotariTab';
 import { DailyJanvaJevuTab } from './DailyJanvaJevuTab';
 import { DailyAbhivyaktiTab } from './DailyAbhivyaktiTab';
 import { DailySuvicharTab } from './DailySuvicharTab';
+import { ThemeToggle } from './ThemeToggle';
 import { subscribeToSchoolProfile } from '../services/authService';
 import { calculateClassResults } from '../utils/resultFormulaUtils';
 import { getStudentDiseCode } from '../utils/idCardPdf';
@@ -296,7 +297,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f6f2] dark:bg-[#090c10] text-slate-800 dark:text-[#e4ded6] font-['Anek_Gujarati'] transition-colors">
+    <div className="min-h-screen bg-[#F5F7FA] dark:bg-[#090c10] text-slate-800 dark:text-[#e4ded6] font-['Anek_Gujarati'] transition-colors">
       {/* Top Glassmorphic Navigation Bar */}
       <header className="sticky top-0 z-40 bg-white/90 dark:bg-[#121921]/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 shadow-sm dark:shadow-lg">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
@@ -327,13 +328,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
           </div>
 
           {/* Student Profile snippet & Logout */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="hidden sm:block text-right">
               <div className="text-xs font-bold text-slate-900 dark:text-white">{student.studentName}</div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
                 ધોરણ: {student.standard} {student.section ? `(${student.section})` : ''} • રોલ: {student.rollNumber || '-'} • GR: {student.grNumber || '-'}
               </div>
             </div>
+
+            <ThemeToggle compact className="shrink-0" />
 
             <button
               type="button"
@@ -536,15 +539,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                   onClick={() => setActiveTab(tab.id as StudentTab)}
                   className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
                     isActive
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
-                      : 'bg-white dark:bg-[#121921] border border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white shadow-sm'
+                      ? 'bg-[#FBE9DF] text-[#C45A2D] border border-[#C45A2D]/30 dark:bg-[#9d512d] dark:text-white dark:border-transparent shadow-xs'
+                      : 'bg-white/90 dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white shadow-xs'
                   }`}
                 >
                   <span>{tab.label}</span>
                   {tab.count !== undefined && (
                     <span
                       className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                        isActive ? 'bg-black/20 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400'
+                        isActive
+                          ? 'bg-[#C45A2D]/15 text-[#C45A2D] dark:bg-black/20 dark:text-white font-bold'
+                          : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400'
                       }`}
                     >
                       {tab.count}

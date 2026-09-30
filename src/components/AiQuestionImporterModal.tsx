@@ -188,7 +188,24 @@ export const AiQuestionImporterModal: React.FC<AiQuestionImporterModalProps> = (
         }
       } catch (_) {}
 
-      if (msg.includes('503') || msg.includes('high demand') || msg.includes('UNAVAILABLE')) {
+      const isQuotaOrLimit =
+        msg.includes('429') ||
+        msg.includes('RESOURCE_EXHAUSTED') ||
+        msg.includes('resource_exhausted') ||
+        msg.includes('quota') ||
+        msg.includes('Quota') ||
+        msg.includes('billing') ||
+        msg.includes('plan') ||
+        msg.includes('exceeded your current quota');
+
+      if (isQuotaOrLimit) {
+        msg = 'Google AI સર્વર વપરાશ મર્યાદા (Quota Limit) આવી છે. કૃપા કરીને થોડી સેકન્ડ પછી નીચે આપેલા "🔄 ફરી પ્રયાસ કરો" બટન પર ક્લિક કરો.';
+      } else if (
+        msg.includes('503') ||
+        msg.includes('high demand') ||
+        msg.includes('UNAVAILABLE') ||
+        msg.includes('overloaded')
+      ) {
         msg = 'Google AI સર્વર પર હાલમાં ભારે ટ્રાફિક (High Demand) છે. કૃપા કરીને નીચે આપેલા "🔄 ફરી પ્રયાસ કરો" બટન પર ક્લિક કરો.';
       }
       setError(msg);

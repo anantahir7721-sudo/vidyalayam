@@ -434,6 +434,17 @@ export async function extractQuestionsWithAI(
       } catch (_) {}
 
       if (
+        errorMsg.includes('429') ||
+        errorMsg.includes('RESOURCE_EXHAUSTED') ||
+        errorMsg.includes('resource_exhausted') ||
+        errorMsg.includes('quota') ||
+        errorMsg.includes('Quota') ||
+        errorMsg.includes('billing') ||
+        errorMsg.includes('plan') ||
+        errorMsg.includes('exceeded your current quota')
+      ) {
+        errorMsg = 'Google AI સર્વર વપરાશ મર્યાદા (Quota Limit) આવી છે. કૃપા કરીને થોડી સેકન્ડ પછી "🔄 ફરી પ્રયાસ કરો" બટન દબાવો.';
+      } else if (
         errorMsg.includes('503') ||
         errorMsg.includes('high demand') ||
         errorMsg.includes('UNAVAILABLE') ||

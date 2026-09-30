@@ -44,6 +44,7 @@ import { SetNewPasswordModal } from './SetNewPasswordModal';
 import { VidyalayamLogo } from './VidyalayamLogo';
 import { OnlineAdmissionPortal, getSchoolAdmissionStatus } from './OnlineAdmissionPortal';
 import { IosDatePickerModal } from './IosDatePicker';
+import { ThemeToggle } from './ThemeToggle';
 import { haptic } from '../utils/haptics';
 import { getSchoolsForAdmissionDirectory } from '../services/firestoreService';
 
@@ -364,7 +365,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   };
 
   return (
-    <div className="min-h-[calc(100vh-60px)] bg-[#f8f6f2] dark:bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors">
+    <div className="relative min-h-[calc(100vh-60px)] bg-[#F5F7FA] dark:bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors">
+      {/* Floating Theme Switcher */}
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30">
+        <ThemeToggle />
+      </div>
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Brand Header: Logo -> Name (only in english) -> by NRChad */}
         <div className="flex flex-col items-center text-center">
@@ -379,7 +385,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           </h1>
 
           {/* 3. by NRChad */}
-          <p className="mt-0.5 text-xs sm:text-sm font-bold text-[#9d512d] dark:text-[#f59c73] tracking-wide">
+          <p className="mt-0.5 text-xs sm:text-sm font-bold text-[#C45A2D] dark:text-[#f59c73] tracking-wide">
             by NRChad
           </p>
 
@@ -492,9 +498,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
           {/* PRIMARY LOGIN CARD: Only authenticated roles [ School ] [ Student ] [ Admin ] */}
           <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-md px-3 sm:px-0">
-            <div className="glass-panel py-8 px-4 shadow-xl dark:shadow-2xl shadow-slate-900/10 dark:shadow-black/60 sm:rounded-3xl sm:px-8 border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#121921]/90 transition-colors">
+            <div className="glass-panel py-8 px-4 shadow-xl dark:shadow-2xl shadow-slate-900/10 dark:shadow-black/60 sm:rounded-3xl sm:px-8 border border-[#E2E8F0] dark:border-white/10 bg-white/95 dark:bg-[#121921]/90 transition-colors">
               {/* Clean 3-way authenticated roles: School, Student, Admin */}
-              <div className="grid grid-cols-3 rounded-2xl bg-slate-100 dark:bg-[#090c10]/90 p-1.5 border border-slate-200 dark:border-white/10 mb-6 shadow-inner gap-1">
+              <div className="grid grid-cols-3 rounded-2xl bg-slate-100/90 dark:bg-[#090c10]/90 p-1.5 border border-[#E2E8F0] dark:border-white/10 mb-6 shadow-inner gap-1">
                 <button
                   id="tab-portal-school"
                   type="button"
@@ -505,7 +511,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   }}
                   className={`flex items-center justify-center gap-1.5 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
                     portalType === 'school'
-                      ? 'bg-[#9d512d] text-white shadow-lg'
+                      ? 'bg-[#C45A2D] text-white shadow-md dark:bg-[#9d512d]'
                       : 'text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-[#e4ded6]'
                   }`}
                 >
@@ -621,7 +627,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       School DISE Code (શાળા ડાયસ કોડ)
                     </label>
                     <div className="relative rounded-xl shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#a99f91]">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-[#a99f91]">
                         <Hash className="w-4 h-4" />
                       </div>
                       <input
@@ -631,7 +637,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         value={diseCode}
                         onChange={(e) => setDiseCode(e.target.value)}
                         placeholder="e.g. 24070500101"
-                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60"
+                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-slate-400 dark:placeholder-[#a99f91]/60"
                       />
                     </div>
                     <p className="mt-1 text-[11px] text-slate-500 dark:text-[#a99f91]">
@@ -644,7 +650,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       School Password (પાસવર્ડ)
                     </label>
                     <div className="relative rounded-xl shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#a99f91]">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-[#a99f91]">
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
@@ -654,7 +660,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         value={schoolPassword}
                         onChange={(e) => setSchoolPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60"
+                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-slate-400 dark:placeholder-[#a99f91]/60"
                       />
                     </div>
                     <div className="flex justify-end mt-1.5">
@@ -709,7 +715,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       School Name (શાળાનું નામ) *
                     </label>
                     <div className="relative rounded-md shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#a99f91]">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-[#a99f91]">
                         <Building2 className="w-4 h-4" />
                       </div>
                       <input
@@ -719,7 +725,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         value={schoolName}
                         onChange={(e) => setSchoolName(e.target.value)}
                         placeholder="e.g. Shree Sarvajanik High School"
-                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60"
+                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-slate-400 dark:placeholder-[#a99f91]/60"
                       />
                     </div>
                   </div>
@@ -734,7 +740,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       )}
                     </label>
                     <div className="relative rounded-xl shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#a99f91]">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-[#a99f91]">
                         <Hash className="w-4 h-4" />
                       </div>
                       <input
@@ -748,7 +754,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         }}
                         onBlur={handleCheckDiseBlur}
                         placeholder="e.g. 24070500101"
-                        className={`glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60 ${
+                        className={`glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-slate-400 dark:placeholder-[#a99f91]/60 ${
                           diseAlreadyRegisteredWarning ? 'border-rose-500 focus:ring-rose-500' : ''
                         }`}
                       />
@@ -784,7 +790,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       Password (પાસવર્ડ) *
                     </label>
                     <div className="relative rounded-xl shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#a99f91]">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-[#a99f91]">
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
@@ -795,7 +801,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         value={schoolPassword}
                         onChange={(e) => setSchoolPassword(e.target.value)}
                         placeholder="Minimum 6 characters"
-                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60"
+                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-slate-400 dark:placeholder-[#a99f91]/60"
                       />
                     </div>
                   </div>
@@ -805,7 +811,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       Confirm Password (પાસવર્ડ પુષ્ટિ કરો) *
                     </label>
                     <div className="relative rounded-xl shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#a99f91]">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-[#a99f91]">
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
@@ -815,7 +821,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Re-type password"
-                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60"
+                        className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-slate-400 dark:placeholder-[#a99f91]/60"
                       />
                     </div>
                   </div>
@@ -1027,7 +1033,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     G.R. નંબર <span className="text-slate-500 dark:text-slate-400 font-normal">(જો શાળા તરફથી આપવામાં આવ્યો હોય)</span>
                   </label>
                   <div className="relative rounded-xl shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#a99f91]">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-[#a99f91]">
                       <UserCheck className="w-4 h-4" />
                     </div>
                     <input
@@ -1036,7 +1042,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       value={studentGrNumber}
                       onChange={(e) => setStudentGrNumber(e.target.value)}
                       placeholder="દા.ત. 124"
-                      className="glass-input block w-full pl-10 pr-3 py-2 rounded-xl text-xs placeholder-[#a99f91]/60"
+                      className="glass-input block w-full pl-10 pr-3 py-2 rounded-xl text-xs placeholder-slate-400 dark:placeholder-[#a99f91]/60"
                     />
                   </div>
                 </div>
@@ -1080,7 +1086,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   Admin Mobile / ID
                 </label>
                 <div className="relative rounded-xl shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#a99f91]">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-[#a99f91]">
                     <Smartphone className="w-4 h-4" />
                   </div>
                   <input
@@ -1090,7 +1096,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     value={adminIdentifier}
                     onChange={(e) => setAdminIdentifier(e.target.value)}
                     placeholder="Enter Admin Mobile / ID"
-                    className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60"
+                    className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-slate-400 dark:placeholder-[#a99f91]/60"
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-slate-500 dark:text-[#a99f91]">
@@ -1105,7 +1111,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   </label>
                 </div>
                 <div className="relative rounded-xl shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#a99f91]">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-[#a99f91]">
                     <Lock className="w-4 h-4" />
                   </div>
                   <input
@@ -1115,7 +1121,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-[#a99f91]/60"
+                    className="glass-input block w-full pl-10 pr-3 py-2.5 rounded-xl text-sm placeholder-slate-400 dark:placeholder-[#a99f91]/60"
                   />
                 </div>
               </div>

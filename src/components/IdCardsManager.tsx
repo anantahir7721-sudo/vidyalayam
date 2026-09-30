@@ -888,11 +888,11 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
           {cardType === 'students' && (
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               <div className="flex items-center gap-2">
-                <label className="text-xs text-[#a99f91] font-semibold">ધોરણ:</label>
+                <label className="text-xs text-slate-600 dark:text-[#a99f91] font-semibold">ધોરણ:</label>
                 <select
                   value={selectedStandard}
                   onChange={(e) => setSelectedStandard(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                  className="px-3 py-1.5 rounded-xl bg-white/90 dark:bg-black/20 border border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#f59c73]"
                 >
                   <option value="ALL">તમામ ધોરણ (All)</option>
                   <option value="9">ધોરણ 9</option>
@@ -903,11 +903,11 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-xs text-[#a99f91] font-semibold">વર્ગ/વિભાગ:</label>
+                <label className="text-xs text-slate-600 dark:text-[#a99f91] font-semibold">વર્ગ/વિભાગ:</label>
                 <select
                   value={selectedDivision}
                   onChange={(e) => setSelectedDivision(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                  className="px-3 py-1.5 rounded-xl bg-white/90 dark:bg-black/20 border border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#f59c73]"
                 >
                   <option value="ALL">તમામ વર્ગ</option>
                   <option value="A">વર્ગ A</option>
@@ -919,7 +919,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
 
               <button
                 onClick={toggleSelectAllStudents}
-                className="inline-flex items-center gap-1.5 text-xs text-[#f59c73] hover:underline font-bold ml-2 cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs text-[#C45A2D] dark:text-[#f59c73] hover:underline font-bold ml-2 cursor-pointer"
               >
                 {selectedStudentIds.size === filteredStudents.length ? (
                   <CheckSquare className="w-3.5 h-3.5" />
@@ -934,7 +934,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
           {cardType === 'staff' && (
             <button
               onClick={toggleSelectAllStaff}
-              className="inline-flex items-center gap-1.5 text-xs text-[#f59c73] hover:underline font-bold cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs text-[#C45A2D] dark:text-[#f59c73] hover:underline font-bold cursor-pointer"
             >
               {selectedStaffIds.size === staffList.length ? (
                 <CheckSquare className="w-3.5 h-3.5" />
@@ -948,23 +948,23 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
       </div>
 
       {/* Cards Preview Grid */}
-      <div className="glass-panel rounded-3xl border border-white/10 p-6 shadow-xl">
+      <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-6 shadow-xl">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-sm font-bold text-[#e4ded6] flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-[#f59c73]" />
+          <h3 className="text-sm font-bold text-slate-900 dark:text-[#e4ded6] flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
             <span>
               {cardType === 'students' ? 'વિદ્યાર્થી ID કાર્ડ પ્રિવ્યૂ' : 'સ્ટાફ ID કાર્ડ પ્રિવ્યૂ'} (
               {cardType === 'students' ? studentsToPrint.length : staffToPrint.length} કાર્ડ્સ)
             </span>
           </h3>
-          <span className="text-xs text-[#a99f91]">
+          <span className="text-xs text-slate-500 dark:text-[#a99f91]">
             A4 પેજ પર 8 કાર્ડ એકસાથે પ્રિન્ટ માટે યોગ્ય
           </span>
         </div>
 
         {cardType === 'students' ? (
           filteredStudents.length === 0 ? (
-            <div className="text-center py-12 text-xs text-[#a99f91]">
+            <div className="text-center py-12 text-xs text-slate-500 dark:text-[#a99f91]">
               પસંદ કરેલ ફિલ્ટરમાં કોઈ વિદ્યાર્થી મળ્યા નથી.
             </div>
           ) : (
@@ -1137,7 +1137,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             </div>
           )
         ) : staffList.length === 0 ? (
-          <div className="text-center py-12 text-xs text-[#a99f91]">
+          <div className="text-center py-12 text-xs text-slate-500 dark:text-[#a99f91]">
             કોઈ સ્ટાફ સભ્ય ઉપલબ્ધ નથી. કૃપા કરીને પ્રથમ સ્ટાફ મેનેજરમાં જઈને સ્ટાફ ઉમેરો.
           </div>
         ) : (

@@ -19,6 +19,7 @@ import { DailySuvicharBulletin } from '../types';
 import { getDailySuvicharBulletin } from '../services/dailyKnowledgeService';
 import { shareDailySuvicharAsPdf } from '../utils/dailyPdfShareUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import { voiceService } from '../services/voiceService';
 
 interface DailySuvicharTabProps {
   schoolName?: string;
@@ -58,46 +59,43 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
 
     return () => {
       isMounted = false;
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      voiceService.stop();
     };
   }, [offsetIndex]);
 
-  // Audio Read Aloud for full 2-3 minute assembly speech
+  // Audio Read Aloud for full 2-3 minute assembly speech with humanlike pacing and voice
   const handleToggleSpeak = () => {
     if (!bulletin) return;
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      voiceService.stop();
       setIsSpeaking(false);
       return;
     }
 
     const { thought, authorOrSource, explanation, example, moralValue, keyPoints } = bulletin.suvichar;
     
-    let speechScript = `પ્રાર્થના સભા સંસ્કાર વાણી. આજનો સુવિચાર: ${thought}. `;
+    let speechScript = `નમસ્તે શિક્ષકગણ અને વહાલા વિદ્યાર્થી મિત્રો. આજની શાળા પ્રાર્થના સભામાં આજનો સુવિચાર છે: "${thought}". `;
     if (authorOrSource) {
-      speechScript += `વિચારકના શબ્દો: ${authorOrSource}. `;
+      speechScript += `આ સુંદર પ્રેરક વિચાર આપણને ${authorOrSource} તરફથી મળ્યો છે. `;
     }
-    speechScript += `વિસ્તૃત સમજૂતી: ${explanation}. `;
-    speechScript += `વ્યવહારિક ઉદાહરણ: ${example}. `;
-    if (keyPoints && keyPoints.length > 0) {
-      speechScript += `મુખ્ય મુદ્દાઓ: ${keyPoints.join('. ')}. `;
+    speechScript += `આ સુવિચારનો અર્થ સમજીએ: ${explanation}. `;
+    if (example) {
+      speechScript += `આપણા રોજિંદા જીવનમાં આનું ઉદાહરણ જોઈએ: ${example}. `;
     }
-    speechScript += `આજનું જીવનમૂલ્ય: ${moralValue}. આભાર.`;
+    if (moralValue) {
+      speechScript += `આ સુવિચારમાંથી આપણને જીવનનું મૂલ્યવાન સંસ્કાર શીખવા મળે છે: ${moralValue}. ચાલો આપણે સૌ આ મૂલ્યને પોતાના આચરણમાં ઉતારીએ. `;
+    }
+    speechScript += `આપ સૌનો ખૂબ ખૂબ આભાર, દિવસ શુભ રહે.`;
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(speechScript);
-    utterance.lang = 'gu-IN';
-    utterance.rate = 0.9;
-
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    window.speechSynthesis.speak(utterance);
     setIsSpeaking(true);
+    voiceService.speak(speechScript, {
+      rate: 0.96,
+      pitch: 1.0,
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
   };
 
   // Copy full suvichar and speech script

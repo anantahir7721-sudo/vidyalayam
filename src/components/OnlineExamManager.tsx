@@ -581,15 +581,15 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
       {/* Delete Confirmation Modal */}
       {deleteTargetExam && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-[#121921] border border-white/10 rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl text-[#e4ded6] max-h-[88dvh] overflow-y-auto my-auto animate-fadeIn">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto">
+          <div className="w-full max-w-md bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl text-slate-800 dark:text-[#e4ded6] max-h-[88dvh] overflow-y-auto my-auto animate-fadeIn">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-500/20 border border-rose-200 dark:border-rose-500/40 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div className="text-center space-y-1">
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 શું તમે આ પરીક્ષા કાઢી નાખવા માંગો છો?
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 "{deleteTargetExam.title}" અને તેના હેઠળના તમામ પ્રશ્નો તથા વિદ્યાર્થીઓના સબમિશન કાયમ માટે દૂર થશે.
               </p>
             </div>
@@ -597,7 +597,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setDeleteTargetExam(null)}
-                className="flex-1 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-semibold"
+                className="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-300 text-xs font-semibold"
               >
                 રદ કરો (Cancel)
               </button>
@@ -605,7 +605,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-950/50 disabled:opacity-50"
+                className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-950/50 disabled:opacity-50 cursor-pointer"
               >
                 {isDeleting ? 'કાઢી રહ્યું છે...' : 'હા, કાઢી નાખો'}
               </button>

@@ -116,10 +116,10 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <button
           onClick={handleBack}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white transition-colors cursor-pointer active:scale-95"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-slate-800 dark:text-[#e4ded6] hover:text-[#C45A2D] dark:hover:text-white transition-colors cursor-pointer active:scale-95"
           title={subView !== 'overview' ? 'પરીક્ષાઓની ઝાંખી પર પાછા જાઓ' : 'પાછળના મેનુ પર જાઓ'}
         >
-          <ArrowLeft className="w-4 h-4 text-[#f59c73]" />
+          <ArrowLeft className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
           <span>{subView !== 'overview' ? 'પરીક્ષાઓની ઝાંખી પર પાછા જાઓ' : 'પાછળ જાઓ (Go Back)'}</span>
         </button>
 
@@ -251,8 +251,8 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
                     )}
                   </div>
 
-                  <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between">
-                    <span className="text-xs text-[#a99f91]">
+                  <div className="mt-6 pt-4 border-t border-stone-200 dark:border-white/10 flex items-center justify-between">
+                    <span className="text-xs text-stone-500 dark:text-[#a99f91]">
                       ધોરણ ૯ થી ૧૨
                     </span>
 
@@ -278,14 +278,14 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
       {/* SUB-VIEW 2: EKAM KASOTI - 1 (25 MARKS QUESTION-WISE) */}
       {subView === 'ekam_kasoti' && (
         <div className="space-y-4">
-          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-emerald-300 font-bold">
-              <Award className="w-4 h-4 text-emerald-400" />
+          <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
+              <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>એકમ કસોટી – ૧ (Unit Test - 25 Marks) • પ્રશ્નવાર ગુણાંકન પત્રક</span>
             </div>
             <button
               onClick={() => setSubView('overview')}
-              className="text-xs font-bold text-emerald-400 hover:underline cursor-pointer"
+              className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
             >
               ← પરીક્ષાઓની ઝાંખી પર પાછા જાઓ
             </button>
@@ -304,14 +304,14 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
       {/* SUB-VIEW 3: TERM & ANNUAL EXAMS (50/50/80/20 MARKS) */}
       {subView === 'term_exams' && (
         <div className="space-y-4">
-          <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-blue-300 font-bold">
-              <Layers className="w-4 h-4 text-blue-400" />
+          <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 font-bold">
+              <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>સત્રાંત અને વાર્ષિક પરીક્ષાઓ (Pratham 50, Dwitiya 50, Varshik 80, Internal 20)</span>
             </div>
             <button
               onClick={() => setSubView('overview')}
-              className="text-xs font-bold text-blue-400 hover:underline cursor-pointer"
+              className="text-xs font-bold text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
             >
               ← પરીક્ષાઓની ઝાંખી પર પાછા જાઓ
             </button>

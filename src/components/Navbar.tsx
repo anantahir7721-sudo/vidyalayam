@@ -176,14 +176,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="app-header bg-[#f7f5f0] dark:bg-[#121921] border-b border-[#d8d0c5] dark:border-white/10 text-[#141d24] dark:text-[#e4ded6] sticky top-0 z-40 shadow-xl transition-colors duration-200">
+    <header className="app-header bg-white/85 dark:bg-[#121921]/95 border-b border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-[#e4ded6] sticky top-0 z-40 shadow-xs dark:shadow-xl backdrop-blur-xl transition-colors duration-200">
       {/* Top institutional strip */}
-      <div className="top-strip bg-[#f1f5f9] dark:bg-[#090c10]/95 px-3 sm:px-4 py-1.5 border-b border-slate-200 dark:border-white/10 text-xs flex justify-between items-center text-slate-700 dark:text-[#a99f91] transition-colors duration-200">
+      <div className="top-strip bg-[#F8FAFC]/90 dark:bg-[#090c10]/95 px-3 sm:px-4 py-1.5 border-b border-[#E2E8F0] dark:border-white/10 text-xs flex justify-between items-center text-slate-600 dark:text-[#a99f91] transition-colors duration-200">
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-[#9d512d] animate-pulse"></span>
-          <span className="font-bold text-[#141d24] dark:text-[#e4ded6] text-[11px] sm:text-xs">Vidyalayam</span>
+          <span className="inline-block w-2 h-2 rounded-full bg-[#C45A2D] animate-pulse"></span>
+          <span className="font-bold text-slate-900 dark:text-[#e4ded6] text-[11px] sm:text-xs">Vidyalayam</span>
           <span className="text-slate-400 dark:text-[#a99f91]/40 hidden sm:inline">•</span>
-          <span className="text-[#9d512d] dark:text-[#f59c73] font-semibold text-[10px] sm:text-xs hidden sm:inline">by NRChad</span>
+          <span className="text-[#C45A2D] dark:text-[#f59c73] font-semibold text-[10px] sm:text-xs hidden sm:inline">by NRChad</span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2.5">
           {/* Active device indicator & manual toggle */}
@@ -200,12 +200,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   : 'mobile';
               device.setViewMode(next);
             }}
-            className="inline-flex items-center gap-1 bg-white/80 dark:bg-[#202d38] text-[#141d24] dark:text-[#e4ded6] border border-[#d8d0c5] dark:border-white/15 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold shadow-xs cursor-pointer hover:border-[#9d512d] transition-all"
+            className="inline-flex items-center gap-1 bg-white/90 dark:bg-[#202d38] text-slate-800 dark:text-[#e4ded6] border border-[#E2E8F0] dark:border-white/15 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold shadow-xs cursor-pointer hover:border-[#C45A2D] transition-all"
             title={`મોડ: ${device.effectiveType === 'mobile' ? 'મોબાઇલ ઓપ્ટિમાઇઝ્ડ' : 'ડેસ્કટોપ મોડ'} (${device.viewMode === 'auto' ? 'ઓટો ડિવાઇસ' : 'મેન્યુઅલ'}). ક્લિક કરીને બદલો.`}
           >
             {device.effectiveType === 'mobile' ? (
               <>
-                <Smartphone className="w-3 h-3 text-[#9d512d] dark:text-[#f59c73]" />
+                <Smartphone className="w-3 h-3 text-[#C45A2D] dark:text-[#f59c73]" />
                 <span>મોબાઇલ</span>
               </>
             ) : (
@@ -215,11 +215,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             )}
             {device.viewMode !== 'auto' && (
-              <span className="w-1.5 h-1.5 rounded-full bg-[#9d512d] animate-pulse"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C45A2D] animate-pulse"></span>
             )}
           </button>
 
-          <span className="bg-white dark:bg-[#202d38] text-[#141d24] dark:text-[#e4ded6] border border-[#d8d0c5] dark:border-white/15 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono shadow-xs hidden xs:inline">
+          <span className="bg-white/90 dark:bg-[#202d38] text-slate-800 dark:text-[#e4ded6] border border-[#E2E8F0] dark:border-white/15 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono shadow-xs hidden xs:inline">
             ગુજરાત શાળાઓ
           </span>
           <ThemeToggle compact className="ml-1" />
@@ -239,16 +239,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-[#141d24] dark:text-[#e4ded6] truncate">
+              <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 dark:text-[#e4ded6] truncate">
                 Vidyalayam
               </h1>
               {school && (
-                <span className="bg-white dark:bg-[#202d38] text-[#141d24] dark:text-[#e4ded6] border border-[#d8d0c5] dark:border-white/15 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-mono font-medium truncate max-w-[130px] sm:max-w-[200px] shadow-xs">
+                <span className="bg-white/90 dark:bg-[#202d38] text-slate-800 dark:text-[#e4ded6] border border-[#E2E8F0] dark:border-white/15 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-mono font-medium truncate max-w-[130px] sm:max-w-[200px] shadow-xs">
                   {school.schoolName}
                 </span>
               )}
             </div>
-            <p className="text-[10px] sm:text-[11px] text-[#9d512d] dark:text-[#f59c73] font-semibold tracking-wide truncate">
+            <p className="text-[10px] sm:text-[11px] text-[#C45A2D] dark:text-[#f59c73] font-semibold tracking-wide truncate">
               Created by NR Chad
             </p>
           </div>
@@ -262,15 +262,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   type="button"
                   onClick={onBack}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/80 dark:bg-white/5 hover:bg-[#ede8e0] dark:hover:bg-white/10 text-[#141d24] dark:text-[#e4ded6] border border-[#d8d0c5] dark:border-white/10 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 touch-manipulation min-h-[38px]"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/90 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-[#e4ded6] border border-[#E2E8F0] dark:border-white/10 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 touch-manipulation min-h-[38px]"
                   title="પાછળના મેનુ પર જાઓ (Go Back)"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
+                  <ArrowLeft className="w-3.5 h-3.5 text-[#C45A2D] dark:text-[#f59c73]" />
                   <span>પાછળ</span>
                 </button>
               )}
 
-              <nav className="flex items-center bg-[#ede8e0]/80 dark:bg-white/5 p-1 rounded-2xl border border-[#d8d0c5] dark:border-white/10 text-xs shrink-0">
+              <nav className="flex items-center bg-white/80 dark:bg-white/5 backdrop-blur-xl p-1 rounded-2xl border border-[#E2E8F0] dark:border-white/10 text-xs shrink-0 shadow-xs">
                 {mainTabs.map((tab) => {
                   const isActive = activeTab === tab.id;
                   return (
@@ -279,8 +279,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                       onClick={() => handleSelectTab(tab.id)}
                       className={`px-2.5 py-2 rounded-xl font-bold transition-all touch-manipulation min-h-[38px] flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                         isActive
-                          ? 'bg-[#9d512d] text-white shadow-md'
-                          : 'text-slate-700 dark:text-[#a99f91] hover:text-slate-950 dark:hover:text-[#e4ded6] hover:bg-black/5 dark:hover:bg-white/5'
+                          ? 'bg-[#FBE9DF] text-[#C45A2D] dark:bg-[#9d512d] dark:text-white shadow-xs'
+                          : 'text-[#475569] dark:text-[#a99f91] hover:text-[#0F172A] dark:hover:text-[#e4ded6] hover:bg-slate-100/70 dark:hover:bg-white/5'
                       }`}
                     >
                       {tab.icon}
@@ -303,8 +303,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     aria-expanded={moreMenuOpen}
                     className={`px-2.5 py-2 rounded-xl font-bold transition-all touch-manipulation min-h-[38px] flex items-center gap-1 cursor-pointer ${
                       isMoreActive
-                        ? 'bg-[#9d512d] text-white shadow-md'
-                        : 'text-slate-700 dark:text-[#a99f91] hover:text-slate-950 dark:hover:text-[#e4ded6] hover:bg-black/5 dark:hover:bg-white/5'
+                        ? 'bg-[#FBE9DF] text-[#C45A2D] dark:bg-[#9d512d] dark:text-white shadow-xs'
+                        : 'text-[#475569] dark:text-[#a99f91] hover:text-[#0F172A] dark:hover:text-[#e4ded6] hover:bg-slate-100/70 dark:hover:bg-white/5'
                     }`}
                   >
                     <span>વધુ</span>
@@ -325,11 +325,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                           right: `${dropdownCoords.right}px`,
                           zIndex: 99999,
                         }}
-                        className="w-64 bg-white dark:bg-[#16202c] rounded-2xl border border-[#d8d0c5] dark:border-white/20 p-2 shadow-2xl divide-y divide-[#d8d0c5]/60 dark:divide-white/10 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
+                        className="w-64 bg-white/95 dark:bg-[#16202c] rounded-2xl border border-[#E2E8F0] dark:border-white/20 p-2 shadow-2xl divide-y divide-[#E2E8F0] dark:divide-white/10 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
                       >
-                        <div className="px-3 py-1.5 text-[11px] font-bold text-[#9d512d] dark:text-[#f59c73] uppercase tracking-wider flex items-center justify-between">
+                        <div className="px-3 py-1.5 text-[11px] font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase tracking-wider flex items-center justify-between">
                           <span>વધુ વિકલ્પો (More Options)</span>
-                          <span className="text-[10px] text-stone-400 font-normal">ESC બંધ કરવા</span>
+                          <span className="text-[10px] text-slate-400 font-normal">ESC બંધ કરવા</span>
                         </div>
                         <div className="pt-1 space-y-1">
                           {moreTabs.map((tab) => (
@@ -342,11 +342,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                               }}
                               className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 transition-all cursor-pointer ${
                                 activeTab === tab.id
-                                  ? 'bg-[#9d512d] text-white shadow-md'
-                                  : 'text-[#141d24] dark:text-[#e4ded6] hover:bg-[#ede8e0] dark:hover:bg-white/10'
+                                  ? 'bg-[#FBE9DF] text-[#C45A2D] dark:bg-[#9d512d] dark:text-white shadow-xs'
+                                  : 'text-slate-700 dark:text-[#e4ded6] hover:bg-slate-100/80 dark:hover:bg-white/10'
                               }`}
                             >
-                              <span className={`${activeTab === tab.id ? 'text-white' : 'text-[#9d512d] dark:text-[#f59c73]'}`}>
+                              <span className={`${activeTab === tab.id ? 'text-[#C45A2D] dark:text-white' : 'text-[#C45A2D] dark:text-[#f59c73]'}`}>
                                 {tab.icon}
                               </span>
                               <span className="truncate">{tab.label}</span>
@@ -374,7 +374,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="btn-sign-out"
                 onClick={onLogout}
-                className="flex items-center gap-1.5 bg-white/80 dark:bg-transparent hover:bg-rose-50 dark:hover:bg-rose-950/60 text-[#635848] dark:text-[#a99f91] hover:text-rose-600 dark:hover:text-rose-300 border border-[#d8d0c5] dark:border-white/10 hover:border-rose-300 dark:hover:border-rose-800/60 px-3 py-2 rounded-2xl text-xs font-semibold transition-all shrink-0 touch-manipulation min-h-[38px] cursor-pointer shadow-xs"
+                className="flex items-center gap-1.5 bg-white/90 dark:bg-transparent hover:bg-rose-50 dark:hover:bg-rose-950/60 text-slate-700 dark:text-[#a99f91] hover:text-rose-600 dark:hover:text-rose-300 border border-[#E2E8F0] dark:border-white/10 hover:border-rose-300 dark:hover:border-rose-800/60 px-3 py-2 rounded-2xl text-xs font-semibold transition-all shrink-0 touch-manipulation min-h-[38px] cursor-pointer shadow-xs"
                 title="Sign out"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -388,10 +388,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   type="button"
                   onClick={onBack}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[#ede8e0] hover:bg-[#dfd7cc] dark:bg-white/10 dark:hover:bg-white/15 text-[#141d24] dark:text-[#e4ded6] border border-[#d8d0c5] dark:border-white/15 transition-all cursor-pointer touch-manipulation min-h-[36px] active:scale-95 shadow-xs shrink-0"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white/90 hover:bg-slate-100 dark:bg-white/10 dark:hover:bg-white/15 text-slate-800 dark:text-[#e4ded6] border border-[#E2E8F0] dark:border-white/15 transition-all cursor-pointer touch-manipulation min-h-[36px] active:scale-95 shadow-xs shrink-0"
                   title="પાછળના મેનુ પર જાઓ (Go Back)"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
+                  <ArrowLeft className="w-3.5 h-3.5 text-[#C45A2D] dark:text-[#f59c73]" />
                   <span className="text-[11px] sm:text-xs">પાછળ</span>
                 </button>
               )}
@@ -402,12 +402,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => handleSelectTab('students')}
                 className={`hidden sm:flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer touch-manipulation min-h-[36px] ${
                   activeTab === 'students'
-                    ? 'bg-[#9d512d] text-white border-[#9d512d] shadow-sm'
-                    : 'bg-white dark:bg-white/5 hover:bg-[#ede8e0] dark:hover:bg-white/10 text-[#141d24] dark:text-white border-[#d8d0c5] dark:border-white/15'
+                    ? 'bg-[#FBE9DF] text-[#C45A2D] border-[#C45A2D]/30 dark:bg-[#9d512d] dark:text-white dark:border-[#9d512d] shadow-xs'
+                    : 'bg-white/90 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-white border-[#E2E8F0] dark:border-white/15'
                 }`}
                 title="વિદ્યાર્થીઓ"
               >
-                <Users className={`w-3.5 h-3.5 ${activeTab === 'students' ? 'text-white' : 'text-[#9d512d] dark:text-[#f59c73]'}`} />
+                <Users className={`w-3.5 h-3.5 ${activeTab === 'students' ? 'text-[#C45A2D] dark:text-white' : 'text-[#C45A2D] dark:text-[#f59c73]'}`} />
                 <span className="text-[11px] sm:text-xs">વિદ્યાર્થીઓ</span>
               </button>
 
@@ -417,15 +417,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setMobileDrawerOpen((prev) => !prev)}
                 className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer touch-manipulation min-h-[36px] ${
                   mobileDrawerOpen
-                    ? 'bg-[#9d512d] text-white border-[#f59c73]/40 shadow-lg'
-                    : 'bg-white dark:bg-white/5 hover:bg-[#ede8e0] dark:hover:bg-white/10 text-[#141d24] dark:text-white border-[#d8d0c5] dark:border-white/15'
+                    ? 'bg-[#FBE9DF] text-[#C45A2D] border-[#C45A2D]/40 dark:bg-[#9d512d] dark:text-white dark:border-[#f59c73]/40 shadow-xs'
+                    : 'bg-white/90 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-white border-[#E2E8F0] dark:border-white/15'
                 }`}
                 aria-label="Navigation Menu"
               >
                 {mobileDrawerOpen ? (
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4 text-[#C45A2D] dark:text-white" />
                 ) : (
-                  <Menu className="w-4 h-4 text-[#9d512d] dark:text-[#f59c73]" />
+                  <Menu className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
                 )}
                 <span className="text-[11px] sm:text-xs">મેનુ</span>
               </button>
@@ -433,7 +433,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onLogout}
-                className="p-1.5 sm:p-2 rounded-xl bg-white dark:bg-white/5 hover:bg-rose-50 dark:hover:bg-rose-950/60 text-[#635848] dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-300 border border-[#d8d0c5] dark:border-white/15 transition-all cursor-pointer touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center shadow-xs shrink-0"
+                className="p-1.5 sm:p-2 rounded-xl bg-white/90 dark:bg-white/5 hover:bg-rose-50 dark:hover:bg-rose-950/60 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-300 border border-[#E2E8F0] dark:border-white/15 transition-all cursor-pointer touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center shadow-xs shrink-0"
                 title="Logout"
               >
                 <LogOut className="w-4 h-4" />
@@ -450,26 +450,26 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Full-Screen Navigation Drawer via Portal to document.body */}
       {school && mobileDrawerOpen && typeof document !== 'undefined' && createPortal(
         <div
-          className="lg:hidden fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex flex-col justify-end sm:justify-center animate-in fade-in duration-200"
+          className="lg:hidden fixed inset-0 z-[99999] bg-black/70 backdrop-blur-md flex flex-col justify-end sm:justify-center animate-in fade-in duration-200"
           onClick={(e) => {
             if (e.target === e.currentTarget) setMobileDrawerOpen(false);
           }}
         >
-          <div className="w-full h-full max-h-[100dvh] bg-[#f7f5f0] dark:bg-[#0c1219] text-[#141d24] dark:text-[#e4ded6] flex flex-col shadow-2xl overflow-hidden">
+          <div className="w-full h-full max-h-[100dvh] bg-[#F5F7FA] dark:bg-[#0c1219] text-slate-800 dark:text-[#e4ded6] flex flex-col shadow-2xl overflow-hidden">
             {/* Drawer Header with Close Button */}
-            <div className="bg-[#ede8e0] dark:bg-[#121921] border-b border-[#d8d0c5] dark:border-white/15 px-4 py-3 flex items-center justify-between shrink-0 shadow-lg">
+            <div className="bg-white/90 dark:bg-[#121921] border-b border-[#E2E8F0] dark:border-white/15 px-4 py-3 flex items-center justify-between shrink-0 shadow-xs backdrop-blur-xl">
               <div className="flex items-center gap-3 min-w-0">
                 <VidyalayamLogo size={36} />
                 <div className="min-w-0">
-                  <div className="text-sm font-bold text-[#141d24] dark:text-white truncate">{school.schoolName}</div>
-                  <div className="text-xs text-[#9d512d] dark:text-[#f59c73] font-mono mt-0.5">
+                  <div className="text-sm font-bold text-slate-900 dark:text-white truncate">{school.schoolName}</div>
+                  <div className="text-xs text-[#C45A2D] dark:text-[#f59c73] font-mono mt-0.5">
                     DISE: {school.diseCode} {school.district ? `• ${school.district}` : ''}
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => setMobileDrawerOpen(false)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[#141d24] dark:text-white text-xs font-bold transition-colors cursor-pointer touch-manipulation border border-[#d8d0c5] dark:border-transparent"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-800 dark:text-white text-xs font-bold transition-colors cursor-pointer touch-manipulation border border-[#E2E8F0] dark:border-transparent"
                 aria-label="Close menu"
               >
                 <X className="w-4 h-4" />
@@ -478,25 +478,25 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Drawer Menu Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-12 bg-[#f7f5f0] dark:bg-[#0c1219]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-12 bg-[#F5F7FA] dark:bg-[#0c1219]">
               {/* Device Mode Switcher */}
-              <div className="p-3 rounded-2xl bg-white dark:bg-white/[0.04] border border-[#d8d0c5] dark:border-white/10 shadow-xs space-y-2">
+              <div className="p-3 rounded-2xl bg-white/90 dark:bg-white/[0.04] border border-[#E2E8F0] dark:border-white/10 shadow-xs space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-[#9d512d] dark:text-[#f59c73] uppercase tracking-wider text-[11px]">
+                  <span className="font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase tracking-wider text-[11px]">
                     ડિસ્પ્લે / ડિવાઇસ મોડ (Device View)
                   </span>
-                  <span className="text-[10px] text-stone-500 font-mono">
+                  <span className="text-[10px] text-slate-500 font-mono">
                     {device.screenWidth}px ({device.deviceType})
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-black/5 dark:bg-black/40">
+                <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-black/40">
                   <button
                     type="button"
                     onClick={() => device.setViewMode('mobile')}
                     className={`py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-all ${
                       device.viewMode === 'mobile'
-                        ? 'bg-[#9d512d] text-white shadow-sm'
-                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
+                        ? 'bg-[#C45A2D] text-white shadow-xs dark:bg-[#9d512d]'
+                        : 'text-slate-600 dark:text-stone-300 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <Smartphone className="w-3.5 h-3.5" />
@@ -507,8 +507,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => device.setViewMode('desktop')}
                     className={`py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-all ${
                       device.viewMode === 'desktop'
-                        ? 'bg-[#9d512d] text-white shadow-sm'
-                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
+                        ? 'bg-[#C45A2D] text-white shadow-xs dark:bg-[#9d512d]'
+                        : 'text-slate-600 dark:text-stone-300 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <Monitor className="w-3.5 h-3.5" />
@@ -519,8 +519,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => device.setViewMode('auto')}
                     className={`py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-all ${
                       device.viewMode === 'auto'
-                        ? 'bg-[#9d512d] text-white shadow-sm'
-                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
+                        ? 'bg-[#C45A2D] text-white shadow-xs dark:bg-[#9d512d]'
+                        : 'text-slate-600 dark:text-stone-300 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -529,14 +529,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </div>
               {/* Quick Profile Access */}
-              <div className="p-3.5 rounded-2xl bg-white dark:bg-white/[0.04] border border-[#d8d0c5] dark:border-white/10 flex items-center justify-between shadow-xs">
+              <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-white/[0.04] border border-[#E2E8F0] dark:border-white/10 flex items-center justify-between shadow-xs">
                 <div className="min-w-0">
-                  <div className="text-xs text-[#635848] dark:text-[#a99f91]">સક્રિય શાળા પ્રોફાઇલ</div>
-                  <div className="text-sm font-bold text-[#141d24] dark:text-white truncate">{school.schoolName}</div>
+                  <div className="text-xs text-slate-500 dark:text-[#a99f91]">સક્રિય શાળા પ્રોફાઇલ</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white truncate">{school.schoolName}</div>
                 </div>
                 <button
                   onClick={() => handleSelectTab('profile')}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#9d512d] hover:bg-[#b55e34] text-xs font-bold text-white shadow-md cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#C45A2D] hover:bg-[#A8481F] dark:bg-[#9d512d] dark:hover:bg-[#b55e34] text-xs font-bold text-white shadow-xs cursor-pointer"
                 >
                   પ્રોફાઇલ જુઓ
                 </button>
@@ -544,7 +544,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Main Tabs Group */}
               <div>
-                <div className="text-[11px] font-bold text-[#9d512d] dark:text-[#f59c73] uppercase tracking-wider px-1 mb-2">
+                <div className="text-[11px] font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase tracking-wider px-1 mb-2">
                   મુખ્ય વિભાગો (Core Modules)
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -556,12 +556,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                         onClick={() => handleSelectTab(tab.id)}
                         className={`w-full px-4 py-3 rounded-2xl text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer min-h-[48px] border shadow-xs ${
                           isActive
-                            ? 'bg-[#9d512d] text-white border-[#f59c73]/60 shadow-lg'
-                            : 'bg-white dark:bg-white/5 hover:bg-[#ede8e0] dark:hover:bg-white/10 text-[#141d24] dark:text-slate-200 border-[#d8d0c5] dark:border-white/10'
+                            ? 'bg-[#FBE9DF] text-[#C45A2D] border-[#C45A2D]/30 dark:bg-[#9d512d] dark:text-white dark:border-[#f59c73]/60 shadow-sm'
+                            : 'bg-white/90 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 border-[#E2E8F0] dark:border-white/10'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className={`p-2 rounded-xl ${isActive ? 'bg-white/20 text-white' : 'bg-[#ede8e0] dark:bg-white/5 text-[#9d512d] dark:text-[#f59c73]'}`}>
+                          <span className={`p-2 rounded-xl ${isActive ? 'bg-[#C45A2D]/15 text-[#C45A2D] dark:bg-white/20 dark:text-white' : 'bg-slate-100 dark:bg-white/5 text-[#C45A2D] dark:text-[#f59c73]'}`}>
                             {tab.icon}
                           </span>
                           <span className="text-sm font-semibold">{tab.label}</span>
@@ -572,7 +572,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               OPEN
                             </span>
                           )}
-                          {isActive && <span className="w-2.5 h-2.5 rounded-full bg-white shadow-sm" />}
+                          {isActive && <span className="w-2.5 h-2.5 rounded-full bg-[#C45A2D] dark:bg-white shadow-xs" />}
                         </div>
                       </button>
                     );
@@ -582,7 +582,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* School Tools & Reports Group */}
               <div>
-                <div className="text-[11px] font-bold text-[#635848] dark:text-[#a99f91] uppercase tracking-wider px-1 mb-2">
+                <div className="text-[11px] font-bold text-slate-500 dark:text-[#a99f91] uppercase tracking-wider px-1 mb-2">
                   શાળા સાધનો & અહેવાલો (Tools & Reports)
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -594,17 +594,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                         onClick={() => handleSelectTab(tab.id)}
                         className={`w-full px-4 py-3 rounded-2xl text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer min-h-[48px] border shadow-xs ${
                           isActive
-                            ? 'bg-[#9d512d] text-white border-[#f59c73]/60 shadow-lg'
-                            : 'bg-white dark:bg-white/5 hover:bg-[#ede8e0] dark:hover:bg-white/10 text-[#141d24] dark:text-slate-200 border-[#d8d0c5] dark:border-white/10'
+                            ? 'bg-[#FBE9DF] text-[#C45A2D] border-[#C45A2D]/30 dark:bg-[#9d512d] dark:text-white dark:border-[#f59c73]/60 shadow-sm'
+                            : 'bg-white/90 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 border-[#E2E8F0] dark:border-white/10'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className={`p-2 rounded-xl ${isActive ? 'bg-white/20 text-white' : 'bg-[#ede8e0] dark:bg-white/5 text-[#9d512d] dark:text-[#f59c73]'}`}>
+                          <span className={`p-2 rounded-xl ${isActive ? 'bg-[#C45A2D]/15 text-[#C45A2D] dark:bg-white/20 dark:text-white' : 'bg-slate-100 dark:bg-white/5 text-[#C45A2D] dark:text-[#f59c73]'}`}>
                             {tab.icon}
                           </span>
                           <span className="text-sm font-semibold">{tab.label}</span>
                         </div>
-                        {isActive && <span className="w-2.5 h-2.5 rounded-full bg-white shadow-sm" />}
+                        {isActive && <span className="w-2.5 h-2.5 rounded-full bg-[#C45A2D] dark:bg-white shadow-xs" />}
                       </button>
                     );
                   })}
@@ -612,7 +612,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
 
               {/* Mobile Drawer Logout & Close Actions */}
-              <div className="pt-3 border-t border-[#d8d0c5] dark:border-white/10 space-y-2">
+              <div className="pt-3 border-t border-[#E2E8F0] dark:border-white/10 space-y-2">
                 {school && (
                   <button
                     onClick={() => {
@@ -639,7 +639,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 <button
                   onClick={() => setMobileDrawerOpen(false)}
-                  className="w-full py-3 px-4 rounded-2xl bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15 text-[#141d24] dark:text-slate-300 border border-[#d8d0c5] dark:border-white/10 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px]"
+                  className="w-full py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-800 dark:text-slate-300 border border-[#E2E8F0] dark:border-white/10 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px]"
                 >
                   <X className="w-4 h-4" />
                   <span>મેનુ બંધ કરો (Close)</span>
@@ -653,14 +653,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Convenient Bottom Navigation Bar via Portal to document.body */}
       {school && !mobileDrawerOpen && typeof document !== 'undefined' && createPortal(
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-[#0e141c]/95 backdrop-blur-lg border-t border-[#d8d0c5] dark:border-white/10 py-1.5 px-3 flex items-center justify-around shadow-2xl safe-area-pb transition-colors duration-200">
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/90 dark:bg-[#0e141c]/95 backdrop-blur-xl border-t border-[#E2E8F0] dark:border-white/10 py-1.5 px-3 flex items-center justify-around shadow-xl safe-area-pb transition-colors duration-200">
           <button
             onClick={() => handleSelectTab('overview')}
-            className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
-              activeTab === 'overview' ? 'text-[#9d512d] dark:text-white font-bold' : 'text-[#635848] hover:text-[#141d24] dark:text-[#a99f91] dark:hover:text-white'
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'overview'
+                ? 'bg-[#FBE9DF] text-[#C45A2D] dark:bg-[#9d512d] dark:text-white font-bold shadow-xs'
+                : 'text-[#64748B] hover:text-[#0F172A] dark:text-[#a99f91] dark:hover:text-white font-medium'
             }`}
           >
-            <div className={`p-1 rounded-lg ${activeTab === 'overview' ? 'bg-[#9d512d] text-white shadow-sm' : 'bg-transparent'}`}>
+            <div className={`p-1 rounded-xl ${activeTab === 'overview' ? 'text-[#C45A2D] dark:text-white' : 'bg-transparent'}`}>
               <SchoolIcon className="w-4 h-4" />
             </div>
             <span className="text-[10px]">ડેશબોર્ડ</span>
@@ -668,11 +670,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => handleSelectTab('students')}
-            className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
-              activeTab === 'students' ? 'text-[#9d512d] dark:text-white font-bold' : 'text-[#635848] hover:text-[#141d24] dark:text-[#a99f91] dark:hover:text-white'
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'students'
+                ? 'bg-[#FBE9DF] text-[#C45A2D] dark:bg-[#9d512d] dark:text-white font-bold shadow-xs'
+                : 'text-[#64748B] hover:text-[#0F172A] dark:text-[#a99f91] dark:hover:text-white font-medium'
             }`}
           >
-            <div className={`p-1 rounded-lg ${activeTab === 'students' ? 'bg-[#9d512d] text-white shadow-sm' : 'bg-transparent'}`}>
+            <div className={`p-1 rounded-xl ${activeTab === 'students' ? 'text-[#C45A2D] dark:text-white' : 'bg-transparent'}`}>
               <Users className="w-4 h-4" />
             </div>
             <span className="text-[10px]">વિદ્યાર્થીઓ</span>
@@ -680,11 +684,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => handleSelectTab('staff')}
-            className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
-              activeTab === 'staff' ? 'text-[#9d512d] dark:text-white font-bold' : 'text-[#635848] hover:text-[#141d24] dark:text-[#a99f91] dark:hover:text-white'
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'staff'
+                ? 'bg-[#FBE9DF] text-[#C45A2D] dark:bg-[#9d512d] dark:text-white font-bold shadow-xs'
+                : 'text-[#64748B] hover:text-[#0F172A] dark:text-[#a99f91] dark:hover:text-white font-medium'
             }`}
           >
-            <div className={`p-1 rounded-lg ${activeTab === 'staff' ? 'bg-[#9d512d] text-white shadow-sm' : 'bg-transparent'}`}>
+            <div className={`p-1 rounded-xl ${activeTab === 'staff' ? 'text-[#C45A2D] dark:text-white' : 'bg-transparent'}`}>
               <UserCheck className="w-4 h-4" />
             </div>
             <span className="text-[10px]">સ્ટાફ</span>
@@ -692,11 +698,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => handleSelectTab('exams')}
-            className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
-              activeTab === 'exams' ? 'text-[#9d512d] dark:text-white font-bold' : 'text-[#635848] hover:text-[#141d24] dark:text-[#a99f91] dark:hover:text-white'
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'exams'
+                ? 'bg-[#FBE9DF] text-[#C45A2D] dark:bg-[#9d512d] dark:text-white font-bold shadow-xs'
+                : 'text-[#64748B] hover:text-[#0F172A] dark:text-[#a99f91] dark:hover:text-white font-medium'
             }`}
           >
-            <div className={`p-1 rounded-lg ${activeTab === 'exams' ? 'bg-[#9d512d] text-white shadow-sm' : 'bg-transparent'}`}>
+            <div className={`p-1 rounded-xl ${activeTab === 'exams' ? 'text-[#C45A2D] dark:text-white' : 'bg-transparent'}`}>
               <ClipboardList className="w-4 h-4" />
             </div>
             <span className="text-[10px]">પરીક્ષા</span>
@@ -704,12 +712,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => setMobileDrawerOpen(true)}
-            className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[#9d512d] dark:text-[#f59c73] hover:text-[#141d24] dark:hover:text-white transition-all cursor-pointer"
+            className="flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl text-[#64748B] hover:text-[#0F172A] dark:text-[#f59c73] dark:hover:text-white transition-all cursor-pointer font-medium"
           >
-            <div className="p-1 rounded-lg bg-[#ede8e0] dark:bg-white/5 border border-[#d8d0c5] dark:border-white/10">
-              <Menu className="w-4 h-4" />
+            <div className="p-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-[#E2E8F0] dark:border-white/10">
+              <Menu className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
             </div>
-            <span className="text-[10px] font-semibold">મેનુ</span>
+            <span className="text-[10px]">મેનુ</span>
           </button>
         </div>,
         document.body

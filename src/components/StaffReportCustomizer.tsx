@@ -728,15 +728,15 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
   };
 
   return (
-    <div className="glass-panel rounded-3xl border border-[#d8d0c5] dark:border-white/10 p-5 sm:p-6 shadow-xl space-y-6">
+    <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-5 sm:p-6 shadow-xl space-y-6">
       {/* Header & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#d8d0c5] dark:border-white/10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0] dark:border-white/10">
         <div>
-          <h3 className="text-base sm:text-lg font-bold text-[#141d24] dark:text-white flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-[#9d512d] dark:text-amber-400" />
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-[#C45A2D] dark:text-amber-400" />
             <span>૨. શાળા સ્ટાફ પત્રક PDF (Staff Master Register PDF)</span>
           </h3>
-          <p className="text-xs text-[#635848] dark:text-[#a99f91] mt-1">
+          <p className="text-xs text-slate-500 dark:text-[#a99f91] mt-1">
             શિક્ષકો અને વહીવટી કર્મચારીઓની તમામ વિગતો સાથેનું સત્તાવાર સ્ટાફ પત્રક PDF માં ડાઉનલોડ કરો. (હાજર તારીખ મુજબ ક્રમબદ્ધ)
           </p>
         </div>
@@ -768,7 +768,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
           <button
             type="button"
             onClick={handlePrintPDF}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#9d512d] to-amber-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-amber-950/20 transition-all cursor-pointer touch-manipulation"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#C45A2D] hover:bg-[#A8481F] dark:bg-gradient-to-r dark:from-[#9d512d] dark:to-amber-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-amber-950/20 transition-all cursor-pointer touch-manipulation"
           >
             <Printer className="w-4 h-4" />
             <span>સ્ટાફ પત્રક PDF ડાઉનલોડ ({staffToPrint.length})</span>
@@ -777,16 +777,16 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
       </div>
 
       {/* Filter Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#ede8e0]/60 dark:bg-white/[0.02] p-3.5 rounded-2xl border border-[#d8d0c5] dark:border-white/5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-white/60 dark:bg-white/[0.02] p-3.5 rounded-2xl border border-[#E2E8F0] dark:border-white/5">
         <div>
-          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-amber-300 mb-1 flex items-center gap-1">
+          <label className="block text-[11px] font-bold text-[#C45A2D] dark:text-amber-300 mb-1 flex items-center gap-1">
             <Filter className="w-3 h-3" />
             <span>વિભાગ (Section / Vibhag):</span>
           </label>
           <select
             value={filterSection}
             onChange={(e) => setFilterSection(e.target.value)}
-            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
+            className="w-full bg-white dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#C45A2D]"
           >
             <option value="all">તમામ વિભાગ (All Sections)</option>
             <option value="માધ્યમિક">માધ્યમિક (Secondary)</option>
@@ -795,14 +795,14 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
         </div>
 
         <div>
-          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-amber-300 mb-1 flex items-center gap-1">
+          <label className="block text-[11px] font-bold text-[#C45A2D] dark:text-amber-300 mb-1 flex items-center gap-1">
             <Filter className="w-3 h-3" />
             <span>હોદ્દો (Designation) ફિલ્ટર:</span>
           </label>
           <select
             value={filterDesignation}
             onChange={(e) => setFilterDesignation(e.target.value)}
-            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
+            className="w-full bg-white dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#C45A2D]"
           >
             <option value="all">તમામ હોદ્દા (All Designations)</option>
             {availableDesignations.map((desig) => (
@@ -814,22 +814,22 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
         </div>
 
         <div>
-          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-amber-300 mb-1">પત્રકનું શીર્ષક:</label>
+          <label className="block text-[11px] font-bold text-[#C45A2D] dark:text-amber-300 mb-1">પત્રકનું શીર્ષક:</label>
           <input
             type="text"
             value={reportTitle}
             onChange={(e) => setReportTitle(e.target.value)}
-            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
+            className="w-full bg-white dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#C45A2D]"
             placeholder="દા.ત. શાળા સ્ટાફ પત્રક ૨૦૨૬-૨૭"
           />
         </div>
 
         <div>
-          <label className="block text-[11px] font-bold text-[#9d512d] dark:text-amber-300 mb-1">પેપર ઓરિએન્ટેશન:</label>
+          <label className="block text-[11px] font-bold text-[#C45A2D] dark:text-amber-300 mb-1">પેપર ઓરિએન્ટેશન:</label>
           <select
             value={paperOrientation}
             onChange={(e) => setPaperOrientation(e.target.value as any)}
-            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
+            className="w-full bg-white dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#C45A2D]"
           >
             <option value="auto">ઓટોમેટિક ({calculatedOrientation === 'landscape' ? 'લેન્ડસ્કેપ' : 'પોર્ટ્રેટ'})</option>
             <option value="portrait">પોર્ટ્રેટ (Portrait - ઊભું)</option>
@@ -839,10 +839,10 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
       </div>
 
       {/* Staff Selection Section (Who to include in PDF) */}
-      <div className="bg-[#ede8e0]/40 dark:bg-white/[0.02] p-4 rounded-2xl border border-[#d8d0c5] dark:border-white/5 space-y-3">
+      <div className="bg-white/60 dark:bg-white/[0.02] p-4 rounded-2xl border border-[#E2E8F0] dark:border-white/5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#141d24] dark:text-white">
-            <Users className="w-4 h-4 text-[#9d512d] dark:text-amber-400" />
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+            <Users className="w-4 h-4 text-[#C45A2D] dark:text-amber-400" />
             <span>PDF માં સમાવિષ્ટ સ્ટાફ સભ્યો પસંદ કરો (Select Staff for PDF):</span>
             <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-amber-100/90 text-amber-950 dark:bg-amber-500/20 dark:text-amber-200 border border-amber-400/80 dark:border-amber-500/30 font-extrabold shadow-xs">
               {staffToPrint.length} / {filteredStaff.length} પસંદ
@@ -853,15 +853,15 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
             <button
               type="button"
               onClick={selectAllStaff}
-              className="text-[#9d512d] dark:text-amber-400 hover:underline font-semibold cursor-pointer"
+              className="text-[#C45A2D] dark:text-amber-400 hover:underline font-semibold cursor-pointer"
             >
               બધા પસંદ કરો
             </button>
-            <span className="text-stone-400 dark:text-white/20">•</span>
+            <span className="text-slate-300 dark:text-white/20">•</span>
             <button
               type="button"
               onClick={deselectAllStaff}
-              className="text-[#635848] dark:text-[#a99f91] hover:text-[#141d24] dark:hover:text-white font-semibold cursor-pointer"
+              className="text-slate-500 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white font-semibold cursor-pointer"
             >
               બધા રદ કરો
             </button>
@@ -870,13 +870,13 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
 
         {/* Staff Quick Search Filter */}
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={staffSearchQuery}
             onChange={(e) => setStaffSearchQuery(e.target.value)}
             placeholder="સ્ટાફનું નામ, વિષય, હોદ્દો, વિભાગ અથવા મોબાઇલ નંબર શોધો..."
-            className="w-full bg-white dark:bg-[#121921] border border-[#d8d0c5] dark:border-white/15 rounded-xl pl-8 pr-3 py-1.5 text-xs text-[#141d24] dark:text-white focus:outline-none focus:border-[#9d512d]"
+            className="w-full bg-white dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/15 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#C45A2D]"
           />
         </div>
 
@@ -893,20 +893,20 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
                 onClick={() => toggleStaffSelection(st.id)}
                 className={`flex items-start gap-2.5 p-2 rounded-xl text-xs font-medium border text-left transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-[#9d512d]/10 dark:bg-amber-950/40 border-[#9d512d]/50 dark:border-amber-500/60 text-[#141d24] dark:text-white shadow-sm'
-                    : 'bg-white/80 dark:bg-white/[0.02] border-[#d8d0c5] dark:border-white/10 text-[#635848] dark:text-[#a99f91] hover:border-[#9d512d]/40'
+                    ? 'bg-[#FBE9DF] border-[#C45A2D]/40 text-[#C45A2D] dark:bg-amber-950/40 dark:border-amber-500/60 dark:text-white shadow-xs'
+                    : 'bg-white/80 dark:bg-white/[0.02] border-[#E2E8F0] dark:border-white/10 text-slate-600 dark:text-[#a99f91] hover:border-[#C45A2D]/40'
                 }`}
               >
                 <div className="mt-0.5 shrink-0">
                   {isSelected ? (
-                    <CheckSquare className="w-4 h-4 text-[#9d512d] dark:text-amber-400" />
+                    <CheckSquare className="w-4 h-4 text-[#C45A2D] dark:text-amber-400" />
                   ) : (
-                    <Square className="w-4 h-4 text-stone-400 dark:text-white/30" />
+                    <Square className="w-4 h-4 text-slate-400 dark:text-white/30" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1">
-                    <div className="font-bold truncate text-[#141d24] dark:text-white">
+                    <div className="font-bold truncate text-slate-800 dark:text-white">
                       {idx + 1}. {st.fullName || 'નામ ઉપલબ્ધ નથી'}
                     </div>
                     {st.mobile ? (
@@ -926,14 +926,14 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
                       </span>
                     ) : null}
                   </div>
-                  <div className="text-[11px] text-[#635848] dark:text-[#a99f91] truncate flex items-center justify-between gap-1 mt-0.5">
+                  <div className="text-[11px] text-slate-500 dark:text-[#a99f91] truncate flex items-center justify-between gap-1 mt-0.5">
                     <span className="truncate">{st.designation || 'શિક્ષક'}</span>
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30 shrink-0">
                       {staffSection}
                     </span>
                   </div>
                   {joinDate ? (
-                    <div className="text-[10px] text-[#9d512d] dark:text-amber-300/90 font-mono mt-0.5 flex items-center gap-1">
+                    <div className="text-[10px] text-[#C45A2D] dark:text-amber-300/90 font-mono mt-0.5 flex items-center gap-1">
                       <Calendar className="w-2.5 h-2.5 shrink-0" />
                       <span>હાજર: {joinDate}</span>
                     </div>
@@ -943,7 +943,7 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
             );
           })}
           {displayStaffList.length === 0 && (
-            <div className="col-span-full py-4 text-center text-xs text-[#635848] dark:text-stone-400">
+            <div className="col-span-full py-4 text-center text-xs text-slate-500 dark:text-stone-400">
               કોઈ સ્ટાફ સભ્ય મળ્યા નથી.
             </div>
           )}
@@ -953,8 +953,8 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
       {/* Column Selection */}
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#141d24] dark:text-white">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#9d512d] dark:text-amber-300" />
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#C45A2D] dark:text-amber-300" />
             <span>સ્ટાફ પત્રકમાં સમાવિષ્ટ કોલમો (Select Staff Columns):</span>
             <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-950 dark:bg-amber-500/20 dark:text-amber-200 border border-amber-300/80 dark:border-amber-500/30 ml-1 font-bold shadow-xs">
               {selectedColumnIds.length} / {ALL_STAFF_COLUMNS.length} પસંદ
@@ -965,15 +965,15 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
             <button
               type="button"
               onClick={selectAllColumns}
-              className="text-[#9d512d] dark:text-amber-400 hover:underline font-semibold cursor-pointer"
+              className="text-[#C45A2D] dark:text-amber-400 hover:underline font-semibold cursor-pointer"
             >
               બધી પસંદ કરો
             </button>
-            <span className="text-stone-400 dark:text-white/20">•</span>
+            <span className="text-slate-300 dark:text-white/20">•</span>
             <button
               type="button"
               onClick={selectDefaultColumns}
-              className="text-[#635848] dark:text-[#a99f91] hover:text-[#141d24] dark:hover:text-white font-semibold cursor-pointer"
+              className="text-slate-500 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white font-semibold cursor-pointer"
             >
               મૂળભૂત (Default)
             </button>
@@ -990,49 +990,49 @@ export const StaffReportCustomizer: React.FC<StaffReportCustomizerProps> = ({
                 onClick={() => toggleColumn(col.id)}
                 className={`flex items-center gap-2 p-2 rounded-xl text-xs font-medium border text-left transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-[#9d512d]/10 dark:bg-amber-950/40 border-[#9d512d]/50 dark:border-amber-500/60 text-[#141d24] dark:text-white shadow-sm'
-                    : 'bg-white/80 dark:bg-white/[0.02] border-[#d8d0c5] dark:border-white/10 text-[#635848] dark:text-[#a99f91] hover:border-[#9d512d]/40'
+                    ? 'bg-[#FBE9DF] border-[#C45A2D]/40 text-[#C45A2D] dark:bg-amber-950/40 dark:border-amber-500/60 dark:text-white shadow-xs font-semibold'
+                    : 'bg-white/80 dark:bg-white/[0.02] border-[#E2E8F0] dark:border-white/10 text-slate-600 dark:text-[#a99f91] hover:border-[#C45A2D]/40'
                 }`}
               >
                 {isSelected ? (
-                  <CheckSquare className="w-4 h-4 text-[#9d512d] dark:text-amber-400 shrink-0" />
+                  <CheckSquare className="w-4 h-4 text-[#C45A2D] dark:text-amber-400 shrink-0" />
                 ) : (
-                  <Square className="w-4 h-4 text-stone-400 dark:text-white/30 shrink-0" />
+                  <Square className="w-4 h-4 text-slate-400 dark:text-white/30 shrink-0" />
                 )}
                 <span className="truncate">{col.label}</span>
               </button>
             );
           })}
         </div>
-        <p className="text-[11px] text-[#635848] dark:text-[#a99f91] mt-2">
+        <p className="text-[11px] text-slate-500 dark:text-[#a99f91] mt-2">
           💡 <strong>નોંધ:</strong> શાળામાં વહેલા હાજર થયેલા શિક્ષકો પ્રથમ ક્રમે આપોઆપ સોર્ટ થઈ જશે. શાળાનું નામ, સરનામું અને DISE કોડ હેડરમાં આપોઆપ આવી જશે.
         </p>
       </div>
 
       {/* Preview */}
-      <div className="pt-2 border-t border-[#d8d0c5] dark:border-white/10">
+      <div className="pt-2 border-t border-[#E2E8F0] dark:border-white/10">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#141d24] dark:text-[#e4ded6]">
-            <Eye className="w-3.5 h-3.5 text-[#9d512d] dark:text-amber-400" />
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-[#e4ded6]">
+            <Eye className="w-3.5 h-3.5 text-[#C45A2D] dark:text-amber-400" />
             <span>સ્ટાફ પત્રક પ્રિવ્યુ (પહેલા ૫ પસંદ કરેલ કર્મચારીઓ):</span>
           </div>
-          <span className="text-[11px] text-[#635848] dark:text-[#a99f91]">
+          <span className="text-[11px] text-slate-500 dark:text-[#a99f91]">
             કુલ {staffToPrint.length} કર્મચારીઓ પ્રિન્ટ થશે
           </span>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-[#d8d0c5] dark:border-white/10 bg-white dark:bg-slate-950/60 max-h-56 shadow-inner">
+        <div className="overflow-x-auto rounded-2xl border border-[#E2E8F0] dark:border-white/10 bg-white dark:bg-slate-950/60 max-h-56 shadow-xs">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-[#ede8e0] dark:bg-[#16202c] sticky top-0 text-[#9d512d] dark:text-amber-400 font-bold border-b border-[#d8d0c5] dark:border-white/10">
+            <thead className="bg-[#F1F5F9] dark:bg-[#16202c] sticky top-0 text-[#C45A2D] dark:text-amber-400 font-bold border-b border-[#E2E8F0] dark:border-white/10">
               <tr>
                 {activeColumns.map((col) => (
-                  <th key={col.id} className="p-2 border-b border-[#d8d0c5] dark:border-white/10 whitespace-nowrap">
+                  <th key={col.id} className="p-2 border-b border-[#E2E8F0] dark:border-white/10 whitespace-nowrap">
                     {col.label}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#d8d0c5]/50 dark:divide-white/5 text-[#141d24] dark:text-[#e4ded6]">
+            <tbody className="divide-y divide-[#E2E8F0]/80 dark:divide-white/5 text-slate-800 dark:text-[#e4ded6]">
               {staffToPrint.slice(0, 5).map((st, idx) => (
                 <tr key={st.id || idx} className="hover:bg-black/5 dark:hover:bg-white/[0.02]">
                   {activeColumns.map((col) => (

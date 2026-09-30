@@ -615,15 +615,15 @@ export const StudentStatsReport: React.FC<StudentStatsReportProps> = ({ school, 
   };
 
   return (
-    <div className="glass-panel rounded-3xl border border-white/10 p-5 sm:p-6 shadow-xl space-y-6">
+    <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-5 sm:p-6 shadow-xl space-y-6">
       {/* Header & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0] dark:border-white/10">
         <div>
-          <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-            <PieChart className="w-5 h-5 text-[#f59c73]" />
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <PieChart className="w-5 h-5 text-[#C45A2D] dark:text-[#f59c73]" />
             <span>૩. ધોરણવાર અને જાતિવાર વિદ્યાર્થી સંખ્યા પત્રક (Student Strength PDF)</span>
           </h3>
-          <p className="text-xs text-[#a99f91] mt-1">
+          <p className="text-xs text-slate-600 dark:text-[#a99f91] mt-1">
             ધોરણ ૯ થી ૧૨ ના કુમાર-કન્યા તેમજ OBC, SC, ST અને Others મુજબનું સત્તાવાર સંખ્યા પત્રક.
           </p>
         </div>
@@ -641,70 +641,70 @@ export const StudentStatsReport: React.FC<StudentStatsReportProps> = ({ school, 
 
       {/* Summary KPI Cards Preview */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-          <div className="text-[11px] font-bold text-blue-400 uppercase tracking-wide">
+        <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 dark:border-blue-500/20">
+          <div className="text-[11px] font-bold text-blue-800 dark:text-blue-400 uppercase tracking-wide">
             OBC / SEBC
           </div>
-          <div className="text-2xl font-black text-white font-mono mt-1">{totalOBC}</div>
-          <div className="text-[10px] text-[#a99f91] mt-0.5">
+          <div className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-1">{totalOBC}</div>
+          <div className="text-[10px] text-slate-600 dark:text-[#a99f91] mt-0.5">
             કુમાર: {grandTotals.kumarOBC} • કન્યા: {grandTotals.kanyaOBC}
           </div>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-          <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wide">
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 dark:border-emerald-500/20">
+          <div className="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wide">
             SC (અનુ. જાતિ)
           </div>
-          <div className="text-2xl font-black text-white font-mono mt-1">{totalSC}</div>
-          <div className="text-[10px] text-[#a99f91] mt-0.5">
+          <div className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-1">{totalSC}</div>
+          <div className="text-[10px] text-slate-600 dark:text-[#a99f91] mt-0.5">
             કુમાર: {grandTotals.kumarSC} • કન્યા: {grandTotals.kanyaSC}
           </div>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-          <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wide">
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 dark:border-amber-500/20">
+          <div className="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wide">
             ST (અનુ. જનજાતિ)
           </div>
-          <div className="text-2xl font-black text-white font-mono mt-1">{totalST}</div>
-          <div className="text-[10px] text-[#a99f91] mt-0.5">
+          <div className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-1">{totalST}</div>
+          <div className="text-[10px] text-slate-600 dark:text-[#a99f91] mt-0.5">
             કુમાર: {grandTotals.kumarST} • કન્યા: {grandTotals.kanyaST}
           </div>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20">
-          <div className="text-[11px] font-bold text-purple-400 uppercase tracking-wide">
+        <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 dark:border-purple-500/20">
+          <div className="text-[11px] font-bold text-purple-800 dark:text-purple-400 uppercase tracking-wide">
             Others (સામાન્ય/અન્ય)
           </div>
-          <div className="text-2xl font-black text-white font-mono mt-1">{totalOthers}</div>
-          <div className="text-[10px] text-[#a99f91] mt-0.5">
+          <div className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-1">{totalOthers}</div>
+          <div className="text-[10px] text-slate-600 dark:text-[#a99f91] mt-0.5">
             કુમાર: {grandTotals.kumarOthers} • કન્યા: {grandTotals.kanyaOthers}
           </div>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-[#f59c73]/10 border border-[#f59c73]/25 col-span-2 sm:col-span-1">
-          <div className="text-[11px] font-bold text-[#f59c73] uppercase tracking-wide">
+        <div className="p-3.5 rounded-2xl bg-[#FBE9DF] dark:bg-[#f59c73]/10 border border-[#C45A2D]/30 dark:border-[#f59c73]/25 col-span-2 sm:col-span-1">
+          <div className="text-[11px] font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase tracking-wide">
             કુલ વિદ્યાર્થીઓ
           </div>
-          <div className="text-2xl font-black text-white font-mono mt-1">
+          <div className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-1">
             {grandTotals.totalStudents}
           </div>
-          <div className="text-[10px] text-[#a99f91] mt-0.5">
+          <div className="text-[10px] text-slate-600 dark:text-[#a99f91] mt-0.5">
             કુમાર: {grandTotals.totalKumar} • કન્યા: {grandTotals.totalKanya}
           </div>
         </div>
       </div>
 
       {/* Configuration Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/5 text-xs text-[#e4ded6]">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-white/[0.03] border border-[#E2E8F0] dark:border-white/5 text-xs text-slate-700 dark:text-[#e4ded6] shadow-sm">
         <div className="flex items-center gap-2">
-          <span className="text-[#a99f91]">પેપર ઓરિએન્ટેશન:</span>
+          <span className="text-slate-600 dark:text-[#a99f91]">પેપર ઓરિએન્ટેશન:</span>
           <button
             type="button"
             onClick={() => setPaperOrientation('landscape')}
             className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
               paperOrientation === 'landscape'
-                ? 'bg-[#9d512d] text-white shadow-md'
-                : 'bg-white/5 text-[#a99f91] hover:text-white'
+                ? 'btn-terracotta text-white shadow-md'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/5 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             લેન્ડસ્કેપ (Landscape - પહોળું)
@@ -714,8 +714,8 @@ export const StudentStatsReport: React.FC<StudentStatsReportProps> = ({ school, 
             onClick={() => setPaperOrientation('portrait')}
             className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
               paperOrientation === 'portrait'
-                ? 'bg-[#9d512d] text-white shadow-md'
-                : 'bg-white/5 text-[#a99f91] hover:text-white'
+                ? 'btn-terracotta text-white shadow-md'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/5 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             પોર્ટ્રેટ (Portrait - ઊભું)
@@ -735,16 +735,16 @@ export const StudentStatsReport: React.FC<StudentStatsReportProps> = ({ school, 
 
       {/* Interactive Table Preview */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-[#a99f91]">
-          <span className="font-bold text-[#e4ded6] flex items-center gap-1.5">
-            <Eye className="w-4 h-4 text-[#f59c73]" />
+        <div className="flex items-center justify-between text-xs text-slate-600 dark:text-[#a99f91]">
+          <span className="font-bold text-slate-900 dark:text-[#e4ded6] flex items-center gap-1.5">
+            <Eye className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
             લાઈવ પૂર્વાવલોકન (Live Table Preview)
           </span>
           <span>નોંધ: OBC, SC, ST સિવાયના તમામ વિદ્યાર્થીઓ 'Others' કેટેગરીમાં ગણવામાં આવેલ છે.</span>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-white/10 shadow-inner">
-          <table className="w-full text-xs text-left text-[#e4ded6]">
+        <div className="overflow-x-auto rounded-2xl border border-[#E2E8F0] dark:border-white/10 shadow-inner">
+          <table className="w-full text-xs text-left text-slate-800 dark:text-[#e4ded6]">
             <thead>
               <tr className="bg-[#1e293b] text-white text-center text-[11px]">
                 <th rowSpan={2} className="py-2.5 px-3 border-r border-white/10 w-12">
@@ -783,53 +783,53 @@ export const StudentStatsReport: React.FC<StudentStatsReportProps> = ({ school, 
                 <th className="py-1 px-2 text-[#f59c73] font-bold">કુલ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 text-center font-mono">
+            <tbody className="divide-y divide-slate-200 dark:divide-white/5 text-center font-mono">
               {rows.map((r, idx) => (
-                <tr key={r.standard} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="py-2.5 px-3 border-r border-white/5 text-[#a99f91]">{idx + 1}</td>
-                  <td className="py-2.5 px-3 border-r border-white/5 font-bold text-white font-sans">
+                <tr key={r.standard} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
+                  <td className="py-2.5 px-3 border-r border-slate-200 dark:border-white/5 text-slate-500 dark:text-[#a99f91]">{idx + 1}</td>
+                  <td className="py-2.5 px-3 border-r border-slate-200 dark:border-white/5 font-bold text-slate-900 dark:text-white font-sans">
                     ધોરણ {r.standard}
                   </td>
-                  <td className="py-2 px-2 border-r border-white/5">{r.kumarOBC}</td>
-                  <td className="py-2 px-2 border-r border-white/5">{r.kanyaOBC}</td>
-                  <td className="py-2 px-2 border-r border-white/5">{r.kumarSC}</td>
-                  <td className="py-2 px-2 border-r border-white/5">{r.kanyaSC}</td>
-                  <td className="py-2 px-2 border-r border-white/5">{r.kumarST}</td>
-                  <td className="py-2 px-2 border-r border-white/5">{r.kanyaST}</td>
-                  <td className="py-2 px-2 border-r border-white/5">{r.kumarOthers}</td>
-                  <td className="py-2 px-2 border-r border-white/5">{r.kanyaOthers}</td>
-                  <td className="py-2 px-2 border-r border-white/5 font-bold text-white">
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/5 text-slate-800 dark:text-[#e4ded6]">{r.kumarOBC}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/5 text-slate-800 dark:text-[#e4ded6]">{r.kanyaOBC}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/5 text-slate-800 dark:text-[#e4ded6]">{r.kumarSC}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/5 text-slate-800 dark:text-[#e4ded6]">{r.kanyaSC}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/5 text-slate-800 dark:text-[#e4ded6]">{r.kumarST}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/5 text-slate-800 dark:text-[#e4ded6]">{r.kanyaST}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/5 text-slate-800 dark:text-[#e4ded6]">{r.kumarOthers}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/5 text-slate-800 dark:text-[#e4ded6]">{r.kanyaOthers}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/5 font-bold text-slate-900 dark:text-white">
                     {r.totalKumar}
                   </td>
-                  <td className="py-2 px-2 border-r border-white/5 font-bold text-white">
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/5 font-bold text-slate-900 dark:text-white">
                     {r.totalKanya}
                   </td>
-                  <td className="py-2 px-2 font-black text-[#f59c73] bg-white/[0.02]">
+                  <td className="py-2 px-2 font-black text-[#C45A2D] dark:text-[#f59c73] bg-slate-50/60 dark:bg-white/[0.02]">
                     {r.totalStudents}
                   </td>
                 </tr>
               ))}
 
               {showGrandTotalRow && (
-                <tr className="bg-white/10 font-bold text-white border-t-2 border-white/20">
-                  <td colSpan={2} className="py-3 px-3 font-sans text-center text-[#f59c73]">
+                <tr className="bg-slate-100 dark:bg-white/10 font-bold text-slate-900 dark:text-white border-t-2 border-slate-300 dark:border-white/20">
+                  <td colSpan={2} className="py-3 px-3 font-sans text-center text-[#C45A2D] dark:text-[#f59c73]">
                     કુલ સરવાળો (Grand Total)
                   </td>
-                  <td className="py-2 px-2 border-r border-white/10">{grandTotals.kumarOBC}</td>
-                  <td className="py-2 px-2 border-r border-white/10">{grandTotals.kanyaOBC}</td>
-                  <td className="py-2 px-2 border-r border-white/10">{grandTotals.kumarSC}</td>
-                  <td className="py-2 px-2 border-r border-white/10">{grandTotals.kanyaSC}</td>
-                  <td className="py-2 px-2 border-r border-white/10">{grandTotals.kumarST}</td>
-                  <td className="py-2 px-2 border-r border-white/10">{grandTotals.kanyaST}</td>
-                  <td className="py-2 px-2 border-r border-white/10">{grandTotals.kumarOthers}</td>
-                  <td className="py-2 px-2 border-r border-white/10">{grandTotals.kanyaOthers}</td>
-                  <td className="py-2 px-2 border-r border-white/10 text-emerald-400">
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/10">{grandTotals.kumarOBC}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/10">{grandTotals.kanyaOBC}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/10">{grandTotals.kumarSC}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/10">{grandTotals.kanyaSC}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/10">{grandTotals.kumarST}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/10">{grandTotals.kanyaST}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/10">{grandTotals.kumarOthers}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/10">{grandTotals.kanyaOthers}</td>
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/10 text-emerald-700 dark:text-emerald-400">
                     {grandTotals.totalKumar}
                   </td>
-                  <td className="py-2 px-2 border-r border-white/10 text-emerald-400">
+                  <td className="py-2 px-2 border-r border-slate-200 dark:border-white/10 text-emerald-700 dark:text-emerald-400">
                     {grandTotals.totalKanya}
                   </td>
-                  <td className="py-2 px-2 text-[#f59c73] font-black text-sm">
+                  <td className="py-2 px-2 text-[#C45A2D] dark:text-[#f59c73] font-black text-sm">
                     {grandTotals.totalStudents}
                   </td>
                 </tr>

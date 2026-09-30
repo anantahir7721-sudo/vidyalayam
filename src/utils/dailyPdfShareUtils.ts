@@ -23,9 +23,28 @@ export interface ShareResult {
   message?: string;
 }
 
-// Universal safe Gujarati font stack
-const GUJARATI_FONT_FAMILY =
-  "'Anek Gujarati', 'Noto Sans Gujarati', 'Gujarati Sangam MN', 'Shruti', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+// Universal safe Gujarati font stack - user requested Anek Gujarati only
+export const GUJARATI_FONT_FAMILY =
+  "'Anek Gujarati', 'Gujarati Sangam MN', 'Shruti', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+/**
+ * Standard html2canvas options to guarantee ZERO scroll shifting, perfect 1:1 scale, and crisp font rendering.
+ * Forces scrollX: 0, scrollY: 0, x: 0, y: 0 to prevent the notorious scrolled-down downward displacement bug.
+ */
+const HTML2CANVAS_PDF_OPTIONS = {
+  scale: 2,
+  useCORS: true,
+  logging: false,
+  backgroundColor: '#ffffff',
+  scrollX: 0,
+  scrollY: 0,
+  x: 0,
+  y: 0,
+  width: 794,
+  height: 1120,
+  windowWidth: 794,
+  windowHeight: 1120,
+};
 
 /**
  * Ensures browser fonts are loaded before capturing via html2canvas.
@@ -33,8 +52,18 @@ const GUJARATI_FONT_FAMILY =
  */
 async function waitForFontsToRender(): Promise<void> {
   try {
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
+    if (document.fonts) {
+      await Promise.allSettled([
+        document.fonts.load('300 14px "Anek Gujarati"'),
+        document.fonts.load('400 14px "Anek Gujarati"'),
+        document.fonts.load('500 14px "Anek Gujarati"'),
+        document.fonts.load('600 14px "Anek Gujarati"'),
+        document.fonts.load('700 14px "Anek Gujarati"'),
+        document.fonts.load('800 14px "Anek Gujarati"'),
+      ]);
+      if (document.fonts.ready) {
+        await document.fonts.ready;
+      }
     }
   } catch (e) {
     // Ignore font loading errors and proceed
@@ -69,8 +98,13 @@ export async function shareDailyNewsAsPdf(
   options: ShareOptions
 ): Promise<ShareResult> {
   const schoolName = options.schoolName || 'શાળા શૈક્ષણિક પોર્ટલ';
-  const cleanSchool = schoolName.replace(/[^a-zA-Z0-9\u0A80-\u0AFF]/g, '_');
-  const fileName = `${cleanSchool}_Samachar_${bulletin.dateKey}.pdf`;
+  const hasCustomSchool = options.schoolName && options.schoolName !== 'શાળા શૈક્ષણિક પોર્ટલ';
+  const cleanSchool = hasCustomSchool
+    ? options.schoolName.trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_')
+    : '';
+  const fileName = cleanSchool
+    ? `${cleanSchool}_આજના_મુખ્ય_સમાચાર_${bulletin.dateKey}.pdf`
+    : `આજના_મુખ્ય_સમાચાર_${bulletin.dateKey}.pdf`;
 
   await waitForFontsToRender();
 
@@ -104,17 +138,17 @@ export async function shareDailyNewsAsPdf(
         <h1 style="font-size: 20px; font-weight: 800; color: #1e293b; margin: 0 0 3px 0; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY};">
           ${schoolName}
         </h1>
-        <div style="font-size: 11px; color: #64748b; font-weight: 600;">
+        <div style="font-size: 11px; color: #64748b; font-weight: 600; line-height: 1.3; font-family: ${GUJARATI_FONT_FAMILY};">
           ${options.diseCode ? `DISE કોડ: ${options.diseCode} • ` : ''}${options.district ? `${options.district} જિલ્લો, ગુજરાત • ` : ''}દૈનિક સમાચાર બુલેટિન
         </div>
       </div>
 
       <!-- Title & Date Strip -->
       <div style="background: #9d512d; color: #ffffff; border-radius: 6px; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <div style="font-size: 13.5px; font-weight: 800; font-family: ${GUJARATI_FONT_FAMILY};">
+        <div style="font-size: 13.5px; font-weight: 800; line-height: 1.3; font-family: ${GUJARATI_FONT_FAMILY};">
           📰 આજના મુખ્ય ૧૦ સમાચાર (Daily News Bulletin)
         </div>
-        <div style="font-size: 11.5px; font-weight: 700; background: rgba(0,0,0,0.22); padding: 3px 9px; border-radius: 4px;">
+        <div style="font-size: 11.5px; font-weight: 700; background: rgba(0,0,0,0.22); padding: 3px 9px; border-radius: 4px; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
           ${bulletin.editionDate} • સવારે ૫:૦૦ વાગ્યાની આવૃત્તિ
         </div>
       </div>
@@ -123,8 +157,8 @@ export async function shareDailyNewsAsPdf(
       ${
         bulletin.morningPrayerShloka
           ? `
-        <div style="background: #fdfaf6; border-left: 3.5px solid #9d512d; padding: 6px 10px; margin-bottom: 8px; border-radius: 4px;">
-          <span style="font-size: 10.5px; font-weight: 800; color: #9d512d;">✨ પ્રાર્થના મંત્ર / સુવિચાર: </span>
+        <div style="background: #fdfaf6; border-left: 3.5px solid #9d512d; padding: 6px 10px; margin-bottom: 8px; border-radius: 4px; line-height: 1.35;">
+          <span style="font-size: 10.5px; font-weight: 800; color: #9d512d; font-family: ${GUJARATI_FONT_FAMILY};">✨ પ્રાર્થના મંત્ર / સુવિચાર: </span>
           <span style="font-size: 11.5px; font-weight: 600; color: #334155; font-style: italic; font-family: ${GUJARATI_FONT_FAMILY};">
             ${bulletin.morningPrayerShloka}
           </span>
@@ -134,21 +168,21 @@ export async function shareDailyNewsAsPdf(
       }
 
       <!-- 10 News Items: ONLY Headlines and Context (Summary), NO Category/Region Tags -->
-      <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; justify-content: space-around;">
+      <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; justify-content: space-between;">
         ${bulletin.items
           .slice(0, 10)
           .map((item, idx) => {
             return `
-            <div style="padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+            <div style="padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box;">
               <div style="display: flex; align-items: flex-start; gap: 8px;">
-                <span style="font-size: 11px; font-weight: 800; background: #9d512d; color: #ffffff; min-width: 19px; height: 19px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; shrink-0; margin-top: 1px;">
+                <span style="font-size: 11px; font-weight: 800; background: #9d512d; color: #ffffff; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 4px; flex-shrink: 0; display: inline-block; vertical-align: top; margin-top: 1px; font-family: ${GUJARATI_FONT_FAMILY};">
                   ${toGujaratiDigits(idx + 1)}
                 </span>
                 <div style="flex: 1; min-width: 0;">
-                  <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.35; margin-bottom: 2px; font-family: ${GUJARATI_FONT_FAMILY};">
+                  <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.35; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
                     ${item.headline}
                   </div>
-                  <div style="font-size: 10.5px; color: #475569; line-height: 1.4; font-family: ${GUJARATI_FONT_FAMILY};">
+                  <div style="font-size: 10.5px; color: #475569; line-height: 1.38; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
                     ${item.summary}
                   </div>
                 </div>
@@ -160,7 +194,7 @@ export async function shareDailyNewsAsPdf(
       </div>
 
       <!-- Footer Note -->
-      <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; color: #64748b;">
+      <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; color: #64748b; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
         <span>વિદ્યાલયમ શૈક્ષણિક પોર્ટલ • શાળા પ્રાર્થના સંમેલન સેવા</span>
         <span>${bulletin.editionDate}</span>
       </div>
@@ -170,12 +204,7 @@ export async function shareDailyNewsAsPdf(
   document.body.appendChild(container);
 
   try {
-    const canvas = await html2canvas(container, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-    });
+    const canvas = await html2canvas(container, HTML2CANVAS_PDF_OPTIONS);
 
     if (document.body.contains(container)) {
       document.body.removeChild(container);
@@ -251,8 +280,13 @@ export async function shareDailyJanvaJevuAsPdf(
   options: ShareOptions
 ): Promise<ShareResult> {
   const schoolName = options.schoolName || 'શાળા શૈક્ષણિક પોર્ટલ';
-  const cleanSchool = schoolName.replace(/[^a-zA-Z0-9\u0A80-\u0AFF]/g, '_');
-  const fileName = `${cleanSchool}_Janva_Jevu_${bulletin.dateKey}.pdf`;
+  const hasCustomSchool = options.schoolName && options.schoolName !== 'શાળા શૈક્ષણિક પોર્ટલ';
+  const cleanSchool = hasCustomSchool
+    ? options.schoolName.trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_')
+    : '';
+  const fileName = cleanSchool
+    ? `${cleanSchool}_આજનું_જાણવા_જેવું_${bulletin.dateKey}.pdf`
+    : `આજનું_જાણવા_જેવું_${bulletin.dateKey}.pdf`;
 
   // Helper to extract strictly 1 clean single word from answer
   const cleanOneWord = (ans: string): string => {
@@ -301,16 +335,16 @@ export async function shareDailyJanvaJevuAsPdf(
         const idx = startIdx + i;
         const singleWordAnswer = cleanOneWord(q.answer);
         return `
-        <div style="padding: 5px 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box;">
+        <div style="padding: 5px 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; justify-content: center;">
           <div style="display: flex; align-items: flex-start; gap: 6px;">
-            <span style="font-size: 10px; font-weight: 800; background: #1e293b; color: #ffffff; min-width: 17px; height: 17px; display: inline-flex; align-items: center; justify-content: center; border-radius: 3px; shrink-0; margin-top: 1px;">
+            <span style="font-size: 10px; font-weight: 800; background: #1e293b; color: #ffffff; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 3px; flex-shrink: 0; display: inline-block; vertical-align: top; margin-top: 1px; font-family: ${GUJARATI_FONT_FAMILY};">
               ${toGujaratiDigits(idx + 1)}
             </span>
             <div style="flex: 1; min-width: 0;">
-              <div style="font-size: 10.5px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 3px; font-family: ${GUJARATI_FONT_FAMILY};">
+              <div style="font-size: 10.5px; font-weight: 700; color: #0f172a; line-height: 1.3; margin: 0 0 3px 0; font-family: ${GUJARATI_FONT_FAMILY};">
                 ${q.question}
               </div>
-              <div style="display: inline-block; font-size: 10px; font-weight: 800; background: #dcfce7; color: #166534; padding: 1.5px 6px; border-radius: 4px; border: 1px solid #86efac; font-family: ${GUJARATI_FONT_FAMILY};">
+              <div style="display: inline-block; font-size: 10px; font-weight: 800; background: #dcfce7; color: #166534; padding: 2px 7px; border-radius: 4px; border: 1px solid #86efac; line-height: 1.25; vertical-align: middle; font-family: ${GUJARATI_FONT_FAMILY};">
                 જવાબ: ${singleWordAnswer}
               </div>
             </div>
@@ -329,41 +363,41 @@ export async function shareDailyJanvaJevuAsPdf(
         <h1 style="font-size: 20px; font-weight: 800; color: #1e293b; margin: 0 0 3px 0; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY};">
           ${schoolName}
         </h1>
-        <div style="font-size: 11px; color: #64748b; font-weight: 600;">
+        <div style="font-size: 11px; color: #64748b; font-weight: 600; line-height: 1.3; font-family: ${GUJARATI_FONT_FAMILY};">
           ${options.diseCode ? `DISE કોડ: ${options.diseCode} • ` : ''}${options.district ? `${options.district} જિલ્લો, ગુજરાત • ` : ''}સામાન્ય જ્ઞાન બુલેટિન
         </div>
       </div>
 
       <!-- Title & Date Strip -->
       <div style="background: #1e293b; color: #ffffff; border-radius: 6px; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-left: 4px solid #f59c73;">
-        <div style="font-size: 13.5px; font-weight: 800; font-family: ${GUJARATI_FONT_FAMILY};">
+        <div style="font-size: 13.5px; font-weight: 800; line-height: 1.3; font-family: ${GUJARATI_FONT_FAMILY};">
           💡 આજનું જાણવા જેવું (૨૦ પ્રશ્નોત્તરી — એક શબ્દમાં જવાબ)
         </div>
-        <div style="font-size: 11.5px; font-weight: 700; color: #f59c73;">
+        <div style="font-size: 11.5px; font-weight: 700; color: #f59c73; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
           ${bulletin.editionDate} • બપોરે ૧:૦૦ વાગ્યાની આવૃત્તિ
         </div>
       </div>
 
       <!-- Suvichar Strip -->
-      <div style="background: #fdfaf6; border-left: 3.5px solid #f59c73; padding: 6px 10px; margin-bottom: 8px; border-radius: 4px;">
-        <span style="font-size: 10.5px; font-weight: 800; color: #9d512d;">✨ આજનો સુવિચાર: </span>
+      <div style="background: #fdfaf6; border-left: 3.5px solid #f59c73; padding: 6px 10px; margin-bottom: 8px; border-radius: 4px; line-height: 1.35;">
+        <span style="font-size: 10.5px; font-weight: 800; color: #9d512d; font-family: ${GUJARATI_FONT_FAMILY};">✨ આજનો સુવિચાર: </span>
         <span style="font-size: 11px; font-weight: 600; color: #1e293b; font-family: ${GUJARATI_FONT_FAMILY};">
           "${suvicharText}"
         </span>
       </div>
 
       <!-- 20 Questions: Clean 2-Column Side-by-Side Layout (1-10 on Left, 11-20 on Right) -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; align-items: stretch;">
-        <div style="display: flex; flex-direction: column; gap: 4.5px; justify-content: space-between;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; align-items: stretch; margin-bottom: 4px;">
+        <div style="display: flex; flex-direction: column; gap: 5px; height: 100%; justify-content: space-between;">
           ${renderColumnItems(col1, 0)}
         </div>
-        <div style="display: flex; flex-direction: column; gap: 4.5px; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 5px; height: 100%; justify-content: space-between;">
           ${renderColumnItems(col2, 10)}
         </div>
       </div>
 
       <!-- Footer Note -->
-      <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; color: #64748b;">
+      <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; color: #64748b; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
         <span>વિદ્યાલયમ શૈક્ષણિક પોર્ટલ • સામાન્ય જ્ઞાન સેવા</span>
         <span>${bulletin.editionDate}</span>
       </div>
@@ -373,12 +407,7 @@ export async function shareDailyJanvaJevuAsPdf(
   document.body.appendChild(container);
 
   try {
-    const canvas = await html2canvas(container, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-    });
+    const canvas = await html2canvas(container, HTML2CANVAS_PDF_OPTIONS);
 
     if (document.body.contains(container)) {
       document.body.removeChild(container);
@@ -454,8 +483,13 @@ export async function shareDailySuvicharAsPdf(
   options: ShareOptions
 ): Promise<ShareResult> {
   const schoolName = options.schoolName || 'શાળા શૈક્ષણિક પોર્ટલ';
-  const cleanSchool = schoolName.replace(/[^a-zA-Z0-9\u0A80-\u0AFF]/g, '_');
-  const fileName = `${cleanSchool}_Suvichar_${bulletin.dateKey}.pdf`;
+  const hasCustomSchool = options.schoolName && options.schoolName !== 'શાળા શૈક્ષણિક પોર્ટલ';
+  const cleanSchool = hasCustomSchool
+    ? options.schoolName.trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_')
+    : '';
+  const fileName = cleanSchool
+    ? `${cleanSchool}_આજનો_સુવિચાર_${bulletin.dateKey}.pdf`
+    : `આજનો_સુવિચાર_${bulletin.dateKey}.pdf`;
 
   await waitForFontsToRender();
 
@@ -660,12 +694,7 @@ export async function shareDailySuvicharAsPdf(
   document.body.appendChild(container);
 
   try {
-    const canvas = await html2canvas(container, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-    });
+    const canvas = await html2canvas(container, HTML2CANVAS_PDF_OPTIONS);
 
     if (document.body.contains(container)) {
       document.body.removeChild(container);
@@ -739,22 +768,30 @@ export async function shareDailyInterestingFactsAsPdf(
   options: ShareOptions
 ): Promise<ShareResult> {
   const schoolName = options.schoolName || 'શાળા શૈક્ષણિક પોર્ટલ';
-  const cleanSchool = schoolName.replace(/[^a-zA-Z0-9\u0A80-\u0AFF]/g, '_');
-  const fileName = `${cleanSchool}_Janva_Jevu_12Facts_${bulletin.dateKey}.pdf`;
+  const hasCustomSchool = options.schoolName && options.schoolName !== 'શાળા શૈક્ષણિક પોર્ટલ';
+  const cleanSchool = hasCustomSchool
+    ? options.schoolName.trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_')
+    : '';
+  const fileName = cleanSchool
+    ? `${cleanSchool}_આજનું_જાણવા_જેવું_૧૨_તથ્યો_${bulletin.dateKey}.pdf`
+    : `આજનું_જાણવા_જેવું_૧૨_તથ્યો_${bulletin.dateKey}.pdf`;
 
   await waitForFontsToRender();
 
   const container = document.createElement('div');
   container.style.position = 'fixed';
-  container.style.left = '-9999px';
+  container.style.left = '0';
   container.style.top = '0';
+  container.style.zIndex = '-9999';
+  container.style.pointerEvents = 'none';
   container.style.width = '794px';
   container.style.height = '1120px';
+  container.style.maxHeight = '1120px';
   container.style.backgroundColor = '#ffffff';
   container.style.color = '#0f172a';
   container.style.fontFamily = GUJARATI_FONT_FAMILY;
   container.style.boxSizing = 'border-box';
-  container.style.padding = '18px 24px';
+  container.style.padding = '18px 22px';
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
   container.style.justifyContent = 'space-between';
@@ -763,60 +800,67 @@ export async function shareDailyInterestingFactsAsPdf(
   const factsHtml = bulletin.facts
     .slice(0, 12)
     .map((fact) => `
-      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-left:4px solid #f59e0b; border-radius:8px; padding:6px 10px; display:flex; flex-direction:column; gap:2px;">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-left:4px solid #f59e0b; border-radius:8px; padding:6px 9px; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
           <div style="display:flex; align-items:center; gap:6px;">
-            <span style="background:#fef3c7; color:#92400e; font-size:8pt; font-weight:800; border-radius:4px; padding:1px 5px;">
+            <span style="background:#fef3c7; color:#92400e; font-size:8pt; font-weight:800; border-radius:4px; width:18px; height:18px; line-height:18px; text-align:center; display:inline-block; vertical-align:middle; font-family:${GUJARATI_FONT_FAMILY};">
               ${toGujaratiDigits(fact.factNumber)}
             </span>
-            <span style="font-size:8.5pt; font-weight:800; color:#0f172a;">${fact.title}</span>
+            <span style="font-size:8.5pt; font-weight:800; color:#0f172a; line-height:1.25; font-family:${GUJARATI_FONT_FAMILY};">${fact.title}</span>
           </div>
-          <span style="font-size:7pt; color:#64748b; font-weight:600;">${fact.category}</span>
+          <span style="font-size:7pt; color:#64748b; font-weight:600; line-height:1.2; font-family:${GUJARATI_FONT_FAMILY};">${fact.category}</span>
         </div>
-        <div style="font-size:7.5pt; color:#334155; line-height:1.25; margin-top:2px;">
+        <div style="font-size:7.5pt; color:#334155; line-height:1.32; margin-top:2px; font-family:${GUJARATI_FONT_FAMILY};">
           ${fact.fact}
         </div>
-        ${fact.whyItMatters ? `<div style="font-size:6.8pt; color:#0284c7; font-style:italic;">💡 ${fact.whyItMatters}</div>` : ''}
+        ${fact.whyItMatters ? `<div style="font-size:6.8pt; color:#0284c7; font-style:italic; line-height:1.25; margin-top:2px; font-family:${GUJARATI_FONT_FAMILY};">💡 ${fact.whyItMatters}</div>` : ''}
       </div>
     `)
     .join('');
 
   container.innerHTML = `
-    <div>
-      <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #0f172a; padding-bottom:8px; margin-bottom:10px;">
-        <div>
-          <div style="font-size:15pt; font-weight:900; color:#0f172a; letter-spacing:-0.3px;">${schoolName}</div>
-          <div style="font-size:9pt; font-weight:700; color:#d97706; margin-top:1px;">
-            💡 આજનું જાણવા જેવું — રોજના ૧૨ રોમાંચક તથ્યો (ધોરણ ૯ થી ૧૨ વિશેષ)
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:9pt; font-weight:800; color:#0f172a;">${bulletin.editionDate}</div>
-          <div style="font-size:7.5pt; color:#64748b;">બપોરે ૧:૦૦ વાગ્યાની આવૃત્તિ</div>
+    <div style="border: 2px solid #d97706; border-radius: 10px; padding: 14px 18px; background: #ffffff; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+      
+      <!-- School Header -->
+      <div style="text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 8px;">
+        <h1 style="font-size: 20px; font-weight: 800; color: #1e293b; margin: 0 0 3px 0; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY};">
+          ${schoolName}
+        </h1>
+        <div style="font-size: 11px; color: #64748b; font-weight: 600; line-height: 1.3; font-family: ${GUJARATI_FONT_FAMILY};">
+          ${options.diseCode ? `DISE કોડ: ${options.diseCode} • ` : ''}${options.district ? `${options.district} જિલ્લો, ગુજરાત • ` : ''}સામાન્ય જ્ઞાન — વિશેષ તથ્યો (ધોરણ ૯ થી ૧૨)
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <!-- Title & Date Strip -->
+      <div style="background: #b45309; color: #ffffff; border-radius: 6px; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="font-size: 13.5px; font-weight: 800; line-height: 1.3; font-family: ${GUJARATI_FONT_FAMILY};">
+          💡 આજનું જાણવા જેવું — ૧૨ રોમાંચક તથ્યો
+        </div>
+        <div style="font-size: 11.5px; font-weight: 700; background: rgba(0,0,0,0.22); padding: 3px 9px; border-radius: 4px; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
+          ${bulletin.editionDate} • બપોરે ૧:૦૦ વાગ્યાની આવૃત્તિ
+        </div>
+      </div>
+
+      <!-- 12 Facts Grid: 2 Columns of 6, perfectly balanced -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px; flex: 1; align-content: space-between; margin-bottom: 4px;">
         ${factsHtml}
       </div>
-    </div>
 
-    <div style="border-top:1px solid #e2e8f0; padding-top:6px; display:flex; align-items:center; justify-content:space-between; font-size:7.5pt; color:#64748b;">
-      <span>વિદ્યાલયમ શૈક્ષણિક પોર્ટલ • રોજ બપોરે ૧:૦૦ વાગ્યે ઓટો-અપડેટ</span>
-      <span>પાનું ૧ / ૧ • શાળા પ્રાર્થના સંમેલન & જ્ઞાન ચર્ચા</span>
+      <!-- Footer Note -->
+      <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; color: #64748b; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
+        <span>વિદ્યાલયમ શૈક્ષણિક પોર્ટલ • રોજ બપોરે ૧:૦૦ વાગ્યે ઓટો-અપડેટ</span>
+        <span>${bulletin.editionDate}</span>
+      </div>
     </div>
   `;
 
   document.body.appendChild(container);
 
   try {
-    const canvas = await html2canvas(container, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
-    document.body.removeChild(container);
+    const canvas = await html2canvas(container, HTML2CANVAS_PDF_OPTIONS);
+    if (document.body.contains(container)) {
+      document.body.removeChild(container);
+    }
 
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);

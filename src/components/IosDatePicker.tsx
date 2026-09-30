@@ -405,24 +405,24 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
       onClick={handleCancel}
     >
       <div
-        className="w-full sm:max-w-md bg-white dark:bg-[#1c1c1e] text-stone-900 dark:text-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-stone-200 dark:border-white/10 overflow-hidden flex flex-col"
+        className="w-full sm:max-w-md bg-white dark:bg-[#1c1c1e] text-slate-900 dark:text-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[#E2E8F0] dark:border-white/10 overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* iOS Grabber on mobile */}
-        <div className="w-12 h-1.5 bg-stone-300 dark:bg-white/20 rounded-full mx-auto mt-2.5 sm:hidden" />
+        <div className="w-12 h-1.5 bg-slate-300 dark:bg-white/20 rounded-full mx-auto mt-2.5 sm:hidden" />
 
         {/* iOS Navigation Header */}
-        <div className="px-5 py-3 border-b border-stone-200 dark:border-white/10 flex items-center justify-between">
+        <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-white/10 flex items-center justify-between">
           <button
             type="button"
             onClick={handleCancel}
-            className="text-sm font-semibold text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-white transition-colors cursor-pointer"
+            className="text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-stone-400 dark:hover:text-white transition-colors cursor-pointer"
           >
             રદ કરો (Cancel)
           </button>
 
           <div className="text-center">
-            <h3 className="text-[11px] font-bold text-stone-500 dark:text-[#a99f91] uppercase tracking-wider">
+            <h3 className="text-[11px] font-bold text-slate-500 dark:text-[#a99f91] uppercase tracking-wider">
               {title}
             </h3>
             {isManualEditing ? (
@@ -433,7 +433,7 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
                 onChange={(e) => handleManualTextChange(e.target.value)}
                 placeholder="DD/MM/YYYY"
                 maxLength={10}
-                className="w-28 text-center text-xs font-mono font-bold px-2 py-0.5 rounded border border-[#9d512d] bg-stone-50 dark:bg-black/30 text-stone-900 dark:text-white"
+                className="w-28 text-center text-xs font-mono font-bold px-2 py-0.5 rounded border border-[#C45A2D] bg-slate-50 dark:bg-black/30 text-slate-900 dark:text-white"
               />
             ) : (
               <div
@@ -442,11 +442,11 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
                   setManualText(displayStandardEnglish);
                   setIsManualEditing(true);
                 }}
-                className="text-sm font-black text-[#9d512d] dark:text-[#f59c73] flex items-center justify-center gap-1 cursor-pointer hover:underline"
+                className="text-sm font-black text-[#C45A2D] dark:text-[#f59c73] flex items-center justify-center gap-1 cursor-pointer hover:underline"
                 title="તારીખ લખવા માટે ક્લિક કરો"
               >
                 <span>{displayFormattedGujarati}</span>
-                <Edit3 className="w-3 h-3 text-stone-400" />
+                <Edit3 className="w-3 h-3 text-slate-400" />
               </div>
             )}
           </div>
@@ -454,17 +454,17 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
           <button
             type="button"
             onClick={handleConfirm}
-            className="text-sm font-bold text-[#9d512d] dark:text-[#f59c73] hover:underline cursor-pointer"
+            className="text-sm font-bold text-[#C45A2D] dark:text-[#f59c73] hover:underline cursor-pointer"
           >
             પૂર્ણ (Done)
           </button>
         </div>
 
         {/* Cupertino 3-Wheel Drum Picker */}
-        <div className="p-4 grid grid-cols-12 gap-1.5 items-center bg-stone-50/50 dark:bg-black/20">
+        <div className="p-4 grid grid-cols-12 gap-1.5 items-center bg-slate-50/70 dark:bg-black/20">
           {/* Day Wheel */}
           <div className="col-span-3 sm:col-span-3">
-            <div className="text-[10px] font-bold text-center text-stone-400 uppercase mb-1">
+            <div className="text-[10px] font-bold text-center text-slate-400 uppercase mb-1">
               દિવસ (Day)
             </div>
             <CupertinoWheelColumn
@@ -476,7 +476,7 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
 
           {/* Month Wheel */}
           <div className="col-span-5 sm:col-span-5">
-            <div className="text-[10px] font-bold text-center text-stone-400 uppercase mb-1">
+            <div className="text-[10px] font-bold text-center text-slate-400 uppercase mb-1">
               મહિનો (Month)
             </div>
             <CupertinoWheelColumn
@@ -488,7 +488,7 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
 
           {/* Year Wheel */}
           <div className="col-span-4 sm:col-span-4">
-            <div className="text-[10px] font-bold text-center text-stone-400 uppercase mb-1">
+            <div className="text-[10px] font-bold text-center text-slate-400 uppercase mb-1">
               વર્ષ (Year)
             </div>
             <CupertinoWheelColumn
@@ -500,8 +500,8 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
         </div>
 
         {/* Decade Quick Jump Selector (Fast Year Scrolling) */}
-        <div className="px-4 py-2 border-t border-stone-200 dark:border-white/10 flex items-center justify-between gap-1 overflow-x-auto no-scrollbar bg-stone-100/60 dark:bg-black/40 text-[11px]">
-          <span className="text-[10px] text-stone-400 uppercase font-bold shrink-0">દાયકો:</span>
+        <div className="px-4 py-2 border-t border-[#E2E8F0] dark:border-white/10 flex items-center justify-between gap-1 overflow-x-auto no-scrollbar bg-slate-100/70 dark:bg-black/40 text-[11px]">
+          <span className="text-[10px] text-slate-400 uppercase font-bold shrink-0">દાયકો:</span>
           {[1970, 1980, 1990, 2000, 2010, 2020].map((dec) => {
             const isCurrentDecade = selectedYear >= dec && selectedYear < dec + 10;
             return (
@@ -511,8 +511,8 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
                 onClick={() => handleDecadeJump(dec + 5)}
                 className={`px-2 py-0.5 rounded font-mono text-[11px] font-bold transition-all cursor-pointer ${
                   isCurrentDecade
-                    ? 'bg-[#9d512d] text-white shadow-xs'
-                    : 'bg-white dark:bg-white/10 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-white/20'
+                    ? 'bg-[#C45A2D] text-white shadow-xs dark:bg-[#9d512d]'
+                    : 'bg-white dark:bg-white/10 text-slate-600 dark:text-stone-300 hover:bg-slate-200 dark:hover:bg-white/20'
                 }`}
               >
                 {dec}s
@@ -522,12 +522,12 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
         </div>
 
         {/* Quick Presets / Shortcuts */}
-        <div className="px-4 py-3 border-t border-stone-200 dark:border-white/10 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar bg-white dark:bg-[#1c1c1e]">
+        <div className="px-4 py-3 border-t border-[#E2E8F0] dark:border-white/10 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar bg-white dark:bg-[#1c1c1e]">
           <div className="flex items-center gap-1.5 text-xs">
             <button
               type="button"
               onClick={() => handleQuickPreset(0, true)}
-              className="px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-white/10 hover:bg-[#9d512d] hover:text-white text-stone-700 dark:text-stone-300 font-bold transition-all text-xs cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/10 hover:bg-[#C45A2D] hover:text-white text-slate-700 dark:text-stone-300 font-bold transition-all text-xs cursor-pointer"
             >
               આજે (Today)
             </button>
@@ -537,7 +537,7 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedYear((y) => y - 5)}
-                  className="px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/20 text-stone-700 dark:text-stone-300 font-semibold transition-all text-xs cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-stone-300 font-semibold transition-all text-xs cursor-pointer"
                   title="5 વર્ષ પાછળ"
                 >
                   -૫ વર્ષ
@@ -545,7 +545,7 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedYear((y) => y - 10)}
-                  className="px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/20 text-stone-700 dark:text-stone-300 font-semibold transition-all text-xs cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-stone-300 font-semibold transition-all text-xs cursor-pointer"
                   title="10 વર્ષ પાછળ (વિદ્યાર્થી DOB)"
                 >
                   -૧૦ વર્ષ
@@ -553,7 +553,7 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedYear((y) => y - 15)}
-                  className="px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/20 text-stone-700 dark:text-stone-300 font-semibold transition-all text-xs cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-stone-300 font-semibold transition-all text-xs cursor-pointer"
                   title="15 વર્ષ પાછળ"
                 >
                   -૧૫ વર્ષ
@@ -565,7 +565,7 @@ export const IosDatePickerModal: React.FC<IosDatePickerProps> = ({
           <button
             type="button"
             onClick={handleConfirm}
-            className="px-4 py-1.5 rounded-xl bg-[#9d512d] hover:bg-[#b55f37] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            className="px-4 py-1.5 rounded-xl bg-[#C45A2D] hover:bg-[#A8481F] dark:bg-[#9d512d] dark:hover:bg-[#b55f37] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
           >
             <Check className="w-3.5 h-3.5" />
             <span>પસંદ કરો</span>
@@ -695,7 +695,7 @@ export const IosDateInput: React.FC<IosDateInputProps> = ({
             type="button"
             onClick={handleOpenPicker}
             disabled={disabled}
-            className="text-[#9d512d] dark:text-[#f59c73] hover:scale-110 transition-transform cursor-pointer shrink-0"
+            className="text-[#C45A2D] dark:text-[#f59c73] hover:scale-110 transition-transform cursor-pointer shrink-0"
             title="iPhone કેલેન્ડર વ્હીલ ડ્રમ ખોલો"
           >
             <Calendar className="w-4 h-4" />
@@ -739,7 +739,7 @@ export const IosDateInput: React.FC<IosDateInputProps> = ({
             type="button"
             onClick={handleOpenPicker}
             disabled={disabled}
-            className="p-1 rounded-md text-stone-400 hover:text-[#9d512d] dark:hover:text-[#f59c73] transition-colors cursor-pointer"
+            className="p-1 rounded-md text-slate-400 hover:text-[#C45A2D] dark:hover:text-[#f59c73] transition-colors cursor-pointer"
             title="કેલેન્ડર ખોલો"
           >
             <Calendar className="w-4 h-4" />

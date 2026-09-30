@@ -297,15 +297,15 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-[#e4ded6] hover:text-white transition-colors cursor-pointer active:scale-95"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-[#E2E8F0] dark:border-white/10 text-xs font-bold text-slate-800 dark:text-[#e4ded6] transition-colors cursor-pointer active:scale-95 shadow-xs"
           title="પાછળના મેનુ પર જાઓ (Go Back)"
         >
-          <ArrowLeft className="w-4 h-4 text-[#f59c73]" />
+          <ArrowLeft className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
           <span>પાછળ જાઓ (Go Back)</span>
         </button>
 
-        <div className="flex items-center gap-2 text-xs text-[#a99f91]">
-          <FileText className="w-4 h-4 text-[#f59c73]" />
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-[#a99f91]">
+          <FileText className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
           <span>બોનાફાઈડ અને પ્રમાણપત્રો સંચાલન</span>
         </div>
       </div>
@@ -313,30 +313,30 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
       {/* Main Grid: Controls & Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Controls Column */}
-        <div className="glass-panel rounded-3xl border border-white/10 p-6 shadow-xl space-y-5">
+        <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-6 shadow-xl space-y-5">
           <div>
-            <h3 className="text-base font-bold text-[#e4ded6] flex items-center gap-2">
-              <Award className="w-4 h-4 text-[#f59c73]" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-[#e4ded6] flex items-center gap-2">
+              <Award className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
               <span>પ્રમાણપત્ર વિગતો</span>
             </h3>
-            <p className="text-xs text-[#a99f91] mt-1">
+            <p className="text-xs text-slate-500 dark:text-[#a99f91] mt-1">
               પ્રમાણપત્ર પ્રકાર અને વિદ્યાર્થી પસંદ કરો.
             </p>
           </div>
 
           {/* Type Switcher */}
           <div>
-            <label className="block text-xs font-semibold text-[#a99f91] mb-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-2">
               પ્રમાણપત્ર પ્રકાર:
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setCertType('bonafide')}
-                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   certType === 'bonafide'
-                    ? 'bg-[#9d512d] text-white shadow'
-                    : 'glass-card text-[#a99f91] hover:text-white'
+                    ? 'bg-[#C45A2D] text-white shadow-xs dark:bg-[#9d512d]'
+                    : 'bg-white/80 dark:bg-white/5 border border-[#E2E8F0] dark:border-white/10 text-slate-700 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 બોનાફાઈડ (Bonafide)
@@ -344,10 +344,10 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setCertType('character')}
-                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   certType === 'character'
-                    ? 'bg-[#9d512d] text-white shadow'
-                    : 'glass-card text-[#a99f91] hover:text-white'
+                    ? 'bg-[#C45A2D] text-white shadow-xs dark:bg-[#9d512d]'
+                    : 'bg-white/80 dark:bg-white/5 border border-[#E2E8F0] dark:border-white/10 text-slate-700 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 ચારિત્ર્ય (Character)
@@ -357,13 +357,13 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
 
           {/* Student Selector */}
           <div>
-            <label className="block text-xs font-semibold text-[#a99f91] mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1.5">
               વિદ્યાર્થી પસંદ કરો (Select Student) *
             </label>
             <select
               value={selectedStudentId}
               onChange={(e) => setSelectedStudentId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#C45A2D]"
             >
               {students.map((st) => (
                 <option key={st.id} value={st.id}>
@@ -375,27 +375,27 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
 
           {/* Academic Year */}
           <div>
-            <label className="block text-xs font-semibold text-[#a99f91] mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1.5">
               શૈક્ષણિક વર્ષ:
             </label>
             <input
               type="text"
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+              className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#C45A2D]"
             />
           </div>
 
           {/* Purpose / Conduct */}
           {certType === 'bonafide' ? (
             <div>
-              <label className="block text-xs font-semibold text-[#a99f91] mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1.5">
                 હેતુ (Purpose):
               </label>
               <select
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#C45A2D]"
               >
                 <option value="શિષ્યવૃત્તિ ફોર્મ માટે (For Scholarship)">શિષ્યવૃત્તિ ફોર્મ માટે (For Scholarship)</option>
                 <option value="બેંક એકાઉન્ટ ખોલાવવા માટે (Bank Account)">બેંક એકાઉન્ટ ખોલાવવા માટે (Bank Account)</option>
@@ -406,14 +406,14 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-semibold text-[#a99f91] mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1.5">
                 વર્તણૂક (Conduct):
               </label>
               <input
                 type="text"
                 value={conduct}
                 onChange={(e) => setConduct(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#C45A2D]"
               />
             </div>
           )}
@@ -421,7 +421,7 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
           {/* Print Button */}
           <button
             onClick={handlePrintCertificate}
-            className="w-full py-3 rounded-2xl bg-[#9d512d] hover:bg-[#b55e34] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
+            className="w-full py-3 rounded-2xl bg-[#C45A2D] hover:bg-[#A8481F] dark:bg-[#9d512d] dark:hover:bg-[#b55e34] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>A4 પ્રમાણપત્ર પ્રિન્ટ / PDF</span>
@@ -429,13 +429,13 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
         </div>
 
         {/* Live Preview Column */}
-        <div className="lg:col-span-2 glass-panel rounded-3xl border border-white/10 p-6 shadow-xl flex flex-col justify-between">
+        <div className="lg:col-span-2 glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-6 shadow-xl flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
-              <span className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] dark:border-white/10 mb-4">
+              <span className="text-xs font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase tracking-wider">
                 લાઈવ પ્રમાણપત્ર પ્રિવ્યૂ (Live Preview)
               </span>
-              <span className="text-xs text-[#a99f91]">A4 ફોર્મેટ • સત્તાવાર માન્ય</span>
+              <span className="text-xs text-slate-500 dark:text-[#a99f91]">A4 ફોર્મેટ • સત્તાવાર માન્ય</span>
             </div>
 
             {selectedStudent ? (
@@ -495,13 +495,13 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="text-center py-16 text-xs text-[#a99f91]">
+              <div className="text-center py-16 text-xs text-slate-500 dark:text-[#a99f91]">
                 કોઈ વિદ્યાર્થી પસંદ થયેલ નથી.
               </div>
             )}
           </div>
 
-          <div className="mt-4 pt-4 border-t border-white/10 text-center text-xs text-[#a99f91]">
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 text-center text-xs text-slate-500 dark:text-[#a99f91]">
             Vidyalayam • Created by NR Chad
           </div>
         </div>

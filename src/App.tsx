@@ -328,7 +328,7 @@ export default function App() {
     // Pending, Rejected, or Inactive status notice screens
     if (status !== 'approved') {
       return (
-        <div className="min-h-screen bg-[#f8f6f2] dark:bg-slate-900 text-slate-900 dark:text-white flex flex-col transition-colors">
+        <div className="min-h-screen bg-[#F5F7FA] dark:bg-slate-900 text-slate-900 dark:text-white flex flex-col transition-colors">
           <Navbar
             school={school}
             onLogout={handleLogout}
@@ -370,7 +370,7 @@ export default function App() {
 
         <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 lg:pb-8">
           {dataLoading && (
-            <div className="mb-4 glass-card border border-white/10 px-4 py-2 rounded-2xl text-xs text-emerald-400 flex items-center gap-2">
+            <div className="mb-4 glass-card border border-[#E2E8F0] dark:border-white/10 px-4 py-2 rounded-2xl text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
               <span>Syncing records with Cloud Firestore...</span>
             </div>
@@ -537,7 +537,7 @@ export default function App() {
 
   // 5. Authenticated user without Admin or School profile (Unrecognized user)
   return (
-    <div className="min-h-screen bg-[#080b0f] text-[#e4ded6] flex flex-col">
+    <div className="min-h-screen bg-[#F5F7FA] dark:bg-[#080b0f] text-slate-900 dark:text-[#e4ded6] flex flex-col transition-colors">
       <Navbar
         school={null}
         onLogout={handleLogout}
@@ -561,11 +561,11 @@ export default function App() {
           }}
         />
       </main>
-      <footer className="bg-slate-950/90 border-t border-white/10 pt-4 pb-24 lg:pb-4 text-center text-xs text-slate-400 space-y-1">
-        <div className="font-bold text-white tracking-wide">
+      <footer className="bg-white/90 dark:bg-slate-950/90 border-t border-[#E2E8F0] dark:border-white/10 pt-4 pb-24 lg:pb-4 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
+        <div className="font-bold text-slate-900 dark:text-white tracking-wide">
           Vidyalayam (વિદ્યાલયમ)
         </div>
-        <div className="text-emerald-400 font-medium">
+        <div className="text-emerald-600 dark:text-emerald-400 font-medium">
           Created by NR Chad
         </div>
       </footer>

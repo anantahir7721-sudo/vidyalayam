@@ -582,10 +582,10 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
               <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-500 text-slate-950 uppercase tracking-wide">
                 {EXAM_NAME}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/5 text-emerald-300 border border-emerald-500/30">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
                 શૈક્ષણિક વર્ષ: {ACADEMIC_YEAR}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/5 text-slate-300 border border-white/10">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10">
                 કુલ ગુણ: {currentTotalMaxMarks}
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 flex items-center gap-1">
@@ -593,11 +593,11 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
                 <span>મલ્ટિ-ડિવાઇસ લાઇવ સિંક</span>
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {EXAM_TITLE_GUJARATI} – ગુણાંકન પત્રક
             </h2>
-            <p className="text-xs text-slate-300">
-              શાળા: <strong className="text-white">{school.schoolName}</strong> • DISE કોડ: <span className="font-mono text-emerald-400">{school.diseCode}</span> • {school.district}
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              શાળા: <strong className="text-slate-900 dark:text-white">{school.schoolName}</strong> • DISE કોડ: <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{school.diseCode}</span> • {school.district}
             </p>
           </div>
 
@@ -606,10 +606,10 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
             <button
               id="btn-preview-a4"
               onClick={() => setShowA4Preview(true)}
-              className="flex items-center gap-1.5 px-3 py-2 glass-card hover:bg-white/10 text-slate-200 border border-white/10 rounded-xl text-xs font-semibold transition-all touch-manipulation min-h-[42px]"
+              className="flex items-center gap-1.5 px-3 py-2 glass-card hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-[#E2E8F0] dark:border-white/10 rounded-xl text-xs font-semibold transition-all touch-manipulation min-h-[42px]"
               title="View formatted A4 printable sheet"
             >
-              <Eye className="w-4 h-4 text-blue-400" />
+              <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>A4 પૂર્વાવલોકન</span>
             </button>
 
@@ -637,10 +637,10 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
       </div>
 
       {/* Step 1: Standard Selection & Step 2: Subject Selection */}
-      <div className="glass-panel rounded-3xl border border-white/10 p-4 sm:p-5 shadow-lg space-y-4">
+      <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-4 sm:p-5 shadow-lg space-y-4">
         {/* Step 1: Standard Selector with Standard 12 */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-[#a99f91] mb-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-[#a99f91] mb-2">
             પગલું ૧: ધોરણ પસંદ કરો (Step 1: Select Standard)
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
@@ -655,8 +655,8 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
                   onClick={() => setSelectedStandard(std)}
                   className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border transition-all touch-manipulation min-h-[60px] ${
                     isSelected
-                      ? 'bg-[#9d512d] border-[#f59c73]/60 text-white shadow-lg ring-2 ring-[#9d512d]/40 font-extrabold'
-                      : 'glass-card border-white/10 text-[#a99f91] hover:border-white/20 hover:text-[#e4ded6] font-semibold'
+                      ? 'btn-terracotta border-transparent text-white shadow-lg ring-2 ring-[#C45A2D]/40 font-extrabold'
+                      : 'glass-card border-[#E2E8F0] dark:border-white/10 text-slate-600 dark:text-[#a99f91] hover:border-[#C45A2D]/40 hover:text-slate-900 dark:hover:text-[#e4ded6] font-semibold'
                   }`}
                 >
                   <span className="text-base sm:text-lg">ધોરણ {std}</span>
@@ -672,10 +672,10 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
         {/* Step 2: Subject Selector for selected standard */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#a99f91]">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-[#a99f91]">
               પગલું ૨: વિષય પસંદ કરો (Step 2: Select Subject)
             </label>
-            <span className="text-[11px] text-[#f59c73] font-medium">
+            <span className="text-[11px] text-[#C45A2D] dark:text-[#f59c73] font-medium">
               ધોરણ {selectedStandard} ના વિષયો ({availableSubjects.length})
             </span>
           </div>
@@ -692,21 +692,21 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
                   onClick={() => setSelectedSubjectId(subj.id)}
                   className={`flex items-start justify-between p-3 rounded-2xl border text-left transition-all touch-manipulation min-h-[58px] ${
                     isSelected
-                      ? 'bg-[#202d38] border-[#9d512d] text-[#e4ded6] shadow-md ring-2 ring-[#9d512d]/50'
-                      : 'glass-card border-white/10 text-[#a99f91] hover:border-white/20 hover:text-[#e4ded6]'
+                      ? 'bg-[#FBE9DF] dark:bg-[#202d38] border-[#C45A2D] dark:border-[#9d512d] text-slate-900 dark:text-[#e4ded6] shadow-md ring-2 ring-[#C45A2D]/30 dark:ring-[#9d512d]/50'
+                      : 'glass-card border-[#E2E8F0] dark:border-white/10 text-slate-600 dark:text-[#a99f91] hover:border-[#C45A2D]/40 hover:text-slate-900 dark:hover:text-[#e4ded6]'
                   }`}
                 >
                   <div>
-                    <div className="text-sm font-bold flex items-center gap-1.5 text-[#e4ded6]">
+                    <div className="text-sm font-bold flex items-center gap-1.5 text-slate-900 dark:text-[#e4ded6]">
                       {subj.gujaratiName}
                       {isCustom && (
-                        <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-[#9d512d]/20 text-[#f59c73] border border-[#9d512d]/40">
+                        <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-[#FBE9DF] dark:bg-[#9d512d]/20 text-[#C45A2D] dark:text-[#f59c73] border border-[#C45A2D]/30 dark:border-[#9d512d]/40">
                           શાળા વિષય
                         </span>
                       )}
                     </div>
-                    <div className="text-xs font-normal text-[#a99f91]">({subj.englishName})</div>
-                    <div className="text-[11px] text-[#f59c73] mt-0.5">
+                    <div className="text-xs font-normal text-slate-500 dark:text-[#a99f91]">({subj.englishName})</div>
+                    <div className="text-[11px] text-[#C45A2D] dark:text-[#f59c73] mt-0.5">
                       {subj.questions.length} વિભાગો • કુલ ગુણ {subj.totalMarks || 25}
                     </div>
                   </div>
@@ -724,15 +724,15 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
 
       {/* Subject Question Structure Overview */}
       {currentSubject && (
-        <div className="glass-panel rounded-2xl border border-white/10 p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3 mb-3">
+        <div className="glass-panel rounded-2xl border border-[#E2E8F0] dark:border-white/10 p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E2E8F0] dark:border-white/10 pb-3 mb-3">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-emerald-400" />
-              <h3 className="text-sm font-bold text-white">
+              <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 પ્રશ્ન રચના અને ગુણભાર: {currentSubject.name} (કુલ ગુણ {currentTotalMaxMarks})
               </h3>
             </div>
-            <span className="text-xs glass-card border border-white/10 px-2.5 py-1 rounded-lg text-slate-300">
+            <span className="text-xs glass-card border border-[#E2E8F0] dark:border-white/10 px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-300">
               ધોરણ {selectedStandard} - વિશિષ્ટ રચના
             </span>
           </div>
@@ -742,14 +742,14 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
             {currentSubject.questions.map((q) => (
               <div
                 key={q.id}
-                className="glass-card border border-white/10 rounded-xl px-3 py-1.5 text-xs flex items-center gap-2"
+                className="glass-card border border-[#E2E8F0] dark:border-white/10 rounded-xl px-3 py-1.5 text-xs flex items-center gap-2"
               >
-                <div className="font-semibold text-slate-200">
+                <div className="font-semibold text-slate-900 dark:text-slate-200">
                   {q.section ? `${q.section.split(' ')[0]}: ` : ''}
                   {q.label}
                 </div>
                 {q.description && q.description !== q.label && (
-                  <span className="text-[11px] text-slate-400 hidden sm:inline">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
                     ({q.description})
                   </span>
                 )}
@@ -763,7 +763,7 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
       )}
 
       {/* Filter and Search Strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800/90 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800/90 p-3.5 rounded-xl border border-[#E2E8F0] dark:border-slate-700 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 flex-1">
           {/* Search box */}
           <div className="relative flex-1 min-w-[200px]">
@@ -846,21 +846,21 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
         <div
           className={`p-3 rounded-xl text-xs flex items-center justify-between gap-2 ${
             saveFeedback.type === 'success'
-              ? 'bg-emerald-950/80 border border-emerald-800 text-emerald-200'
-              : 'bg-red-950/80 border border-red-800 text-red-200'
+              ? 'bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+              : 'bg-red-50 dark:bg-red-950/80 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
           }`}
         >
           <div className="flex items-center gap-2">
             {saveFeedback.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
             )}
             <span>{saveFeedback.message}</span>
           </div>
           <button
             onClick={() => setSaveFeedback(null)}
-            className="text-slate-400 hover:text-white"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
           >
             <X className="w-4 h-4" />
           </button>
@@ -869,11 +869,11 @@ export const MarksManager: React.FC<MarksManagerProps> = ({
 
       {/* Marks Entry Grid (Desktop & Mobile Responsive) */}
       {currentSubject && (
-        <div className="glass-panel rounded-3xl border border-white/10 shadow-xl overflow-hidden">
+        <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 shadow-xl overflow-hidden">
           {standardStudents.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 space-y-2">
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400 space-y-2">
               <Info className="w-8 h-8 mx-auto text-slate-500 mb-2" />
-              <p className="text-sm font-semibold text-slate-300">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 ધોરણ {selectedStandard} માં કોઈ વિદ્યાર્થી નોંધાયેલ નથી.
               </p>
               <p className="text-xs text-slate-500">

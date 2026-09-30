@@ -20,6 +20,7 @@ import { DailyPrashnotariBulletin, PrashnotariQuestion } from '../types';
 import { getDailyPrashnotariBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
 import { shareDailyJanvaJevuAsPdf } from '../utils/dailyPdfShareUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import { voiceService } from '../services/voiceService';
 
 interface DailyPrashnotariTabProps {
   schoolName?: string;
@@ -61,9 +62,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
 
     return () => {
       isMounted = false;
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      voiceService.stop();
     };
   }, []);
 
@@ -117,28 +116,24 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
   };
 
   const handleToggleSpeak = (q: PrashnotariQuestion) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      alert('તમારા બ્રાઉઝરમાં ઓડિયો સુવિધા ઉપલબ્ધ નથી.');
-      return;
-    }
-
     if (speakingId === q.id) {
-      window.speechSynthesis.cancel();
+      voiceService.stop();
       setSpeakingId(null);
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const textToSpeak = `પ્રશ્ન: ${q.question}. જવાબ: ${q.answer}`;
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    utterance.lang = 'gu-IN';
-    utterance.rate = 0.95;
-
-    utterance.onend = () => setSpeakingId(null);
-    utterance.onerror = () => setSpeakingId(null);
-
+    const cleanQ = q.question.replace(/^[૦-૯0-9]+[.\-)]\s*/, '').trim();
+    const cleanAns = q.answer.replace(/^[👉•\-]\s*/, '').trim();
+    const textToSpeak = `પ્રશ્ન: ${cleanQ}. સાચો ઉત્તર છે: ${cleanAns}`;
     setSpeakingId(q.id);
-    window.speechSynthesis.speak(utterance);
+
+    voiceService.speak(textToSpeak, {
+      rate: 0.96,
+      pitch: 1.0,
+      onStart: () => setSpeakingId(q.id),
+      onEnd: () => setSpeakingId(null),
+      onError: () => setSpeakingId(null),
+    });
   };
 
   const handleCopyBulletin = () => {
@@ -198,11 +193,11 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center space-y-4">
         <div className="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center animate-pulse">
-          <HelpCircle className="w-6 h-6 text-sky-400" />
+          <HelpCircle className="w-6 h-6 text-sky-500 dark:text-sky-400" />
         </div>
         <div className="space-y-1">
-          <h3 className="text-base font-bold text-white">આજની પ્રશ્નોત્તરી લોડ થઈ રહી છે...</h3>
-          <p className="text-xs text-[#a99f91]">બપોરે ૧:૦૦ વાગ્યાની આવૃત્તિ (૨૦ પ્રશ્નોત્તરી) તૈયાર થઈ રહી છે</p>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">આજની પ્રશ્નોત્તરી લોડ થઈ રહી છે...</h3>
+          <p className="text-xs text-slate-500 dark:text-[#a99f91]">બપોરે ૧:૦૦ વાગ્યાની આવૃત્તિ (૨૦ પ્રશ્નોત્તરી) તૈયાર થઈ રહી છે</p>
         </div>
       </div>
     );
@@ -210,7 +205,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
 
   if (!bulletin) {
     return (
-      <div className="p-8 text-center bg-[#121921] rounded-2xl border border-white/10 text-white">
+      <div className="p-8 text-center bg-white/90 dark:bg-[#121921] rounded-2xl border border-[#E2E8F0] dark:border-white/10 text-slate-800 dark:text-white">
         માહિતી ઉપલબ્ધ નથી. કૃપા કરીને થોડીવાર પછી ફરી પ્રયાસ કરો.
       </div>
     );
@@ -221,18 +216,18 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
       {/* Top Banner & Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#121c25] via-[#1a2632] to-[#0c131a] border border-white/10 p-5 sm:p-7 shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-900 via-slate-900 to-indigo-950 dark:from-[#121c25] dark:via-[#1a2632] dark:to-[#0c131a] border border-sky-800/40 dark:border-white/10 p-5 sm:p-7 shadow-xl text-white">
         <div className="absolute top-0 right-0 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 flex items-center gap-1.5 shadow-sm">
-                <HelpCircle className="w-3.5 h-3.5 text-sky-400" />
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-sky-500/20 text-sky-200 border border-sky-400/40 flex items-center gap-1.5 shadow-sm">
+                <HelpCircle className="w-3.5 h-3.5 text-sky-300" />
                 આજની પ્રશ્નોત્તરી (Daily Q&A Quiz)
               </span>
-              <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-white/5 text-[#e4ded6] border border-white/10 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-sky-400" />
+              <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-white/10 text-white/90 border border-white/20 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-sky-300" />
                 દરરોજ બપોરે ૧:૦૦ વાગ્યે ઓટો-અપડેટ
               </span>
             </div>
@@ -242,7 +237,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
               દૈનિક સામાન્ય જ્ઞાન — ૨૦ પ્રશ્નોત્તરી
             </h2>
 
-            <div className="flex flex-wrap items-center gap-3 text-xs text-[#a99f91]">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
               <span className="flex items-center gap-1.5 text-white font-semibold">
                 <Calendar className="w-3.5 h-3.5 text-sky-400" />
                 {bulletin.editionDate}
@@ -277,7 +272,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
             </button>
 
             {/* Study Mode vs Test Mode */}
-            <div className="flex items-center bg-black/40 border border-white/10 rounded-xl p-1 text-xs">
+            <div className="flex items-center bg-black/40 border border-white/20 rounded-xl p-1 text-xs">
               <button
                 type="button"
                 onClick={() => {
@@ -287,7 +282,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   studyMode === 'study'
                     ? 'bg-sky-600 text-white shadow-sm'
-                    : 'text-[#a99f91] hover:text-white'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
                 અભ્યાસ મોડ
@@ -301,7 +296,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   studyMode === 'test'
                     ? 'bg-sky-600 text-white shadow-sm'
-                    : 'text-[#a99f91] hover:text-white'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
                 ટેસ્ટ મોડ (ક્વિઝ)
@@ -314,7 +309,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
               className={`px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
                 copied
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-white/10 hover:bg-white/15 text-[#e4ded6] border border-white/15'
+                  : 'bg-white/10 hover:bg-white/15 text-white border border-white/20'
               }`}
             >
               {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -324,7 +319,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
             <button
               type="button"
               onClick={handlePrint}
-              className="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#9d512d] hover:bg-[#b55f37] text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+              className="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#C45A2D] hover:bg-[#b04f25] text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
             >
               <Printer className="w-4 h-4" />
               <span>પ્રિન્ટ</span>
@@ -333,19 +328,19 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
         </div>
 
         {shareFeedback && (
-          <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-200">
+          <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-200">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{shareFeedback}</span>
           </div>
         )}
 
         {/* Suvichar Box */}
-        <div className="mt-5 p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-start gap-3">
-          <div className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center shrink-0 text-sky-300">
+        <div className="mt-5 p-4 rounded-2xl bg-sky-500/15 border border-sky-400/30 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center shrink-0 text-sky-200">
             <Quote className="w-4 h-4" />
           </div>
           <div className="space-y-0.5 min-w-0">
-            <div className="text-[11px] font-bold text-sky-400 uppercase tracking-wider">
+            <div className="text-[11px] font-bold text-sky-300 uppercase tracking-wider">
               આજનો પ્રેરણાદાયી સુવિચાર
             </div>
             <p className="text-sm font-semibold text-white/95 italic leading-relaxed">
@@ -356,15 +351,15 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
       </div>
 
       {/* Filter Tabs & Test Mode Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-[#0c1218] border border-white/10">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-white/90 dark:bg-[#0c1218] border border-[#E2E8F0] dark:border-white/10 shadow-sm">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
           <button
             type="button"
             onClick={() => setActiveFilter('all')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeFilter === 'all'
-                ? 'bg-sky-600 text-white'
-                : 'bg-white/5 text-[#a99f91] hover:text-white hover:bg-white/10'
+                ? 'bg-sky-600 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 dark:bg-white/5 dark:text-[#a99f91] dark:hover:text-white dark:hover:bg-white/10'
             }`}
           >
             તમામ ૨૦ પ્રશ્નો
@@ -375,11 +370,11 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
             onClick={() => setActiveFilter('weekly_core')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
               activeFilter === 'weekly_core'
-                ? 'bg-amber-600 text-white'
-                : 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20'
             }`}
           >
-            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+            <Star className="w-3 h-3 text-amber-500 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" />
             <span>સાપ્તાહિક પુનરાવર્તન ({toGujaratiDigits(weeklyCoreCount)})</span>
           </button>
 
@@ -390,8 +385,8 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
               onClick={() => setActiveFilter(subj)}
               className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeFilter === subj
-                  ? 'bg-sky-600 text-white font-bold'
-                  : 'bg-white/5 text-[#a99f91] hover:text-white hover:bg-white/10'
+                  ? 'bg-sky-600 text-white font-bold shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 dark:bg-white/5 dark:text-[#a99f91] dark:hover:text-white dark:hover:bg-white/10'
               }`}
             >
               {subj}
@@ -404,16 +399,16 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
             <button
               type="button"
               onClick={() => handleRevealAll(true)}
-              className="text-xs text-sky-400 hover:text-sky-300 font-bold flex items-center gap-1 cursor-pointer"
+              className="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-bold flex items-center gap-1 cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5" />
               <span>બધા જવાબો બતાવો</span>
             </button>
-            <span className="text-white/20">|</span>
+            <span className="text-slate-300 dark:text-white/20">|</span>
             <button
               type="button"
               onClick={() => handleRevealAll(false)}
-              className="text-xs text-[#a99f91] hover:text-white font-medium flex items-center gap-1 cursor-pointer"
+              className="text-xs text-slate-500 dark:text-[#a99f91] hover:text-slate-800 dark:hover:text-white font-medium flex items-center gap-1 cursor-pointer"
             >
               <EyeOff className="w-3.5 h-3.5" />
               <span>બધા જવાબો છુપાવો</span>
@@ -431,24 +426,24 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
           return (
             <div
               key={q.id}
-              className={`relative rounded-2xl p-4 sm:p-5 border transition-all duration-200 flex flex-col justify-between ${
+              className={`relative rounded-2xl p-4 sm:p-5 border transition-all duration-200 flex flex-col justify-between shadow-xs ${
                 q.isWeeklyCoreRevision
-                  ? 'bg-[#141b22] border-amber-500/30 hover:border-amber-500/60 shadow-md'
-                  : 'bg-[#121921] border-white/10 hover:border-white/20'
+                  ? 'bg-amber-50/40 border-amber-200/80 hover:border-amber-400 dark:bg-[#141b22] dark:border-amber-500/30 dark:hover:border-amber-500/60 shadow-sm'
+                  : 'bg-white/90 border-[#E2E8F0] hover:border-sky-300 dark:bg-[#121921] dark:border-white/10 dark:hover:border-white/20'
               }`}
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="w-7 h-7 rounded-xl bg-sky-500/20 text-sky-300 font-mono font-bold text-xs flex items-center justify-center shrink-0 border border-sky-500/30">
+                    <span className="w-7 h-7 rounded-xl bg-sky-500/15 text-sky-700 dark:text-sky-300 font-mono font-bold text-xs flex items-center justify-center shrink-0 border border-sky-500/30">
                       {toGujaratiDigits(q.questionNumber)}
                     </span>
-                    <span className="text-[10.5px] px-2 py-0.5 rounded-full font-bold bg-white/5 text-[#a99f91] border border-white/10">
+                    <span className="text-[10.5px] px-2 py-0.5 rounded-full font-bold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-white/5 dark:text-[#a99f91] dark:border-white/10">
                       {q.subject}
                     </span>
                     {q.isWeeklyCoreRevision && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                        <Star className="w-2.5 h-2.5 fill-amber-400" />
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 dark:border-amber-500/40 flex items-center gap-1">
+                        <Star className="w-2.5 h-2.5 fill-amber-500 dark:fill-amber-400" />
                         સાપ્તાહિક પુનરાવર્તન
                       </span>
                     )}
@@ -460,7 +455,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
                     className={`p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
                       isSpeaking
                         ? 'bg-sky-600 text-white animate-pulse'
-                        : 'text-[#a99f91] hover:text-white hover:bg-white/10'
+                        : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-[#a99f91] dark:hover:text-white dark:hover:bg-white/10'
                     }`}
                     title="સાંભળો (Audio Speech)"
                   >
@@ -469,23 +464,23 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
                 </div>
 
                 {/* Question Text */}
-                <h4 className="text-sm sm:text-base font-bold text-white leading-relaxed">
+                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-relaxed">
                   {q.question}
                 </h4>
 
                 {/* Answer Area */}
-                <div className="pt-2 border-t border-white/5">
+                <div className="pt-2 border-t border-slate-100 dark:border-white/5">
                   {isRevealed ? (
-                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1 animate-in fade-in duration-150">
-                      <div className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 space-y-1 animate-in fade-in duration-150">
+                      <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>સાચો જવાબ:</span>
                       </div>
-                      <div className="text-sm font-bold text-white">
+                      <div className="text-sm font-bold text-emerald-950 dark:text-white">
                         {q.answer}
                       </div>
                       {q.explanation && (
-                        <div className="text-xs text-[#a99f91] mt-1 pt-1 border-t border-white/5">
+                        <div className="text-xs text-slate-600 dark:text-[#a99f91] mt-1 pt-1 border-t border-emerald-100 dark:border-white/5">
                           💡 {q.explanation}
                         </div>
                       )}
@@ -494,7 +489,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
                     <button
                       type="button"
                       onClick={() => toggleReveal(q.id)}
-                      className="w-full py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-dashed border-white/20 text-xs font-bold text-sky-400 hover:text-sky-300 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="w-full py-2.5 px-3 rounded-xl bg-sky-50/60 hover:bg-sky-100/80 border border-dashed border-sky-300 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/20 text-xs font-bold text-sky-700 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>જવાબ જોવા માટે અહીં ક્લિક કરો</span>
@@ -508,13 +503,13 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
       </div>
 
       {/* Bottom Info Footer */}
-      <div className="p-4 rounded-2xl bg-[#0c1218] border border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-[#a99f91]">
+      <div className="p-4 rounded-2xl bg-white/90 dark:bg-[#0c1218] border border-[#E2E8F0] dark:border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 dark:text-[#a99f91] shadow-xs">
         <div className="flex items-center gap-2">
-          <Award className="w-4 h-4 text-sky-400" />
+          <Award className="w-4 h-4 text-sky-600 dark:text-sky-400" />
           <span>દરરોજ બપોરે ૧:૦૦ વાગ્યે નવી આવૃત્તિ આપમેળે પ્રકાશિત થાય છે.</span>
         </div>
         {timeRemaining && (
-          <div className="font-mono text-sky-400 font-bold">
+          <div className="font-mono text-sky-700 dark:text-sky-400 font-bold">
             આગામી આવૃત્તિ: {timeRemaining}
           </div>
         )}

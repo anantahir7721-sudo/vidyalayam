@@ -80,7 +80,9 @@ export function getNewsCycleDateKey(now = new Date()): {
   editionDate: string;
   nextUpdateTime: Date;
 } {
-  const current = new Date(now);
+  // Always calculate using Indian Standard Time (Asia/Kolkata)
+  const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  const current = new Date(istString);
   const hours = current.getHours();
 
   // Reference date for the edition
@@ -269,23 +271,45 @@ export function generateDailyJanvaJevuQuestions(dateKey: string): JanvaJevuQuest
 
 /**
  * Fetch or generate Daily News Bulletin:
- * Tries Firestore first; if not present, generates and saves to Firestore in background.
+ * Prioritizes live real-time news from /api/daily-news (5:00 AM edition).
+ * Falls back to Firestore, then deterministic algorithmic syllabus topics.
  */
-export async function getDailyNewsBulletin(now = new Date()): Promise<DailyNewsBulletin> {
+export async function getDailyNewsBulletin(now = new Date(), forceRefresh = false): Promise<DailyNewsBulletin> {
   const { dateKey, editionDate, nextUpdateTime } = getNewsCycleDateKey(now);
 
+  // 1. Prioritize real-time live news from /api/daily-news
+  if (typeof window !== 'undefined' && window.fetch) {
+    try {
+      const url = `/api/daily-news?dateKey=${dateKey}${forceRefresh ? '&forceRefresh=true' : ''}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(7000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.bulletin && Array.isArray(data.bulletin.items) && data.bulletin.items.length >= 8) {
+          // Sync to client Firestore in background if needed
+          try {
+            setDoc(doc(db, 'daily_news', dateKey), data.bulletin, { merge: true }).catch(() => {});
+          } catch {}
+          return data.bulletin;
+        }
+      }
+    } catch (e) {
+      console.warn('API /api/daily-news live fetch failed, trying Firestore:', e);
+    }
+  }
+
+  // 2. Try Firestore
   try {
     const docRef = doc(db, 'daily_news', dateKey);
     const snap = await getDoc(docRef);
 
     if (snap.exists()) {
       const data = snap.data();
-      if (Array.isArray(data.items) && data.items.length >= 10) {
+      if (Array.isArray(data.items) && data.items.length >= 8) {
         return {
           id: dateKey,
           editionDate: data.editionDate || editionDate,
           dateKey,
-          cycleTime: 'સવારે ૫:૦૦ વાગ્યે પ્રકાશિત',
+          cycleTime: data.cycleTime || 'સવારે ૫:૦૦ વાગ્યે પ્રકાશિત',
           nextCycleTime: 'આવતીકાલે સવારે ૫:૦૦ વાગ્યે',
           nextUpdateTimeTimestamp: nextUpdateTime.getTime(),
           items: data.items,
@@ -297,7 +321,7 @@ export async function getDailyNewsBulletin(now = new Date()): Promise<DailyNewsB
     console.warn('Could not read from firestore daily_news, using algorithm:', err);
   }
 
-  // Generate deterministically
+  // 3. Fallback: Generate deterministically from master topics
   const items = generateDailyNewsItems(dateKey);
   const bulletin: DailyNewsBulletin = {
     id: dateKey,
@@ -544,7 +568,7 @@ export async function getDailyAbhivyaktiBulletin(
 
     if (snap.exists()) {
       const data = snap.data();
-      if (Array.isArray(data.ideas) && data.ideas.length > 0) {
+      if (Array.isArray(data.ideas) && data.ideas.length >= MASTER_ABHIVYAKTI_POOL.length) {
         return {
           id: dateKey,
           editionDate: data.editionDate || editionDate,

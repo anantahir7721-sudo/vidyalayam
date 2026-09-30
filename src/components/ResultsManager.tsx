@@ -763,26 +763,26 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="glass-panel rounded-3xl border border-white/10 p-6 shadow-xl relative overflow-hidden">
+      <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-6 shadow-xl relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="flex items-start gap-4">
             <button
               type="button"
               onClick={onBack}
-              className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-[#e4ded6] hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1"
+              className="p-2.5 rounded-2xl bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 text-slate-800 dark:text-[#e4ded6] hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1 border border-[#E2E8F0] dark:border-transparent"
               title="પાછળના મેનુ પર જાઓ (Go Back)"
             >
-              <ArrowLeft className="w-5 h-5 text-[#f59c73]" />
+              <ArrowLeft className="w-5 h-5 text-[#C45A2D] dark:text-[#f59c73]" />
             </button>
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/25 text-[#f59c73] border border-[#9d512d]/40 mb-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#FBE9DF] dark:bg-[#9d512d]/25 text-[#C45A2D] dark:text-[#f59c73] border border-[#C45A2D]/30 dark:border-[#9d512d]/40 mb-2">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>ઓટોમેટેડ રિઝલ્ટ કેલ્ક્યુલેટર • GSEB વાર્ષિક પરિણામ ફોર્મ્યુલા</span>
               </div>
-              <h2 className="text-2xl font-black text-[#e4ded6] tracking-tight">
+              <h2 className="text-2xl font-black text-slate-900 dark:text-[#e4ded6] tracking-tight">
                 વાર્ષિક પરિણામ અને પ્રગતિ પત્રક કેન્દ્ર
               </h2>
-              <p className="text-xs text-[#a99f91] mt-1 max-w-2xl leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-[#a99f91] mt-1 max-w-2xl leading-relaxed">
                 પ્રથમ (10%), દ્વિતીય (10%), વાર્ષિક (60%) અને આંતરિક (20%) ગુણભાર મુજબ 100 ગુણમાં રૂપાંતર. ગુજરાત બોર્ડના સત્તાવાર નિયમો મુજબ સિદ્ધિ ગુણ (#) અને આચાર્યશ્રી કૃપા ગુણ (*) ની સચોટ ગણતરી.
               </p>
             </div>
@@ -791,9 +791,9 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowRulesModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-amber-300 hover:text-white border-amber-500/30 hover:border-amber-500 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-white border-amber-500/30 hover:border-amber-500 transition-all cursor-pointer"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+              <HelpCircle className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <span>સિદ્ધિ/કૃપા ગુણના નિયમો</span>
             </button>
 
@@ -808,8 +808,8 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                   }}
                   className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                     selectedStandard === std
-                      ? 'bg-[#9d512d] text-white shadow-lg shadow-[#9d512d]/30 scale-105'
-                      : 'glass-card text-[#a99f91] hover:text-white'
+                      ? 'btn-terracotta text-white shadow-lg shadow-[#C45A2D]/30 scale-105'
+                      : 'glass-card text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white border border-[#E2E8F0] dark:border-white/10'
                   }`}
                 >
                   ધોરણ {std}
@@ -822,47 +822,47 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
 
       {/* KPI Stats Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="glass-card rounded-2xl border border-white/10 p-4">
-          <div className="text-[11px] text-[#a99f91] font-bold">કુલ વિદ્યાર્થીઓ</div>
-          <div className="text-2xl font-black text-white mt-1">{stats.total}</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">ધોરણ {selectedStandard}</div>
+        <div className="glass-card rounded-2xl border border-[#E2E8F0] dark:border-white/10 p-4">
+          <div className="text-[11px] text-slate-500 dark:text-[#a99f91] font-bold">કુલ વિદ્યાર્થીઓ</div>
+          <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">{stats.total}</div>
+          <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">ધોરણ {selectedStandard}</div>
         </div>
 
-        <div className="glass-card rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-          <div className="text-[11px] text-emerald-400 font-bold">સીધા ઉત્તીર્ણ (Direct)</div>
-          <div className="text-2xl font-black text-emerald-400 mt-1">{stats.directPassCount}</div>
-          <div className="text-[10px] text-emerald-500 mt-0.5">કોઈ ગ્રેસ વગર પાસ</div>
+        <div className="glass-card rounded-2xl border border-emerald-500/30 dark:border-emerald-500/20 bg-emerald-500/10 dark:bg-emerald-500/5 p-4">
+          <div className="text-[11px] text-emerald-800 dark:text-emerald-400 font-bold">સીધા ઉત્તીર્ણ (Direct)</div>
+          <div className="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1">{stats.directPassCount}</div>
+          <div className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-0.5">કોઈ ગ્રેસ વગર પાસ</div>
         </div>
 
-        <div className="glass-card rounded-2xl border border-teal-500/20 bg-teal-500/5 p-4">
-          <div className="text-[11px] text-teal-400 font-bold">સિદ્ધિ ગુણ (#)</div>
-          <div className="text-2xl font-black text-teal-300 mt-1">{stats.siddhiCount}</div>
-          <div className="text-[10px] text-teal-400 mt-0.5">રેન્ક માટે પાત્ર (1-15M)</div>
+        <div className="glass-card rounded-2xl border border-teal-500/30 dark:border-teal-500/20 bg-teal-500/10 dark:bg-teal-500/5 p-4">
+          <div className="text-[11px] text-teal-800 dark:text-teal-400 font-bold">સિદ્ધિ ગુણ (#)</div>
+          <div className="text-2xl font-black text-teal-700 dark:text-teal-300 mt-1">{stats.siddhiCount}</div>
+          <div className="text-[10px] text-teal-600 dark:text-teal-400 mt-0.5">રેન્ક માટે પાત્ર (1-15M)</div>
         </div>
 
-        <div className="glass-card rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <div className="text-[11px] text-amber-400 font-bold">કૃપા ગુણ (*)</div>
-          <div className="text-2xl font-black text-amber-400 mt-1">{stats.krupaCount}</div>
-          <div className="text-[10px] text-amber-500 mt-0.5">આચાર્ય ક્વોટા (1-10M)</div>
+        <div className="glass-card rounded-2xl border border-amber-500/30 dark:border-amber-500/20 bg-amber-500/10 dark:bg-amber-500/5 p-4">
+          <div className="text-[11px] text-amber-800 dark:text-amber-400 font-bold">કૃપા ગુણ (*)</div>
+          <div className="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1">{stats.krupaCount}</div>
+          <div className="text-[10px] text-amber-600 dark:text-amber-500 mt-0.5">આચાર્ય ક્વોટા (1-10M)</div>
         </div>
 
-        <div className="glass-card rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
-          <div className="text-[11px] text-red-400 font-bold">સુધારણા જરૂરી</div>
-          <div className="text-2xl font-black text-red-400 mt-1">{stats.failCount}</div>
-          <div className="text-[10px] text-red-500 mt-0.5">પુનઃપરીક્ષા પાત્ર</div>
+        <div className="glass-card rounded-2xl border border-rose-500/30 dark:border-red-500/20 bg-rose-500/10 dark:bg-red-500/5 p-4">
+          <div className="text-[11px] text-rose-800 dark:text-red-400 font-bold">સુધારણા જરૂરી</div>
+          <div className="text-2xl font-black text-rose-700 dark:text-red-400 mt-1">{stats.failCount}</div>
+          <div className="text-[10px] text-rose-600 dark:text-red-500 mt-0.5">પુનઃપરીક્ષા પાત્ર</div>
         </div>
 
-        <div className="glass-card rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4">
-          <div className="text-[11px] text-blue-400 font-bold">પરિણામ ટકાવારી</div>
-          <div className="text-2xl font-black text-blue-400 mt-1">{stats.passPct}%</div>
-          <div className="text-[10px] text-blue-500 mt-0.5">સર્વોચ્ચ: {stats.highestPct}%</div>
+        <div className="glass-card rounded-2xl border border-blue-500/30 dark:border-blue-500/20 bg-blue-500/10 dark:bg-blue-500/5 p-4">
+          <div className="text-[11px] text-blue-800 dark:text-blue-400 font-bold">પરિણામ ટકાવારી</div>
+          <div className="text-2xl font-black text-blue-700 dark:text-blue-400 mt-1">{stats.passPct}%</div>
+          <div className="text-[10px] text-blue-600 dark:text-blue-500 mt-0.5">સર્વોચ્ચ: {stats.highestPct}%</div>
         </div>
       </div>
 
       {/* Grade Distribution Pill Strip */}
-      <div className="glass-card rounded-2xl border border-white/10 p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <span className="font-bold text-[#a99f91] flex items-center gap-1.5">
-          <Award className="w-4 h-4 text-[#f59c73]" />
+      <div className="glass-card rounded-2xl border border-[#E2E8F0] dark:border-white/10 p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <span className="font-bold text-slate-700 dark:text-[#a99f91] flex items-center gap-1.5">
+          <Award className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
           ગ્રેડ વિતરણ:
         </span>
         <div className="flex flex-wrap items-center gap-2">
@@ -874,13 +874,13 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
                   count > 0
                     ? gr.startsWith('A')
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-800 dark:text-emerald-400'
                       : gr.startsWith('B')
-                      ? 'bg-blue-500/15 border-blue-500/30 text-blue-400'
+                      ? 'bg-blue-500/15 border-blue-500/30 text-blue-800 dark:text-blue-400'
                       : gr.startsWith('C') || gr === 'D'
-                      ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                      : 'bg-red-500/15 border-red-500/30 text-red-400'
-                    : 'bg-slate-900/50 border-slate-800 text-slate-500'
+                      ? 'bg-amber-500/15 border-amber-500/30 text-amber-800 dark:text-amber-400'
+                      : 'bg-rose-500/15 border-rose-500/30 text-rose-800 dark:text-red-400'
+                    : 'bg-slate-100 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-500'
                 }`}
               >
                 {gr}: <strong>{count}</strong>
@@ -893,12 +893,12 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
       {/* View Switcher & Action Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         {/* Toggle between Gazette and Individual Progress Card */}
-        <div className="flex gap-2 p-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex gap-2 p-1 rounded-2xl bg-white dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 shadow-sm">
           <button
             onClick={() => setViewMode('gazette')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewMode === 'gazette'
-                ? 'bg-[#9d512d] text-white shadow'
+                ? 'btn-terracotta text-white shadow'
                 : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
@@ -910,7 +910,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             onClick={() => setViewMode('progress_card')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewMode === 'progress_card'
-                ? 'bg-[#9d512d] text-white shadow'
+                ? 'btn-terracotta text-white shadow'
                 : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
@@ -933,7 +933,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           {onNavigateToMarks && (
             <button
               onClick={onNavigateToMarks}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-xs font-bold text-[#f59c73] hover:text-white transition-all cursor-pointer border-[#9d512d]/40"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-xs font-bold text-[#C45A2D] dark:text-[#f59c73] hover:text-[#A8481F] dark:hover:text-white transition-all cursor-pointer border-[#C45A2D]/30 dark:border-[#9d512d]/40"
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>ગુણ દાખલ કરો (Mark Entry)</span>
@@ -944,14 +944,14 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             <>
               <button
                 onClick={handleExportGazetteExcel}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-xs font-bold text-emerald-400 hover:text-white transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-white transition-all cursor-pointer border border-[#E2E8F0] dark:border-white/10"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>એક્સેલ ડાઉનલોડ (.xlsx)</span>
               </button>
               <button
                 onClick={handlePrintGazette}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#9d512d] hover:bg-[#864424] text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl btn-terracotta text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>ગેઝેટ પ્રિન્ટ કરો (A4 Landscape)</span>
@@ -960,7 +960,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           ) : (
             <button
               onClick={() => handlePrintStudentCard()}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#9d512d] hover:bg-[#864424] text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl btn-terracotta text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>પ્રગતિ પત્રક પ્રિન્ટ (A4 Portrait)</span>
@@ -971,9 +971,9 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
 
       {/* VIEW 1: GAZETTE (Class Master Marksheet Matrix) */}
       {viewMode === 'gazette' && (
-        <div className="glass-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+        <div className="glass-card rounded-2xl border border-[#E2E8F0] dark:border-white/10 overflow-hidden shadow-2xl">
           {/* Table Search & Filter Bar */}
-          <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-4">
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-b border-[#E2E8F0] dark:border-white/10 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-1 min-w-[280px]">
               <div className="relative flex-1">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
@@ -982,7 +982,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="નામ, રોલ નંબર અથવા G.R. નંબરથી શોધો..."
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#9d512d] dark:focus:border-[#f59c73]"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                 />
               </div>
             </div>
@@ -994,8 +994,8 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                 onClick={() => setStatusFilter('ALL')}
                 className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   statusFilter === 'ALL'
-                    ? 'bg-[#9d512d] text-white shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-transparent'
+                    ? 'btn-terracotta text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-[#E2E8F0] dark:border-transparent'
                 }`}
               >
                 બધા ({classResults.length})
@@ -1200,13 +1200,13 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
       {viewMode === 'progress_card' && activeStudentResult && (
         <div className="space-y-4">
           {/* Student Selector Carousel Bar */}
-          <div className="glass-card rounded-2xl border border-stone-200 dark:border-white/10 p-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="glass-card rounded-2xl border border-[#E2E8F0] dark:border-white/10 p-4 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-slate-700 dark:text-[#a99f91]">વિદ્યાર્થી પસંદ કરો:</span>
               <select
                 value={activeStudentResult.student.id}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
-                className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#9d512d] dark:focus:border-[#f59c73]"
+                className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
               >
                 {classResults.map((r) => (
                   <option key={r.student.id} value={r.student.id}>
@@ -1225,7 +1225,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                   }
                 }}
                 disabled={classResults.findIndex((r) => r.student.id === activeStudentResult.student.id) === 0}
-                className="p-2 rounded-xl glass-card text-white hover:text-[#f59c73] transition-colors cursor-pointer disabled:opacity-40"
+                className="p-2 rounded-xl glass-card text-slate-700 dark:text-white hover:text-[#C45A2D] dark:hover:text-[#f59c73] transition-colors cursor-pointer disabled:opacity-40 border border-[#E2E8F0] dark:border-white/10"
                 title="પાછલો વિદ્યાર્થી"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -1239,7 +1239,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                   }
                 }}
                 disabled={classResults.findIndex((r) => r.student.id === activeStudentResult.student.id) === classResults.length - 1}
-                className="p-2 rounded-xl glass-card text-white hover:text-[#f59c73] transition-colors cursor-pointer disabled:opacity-40"
+                className="p-2 rounded-xl glass-card text-slate-700 dark:text-white hover:text-[#C45A2D] dark:hover:text-[#f59c73] transition-colors cursor-pointer disabled:opacity-40 border border-[#E2E8F0] dark:border-white/10"
                 title="આગલો વિદ્યાર્થી"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -1486,9 +1486,9 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                 </ul>
               </div>
 
-              <div className="bg-red-950/40 p-3.5 rounded-xl border border-red-500/30">
-                <h4 className="font-bold text-red-300 text-sm mb-1.5">૪. ૨૫% લઘુત્તમ શરત અને પુનઃપરીક્ષા (Re-examination)</h4>
-                <ul className="list-disc list-inside space-y-1 text-red-100">
+              <div className="bg-rose-50 dark:bg-red-950/40 p-3.5 rounded-xl border border-rose-200 dark:border-red-500/30">
+                <h4 className="font-bold text-rose-800 dark:text-red-300 text-sm mb-1.5">૪. ૨૫% લઘુત્તમ શરત અને પુનઃપરીક્ષા (Re-examination)</h4>
+                <ul className="list-disc list-inside space-y-1 text-rose-900 dark:text-red-100">
                   <li>સિદ્ધિ ગુણ કે કૃપા ગુણ મેળવવા માટે વિદ્યાર્થીએ સંબંધિત વિષયમાં <strong>ઓછામાં ઓછા ૨૫% ગુણ (૨૫ ગુણ)</strong> મેળવેલા હોવા જરૂરી છે. ૨૫ થી ઓછા ગુણ હોય તો સિદ્ધિ કે કૃપા ગુણ આપી શકાતા નથી.</li>
                   <li>સિદ્ધિ અને કૃપા ગુણ બંને વિદ્યાર્થીના કુલ ગુણના સરવાળામાં ઉમેરાતા નથી.</li>
                   <li>ગ્રેસિંગ પછી પણ પાસ ન થનાર વિદ્યાર્થીએ શાળા કક્ષાએ પુનઃપરીક્ષા (પૂરક પરીક્ષા) આપવાની રહેશે.</li>
@@ -1499,7 +1499,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setShowRulesModal(false)}
-                className="px-5 py-2 rounded-xl bg-[#9d512d] hover:bg-[#864424] text-white text-xs font-bold transition-all cursor-pointer"
+                className="px-5 py-2 rounded-xl btn-terracotta text-white text-xs font-bold transition-all cursor-pointer"
               >
                 સમજાયું (Close)
               </button>

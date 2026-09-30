@@ -328,16 +328,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       {/* =========================================================================
           STARTING SECTION: SCHOOL BASIC INFORMATION (શાળાની મૂળભૂત માહિતી)
           ========================================================================= */}
-      <section className="glass-panel rounded-2xl sm:rounded-3xl border border-white/10 p-4 sm:p-7 shadow-xl">
+      <section className="glass-panel rounded-2xl sm:rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-4 sm:p-7 shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 sm:gap-6">
           {/* Main Info */}
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              <span className="px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-[#9d512d]/15 text-[#7a3b1a] border border-[#9d512d]/30 dark:bg-[#9d512d]/25 dark:text-[#f59c73] dark:border-[#9d512d]/40 inline-flex items-center gap-1.5 shadow-xs">
-                <Building className="w-3.5 h-3.5 text-[#9d512d] dark:text-[#f59c73]" />
+              <span className="px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-[#FBE9DF] text-[#C45A2D] border border-[#C45A2D]/30 dark:bg-[#9d512d]/25 dark:text-[#f59c73] dark:border-[#9d512d]/40 inline-flex items-center gap-1.5 shadow-xs">
+                <Building className="w-3.5 h-3.5 text-[#C45A2D] dark:text-[#f59c73]" />
                 <span>શાળા માહિતી</span>
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-stone-100 text-stone-800 border border-stone-200 dark:bg-white/5 dark:border-white/10 dark:text-[#e4ded6]">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-[#E2E8F0] dark:bg-white/5 dark:border-white/10 dark:text-[#e4ded6]">
                 DISE: {school.diseCode}
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 shadow-xs">
@@ -457,7 +457,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             UNIVERSAL STUDENT SEARCH (યુનિવર્સલ વિદ્યાર્થી શોધ)
             Placed under profile info and above/around vidyarthi sankhya
             ========================================================================= */}
-        <div className="mt-6 pt-6 border-t border-white/10">
+        <div className="mt-6 pt-6 border-t border-[#E2E8F0] dark:border-white/10">
           <UniversalStudentSearch
             students={students}
             school={school}
@@ -469,9 +469,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         {/* =========================================================================
             DETAILED STATISTICAL STRIP (વિદ્યાર્થી સંખ્યા, સ્ટાફ સંખ્યા વગેરે)
             ========================================================================= */}
-        <div className="mt-5 pt-5 sm:mt-6 sm:pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="mt-5 pt-5 sm:mt-6 sm:pt-6 border-t border-[#E2E8F0] dark:border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: વિદ્યાર્થી સંખ્યા */}
-          <div className="glass-card rounded-2xl border border-white/10 p-4 shadow flex flex-col justify-between">
+          <div className="glass-card rounded-2xl border border-[#E2E8F0] dark:border-white/10 p-4 shadow flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700 dark:text-[#a99f91] uppercase tracking-wider">
@@ -639,28 +639,28 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       {/* =========================================================================
           DAILY KNOWLEDGE & NEWS WIDGET (દૈનિક શાળા સમાચાર અને સામાન્ય જ્ઞાન)
           ========================================================================= */}
-      <section className="glass-panel rounded-2xl sm:rounded-3xl border border-white/10 p-5 sm:p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[#9d512d]/10 rounded-full blur-3xl pointer-events-none" />
+      <section className="glass-panel rounded-2xl sm:rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-5 sm:p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#C45A2D]/10 dark:bg-[#9d512d]/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#9d512d]/25 text-[#f59c73] border border-[#9d512d]/40 flex items-center gap-1.5 shadow-sm">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FBE9DF] text-[#C45A2D] border border-[#C45A2D]/30 dark:bg-[#9d512d]/25 dark:text-[#f59c73] dark:border-[#9d512d]/40 flex items-center gap-1.5 shadow-xs">
                 <Flame className="w-3.5 h-3.5" />
                 દૈનિક શાળા જ્ઞાન અને સમાચાર
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white/5 text-[#e4ded6] border border-white/10 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-emerald-400" />
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 border border-[#E2E8F0] dark:bg-white/5 dark:text-[#e4ded6] dark:border-white/10 flex items-center gap-1">
+                <Clock className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                 સમાચાર ૫:૦૦ AM • GK ૧:૦૦ PM
               </span>
             </div>
 
-            <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-[#e4ded6] tracking-tight flex items-center gap-2.5">
-              <Newspaper className="w-5 h-5 text-[#f59c73]" />
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-[#e4ded6] tracking-tight flex items-center gap-2.5">
+              <Newspaper className="w-5 h-5 text-[#C45A2D] dark:text-[#f59c73]" />
               <span>દૈનિક સમાચાર, પ્રશ્નોત્તરી, ૧૨ રોચક તથ્યો & અભિવ્યક્તિ</span>
             </h2>
 
-            <p className="text-xs text-stone-600 dark:text-[#a99f91] max-w-2xl leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-[#a99f91] max-w-2xl leading-relaxed">
               કચ્છ-ગુજરાતના ૧૦ મુખ્ય સમાચાર, ૨૦ દૈનિક પ્રશ્નોત્તરી, ધો. ૯ થી ૧૨ના ૧૨ રોચક તથ્યો અને પ્રાર્થના સભા અભિવ્યક્તિ પ્રસ્તુતિ. દરરોજ નિયત સમયે આપોઆપ અપડેટ.
             </p>
 
@@ -673,18 +673,18 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   onClick={() => handleToggleNews(!newsEnabled)}
                   className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
                     newsEnabled
-                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
-                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40 shadow-xs'
+                      : 'bg-stone-200 text-stone-800 border-stone-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/40'
                   }`}
                 >
                   {newsEnabled ? (
                     <>
-                      <ToggleRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <ToggleRight className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                       <span>ચાલુ</span>
                     </>
                   ) : (
                     <>
-                      <ToggleLeft className="w-3.5 h-3.5 text-stone-500 dark:text-rose-400" />
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-600 dark:text-rose-400" />
                       <span>બંધ</span>
                     </>
                   )}
@@ -698,18 +698,18 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   onClick={() => handleTogglePrashnotari(!prashnotariEnabled)}
                   className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
                     prashnotariEnabled
-                      ? 'bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/40 shadow-xs'
-                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                      ? 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/40 shadow-xs'
+                      : 'bg-stone-200 text-stone-800 border-stone-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/40'
                   }`}
                 >
                   {prashnotariEnabled ? (
                     <>
-                      <ToggleRight className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                      <ToggleRight className="w-3.5 h-3.5 text-sky-700 dark:text-sky-400" />
                       <span>ચાલુ</span>
                     </>
                   ) : (
                     <>
-                      <ToggleLeft className="w-3.5 h-3.5 text-stone-500 dark:text-rose-400" />
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-600 dark:text-rose-400" />
                       <span>બંધ</span>
                     </>
                   )}
@@ -723,18 +723,18 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   onClick={() => handleToggleJanvaJevu(!janvaJevuEnabled)}
                   className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
                     janvaJevuEnabled
-                      ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-xs'
-                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                      ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40 shadow-xs'
+                      : 'bg-stone-200 text-stone-800 border-stone-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/40'
                   }`}
                 >
                   {janvaJevuEnabled ? (
                     <>
-                      <ToggleRight className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      <ToggleRight className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
                       <span>ચાલુ</span>
                     </>
                   ) : (
                     <>
-                      <ToggleLeft className="w-3.5 h-3.5 text-stone-500 dark:text-rose-400" />
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-600 dark:text-rose-400" />
                       <span>બંધ</span>
                     </>
                   )}
@@ -748,18 +748,18 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   onClick={() => handleToggleAbhivyakti(!abhivyaktiEnabled)}
                   className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
                     abhivyaktiEnabled
-                      ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40 shadow-xs'
-                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                      ? 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40 shadow-xs'
+                      : 'bg-stone-200 text-stone-800 border-stone-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/40'
                   }`}
                 >
                   {abhivyaktiEnabled ? (
                     <>
-                      <ToggleRight className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                      <ToggleRight className="w-3.5 h-3.5 text-purple-700 dark:text-purple-400" />
                       <span>ચાલુ</span>
                     </>
                   ) : (
                     <>
-                      <ToggleLeft className="w-3.5 h-3.5 text-stone-500 dark:text-rose-400" />
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-600 dark:text-rose-400" />
                       <span>બંધ</span>
                     </>
                   )}
@@ -773,18 +773,18 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   onClick={() => handleToggleSuvichar(!suvicharEnabled)}
                   className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
                     suvicharEnabled
-                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
-                      : 'bg-stone-200 dark:bg-rose-500/20 text-stone-700 dark:text-rose-300 border-stone-300 dark:border-rose-500/40'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40 shadow-xs'
+                      : 'bg-stone-200 text-stone-800 border-stone-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/40'
                   }`}
                 >
                   {suvicharEnabled ? (
                     <>
-                      <ToggleRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <ToggleRight className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                       <span>ચાલુ</span>
                     </>
                   ) : (
                     <>
-                      <ToggleLeft className="w-3.5 h-3.5 text-stone-500 dark:text-rose-400" />
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-600 dark:text-rose-400" />
                       <span>બંધ</span>
                     </>
                   )}
@@ -813,9 +813,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 setModalInitialTab('prashnotari');
                 setKnowledgeModalOpen(true);
               }}
-              className="px-3.5 py-2 rounded-xl bg-sky-600/25 hover:bg-sky-600/35 text-sky-200 border border-sky-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-600/25 dark:hover:bg-sky-600/35 text-sky-900 dark:text-sky-200 border border-sky-300 dark:border-sky-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-sky-400" />
+              <HelpCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
               <span>આજની પ્રશ્નોત્તરી (૨૦ Q&A)</span>
             </button>
 
@@ -825,9 +825,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 setModalInitialTab('janva_jevu');
                 setKnowledgeModalOpen(true);
               }}
-              className="px-3.5 py-2 rounded-xl bg-amber-600/25 hover:bg-amber-600/35 text-amber-200 border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-600/25 dark:hover:bg-amber-600/35 text-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
             >
-              <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+              <Lightbulb className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>આજનું જાણવા જેવું (૧૨ Facts)</span>
             </button>
 
@@ -837,9 +837,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 setModalInitialTab('abhivyakti');
                 setKnowledgeModalOpen(true);
               }}
-              className="px-3.5 py-2 rounded-xl bg-purple-600/25 hover:bg-purple-600/35 text-purple-200 border border-purple-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-600/25 dark:hover:bg-purple-600/35 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
             >
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
               <span>અભિવ્યક્તિ & AI સહાયક</span>
             </button>
 
@@ -849,9 +849,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 setModalInitialTab('suvichar');
                 setKnowledgeModalOpen(true);
               }}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 text-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>આજનો સુવિચાર</span>
             </button>
           </div>
@@ -881,27 +881,27 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <div
               key={mod.id}
               onClick={() => onNavigate(mod.id)}
-              className={`glass-panel rounded-3xl border border-stone-200 dark:border-white/10 p-5 shadow-lg flex flex-col justify-between cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:border-[#9d512d]/40 ${mod.color}`}
+              className={`glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-5 shadow-lg flex flex-col justify-between cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:border-[#C45A2D]/40 ${mod.color}`}
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="p-3 rounded-2xl bg-stone-100 dark:bg-white/5 border border-stone-200 dark:border-white/10">
+                  <div className="p-3 rounded-2xl bg-slate-100 dark:bg-white/5 border border-[#E2E8F0] dark:border-white/10">
                     {mod.icon}
                   </div>
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-white/5 border border-stone-200 dark:border-white/10 text-[#9d512d] dark:text-[#f59c73]">
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/5 border border-[#E2E8F0] dark:border-white/10 text-[#C45A2D] dark:text-[#f59c73]">
                     {mod.badge}
                   </span>
                 </div>
 
-                <h3 className="text-base font-bold text-stone-900 dark:text-[#e4ded6] mb-1.5">
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#e4ded6] mb-1.5">
                   {mod.title}
                 </h3>
-                <p className="text-xs text-stone-600 dark:text-slate-300 leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                   {mod.desc}
                 </p>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-stone-200 dark:border-white/5 flex items-center justify-between text-xs font-bold text-[#9d512d] dark:text-[#f59c73]">
+              <div className="mt-5 pt-3 border-t border-[#E2E8F0] dark:border-white/5 flex items-center justify-between text-xs font-bold text-[#C45A2D] dark:text-[#f59c73]">
                 <span>{mod.actionText}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>

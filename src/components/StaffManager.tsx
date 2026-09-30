@@ -348,21 +348,21 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
         <div
           className={`p-3.5 rounded-2xl text-xs flex items-center gap-2 ${
             toastMessage.type === 'success'
-              ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
-              : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300'
+              : 'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-500/15 dark:border-rose-500/30 dark:text-rose-300'
           }`}
         >
           {toastMessage.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
           ) : (
-            <AlertCircle className="w-4 h-4 shrink-0" />
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
           )}
           <span>{toastMessage.text}</span>
         </div>
       )}
 
       {/* Filter and Search Bar */}
-      <div className="glass-panel rounded-3xl border border-white/10 p-5 shadow-lg">
+      <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-5 shadow-lg">
         <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 dark:text-[#a99f91]" />
@@ -420,19 +420,19 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
 
       {/* Staff Grid */}
       {loading ? (
-        <div className="text-center py-16 text-xs text-[#a99f91]">
+        <div className="text-center py-16 text-xs text-slate-500 dark:text-[#a99f91]">
           સ્ટાફ માહિતી લોડ થઈ રહી છે...
         </div>
       ) : filteredStaff.length === 0 ? (
-        <div className="glass-panel rounded-3xl border border-white/10 p-12 text-center text-[#a99f91]">
-          <UserCheck className="w-12 h-12 mx-auto text-[#f59c73] mb-3 opacity-60" />
-          <h3 className="text-sm font-bold text-white mb-1">કોઈ સ્ટાફ સભ્ય મળ્યા નથી</h3>
+        <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-12 text-center text-slate-500 dark:text-[#a99f91]">
+          <UserCheck className="w-12 h-12 mx-auto text-[#C45A2D] dark:text-[#f59c73] mb-3 opacity-60" />
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">કોઈ સ્ટાફ સભ્ય મળ્યા નથી</h3>
           <p className="text-xs mb-4">
             {searchQuery ? 'શોધ પરિણામમાં કોઈ મેળ નથી આવ્યો.' : 'હજુ સુધી કોઈ સ્ટાફ સભ્ય ઉમેરવામાં આવ્યા નથી.'}
           </p>
           <button
             onClick={handleOpenAdd}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#9d512d] hover:bg-[#b55e34] text-white text-xs font-bold shadow transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#C45A2D] hover:bg-[#b04f25] text-white text-xs font-bold shadow transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>પ્રથમ સ્ટાફ સભ્ય ઉમેરો</span>
@@ -643,14 +643,14 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
       {/* Add / Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm">
-          <div className="glass-panel w-full max-w-xl rounded-3xl border border-stone-200 dark:border-white/20 p-5 sm:p-6 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
-            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-stone-200 dark:border-white/10">
-              <h3 className="text-base font-bold text-stone-900 dark:text-[#e4ded6]">
+          <div className="glass-panel bg-white/95 dark:bg-[#121921]/95 w-full max-w-xl rounded-3xl border border-[#E2E8F0] dark:border-white/20 p-5 sm:p-6 shadow-2xl max-h-[86dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden my-auto animate-fadeIn">
+            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-white/10">
+              <h3 className="text-base font-bold text-slate-900 dark:text-[#e4ded6]">
                 {editingStaff ? 'સ્ટાફ વિગત સુધારો' : 'નવા સ્ટાફ સભ્ય ઉમેરો'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg text-stone-500 dark:text-[#a99f91] hover:text-stone-900 dark:hover:text-white hover:bg-stone-200 dark:hover:bg-white/10 cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-500 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -660,7 +660,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
               <div className="flex-1 overflow-y-auto pr-1 space-y-5">
               {/* Category selector */}
               <div>
-                <label className="block text-xs font-semibold text-stone-700 dark:text-[#a99f91] mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1.5">
                   સ્ટાફ પ્રકાર (Staff Category) *
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -675,8 +675,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                     }}
                     className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       formData.category !== 'non_teaching'
-                        ? 'bg-[#9d512d] text-white border-[#f59c73]'
-                        : 'bg-stone-100 dark:bg-black/20 text-stone-700 dark:text-[#a99f91] border-stone-300 dark:border-white/10 hover:border-[#9d512d]/40'
+                        ? 'btn-terracotta text-white border-transparent'
+                        : 'bg-slate-100 dark:bg-black/20 text-slate-700 dark:text-[#a99f91] border-slate-200 dark:border-white/10 hover:border-[#C45A2D]/40'
                     }`}
                   >
                     શૈક્ષણિક સ્ટાફ (Teaching)
@@ -693,7 +693,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                     className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       formData.category === 'non_teaching'
                         ? 'bg-purple-700 text-white border-purple-400'
-                        : 'bg-stone-100 dark:bg-black/20 text-stone-700 dark:text-[#a99f91] border-stone-300 dark:border-white/10 hover:border-purple-400/40'
+                        : 'bg-slate-100 dark:bg-black/20 text-slate-700 dark:text-[#a99f91] border-slate-200 dark:border-white/10 hover:border-purple-400/40'
                     }`}
                   >
                     બિન-શૈક્ષણિક સ્ટાફ (Non-Teaching)
@@ -702,11 +702,11 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
               </div>
 
               {/* Staff Photo Upload Block */}
-              <div className="bg-black/30 p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row items-center gap-4">
+              <div className="bg-slate-50 dark:bg-black/30 p-4 rounded-2xl border border-[#E2E8F0] dark:border-white/10 flex flex-col sm:flex-row items-center gap-4">
                 <div className="relative group shrink-0">
-                  <div className="w-24 h-28 rounded-2xl border-2 border-dashed border-[#9d512d]/60 bg-black/50 overflow-hidden flex items-center justify-center shadow-inner">
+                  <div className="w-24 h-28 rounded-2xl border-2 border-dashed border-[#C45A2D]/40 dark:border-[#9d512d]/60 bg-white dark:bg-black/50 overflow-hidden flex items-center justify-center shadow-inner">
                     {photoProcessing ? (
-                      <div className="flex flex-col items-center gap-1 text-[11px] text-[#f59c73]">
+                      <div className="flex flex-col items-center gap-1 text-[11px] text-[#C45A2D] dark:text-[#f59c73]">
                         <Loader2 className="w-5 h-5 animate-spin" />
                         <span>કમ્પ્રેસિંગ...</span>
                       </div>
@@ -717,8 +717,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="flex flex-col items-center gap-1 text-[#8e8579]">
-                        <Camera className="w-7 h-7 text-[#f59c73]" />
+                      <div className="flex flex-col items-center gap-1 text-slate-400 dark:text-[#8e8579]">
+                        <Camera className="w-7 h-7 text-[#C45A2D] dark:text-[#f59c73]" />
                         <span className="text-[10px] font-medium">ફોટો નથી</span>
                       </div>
                     )}
@@ -738,8 +738,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
 
                 <div className="flex-1 text-center sm:text-left space-y-2">
                   <div>
-                    <div className="text-xs font-bold text-[#e4ded6]">સ્ટાફ પાસપોર્ટ સાઇઝ ફોટો (Staff Photo)</div>
-                    <div className="text-[11px] text-[#8e8579]">
+                    <div className="text-xs font-bold text-slate-900 dark:text-[#e4ded6]">સ્ટાફ પાસપોર્ટ સાઇઝ ફોટો (Staff Photo)</div>
+                    <div className="text-[11px] text-slate-500 dark:text-[#8e8579]">
                       શિક્ષક આઈડી કાર્ડ અને પ્રોફાઇલમાં છાપવા માટે (ઓટો-કમ્પ્રેસ થશે &lt; 50KB)
                     </div>
                   </div>
@@ -756,7 +756,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       type="button"
                       onClick={() => addPhotoInputRef.current?.click()}
                       disabled={photoProcessing}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#9d512d] hover:bg-[#b55e34] text-white text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition-all disabled:opacity-50"
+                      className="px-3.5 py-1.5 rounded-xl btn-terracotta text-white text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition-all disabled:opacity-50"
                     >
                       <Camera className="w-3.5 h-3.5" />
                       <span>{formData.photoUrl ? 'ફોટો બદલો' : 'ફોટો પસંદ કરો'}</span>
@@ -766,7 +766,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       <button
                         type="button"
                         onClick={() => setFormData((prev) => ({ ...prev, photoUrl: '' }))}
-                        className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-rose-950/40 text-rose-300 border border-white/10 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all"
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 dark:bg-white/5 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-300 border border-slate-200 dark:border-white/10 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>દૂર કરો</span>
@@ -777,11 +777,11 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
               </div>
 
               {/* Basic Details */}
-              <div className="space-y-3 pt-2 border-t border-white/10">
-                <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">મૂળભૂત વિગતો (Basic Details)</h4>
+              <div className="space-y-3 pt-2 border-t border-[#E2E8F0] dark:border-white/10">
+                <h4 className="text-xs font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase tracking-wider">મૂળભૂત વિગતો (Basic Details)</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       પૂરું નામ (Full Name) *
                     </label>
                     <input
@@ -790,18 +790,18 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="દા.ત. પટેલ રમેશભાઈ કે."
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       હોદ્દો / પદ (Designation) *
                     </label>
                     <select
                       value={formData.designation}
                       onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     >
                       {formData.category === 'non_teaching' ? (
                         <>
@@ -827,22 +827,22 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       વિભાગ (Section / Vibhag) *
                     </label>
                     <select
                       value={formData.section}
                       onChange={(e) => setFormData({ ...formData, section: e.target.value as 'માધ્યમિક' | 'ઉચ્ચતર માધ્યમિક' })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     >
                       <option value="માધ્યમિક">માધ્યમિક (Secondary)</option>
                       <option value="ઉચ્ચતર માધ્યમિક">ઉચ્ચતર માધ્યમિક (Higher Secondary)</option>
                     </select>
-                    <span className="text-[10px] text-[#8e8579] mt-0.5 block">માધ્યમિક અથવા ઉચ્ચતર માધ્યમિક વિભાગ</span>
+                    <span className="text-[10px] text-slate-500 dark:text-[#8e8579] mt-0.5 block">માધ્યમિક અથવા ઉચ્ચતર માધ્યમિક વિભાગ</span>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       {formData.category === 'non_teaching' ? 'વિભાગ / કામગીરી' : 'મુખ્ય વિષય (Subject)'}
                     </label>
                     <input
@@ -850,12 +850,12 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder={formData.category === 'non_teaching' ? 'દા.ત. ઓફિસ કામગીરી, વહીવટ' : 'દા.ત. ગણિત, વિજ્ઞાન, ભાષા'}
                       value={formData.subject}
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       શૈક્ષણિક લાયકાત (Qualification)
                     </label>
                     <input
@@ -863,13 +863,13 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="દા.ત. M.Sc., B.Ed. / ધોરણ 12 પાસ"
                       value={formData.qualification}
                       onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
 
                   {/* Teacher Code and HRPN Number (Shaikshanik staff) */}
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       શિક્ષક કોડ (Teacher Code)
                     </label>
                     <input
@@ -877,78 +877,78 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="દા.ત. TC-1049 અથવા 12049"
                       value={formData.teacherCode}
                       onChange={(e) => setFormData({ ...formData, teacherCode: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
-                    <span className="text-[10px] text-[#8e8579] mt-0.5 block">શિક્ષક ઓળખ કોડ નંબર</span>
+                    <span className="text-[10px] text-slate-500 dark:text-[#8e8579] mt-0.5 block">શિક્ષક ઓળખ કોડ નંબર</span>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1 flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1 flex items-center justify-between">
                       <span>HRPN નંબર (HRPN Number)</span>
-                      <span className="text-[10px] text-amber-400 font-normal">(ફરજિયાત નથી / Optional)</span>
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-normal">(ફરજિયાત નથી / Optional)</span>
                     </label>
                     <input
                       type="text"
                       placeholder="દા.ત. HRPN-89230 (વૈકલ્પિક)"
                       value={formData.hrpnNumber}
                       onChange={(e) => setFormData({ ...formData, hrpnNumber: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
-                    <span className="text-[10px] text-[#8e8579] mt-0.5 block">HRPN નંબર વૈકલ્પિક છે</span>
+                    <span className="text-[10px] text-slate-500 dark:text-[#8e8579] mt-0.5 block">HRPN નંબર વૈકલ્પિક છે</span>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       જન્મ તારીખ (Date of Birth)
                     </label>
                     <IosDateInput
                       value={formData.dob}
                       onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                       placeholder="જન્મ તારીખ પસંદ કરો"
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Service & Joining Dates */}
-              <div className="space-y-3 pt-2 border-t border-white/10">
-                <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">સેવા / જોડાવાની તારીખો (Joining Dates)</h4>
+              <div className="space-y-3 pt-2 border-t border-[#E2E8F0] dark:border-white/10">
+                <h4 className="text-xs font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase tracking-wider">સેવા / જોડાવાની તારીખો (Joining Dates)</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       ખાતામાં દાખલ તારીખ *
                     </label>
                     <IosDateInput
                       value={formData.serviceJoiningDate}
                       onChange={(e) => setFormData({ ...formData, serviceJoiningDate: e.target.value })}
                       placeholder="ખાતામાં દાખલ તારીખ"
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs"
                     />
-                    <span className="text-[10px] text-[#8e8579] mt-0.5 block">સરકારી ખાતામાં પ્રથમ નિમણૂક તારીખ</span>
+                    <span className="text-[10px] text-slate-500 dark:text-[#8e8579] mt-0.5 block">સરકારી ખાતામાં પ્રથમ નિમણૂક તારીખ</span>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       આ શાળામાં દાખલ તારીખ *
                     </label>
                     <IosDateInput
                       value={formData.schoolJoiningDate}
                       onChange={(e) => setFormData({ ...formData, schoolJoiningDate: e.target.value })}
                       placeholder="શાળામાં દાખલ તારીખ"
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs"
                     />
-                    <span className="text-[10px] text-[#8e8579] mt-0.5 block">હાજર શાળામાં હાજર થયા તારીખ</span>
+                    <span className="text-[10px] text-slate-500 dark:text-[#8e8579] mt-0.5 block">હાજર શાળામાં હાજર થયા તારીખ</span>
                   </div>
                 </div>
               </div>
 
               {/* Identity Details */}
-              <div className="space-y-3 pt-2 border-t border-white/10">
-                <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">ઓળખ વિગતો (Identity Details)</h4>
+              <div className="space-y-3 pt-2 border-t border-[#E2E8F0] dark:border-white/10">
+                <h4 className="text-xs font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase tracking-wider">ઓળખ વિગતો (Identity Details)</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       આધાર કાર્ડ નંબર (12 અંક)
                     </label>
                     <input
@@ -957,12 +957,12 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="XXXX-XXXX-XXXX"
                       value={formData.aadhaarNumber}
                       onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       PAN કાર્ડ નંબર (10 અક્ષર)
                     </label>
                     <input
@@ -971,18 +971,18 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="ABCDE1234F"
                       value={formData.panNumber}
                       onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs uppercase font-mono focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs uppercase font-mono focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Bank Details */}
-              <div className="space-y-3 pt-2 border-t border-white/10">
-                <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">બેંક ખાતાની વિગતો (Bank Details)</h4>
+              <div className="space-y-3 pt-2 border-t border-[#E2E8F0] dark:border-white/10">
+                <h4 className="text-xs font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase tracking-wider">બેંક ખાતાની વિગતો (Bank Details)</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       બેંકનું નામ (Bank Name)
                     </label>
                     <input
@@ -990,12 +990,12 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="દા.ત. SBI, BOB, HDFC"
                       value={formData.bankName}
                       onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       બેંક ખાતા નંબર (Account No.)
                     </label>
                     <input
@@ -1003,12 +1003,12 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="ખાતા નંબર દાખલ કરો"
                       value={formData.bankAccountNo}
                       onChange={(e) => setFormData({ ...formData, bankAccountNo: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       IFSC કોડ (11 અક્ષર)
                     </label>
                     <input
@@ -1017,12 +1017,12 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="દા.ત. SBIN0001234"
                       value={formData.bankIfsc}
                       onChange={(e) => setFormData({ ...formData, bankIfsc: e.target.value.toUpperCase() })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs uppercase font-mono focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs uppercase font-mono focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       શાખા (Branch Name)
                     </label>
                     <input
@@ -1030,18 +1030,18 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="દા.ત. રાજકોટ મુખ્ય શાખા"
                       value={formData.bankBranch}
                       onChange={(e) => setFormData({ ...formData, bankBranch: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Contact & Personal */}
-              <div className="space-y-3 pt-2 border-t border-white/10">
-                <h4 className="text-xs font-bold text-[#f59c73] uppercase tracking-wider">સંપર્ક અને અંગત વિગતો (Contact & Personal)</h4>
+              <div className="space-y-3 pt-2 border-t border-[#E2E8F0] dark:border-white/10">
+                <h4 className="text-xs font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase tracking-wider">સંપર્ક અને અંગત વિગતો (Contact & Personal)</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       મોબાઈલ નંબર (Mobile)
                     </label>
                     <input
@@ -1049,12 +1049,12 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="10 અંકનો મોબાઈલ"
                       value={formData.mobile}
                       onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       ઈમેલ (Email)
                     </label>
                     <input
@@ -1062,18 +1062,18 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="staff@example.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       બ્લડ ગ્રુપ (Blood Group)
                     </label>
                     <select
                       value={formData.bloodGroup}
                       onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     >
                       <option value="">પસંદ કરો...</option>
                       <option value="A+">A+</option>
@@ -1088,7 +1088,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-[#a99f91] mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#a99f91] mb-1">
                       સરનામું (Address)
                     </label>
                     <input
@@ -1096,25 +1096,25 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                       placeholder="ગામ/શહેર, જિલ્લો, પિનકોડ"
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs focus:outline-none focus:border-[#f59c73]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
                     />
                   </div>
                 </div>
               </div>
               </div>
 
-              <div className="shrink-0 pt-3 flex items-center justify-end gap-3 border-t border-white/10 mt-3">
+              <div className="shrink-0 pt-3 flex items-center justify-end gap-3 border-t border-[#E2E8F0] dark:border-white/10 mt-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#a99f91] hover:text-white cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white cursor-pointer"
                 >
                   રદ કરો
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2.5 rounded-xl bg-[#9d512d] hover:bg-[#b55e34] text-white text-xs font-bold shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl btn-terracotta text-white text-xs font-bold shadow-lg transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? 'સાચવી રહ્યું છે...' : editingStaff ? 'સુધારો સાચવો' : 'સ્ટાફ ઉમેરો'}
                 </button>

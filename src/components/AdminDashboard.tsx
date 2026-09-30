@@ -235,7 +235,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f5f0] text-[#141d24] dark:bg-slate-900 dark:text-white flex flex-col transition-colors">
+    <div className="min-h-screen bg-[#F5F7FA] text-slate-800 dark:bg-slate-900 dark:text-white flex flex-col transition-colors">
       {/* Top Admin Header Bar */}
       <header className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -294,8 +294,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             id="admin-feedback-banner"
             className={`p-3.5 rounded-xl text-xs flex items-center justify-between gap-3 border ${
               feedback.type === 'success'
-                ? 'bg-emerald-950/80 border-emerald-800 text-emerald-200'
-                : 'bg-red-950/80 border-red-800 text-red-200'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-200'
+                : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/80 dark:border-red-800 dark:text-red-200'
             }`}
           >
             <div className="flex items-center gap-2">
