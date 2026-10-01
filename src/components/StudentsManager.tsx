@@ -29,6 +29,7 @@ import { printStudentIdCards } from '../utils/idCardPdf';
 import { compressStudentPhoto } from '../utils/imageUtils';
 import { StudentProfileModal } from './StudentProfileModal';
 import { ImportConfirmationModal } from './ImportConfirmationModal';
+import { StudentPhotoDownloadModal } from './StudentPhotoDownloadModal';
 import { IosDateInput } from './IosDatePicker';
 import {
   cleanAndNormalizeBloodGroup,
@@ -176,6 +177,9 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
   // ID Card Generation Modal State
   const [isIdCardModalOpen, setIsIdCardModalOpen] = useState(false);
   const [idCardStdSelection, setIdCardStdSelection] = useState<string>('ALL');
+
+  // Student Photo Standard-wise ZIP Download Modal State
+  const [isPhotoZipModalOpen, setIsPhotoZipModalOpen] = useState(false);
 
   // Delete All / Bulk Delete Modal State
   const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
@@ -1045,6 +1049,18 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
                     <span>Excel એક્સપોર્ટ</span>
                   </button>
 
+                  <button
+                    onClick={() => {
+                      setMobileToolsOpen(false);
+                      setIsPhotoZipModalOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 text-xs font-bold text-left cursor-pointer"
+                    title="ધોરણ વાઇઝ વિદ્યાર્થીઓના ફોટો ZIP માં ડાઉનલોડ કરો (100x120 px)"
+                  >
+                    <Camera className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    <span>ફોટો ZIP (100×120)</span>
+                  </button>
+
                   <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 col-span-2 justify-between">
                     <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 pl-1">ટેમ્પ્લેટ્સ:</span>
                     <button
@@ -1148,6 +1164,17 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
               >
                 <FileSpreadsheet className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span>એક્સપોર્ટ</span>
+              </button>
+
+              {/* Secondary 3: Standard-wise Photo ZIP Download (100x120 px) */}
+              <button
+                type="button"
+                onClick={() => setIsPhotoZipModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-900 border-indigo-200 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 dark:text-indigo-200 border dark:border-indigo-800/80 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs min-h-[44px] cursor-pointer"
+                title="ધોરણ વાઇઝ વિદ્યાર્થીઓના ફોટો ZIP માં ડાઉનલોડ કરો (100x120 px)"
+              >
+                <Camera className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>ફોટો ડાઉનલોડ (ZIP)</span>
               </button>
 
               {/* Template Downloads Menu / Buttons */}
@@ -3362,6 +3389,16 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
         currentSchool={school}
         remainingCount={pendingImportRemainingRows ? pendingImportRemainingRows.length : 0}
         onProceedWithRemaining={handleProceedWithRemainingImport}
+      />
+
+      {/* MODAL 8: STUDENT PHOTO STANDARD-WISE ZIP DOWNLOAD MODAL */}
+      <StudentPhotoDownloadModal
+        isOpen={isPhotoZipModalOpen}
+        onClose={() => setIsPhotoZipModalOpen(false)}
+        students={students}
+        schoolName={school.schoolName}
+        diseCode={school.diseCode}
+        initialStandard={selectedStandardFilter !== 'ALL' ? selectedStandardFilter : 'ALL'}
       />
     </div>
   );

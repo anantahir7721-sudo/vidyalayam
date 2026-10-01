@@ -6,6 +6,7 @@ import {
   Sparkles,
   HelpCircle,
   Drama,
+  Presentation,
 } from 'lucide-react';
 import { School } from '../types';
 import { DailyNewsTab } from './DailyNewsTab';
@@ -13,13 +14,14 @@ import { DailyJanvaJevuTab } from './DailyJanvaJevuTab';
 import { DailyPrashnotariTab } from './DailyPrashnotariTab';
 import { DailyAbhivyaktiTab } from './DailyAbhivyaktiTab';
 import { DailySuvicharTab } from './DailySuvicharTab';
+import { DailyPresentationTab } from './DailyPresentationTab';
 
 interface DailyKnowledgeModalProps {
   school: School;
   isOpen: boolean;
   onClose: () => void;
   onSchoolUpdated?: (updated: Partial<School>) => void;
-  initialTab?: 'news' | 'prashnotari' | 'janva_jevu' | 'abhivyakti' | 'suvichar';
+  initialTab?: 'news' | 'prashnotari' | 'janva_jevu' | 'abhivyakti' | 'suvichar' | 'presentation';
 }
 
 export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
@@ -29,7 +31,7 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
   initialTab = 'news',
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'news' | 'prashnotari' | 'janva_jevu' | 'abhivyakti' | 'suvichar'
+    'news' | 'prashnotari' | 'janva_jevu' | 'abhivyakti' | 'suvichar' | 'presentation'
   >(initialTab);
 
   useEffect(() => {
@@ -150,6 +152,19 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
             <Sparkles className="w-4 h-4" />
             <span>આજનો સુવિચાર (Daily Suvichar)</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('presentation')}
+            className={`px-4 py-2.5 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'presentation'
+                ? 'border-emerald-600 text-emerald-700 dark:border-emerald-500 dark:text-emerald-400'
+                : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
+            }`}
+          >
+            <Presentation className="w-4 h-4" />
+            <span>🎤 પ્રેઝન્ટેશન & સ્ક્રિપ્ટ (Presentation)</span>
+          </button>
         </div>
 
         {/* Scrollable Content Body */}
@@ -192,6 +207,15 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
 
           {activeTab === 'suvichar' && (
             <DailySuvicharTab
+              schoolName={school.schoolName}
+              diseCode={school.diseCode}
+              district={school.district}
+              isSchoolView
+            />
+          )}
+
+          {activeTab === 'presentation' && (
+            <DailyPresentationTab
               schoolName={school.schoolName}
               diseCode={school.diseCode}
               district={school.district}

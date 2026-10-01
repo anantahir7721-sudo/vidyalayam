@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
+import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { initializeApp, getApps } from 'firebase/app';
 import {
@@ -717,6 +718,659 @@ async function startServer() {
     } catch (err: any) {
       console.warn('Admin delete school server notice:', err);
       return res.json({ success: true, message: 'શાળા ડિલીટ કરવાની પ્રક્રિયા પૂર્ણ થઈ.' });
+    }
+  });
+
+  // =========================================================================
+  // API: Admin School Server Storage Inspector & Analytics
+  // Measures exact storage footprint (bytes & document count) for each school
+  // =========================================================================
+  let storageMetricsCache: { data: any; timestamp: number } | null = null;
+
+  function formatBytes(bytes: number): string {
+    if (!bytes || bytes <= 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  }
+
+  function calculateFirestoreDocBytes(docId: string, data: any): number {
+    let size = 32 + Buffer.byteLength(docId, 'utf8');
+    if (!data || typeof data !== 'object') return size;
+
+    function getValSize(val: any): number {
+      if (val === null || val === undefined) return 1;
+      if (typeof val === 'boolean') return 1;
+      if (typeof val === 'number') return 8;
+      if (typeof val === 'string') return Buffer.byteLength(val, 'utf8') + 1;
+      if (val instanceof Date) return 8;
+      if (Array.isArray(val)) {
+        let arrSize = 1;
+        for (const item of val) {
+          arrSize += getValSize(item);
+        }
+        return arrSize;
+      }
+      if (typeof val === 'object') {
+        let objSize = 1;
+        for (const key of Object.keys(val)) {
+          objSize += Buffer.byteLength(key, 'utf8') + 1 + getValSize(val[key]);
+        }
+        return objSize;
+      }
+      return 8;
+    }
+
+    for (const [key, val] of Object.entries(data)) {
+      size += Buffer.byteLength(key, 'utf8') + 1 + getValSize(val);
+    }
+    return size;
+  }
+
+  app.get('/api/admin/schools-storage', async (req: Request, res: Response) => {
+    try {
+      const forceRefresh = req.query.force === 'true';
+      const targetSchoolId = req.query.schoolId ? String(req.query.schoolId) : null;
+      const now = Date.now();
+
+      // Return cached results if fresh (< 90 seconds) and not forced and not single school
+      if (!forceRefresh && !targetSchoolId && storageMetricsCache && (now - storageMetricsCache.timestamp < 90000)) {
+        return res.json({
+          ...storageMetricsCache.data,
+          fromCache: true,
+          cachedSecondsAgo: Math.round((now - storageMetricsCache.timestamp) / 1000),
+        });
+      }
+
+      // Fetch all schools or targeted school
+      let schoolsList: Array<{ id: string; data: any }> = [];
+      if (targetSchoolId) {
+        const sSnap = await getDoc(doc(db, 'schools', targetSchoolId));
+        if (sSnap.exists()) {
+          schoolsList.push({ id: sSnap.id, data: sSnap.data() });
+        }
+      } else {
+        const allSnap = await getDocs(collection(db, 'schools'));
+        schoolsList = allSnap.docs.map((d) => ({ id: d.id, data: d.data() }));
+      }
+
+      // Calculate storage for each school concurrently with subcollections
+      const calculatedSchools = await Promise.all(
+        schoolsList.map(async ({ id: schoolId, data: schoolData }) => {
+          const profileBytes = calculateFirestoreDocBytes(schoolId, schoolData);
+          let schoolTotalBytes = profileBytes;
+          let schoolTotalDocs = 1; // Root document
+
+          // Helper to measure subcollection
+          const measureSubcollection = async (subName: string) => {
+            try {
+              const snap = await getDocs(collection(db, 'schools', schoolId, subName));
+              let bytes = 0;
+              snap.forEach((d) => {
+                bytes += calculateFirestoreDocBytes(d.id, d.data());
+              });
+              return { count: snap.size, bytes };
+            } catch {
+              return { count: 0, bytes: 0 };
+            }
+          };
+
+          // Helper for online exams with nested questions
+          const measureExams = async () => {
+            try {
+              const examsSnap = await getDocs(collection(db, 'schools', schoolId, 'online_exams'));
+              let examsBytes = 0;
+              let questionsCount = 0;
+              for (const exDoc of examsSnap.docs) {
+                examsBytes += calculateFirestoreDocBytes(exDoc.id, exDoc.data());
+                try {
+                  const qSnap = await getDocs(collection(db, 'schools', schoolId, 'online_exams', exDoc.id, 'questions'));
+                  questionsCount += qSnap.size;
+                  qSnap.forEach((qDoc) => {
+                    examsBytes += calculateFirestoreDocBytes(qDoc.id, qDoc.data());
+                  });
+                } catch {}
+              }
+              return {
+                count: examsSnap.size,
+                questionsCount,
+                bytes: examsBytes,
+              };
+            } catch {
+              return { count: 0, questionsCount: 0, bytes: 0 };
+            }
+          };
+
+          // Fetch all subcollections in parallel
+          const [
+            studentsData,
+            marksData,
+            staffData,
+            subjectsData,
+            certsData,
+            attemptsData,
+            reportsData,
+            examsData,
+          ] = await Promise.all([
+            measureSubcollection('students'),
+            measureSubcollection('marks'),
+            measureSubcollection('staff'),
+            measureSubcollection('subjects'),
+            measureSubcollection('certificates'),
+            measureSubcollection('exam_attempts'),
+            measureSubcollection('reports'),
+            measureExams(),
+          ]);
+
+          const totalSubDocs =
+            studentsData.count +
+            marksData.count +
+            staffData.count +
+            subjectsData.count +
+            certsData.count +
+            attemptsData.count +
+            reportsData.count +
+            examsData.count +
+            examsData.questionsCount;
+
+          const totalSubBytes =
+            studentsData.bytes +
+            marksData.bytes +
+            staffData.bytes +
+            subjectsData.bytes +
+            certsData.bytes +
+            attemptsData.bytes +
+            reportsData.bytes +
+            examsData.bytes;
+
+          schoolTotalBytes += totalSubBytes;
+          schoolTotalDocs += totalSubDocs;
+
+          return {
+            schoolId,
+            schoolName: schoolData.schoolName || 'Unnamed School',
+            diseCode: schoolData.diseCode || 'N/A',
+            district: schoolData.district || 'Gujarat',
+            status: schoolData.status || 'approved',
+            totalBytes: schoolTotalBytes,
+            formattedStorage: formatBytes(schoolTotalBytes),
+            totalDocs: schoolTotalDocs,
+            percentageOfTotal: 0, // Computed below
+            breakdown: {
+              students: {
+                count: studentsData.count,
+                bytes: studentsData.bytes,
+                formatted: formatBytes(studentsData.bytes),
+              },
+              marks: {
+                count: marksData.count,
+                bytes: marksData.bytes,
+                formatted: formatBytes(marksData.bytes),
+              },
+              exams: {
+                count: examsData.count,
+                questionsCount: examsData.questionsCount,
+                bytes: examsData.bytes,
+                formatted: formatBytes(examsData.bytes),
+              },
+              staff: {
+                count: staffData.count,
+                bytes: staffData.bytes,
+                formatted: formatBytes(staffData.bytes),
+              },
+              subjects: {
+                count: subjectsData.count,
+                bytes: subjectsData.bytes,
+                formatted: formatBytes(subjectsData.bytes),
+              },
+              certificates: {
+                count: certsData.count,
+                bytes: certsData.bytes,
+                formatted: formatBytes(certsData.bytes),
+              },
+              examAttempts: {
+                count: attemptsData.count,
+                bytes: attemptsData.bytes,
+                formatted: formatBytes(attemptsData.bytes),
+              },
+              reports: {
+                count: reportsData.count,
+                bytes: reportsData.bytes,
+                formatted: formatBytes(reportsData.bytes),
+              },
+              profile: {
+                bytes: profileBytes,
+                formatted: formatBytes(profileBytes),
+              },
+            },
+            lastCalculatedAt: new Date().toISOString(),
+          };
+        })
+      );
+
+      // Compute aggregates and percentage of total
+      const totalServerStorageBytes = calculatedSchools.reduce((acc, s) => acc + s.totalBytes, 0);
+      const totalServerDocs = calculatedSchools.reduce((acc, s) => acc + s.totalDocs, 0);
+
+      calculatedSchools.forEach((s) => {
+        s.percentageOfTotal =
+          totalServerStorageBytes > 0
+            ? parseFloat(((s.totalBytes / totalServerStorageBytes) * 100).toFixed(1))
+            : 0;
+      });
+
+      // Sort by storage descending
+      calculatedSchools.sort((a, b) => b.totalBytes - a.totalBytes);
+
+      const highest = calculatedSchools[0];
+      const summary = {
+        totalServerStorageBytes,
+        formattedTotalStorage: formatBytes(totalServerStorageBytes),
+        totalServerDocs,
+        averageStoragePerSchool: formatBytes(
+          calculatedSchools.length > 0 ? Math.round(totalServerStorageBytes / calculatedSchools.length) : 0
+        ),
+        schoolCount: calculatedSchools.length,
+        highestStorageSchool: highest
+          ? {
+              schoolId: highest.schoolId,
+              schoolName: highest.schoolName,
+              diseCode: highest.diseCode,
+              bytes: highest.totalBytes,
+              formatted: highest.formattedStorage,
+            }
+          : undefined,
+        calculatedAt: new Date().toISOString(),
+      };
+
+      const resultPayload = {
+        success: true,
+        schools: calculatedSchools,
+        summary,
+      };
+
+      if (!targetSchoolId) {
+        storageMetricsCache = {
+          data: resultPayload,
+          timestamp: Date.now(),
+        };
+      }
+
+      return res.json({
+        ...resultPayload,
+        fromCache: false,
+      });
+    } catch (err: any) {
+      console.error('Error in /api/admin/schools-storage:', err);
+      return res.status(500).json({
+        error: err.message || 'Failed to calculate schools server storage footprint.',
+      });
+    }
+  });
+
+  // =========================================================================
+  // HELPER: Auto-resize and Compress Base64 Images via Sharp (Server-side)
+  // =========================================================================
+  async function resizeBase64WithSharp(
+    dataUrl: string,
+    maxWidth = 260,
+    maxHeight = 340,
+    quality = 80
+  ): Promise<{ optimizedDataUrl: string; bytesBefore: number; bytesAfter: number; wasOptimized: boolean }> {
+    const bytesBefore = Buffer.byteLength(dataUrl || '', 'utf8');
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+      return { optimizedDataUrl: dataUrl, bytesBefore, bytesAfter: bytesBefore, wasOptimized: false };
+    }
+
+    // Only optimize if dataUrl is larger than 18KB (~24,000 base64 chars) or not already compressed JPEG
+    if (dataUrl.length < 24000 && dataUrl.startsWith('data:image/jpeg')) {
+      return { optimizedDataUrl: dataUrl, bytesBefore, bytesAfter: bytesBefore, wasOptimized: false };
+    }
+
+    try {
+      const commaIndex = dataUrl.indexOf(',');
+      if (commaIndex === -1) {
+        return { optimizedDataUrl: dataUrl, bytesBefore, bytesAfter: bytesBefore, wasOptimized: false };
+      }
+
+      const header = dataUrl.substring(0, commaIndex);
+      const base64Data = dataUrl.substring(commaIndex + 1);
+      const buf = Buffer.from(base64Data, 'base64');
+
+      const meta = await sharp(buf).metadata();
+      const isPng = header.includes('png');
+      const hasAlpha = meta.hasAlpha;
+
+      const sharpPipe = sharp(buf).resize(maxWidth, maxHeight, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      });
+
+      let outputBuf: Buffer;
+      let mimeType = 'image/jpeg';
+
+      if (isPng && hasAlpha) {
+        mimeType = 'image/png';
+        outputBuf = await sharpPipe.png({ quality: 80, compressionLevel: 8 }).toBuffer();
+      } else {
+        mimeType = 'image/jpeg';
+        outputBuf = await sharpPipe.jpeg({ quality, mozjpeg: true }).toBuffer();
+      }
+
+      const optimizedDataUrl = `data:${mimeType};base64,${outputBuf.toString('base64')}`;
+      const bytesAfter = Buffer.byteLength(optimizedDataUrl, 'utf8');
+
+      // Only use if actually saved bytes
+      if (bytesAfter < bytesBefore) {
+        return { optimizedDataUrl, bytesBefore, bytesAfter, wasOptimized: true };
+      }
+      return { optimizedDataUrl: dataUrl, bytesBefore, bytesAfter: bytesBefore, wasOptimized: false };
+    } catch (err) {
+      console.warn('Failed to resize image with sharp:', err);
+      return { optimizedDataUrl: dataUrl, bytesBefore, bytesAfter: bytesBefore, wasOptimized: false };
+    }
+  }
+
+  // =========================================================================
+  // API: Admin Auto-Resize & Optimize All Uploaded Photos in Firestore
+  // =========================================================================
+  app.post('/api/admin/optimize-photos', async (req: Request, res: Response) => {
+    try {
+      const { schoolId } = req.body || {};
+      let targetSchools: Array<{ id: string; data: any }> = [];
+
+      if (schoolId) {
+        const sSnap = await getDoc(doc(db, 'schools', schoolId));
+        if (sSnap.exists()) {
+          targetSchools.push({ id: sSnap.id, data: sSnap.data() });
+        }
+      } else {
+        const allSnap = await getDocs(collection(db, 'schools'));
+        targetSchools = allSnap.docs.map((d) => ({ id: d.id, data: d.data() }));
+      }
+
+      let totalChecked = 0;
+      let totalOptimized = 0;
+      let totalBytesBefore = 0;
+      let totalBytesAfter = 0;
+      const optimizedItems: Array<{ type: string; schoolName: string; name: string; savedKb: string }> = [];
+
+      for (const school of targetSchools) {
+        const sData = school.data;
+        const sName = sData.schoolName || school.id;
+
+        // 1. Check School Logo
+        if (sData.logoUrl && sData.logoUrl.startsWith('data:image/')) {
+          totalChecked++;
+          const resizeResult = await resizeBase64WithSharp(sData.logoUrl, 260, 260, 82);
+          totalBytesBefore += resizeResult.bytesBefore;
+          totalBytesAfter += resizeResult.bytesAfter;
+          if (resizeResult.wasOptimized) {
+            await updateDoc(doc(db, 'schools', school.id), {
+              logoUrl: resizeResult.optimizedDataUrl,
+              updatedAt: new Date().toISOString(),
+            });
+            totalOptimized++;
+            optimizedItems.push({
+              type: 'School Logo',
+              schoolName: sName,
+              name: 'શાળાનો લોગો',
+              savedKb: `${((resizeResult.bytesBefore - resizeResult.bytesAfter) / 1024).toFixed(1)} KB`,
+            });
+          }
+        }
+
+        // 2. Check Students Photos
+        try {
+          const stuSnap = await getDocs(collection(db, 'schools', school.id, 'students'));
+          for (const stuDoc of stuSnap.docs) {
+            const stData = stuDoc.data();
+            if (stData.photoUrl && stData.photoUrl.startsWith('data:image/')) {
+              totalChecked++;
+              const resizeResult = await resizeBase64WithSharp(stData.photoUrl, 260, 340, 80);
+              totalBytesBefore += resizeResult.bytesBefore;
+              totalBytesAfter += resizeResult.bytesAfter;
+              if (resizeResult.wasOptimized) {
+                await updateDoc(stuDoc.ref, {
+                  photoUrl: resizeResult.optimizedDataUrl,
+                  updatedAt: new Date().toISOString(),
+                });
+                totalOptimized++;
+                optimizedItems.push({
+                  type: 'Student Photo',
+                  schoolName: sName,
+                  name: stData.studentName || stuDoc.id,
+                  savedKb: `${((resizeResult.bytesBefore - resizeResult.bytesAfter) / 1024).toFixed(1)} KB`,
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Error optimizing students in school:', school.id, e);
+        }
+
+        // 3. Check Staff Photos
+        try {
+          const staffSnap = await getDocs(collection(db, 'schools', school.id, 'staff'));
+          for (const staffDoc of staffSnap.docs) {
+            const sfData = staffDoc.data();
+            if (sfData.photoUrl && sfData.photoUrl.startsWith('data:image/')) {
+              totalChecked++;
+              const resizeResult = await resizeBase64WithSharp(sfData.photoUrl, 260, 340, 80);
+              totalBytesBefore += resizeResult.bytesBefore;
+              totalBytesAfter += resizeResult.bytesAfter;
+              if (resizeResult.wasOptimized) {
+                await updateDoc(staffDoc.ref, {
+                  photoUrl: resizeResult.optimizedDataUrl,
+                  updatedAt: new Date().toISOString(),
+                });
+                totalOptimized++;
+                optimizedItems.push({
+                  type: 'Staff Photo',
+                  schoolName: sName,
+                  name: sfData.fullName || staffDoc.id,
+                  savedKb: `${((resizeResult.bytesBefore - resizeResult.bytesAfter) / 1024).toFixed(1)} KB`,
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Error optimizing staff in school:', school.id, e);
+        }
+      }
+
+      // Invalidate storage metrics cache so fresh numbers reflect immediately
+      storageMetricsCache = null;
+
+      const savedBytes = Math.max(0, totalBytesBefore - totalBytesAfter);
+      const formattedSaved =
+        savedBytes > 1024 * 1024
+          ? `${(savedBytes / (1024 * 1024)).toFixed(2)} MB`
+          : `${(savedBytes / 1024).toFixed(1)} KB`;
+
+      return res.json({
+        success: true,
+        totalChecked,
+        totalOptimized,
+        totalBytesBefore,
+        totalBytesAfter,
+        savedBytes,
+        formattedSaved,
+        optimizedItems: optimizedItems.slice(0, 35),
+        message: `${totalOptimized} ફોટા સફળતાપૂર્વક ઓટો-રીસાઇઝ કરી સાચવવામાં આવ્યા અને ${formattedSaved} સર્વર સ્ટોરેજની બચત થઈ.`,
+      });
+    } catch (err: any) {
+      console.error('Error optimizing photos:', err);
+      return res.status(500).json({ error: err.message || 'ફોટો ઓટો-રીસાઇઝ કરવામાં ભૂલ આવી.' });
+    }
+  });
+
+  // =========================================================================
+  // API: AI GSEB Student Presentation Script Generator
+  // =========================================================================
+  app.post('/api/generate-presentation', async (req: Request, res: Response) => {
+    try {
+      const {
+        standard = 'ધોરણ 10',
+        subject = 'વિજ્ઞાન અને ટેકનોલોજી',
+        topic = '',
+        duration = '3-5 મિનિટ',
+        environment = 'સભા & વર્ગખંડ',
+        studentName = 'વિદ્યાર્થી',
+      } = req.body || {};
+
+      if (!topic || !subject) {
+        return res.status(400).json({ error: 'વિષય (Subject) અને ટોપિક (Topic) ફરજિયાત છે.' });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (apiKey) {
+        try {
+          const ai = new GoogleGenAI({
+            apiKey,
+            httpOptions: {
+              headers: {
+                'User-Agent': 'aistudio-build',
+              },
+            },
+          });
+
+          const prompt = `You are a master Gujarat Board (GSEB) educator and speech coach creating an engaging presentation script in pure Gujarati for a school student.
+Student details:
+- Standard (ધોરણ): ${standard}
+- Subject (વિષય): ${subject}
+- Presentation Topic (ટોપિક): "${topic}"
+- Time Duration (સમય): ${duration}
+- Presentation Setting: ${environment}
+- Student Name: ${studentName}
+
+Strict requirements:
+1. Ground all explanations in Gujarat State Education Board (GSEB) textbook curriculum standards.
+2. The language MUST be pure, encouraging, respectful Gujarati (નમસ્કાર સૌ ગુરુજનો અને સહપાઠી મિત્રો...).
+3. Include actionable stage instructions for the student (હાવભાવ, બોલવાની ગતિ, શ્રોતાઓ તરફ નજર).
+4. MUST include practical BLACKBOARD WORK (બ્લેકબોર્ડ વર્ક) if applicable:
+   - What to write in the center of the board
+   - Key points on the left
+   - Simple diagram or chart to draw on the board (દા.ત. આકૃતિ, સમીકરણ કે ફ્લોચાર્ટ)
+   - Important formula or takeaways on the right
+   - A coaching tip on how to point to the board without turning back entirely to the audience
+5. Real-life daily relatable example that all school children can easily connect with.
+6. 1-2 interactive questions to ask classmates during the speech.
+7. Inspiring closing speech thanking teachers and fellow students.
+
+Output strictly valid JSON with this exact structure:
+{
+  "title": "${topic}",
+  "standard": "${standard}",
+  "subject": "${subject}",
+  "duration": "${duration}",
+  "environment": "${environment}",
+  "hook": "ધ્યાન ખેંચતી શરૂઆત / નમસ્કાર",
+  "introduction": "વિષય પરિચય અને વ્યાખ્યા",
+  "blackboardWork": {
+    "useBlackboard": true,
+    "boardTitle": "બોર્ડ પર લખવાનું મુખ્ય શીર્ષક",
+    "leftSection": ["મુખ્ય મુદ્દો ૧", "મુખ્ય મુદ્દો ૨"],
+    "diagramDescription": "બોર્ડ પર દોરવાની આકૃતિ કે ડાયાગ્રામની સમજૂતી",
+    "rightSection": ["સૂત્ર / નિયમ ૧", "તારણ"],
+    "teacherTip": "બોર્ડ વાપરતી વખતે રાખવાની સાવચેતી"
+  },
+  "presentationSteps": [
+    {
+      "stepNumber": 1,
+      "subHeading": "મુદ્દાનું શીર્ષક",
+      "spokenScript": "વિદ્યાર્થીએ શબ્દશઃ શું બોલવું",
+      "actionInstruction": "વિદ્યાર્થીએ આ મુદ્દા વખતે શું એકશન કરવું"
+    }
+  ],
+  "realLifeExample": "રોજિંદા જીવનનું સરળ ઉદાહરણ",
+  "audienceQuestions": [
+    {
+      "question": "શ્રોતાઓને પૂછવાનો પ્રશ્ન",
+      "expectedAnswer": "સંભવિત જવાબ"
+    }
+  ],
+  "conclusion": "આભાર અને પ્રેરણાદાયી અંતિમ શબ્દો"
+}`;
+
+          const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json',
+            },
+          });
+
+          if (response && response.text) {
+            const parsed = JSON.parse(response.text);
+            return res.json({ success: true, data: parsed, source: 'ai' });
+          }
+        } catch (aiErr) {
+          console.warn('Gemini presentation generation failed, using curriculum fallback:', aiErr);
+        }
+      }
+
+      // Offline curriculum fallback template
+      const stdNum = parseInt(String(standard).replace(/\D/g, ''), 10) || 10;
+      const fallbackScript = {
+        title: topic,
+        standard: standard || `ધોરણ ${stdNum}`,
+        subject: subject,
+        duration,
+        environment,
+        hook: `નમસ્કાર સૌ ગુરુજનો અને મારા વહાલા સહપાઠી મિત્રો! હું ${studentName}, ${standard || `ધોરણ ${stdNum}`} માં અભ્યાસ કરું છું. આજે આપણી સમક્ષ ${subject} ના ખૂબ જ મહત્વપૂર્ણ વિષય "${topic}" પર એક નાની પ્રસ્તુતિ લઈને ઉપસ્થિત થયો છું.`,
+        introduction: `મિત્રો, આપણી GSEB પાઠ્યપુસ્તક અનુસાર "${topic}" માત્ર પરીક્ષા માટે નહીં પણ આપણા રોજિંદા વ્યવહાર અને કુદરતના નિયમો સમજવા માટે અનિવાર્ય છે. ચાલો આ વિષયને સરળ અને રસપ્રદ રીતે સમજીએ.`,
+        blackboardWork: {
+          useBlackboard: true,
+          boardTitle: topic,
+          leftSection: [
+            'મુખ્ય મુદ્દો ૧: વિષયની વ્યાખ્યા અને મૂળ ખ્યાલ',
+            'મુખ્ય મુદ્દો ૨: સિદ્ધાંત અને નિયમો',
+            'મુખ્ય મુદ્દો ૩: વ્યવહારુ ઉપયોગ',
+          ],
+          diagramDescription: 'બોર્ડની મધ્યમાં વિષયનું સરળ રેખાચિત્ર કે ફ્લોચાર્ટ દોરીને તીર દ્વારા મુખ્ય ભાગો દર્શાવો.',
+          rightSection: [
+            'મહત્વના સૂત્રો / વ્યાખ્યા',
+            'ધ્યાનમાં રાખવાના મુદ્દા',
+            'સારાંશ / તારણ',
+          ],
+          teacherTip: 'બોર્ડ પર લખતી વખતે શ્રોતાઓ તરફ પીઠ ન રાખવી. મુદ્દો લખ્યા બાદ શ્રોતાઓ સામે આત્મવિશ્વાસથી જોઈને સ્મિત સાથે બોલવું.',
+        },
+        presentationSteps: [
+          {
+            stepNumber: 1,
+            subHeading: '૧. વિષય પરિચય અને પ્રાથમિક ખ્યાલ',
+            spokenScript: `સૌપ્રથમ આપણે એ જાણીએ કે "${topic}" ખરેખર શું છે? જ્યારે આપણે પાઠ્યપુસ્તક વાંચીએ છીએ ત્યારે આ વિષય અઘરો લાગી શકે છે, પરંતુ વાસ્તવમાં તે ખૂબ જ રોચક અને સરળ છે.`,
+            actionInstruction: 'હાથના હાવભાવ સાથે વિષયનું નામ બોર્ડ પર દર્શાવો અને શ્રોતાઓ સાથે આઇ-કોન્ટેક્ટ જાળવો.',
+          },
+          {
+            stepNumber: 2,
+            subHeading: '૨. મુખ્ય સિદ્ધાંત અને ઊંડાણપૂર્વક સમજૂતી',
+            spokenScript: `હવે આપણે મુખ્ય મુદ્દા પર આવીએ. જેમ બોર્ડ પર દર્શાવ્યું છે, આ વિષયના મુખ્ય નિયમો આપણને સ્પષ્ટ સમજાવે છે કે આ પ્રક્રિયા કેવી રીતે ઘટે છે અને તેનું કારણ શું છે.`,
+            actionInstruction: 'બોર્ડ તરફ ચોકથી મુદ્દો દર્શાવીને શ્રોતાઓ તરફ ફરીને આત્મવિશ્વાસપૂર્વક બોલો.',
+          },
+          {
+            stepNumber: 3,
+            subHeading: '૩. વાસ્તવિક જીવન સાથે જોડાણ',
+            spokenScript: `આ નિયમ માત્ર પુસ્તક પૂરતો મર્યાદિત નથી. આપણી આસપાસ રોજિંદા જીવનમાં આ જ સિદ્ધાંત સતત કામ કરતો જોવા મળે છે.`,
+            actionInstruction: 'ચહેરા પર ઉત્સાહ અને સ્મિત રાખીને વર્ગના મિત્રો તરફ જુઓ.',
+          },
+        ],
+        realLifeExample: `દાખલા તરીકે, આપણા રોજિંદા જીવનમાં અને ઘરમાં ઘટતી સામાન્ય ઘટનાઓ આ સિદ્ધાંતનું ઉત્કૃષ્ટ ઉદાહરણ છે, જે દર્શાવે છે કે વિજ્ઞાન અને શિક્ષણ આપણા જીવન સાથે કેટલું નજીકથી વણાયેલું છે.`,
+        audienceQuestions: [
+          {
+            question: `મિત્રો, શું તમારામાંથી કોઈ કહી શકશે કે આપણા રોજિંદા જીવનમાં આનું અન્ય કયું ઉદાહરણ જોવા મળે છે?`,
+            expectedAnswer: `(શ્રોતાઓ ઉત્તર આપે ત્યારે તેમને 'ખૂબ સરસ' કહીને બિરદાવો.)`,
+          },
+        ],
+        conclusion: `આમ, મિત્રો, ${subject} નો આ અગત્યનો વિષય "${topic}" આપણને વિજ્ઞાન અને જ્ઞાનની નવી દ્રષ્ટિ આપે છે. મારી આ રજૂઆત શાંતિપૂર્વક સાંભળવા બદલ આદરણીય ગુરુજનો અને વહાલા મિત્રોનો ખૂબ ખૂબ આભાર! જય હિન્દ!`,
+      };
+
+      return res.json({ success: true, data: fallbackScript, source: 'curriculum' });
+    } catch (err: any) {
+      console.error('Error in /api/generate-presentation:', err);
+      return res.status(500).json({ error: err.message || 'પ્રેઝન્ટેશન જનરેટ કરવામાં નિષ્ફળતા મળી.' });
     }
   });
 

@@ -146,11 +146,11 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     if (!file) return;
     try {
       setPhotoProcessing(true);
-      const compressed = await compressStudentPhoto(file, 320, 400, 0.82);
+      const compressed = await compressStudentPhoto(file);
       setFormData((prev) => ({ ...prev, photoUrl: compressed }));
-      showToast('success', 'ફોટો તૈયાર થઈ ગયો.');
+      showToast('success', 'ફોટો સ્વચાલિત રીતે રીસાઇઝ થઈ ગયો.');
     } catch (err: any) {
-      alert(err.message || 'ઇમેજ પ્રોસેસ કરવામાં ભૂલ આવી.');
+      showToast('error', err.message || 'ઇમેજ પ્રોસેસ કરવામાં ભૂલ આવી.');
     } finally {
       setPhotoProcessing(false);
       if (addPhotoInputRef.current) addPhotoInputRef.current.value = '';

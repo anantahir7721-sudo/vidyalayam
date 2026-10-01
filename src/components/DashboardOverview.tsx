@@ -31,6 +31,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Flame,
+  Presentation,
 } from 'lucide-react';
 import { ActiveTabType } from './Navbar';
 import { VidyalayamLogo } from './VidyalayamLogo';
@@ -59,7 +60,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 }) => {
   const [knowledgeModalOpen, setKnowledgeModalOpen] = React.useState(false);
   const [modalInitialTab, setModalInitialTab] = React.useState<
-    'news' | 'prashnotari' | 'janva_jevu' | 'abhivyakti' | 'suvichar'
+    'news' | 'prashnotari' | 'janva_jevu' | 'abhivyakti' | 'suvichar' | 'presentation'
   >('news');
   const [newsEnabled, setNewsEnabled] = React.useState(school.dailyNewsEnabled !== false);
   const [prashnotariEnabled, setPrashnotariEnabled] = React.useState(school.dailyPrashnotariEnabled !== false);
@@ -853,6 +854,18 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             >
               <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>આજનો સુવિચાર</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setModalInitialTab('presentation');
+                setKnowledgeModalOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-600/20 dark:hover:bg-teal-600/30 text-teal-950 dark:text-teal-300 border border-teal-300 dark:border-teal-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Presentation className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+              <span>🎤 વિદ્યાર્થી પ્રેઝન્ટેશન & સ્ક્રિપ્ટ</span>
             </button>
           </div>
         </div>

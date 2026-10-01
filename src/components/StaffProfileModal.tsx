@@ -70,7 +70,7 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
     try {
       setPhotoUploading(true);
       setError(null);
-      const compressed = await compressStudentPhoto(file, 320, 400, 0.82);
+      const compressed = await compressStudentPhoto(file);
 
       await updateStaff(schoolId, staff.id, { photoUrl: compressed });
       const updated = { ...staff, photoUrl: compressed };

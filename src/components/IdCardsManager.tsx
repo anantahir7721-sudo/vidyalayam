@@ -11,7 +11,9 @@ import {
   CheckSquare,
   Square,
   QrCode,
+  Camera,
 } from 'lucide-react';
+import { StudentPhotoDownloadModal } from './StudentPhotoDownloadModal';
 
 function parseDateForSort(dateStr?: string): number {
   if (!dateStr || !dateStr.trim()) return 9999999999999;
@@ -56,6 +58,7 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
   const [selectedStaffIds, setSelectedStaffIds] = useState<Set<string>>(new Set());
   const [headerTheme, setHeaderTheme] = useState<'dark' | 'light'>('dark');
   const [logoContrast, setLogoContrast] = useState<'normal' | 'contrast'>('normal');
+  const [isPhotoZipModalOpen, setIsPhotoZipModalOpen] = useState(false);
 
   // Filter students
   const filteredStudents = students.filter((st) => {
@@ -842,6 +845,18 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             </span>
           </button>
 
+          {cardType === 'students' && (
+            <button
+              type="button"
+              onClick={() => setIsPhotoZipModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+              title="ધોરણ વાઇઝ વિદ્યાર્થીઓના ફોટો ZIP માં ડાઉનલોડ કરો (100x120 px)"
+            >
+              <Camera className="w-4 h-4" />
+              <span>ફોટો ZIP (100×120)</span>
+            </button>
+          )}
+
           <button
             onClick={handlePrint}
             className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#9d512d] hover:bg-[#b55e34] text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
@@ -1314,6 +1329,16 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
           </div>
         )}
       </div>
+
+      {/* Student Photo Standard-wise ZIP Download Modal */}
+      <StudentPhotoDownloadModal
+        isOpen={isPhotoZipModalOpen}
+        onClose={() => setIsPhotoZipModalOpen(false)}
+        students={students}
+        schoolName={school.schoolName}
+        diseCode={school.diseCode}
+        initialStandard={selectedStandard !== 'ALL' ? selectedStandard : 'ALL'}
+      />
     </div>
   );
 };

@@ -70,7 +70,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
     const img = imageRef.current;
     if (!img) return;
 
-    const outputSize = 320; // Standardized square logo size in pixels
+    const outputSize = 260; // Optimized square logo size in pixels for storage efficiency
     const canvas = document.createElement('canvas');
     canvas.width = outputSize;
     canvas.height = outputSize;
@@ -80,7 +80,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
     ctx.clearRect(0, 0, outputSize, outputSize);
 
     // Viewport is 280x280. Center is (140, 140).
-    // Output is 320x320. Multiplier is 320 / 280.
+    // Output is 260x260. Multiplier is 260 / 280.
     const multiplier = outputSize / 280;
     const centerX = outputSize / 2;
     const centerY = outputSize / 2;
@@ -122,7 +122,13 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
       ctx.putImageData(imgData, 0, 0);
     }
 
-    const dataUrl = canvas.toDataURL('image/png');
+    // Export optimized base64: PNG if transparency is used, JPEG (0.82) otherwise to save server storage
+    let dataUrl: string;
+    if (removeWhiteBg) {
+      dataUrl = canvas.toDataURL('image/png');
+    } else {
+      dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    }
     setPreviewUrl(dataUrl);
     return dataUrl;
   }, [effectiveScale, position, removeWhiteBg, transparencySensitivity]);

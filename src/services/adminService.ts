@@ -19,7 +19,17 @@ import {
   projectId,
   FIRESTORE_DATABASE_ID,
 } from '../firebase/config';
-import { School, SchoolStatus, AdminRecord, PasswordResetRequest } from '../types';
+import {
+  School,
+  SchoolStatus,
+  AdminRecord,
+  PasswordResetRequest,
+  SchoolStorageData,
+  SchoolsStorageSummary,
+  Student,
+  Staff,
+} from '../types';
+import { autoResizeBase64 } from '../utils/imageUtils';
 
 export interface DatabaseCheckDiagnostic {
   databaseId: string;
@@ -457,6 +467,185 @@ export async function deleteSchoolCompletely(
   return {
     success: true,
     message: 'શાળા અને તેનો તમામ ડેટા સંપૂર્ણપણે ડિલીટ થઈ ગયો છે.',
+  };
+}
+
+/**
+ * Fetch server storage metrics for all schools.
+ * Calculates exact bytes & document counts across student rosters, marks, exams, staff, and certificates.
+ */
+export async function getSchoolsStorageMetrics(
+  forceRefresh = false
+): Promise<{
+  schools: SchoolStorageData[];
+  summary: SchoolsStorageSummary;
+  fromCache?: boolean;
+}> {
+  try {
+    const url = `/api/admin/schools-storage${forceRefresh ? '?force=true' : ''}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Server returned HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to load storage metrics.');
+    }
+    return {
+      schools: data.schools || [],
+      summary: data.summary,
+      fromCache: data.fromCache,
+    };
+  } catch (err: any) {
+    console.warn('Falling back or failed to fetch /api/admin/schools-storage:', err);
+    throw new Error(err.message || 'સર્વર સ્ટોરેજ વિગતો મેળવવામાં સમસ્યા આવી.');
+  }
+}
+
+export interface PhotoOptimizationResult {
+  success: boolean;
+  totalChecked: number;
+  totalOptimized: number;
+  totalBytesBefore: number;
+  totalBytesAfter: number;
+  savedBytes: number;
+  formattedSaved: string;
+  items: Array<{ type: string; schoolName: string; name: string; savedKb: string }>;
+  message: string;
+}
+
+/**
+ * Automatically resize and compress all stored photos (students, staff, school logos)
+ * directly in Firestore, reducing database storage size without quality degradation.
+ */
+export async function optimizeAllStoredPhotos(
+  targetSchoolId?: string,
+  onProgress?: (message: string, percent: number) => void
+): Promise<PhotoOptimizationResult> {
+  let schoolsList: Array<{ id: string; schoolName: string; logoUrl?: string }> = [];
+
+  onProgress?.('શાળાઓની માહિતી ચકાસી રહ્યા છીએ...', 5);
+  if (targetSchoolId) {
+    const sDoc = await getDoc(doc(db, 'schools', targetSchoolId));
+    if (sDoc.exists()) {
+      const d = sDoc.data() as School;
+      schoolsList.push({ id: sDoc.id, schoolName: d.schoolName || sDoc.id, logoUrl: d.logoUrl });
+    }
+  } else {
+    const sSnap = await getDocs(collection(db, 'schools'));
+    schoolsList = sSnap.docs.map((d) => {
+      const data = d.data() as School;
+      return { id: d.id, schoolName: data.schoolName || d.id, logoUrl: data.logoUrl };
+    });
+  }
+
+  let totalChecked = 0;
+  let totalOptimized = 0;
+  let totalBytesBefore = 0;
+  let totalBytesAfter = 0;
+  const items: Array<{ type: string; schoolName: string; name: string; savedKb: string }> = [];
+
+  const totalSchools = schoolsList.length;
+
+  for (let i = 0; i < totalSchools; i++) {
+    const s = schoolsList[i];
+    const pct = Math.round(10 + (i / totalSchools) * 85);
+    onProgress?.(`શાળા સ્કેન થઈ રહી છે (${i + 1}/${totalSchools}): ${s.schoolName}...`, pct);
+
+    // 1. School Logo
+    if (s.logoUrl && s.logoUrl.startsWith('data:image/') && s.logoUrl.length > 25000) {
+      totalChecked++;
+      const bytesBefore = s.logoUrl.length;
+      const optimized = await autoResizeBase64(s.logoUrl, 260, 260, 0.82);
+      const bytesAfter = optimized.length;
+      totalBytesBefore += bytesBefore;
+      totalBytesAfter += bytesAfter;
+      if (bytesAfter < bytesBefore && (bytesBefore - bytesAfter) > 2000) {
+        await updateDoc(doc(db, 'schools', s.id), {
+          logoUrl: optimized,
+          updatedAt: new Date().toISOString(),
+        });
+        totalOptimized++;
+        const savedKb = `${((bytesBefore - bytesAfter) / 1024).toFixed(1)} KB`;
+        items.push({ type: 'School Logo', schoolName: s.schoolName, name: 'શાળાનો લોગો', savedKb });
+      }
+    }
+
+    // 2. Students Photos
+    try {
+      const stuSnap = await getDocs(collection(db, 'schools', s.id, 'students'));
+      for (const stuDoc of stuSnap.docs) {
+        const st = stuDoc.data() as Student;
+        if (st.photoUrl && st.photoUrl.startsWith('data:image/') && st.photoUrl.length > 25000) {
+          totalChecked++;
+          const bytesBefore = st.photoUrl.length;
+          const optimized = await autoResizeBase64(st.photoUrl, 260, 340, 0.80);
+          const bytesAfter = optimized.length;
+          totalBytesBefore += bytesBefore;
+          totalBytesAfter += bytesAfter;
+          if (bytesAfter < bytesBefore && (bytesBefore - bytesAfter) > 2000) {
+            await updateDoc(stuDoc.ref, {
+              photoUrl: optimized,
+              updatedAt: new Date().toISOString(),
+            });
+            totalOptimized++;
+            const savedKb = `${((bytesBefore - bytesAfter) / 1024).toFixed(1)} KB`;
+            items.push({ type: 'Student Photo', schoolName: s.schoolName, name: st.studentName || stuDoc.id, savedKb });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not scan students for school:', s.id, e);
+    }
+
+    // 3. Staff Photos
+    try {
+      const staffSnap = await getDocs(collection(db, 'schools', s.id, 'staff'));
+      for (const staffDoc of staffSnap.docs) {
+        const sf = staffDoc.data() as Staff;
+        if (sf.photoUrl && sf.photoUrl.startsWith('data:image/') && sf.photoUrl.length > 25000) {
+          totalChecked++;
+          const bytesBefore = sf.photoUrl.length;
+          const optimized = await autoResizeBase64(sf.photoUrl, 260, 340, 0.80);
+          const bytesAfter = optimized.length;
+          totalBytesBefore += bytesBefore;
+          totalBytesAfter += bytesAfter;
+          if (bytesAfter < bytesBefore && (bytesBefore - bytesAfter) > 2000) {
+            await updateDoc(staffDoc.ref, {
+              photoUrl: optimized,
+              updatedAt: new Date().toISOString(),
+            });
+            totalOptimized++;
+            const savedKb = `${((bytesBefore - bytesAfter) / 1024).toFixed(1)} KB`;
+            items.push({ type: 'Staff Photo', schoolName: s.schoolName, name: sf.fullName || staffDoc.id, savedKb });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not scan staff for school:', s.id, e);
+    }
+  }
+
+  onProgress?.('ઓપ્ટિમાઇઝેશન પૂર્ણ!', 100);
+
+  const savedBytes = Math.max(0, totalBytesBefore - totalBytesAfter);
+  const formattedSaved =
+    savedBytes > 1024 * 1024
+      ? `${(savedBytes / (1024 * 1024)).toFixed(2)} MB`
+      : `${(savedBytes / 1024).toFixed(1)} KB`;
+
+  return {
+    success: true,
+    totalChecked,
+    totalOptimized,
+    totalBytesBefore,
+    totalBytesAfter,
+    savedBytes,
+    formattedSaved,
+    items,
+    message: totalOptimized > 0
+      ? `${totalOptimized} ફોટા સફળતાપૂર્વક ઓટો-રીસાઇઝ કરી સાચવવામાં આવ્યા અને ${formattedSaved} સર્વર સ્ટોરેજની બચત થઈ.`
+      : 'બધા ફોટા પહેલેથી જ ઓપ્ટિમાઇઝ્ડ અને સાઇઝમાં યોગ્ય છે.',
   };
 }
 

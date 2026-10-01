@@ -435,3 +435,51 @@ export interface ParentBroadcastRecord {
 
 export * from './onlineExam';
 
+export interface StorageCategoryItem {
+  count: number;
+  bytes: number;
+  formatted: string;
+}
+
+export interface SchoolStorageBreakdown {
+  students: StorageCategoryItem;
+  marks: StorageCategoryItem;
+  exams: StorageCategoryItem & { questionsCount?: number };
+  staff: StorageCategoryItem;
+  subjects: StorageCategoryItem;
+  certificates: StorageCategoryItem;
+  examAttempts: StorageCategoryItem;
+  reports: StorageCategoryItem;
+  profile: { bytes: number; formatted: string };
+}
+
+export interface SchoolStorageData {
+  schoolId: string;
+  schoolName: string;
+  diseCode: string;
+  district: string;
+  status: SchoolStatus;
+  totalBytes: number;
+  formattedStorage: string;
+  totalDocs: number;
+  percentageOfTotal: number;
+  breakdown: SchoolStorageBreakdown;
+  lastCalculatedAt: string;
+}
+
+export interface SchoolsStorageSummary {
+  totalServerStorageBytes: number;
+  formattedTotalStorage: string;
+  totalServerDocs: number;
+  averageStoragePerSchool: string;
+  schoolCount: number;
+  highestStorageSchool?: {
+    schoolId: string;
+    schoolName: string;
+    diseCode: string;
+    bytes: number;
+    formatted: string;
+  };
+  calculatedAt: string;
+}
+

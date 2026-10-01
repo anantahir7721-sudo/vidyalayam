@@ -42,6 +42,7 @@ import { DailyPrashnotariTab } from './DailyPrashnotariTab';
 import { DailyJanvaJevuTab } from './DailyJanvaJevuTab';
 import { DailyAbhivyaktiTab } from './DailyAbhivyaktiTab';
 import { DailySuvicharTab } from './DailySuvicharTab';
+import { DailyPresentationTab } from './DailyPresentationTab';
 import { ThemeToggle } from './ThemeToggle';
 import { subscribeToSchoolProfile } from '../services/authService';
 import { calculateClassResults } from '../utils/resultFormulaUtils';
@@ -60,6 +61,7 @@ type StudentTab =
   | 'janva_jevu'
   | 'abhivyakti'
   | 'suvichar'
+  | 'presentation'
   | 'marks'
   | 'result'
   | 'idcard'
@@ -523,6 +525,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
               ...(isJanvaJevuEnabled ? [{ id: 'janva_jevu', label: '💡 આજનું જાણવા જેવું (12 Facts)' }] : []),
               ...(isAbhivyaktiEnabled ? [{ id: 'abhivyakti', label: '🎭 અભિવ્યક્તિ (Assembly Ideas)' }] : []),
               ...(isSuvicharEnabled ? [{ id: 'suvichar', label: '✨ આજનો સુવિચાર (Daily Suvichar)' }] : []),
+              { id: 'presentation', label: '🎤 પ્રેઝન્ટેશન (Presentation AI)' },
               { id: 'marks', label: '📊 મારા ગુણ (My Marks)' },
               { id: 'result', label: '📄 પ્રગતિપત્રક (My Result)' },
               { id: 'idcard', label: '🪪 ID Card' },
@@ -1100,6 +1103,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
           />
         ) : activeTab === 'suvichar' ? (
           <DailySuvicharTab
+            schoolName={school.schoolName}
+            diseCode={school.diseCode}
+            district={school.district}
+          />
+        ) : activeTab === 'presentation' ? (
+          <DailyPresentationTab
             schoolName={school.schoolName}
             diseCode={school.diseCode}
             district={school.district}

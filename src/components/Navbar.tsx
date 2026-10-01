@@ -238,16 +238,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <VidyalayamLogo size={38} glow />
           </button>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 dark:text-[#e4ded6] truncate">
-                Vidyalayam
-              </h1>
-              {school && (
-                <span className="bg-white/90 dark:bg-[#202d38] text-slate-800 dark:text-[#e4ded6] border border-[#E2E8F0] dark:border-white/15 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-mono font-medium truncate max-w-[130px] sm:max-w-[200px] shadow-xs">
-                  {school.schoolName}
-                </span>
-              )}
-            </div>
+            <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 dark:text-[#e4ded6] truncate">
+              Vidyalayam
+            </h1>
             <p className="text-[10px] sm:text-[11px] text-[#C45A2D] dark:text-[#f59c73] font-semibold tracking-wide truncate">
               Created by NR Chad
             </p>
