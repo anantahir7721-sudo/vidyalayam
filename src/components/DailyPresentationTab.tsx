@@ -40,7 +40,7 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
   diseCode,
 }) => {
   // Form controls
-  const [selectedStandard, setSelectedStandard] = useState<number>(10);
+  const [selectedStandard, setSelectedStandard] = useState<number>(9);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('science');
   const [customTopic, setCustomTopic] = useState<string>('');
   const [duration, setDuration] = useState<string>('3-5 મિનિટ');
@@ -51,11 +51,11 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
   // Generation state
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [presentation, setPresentation] = useState<PresentationScriptData | null>(() => {
-    // Default initial presentation
+    // Default initial presentation for Std 9 Science
     return generateCurriculumPresentationScript(
-      10,
-      'વિજ્ઞાન અને ટેકનોલોજી (Science)',
-      'પ્રકાશનું પરાવર્તન અને તેના નિયમો',
+      9,
+      'વિજ્ઞાન (Science)',
+      'દ્રવ્યની ત્રણ ભૌતિક અવસ્થાઓ: ઘન, પ્રવાહી અને વાયુની સરખામણી',
       '3-5 મિનિટ',
       'સભા & વર્ગખંડ',
       'વિદ્યાર્થી'
@@ -83,7 +83,7 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
   // Popular topics for the current standard and subject
   const suggestedTopics = useMemo(() => {
     return currentSubject.popularTopics.filter(
-      (t) => t.standard === selectedStandard || t.standard <= selectedStandard
+      (t) => t.standard === selectedStandard
     );
   }, [currentSubject, selectedStandard]);
 
@@ -219,8 +219,8 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
 
           <div className="flex items-center gap-2 shrink-0">
             <div className="px-3.5 py-2 rounded-2xl bg-black/20 border border-white/20 backdrop-blur-md text-right text-xs">
-              <div className="text-emerald-200 text-[10px] font-semibold">ગુજરાત બોર્ડ ધોરણ ૧ થી ૧૨</div>
-              <div className="font-bold text-white">૧૦૦% શુદ્ધ ગુજરાતી માધ્યમ</div>
+              <div className="text-emerald-200 text-[10px] font-semibold">ગુજરાત બોર્ડ ધોરણ ૯ થી ૧૨ (GSEB)</div>
+              <div className="font-bold text-white">૧૦૦% પાઠ્યપુસ્તક આધારિત</div>
             </div>
           </div>
         </div>

@@ -1246,18 +1246,19 @@ Student details:
 - Student Name: ${studentName}
 
 Strict requirements:
-1. Ground all explanations in Gujarat State Education Board (GSEB) textbook curriculum standards.
-2. The language MUST be pure, encouraging, respectful Gujarati (નમસ્કાર સૌ ગુરુજનો અને સહપાઠી મિત્રો...).
-3. Include actionable stage instructions for the student (હાવભાવ, બોલવાની ગતિ, શ્રોતાઓ તરફ નજર).
-4. MUST include practical BLACKBOARD WORK (બ્લેકબોર્ડ વર્ક) if applicable:
-   - What to write in the center of the board
-   - Key points on the left
-   - Simple diagram or chart to draw on the board (દા.ત. આકૃતિ, સમીકરણ કે ફ્લોચાર્ટ)
-   - Important formula or takeaways on the right
+1. Ground all explanations strictly in the official Gujarat State Education Board (GSEB) textbook curriculum. Do NOT deviate from official GSEB textbook definitions and concepts.
+2. SIMPLIFY and ELEVATE: Make the explanation crystal-clear, intuitive, and impressive so the student speaks with supreme confidence and commands the classroom or assembly's attention.
+3. The language MUST be pure, encouraging, respectful Gujarati (નમસ્કાર સૌ આદરણીય ગુરુજનો અને મારા વહાલા સહપાઠી મિત્રો...).
+4. Include actionable stage instructions for the student (હાવભાવ, અવાજનો ઉતાર-ચઢાવ, બોલવાની ગતિ, શ્રોતાઓ તરફ નજર).
+5. MUST include practical BLACKBOARD WORK (બ્લેકબોર્ડ કાર્ય) whenever applicable:
+   - What to write in the center of the board (ચોકબોર્ડ ટાઈટલ)
+   - Key points on the left section
+   - Simple diagram, equation, or concept chart to draw on the board (દા.ત. આકૃતિ, સમીકરણ કે ફ્લોચાર્ટ)
+   - Important formula or takeaways on the right section
    - A coaching tip on how to point to the board without turning back entirely to the audience
-5. Real-life daily relatable example that all school children can easily connect with.
-6. 1-2 interactive questions to ask classmates during the speech.
-7. Inspiring closing speech thanking teachers and fellow students.
+6. Real-life daily relatable example from Gujarat/Indian school student life that classmates can immediately relate to.
+7. 1-2 interactive engaging questions to ask classmates during the presentation.
+8. Inspiring closing speech thanking teachers and fellow students.
 
 Output strictly valid JSON with this exact structure:
 {
