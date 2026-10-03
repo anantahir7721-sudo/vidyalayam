@@ -17,7 +17,7 @@ jobs:
     - name: Setup Node.js 22
       uses: actions/setup-node@v4
       with:
-        node-version: '22' # 👈 Explicitly setting Node 22 without the strict 'cache' parameter
+        node-version: '22'
 
     - name: Install Node Dependencies
       run: npm install
@@ -27,6 +27,12 @@ jobs:
 
     - name: Initialize & Sync Capacitor Android
       run: npx cap sync android
+
+    - name: Install Asset Tools
+      run: npm install @capacitor/assets --save-dev
+
+    - name: Generate Adaptive Android Icons
+      run: npx @capacitor/assets generate --android
 
     - name: Setup Java JDK 21
       uses: actions/setup-java@v4
