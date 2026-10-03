@@ -179,9 +179,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="app-header bg-white/85 dark:bg-[#121921]/95 border-b border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-[#e4ded6] sticky top-0 z-40 shadow-xs dark:shadow-xl backdrop-blur-xl transition-colors duration-200">
-      {/* Top institutional strip */}
-      <div className="top-strip bg-[#F8FAFC]/90 dark:bg-[#090c10]/95 px-3 sm:px-4 py-1.5 border-b border-[#E2E8F0] dark:border-white/10 text-xs flex justify-between items-center text-slate-600 dark:text-[#a99f91] transition-colors duration-200">
+    <header className="app-header bg-white/85 dark:bg-[#121921]/95 border-b border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-[#e4ded6] sticky top-0 z-40 shadow-xs dark:shadow-xl backdrop-blur-xl transition-colors duration-200 pt-[env(safe-area-inset-top,0px)]">
+      {/* Top institutional strip: Visible on tablet & desktop (hidden on mobile to prevent status bar collision) */}
+      <div className="top-strip hidden md:flex bg-[#F8FAFC]/90 dark:bg-[#090c10]/95 px-3 sm:px-4 py-1.5 border-b border-[#E2E8F0] dark:border-white/10 text-xs justify-between items-center text-slate-600 dark:text-[#a99f91] transition-colors duration-200">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-[#C45A2D] animate-pulse"></span>
           <span className="font-bold text-slate-900 dark:text-[#e4ded6] text-[11px] sm:text-xs">Vidyalayam</span>
@@ -241,11 +241,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             <VidyalayamLogo size={38} glow />
           </button>
           <div className="min-w-0">
-            <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 dark:text-[#e4ded6] truncate">
-              Vidyalayam
+            <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 dark:text-[#e4ded6] truncate" title={school?.schoolName || 'Vidyalayam'}>
+              {school?.schoolName || 'Vidyalayam'}
             </h1>
             <p className="text-[10px] sm:text-[11px] text-[#C45A2D] dark:text-[#f59c73] font-semibold tracking-wide truncate">
-              Created by NR Chad
+              {school ? (school.diseCode ? `DISE: ${school.diseCode} • વિદ્યાલયમ` : 'વિદ્યાલયમ') : 'Created by NR Chad'}
             </p>
           </div>
         </div>
@@ -407,6 +407,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="text-[11px] sm:text-xs">વિદ્યાર્થીઓ</span>
               </button>
 
+              {/* Theme Toggle directly accessible in the mobile header! */}
+              <ThemeToggle compact />
+
               {/* Mobile Drawer Menu Button */}
               <button
                 type="button"
@@ -453,7 +456,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <div className="w-full h-full max-h-[100dvh] bg-[#F5F7FA] dark:bg-[#0c1219] text-slate-800 dark:text-[#e4ded6] flex flex-col shadow-2xl overflow-hidden">
             {/* Drawer Header with Close Button */}
-            <div className="bg-white/90 dark:bg-[#121921] border-b border-[#E2E8F0] dark:border-white/15 px-4 py-3 flex items-center justify-between shrink-0 shadow-xs backdrop-blur-xl">
+            <div className="bg-white/90 dark:bg-[#121921] border-b border-[#E2E8F0] dark:border-white/15 px-4 pt-[max(12px,calc(env(safe-area-inset-top,0px)+8px))] pb-3 flex items-center justify-between shrink-0 shadow-xs backdrop-blur-xl">
               <div className="flex items-center gap-3 min-w-0">
                 <VidyalayamLogo size={36} />
                 <div className="min-w-0">
@@ -463,14 +466,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setMobileDrawerOpen(false)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-800 dark:text-white text-xs font-bold transition-colors cursor-pointer touch-manipulation border border-[#E2E8F0] dark:border-transparent"
-                aria-label="Close menu"
-              >
-                <X className="w-4 h-4" />
-                <span>બંધ કરો</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <ThemeToggle compact />
+                <button
+                  onClick={() => setMobileDrawerOpen(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-800 dark:text-white text-xs font-bold transition-colors cursor-pointer touch-manipulation border border-[#E2E8F0] dark:border-transparent"
+                  aria-label="Close menu"
+                >
+                  <X className="w-4 h-4" />
+                  <span>બંધ કરો</span>
+                </button>
+              </div>
             </div>
 
             {/* Drawer Menu Body */}

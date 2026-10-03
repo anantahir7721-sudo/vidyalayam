@@ -20,7 +20,7 @@ export const VidyalayamLoadingScreen: React.FC = () => {
   return (
     <div
       data-theme={theme}
-      className={`min-h-screen w-full flex flex-col items-center justify-between p-6 sm:p-8 relative overflow-hidden select-none transition-colors duration-300 ${
+      className={`min-h-screen w-full flex flex-col items-center justify-between p-6 sm:p-8 pt-[max(1.5rem,env(safe-area-inset-top,1.5rem))] pb-[max(1.5rem,env(safe-area-inset-bottom,1.5rem))] relative overflow-hidden select-none transition-colors duration-300 ${
         isDark ? 'bg-[#080b0f] text-[#e4ded6]' : 'bg-[#F5F7FA] text-slate-800'
       }`}
     >

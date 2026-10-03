@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
 
 @theme {
@@ -33,6 +34,13 @@
 :root {
   font-family: 'Anek Gujarati', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Ensure sticky app header stays fully below the Android/iOS status bar */
+.app-header {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* =========================================================================

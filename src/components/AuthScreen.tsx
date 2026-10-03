@@ -366,11 +366,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
   return (
     <div className="relative min-h-[calc(100vh-60px)] bg-[#F5F7FA] dark:bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors">
-      {/* Floating Theme Switcher */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30">
-        <ThemeToggle />
-      </div>
-
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Brand Header: Logo -> Name (only in english) -> by NRChad */}
         <div className="flex flex-col items-center text-center">

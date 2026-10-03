@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="gu">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta name="MobileOptimized" content="width" />
+    <title>Vidyalayam</title>
+    <meta name="description" content="Vidyalayam — General School Management System & એકમ કસોટી ગુણપત્રક • by NRChad" />
+    <meta property="og:title" content="Vidyalayam" />
+    <meta property="og:description" content="Vidyalayam — General School Management System & એકમ કસોટી ગુણપત્રક • by NRChad" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#F5F7FA" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Vidyalayam" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@300;400;500;600;700;800&family=Noto+Sans+Gujarati:wght@400;500;600;700;800&family=Noto+Serif+Devanagari:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('ekam_theme');
+          var isDark = false;
+          if (saved === 'dark') {
+            isDark = true;
+          } else if (saved === 'light') {
+            isDark = false;
+          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            isDark = true;
+          }
+          var theme = isDark ? 'dark' : 'light';
+          var root = document.documentElement;
+          if (theme === 'light') {
+            root.classList.remove('dark');
+            root.classList.add('light');
+            root.setAttribute('data-theme', 'light');
+            root.style.colorScheme = 'light';
+            var metaTheme = document.querySelector('meta[name="theme-color"]');
+            if (metaTheme) metaTheme.setAttribute('content', '#F5F7FA');
+          } else {
+            root.classList.remove('light');
+            root.classList.add('dark');
+            root.setAttribute('data-theme', 'dark');
+            root.style.colorScheme = 'dark';
+            var metaTheme = document.querySelector('meta[name="theme-color"]');
+            if (metaTheme) metaTheme.setAttribute('content', '#080b0f');
+          }
+        } catch(e) {}
+      })();
+    </script>
+    <style>
+      :root, html.light, [data-theme="light"] {
+        --loader-bg: #F5F7FA;
+        --loader-text: #0F172A;
+        --loader-subtext: #64748B;
+        --loader-card-border: #E2E8F0;
+        --loader-track: rgba(196, 90, 45, 0.15);
+        --loader-bar: #C45A2D;
+        --loader-shadow: 0 10px 25px -5px rgba(196, 90, 45, 0.25);
+      }
+      html.dark, [data-theme="dark"] {
+        --loader-bg: #080b0f;
+        --loader-text: #e4ded6;
+        --loader-subtext: #a99f91;
+        --loader-card-border: rgba(255, 255, 255, 0.1);
+        --loader-track: rgba(157, 81, 45, 0.2);
+        --loader-bar: #9d512d;
+        --loader-shadow: 0 10px 30px rgba(157, 81, 45, 0.45);
+      }
+      #initial-loader {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--loader-bg);
+        color: var(--loader-text);
+        font-family: 'Anek Gujarati', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        text-align: center;
+        padding: 24px;
+        box-sizing: border-box;
+        transition: background-color 0.25s ease, color 0.25s ease;
+      }
+      #initial-loader-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #C45A2D, #e8733a);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+        box-shadow: var(--loader-shadow);
+      }
+      #initial-loader-title {
+        font-size: 21px;
+        font-weight: 800;
+        letter-spacing: -0.2px;
+        color: var(--loader-text);
+        margin-bottom: 6px;
+      }
+      #initial-loader-subtitle {
+        font-size: 13px;
+        color: var(--loader-subtext);
+        margin-bottom: 16px;
+        font-weight: 500;
+      }
+      #initial-loader-track {
+        width: 130px;
+        height: 4px;
+        background: var(--loader-track);
+        border-radius: 999px;
+        overflow: hidden;
+        position: relative;
+      }
+      #initial-loader-bar {
+        width: 50%;
+        height: 100%;
+        background: var(--loader-bar);
+        border-radius: 999px;
+        animation: vidyPulse 1.2s ease-in-out infinite alternate;
+      }
+      @keyframes vidyPulse {
+        0% { transform: translateX(-65px); }
+        100% { transform: translateX(130px); }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-DynTxK-s.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DllKt9DG.css">
+  </head>
+  <body class="antialiased selection:bg-[#9d512d]/30 selection:text-[#9d512d] min-h-screen">
+    <div id="root">
+      <div id="initial-loader">
+        <div id="initial-loader-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+        </div>
+        <div id="initial-loader-title">વિદ્યાલયમ (Vidyalayam)</div>
+        <div id="initial-loader-subtitle">શાળા પોર્ટલ લોડ થઈ રહ્યું છે...</div>
+        <div id="initial-loader-track">
+          <div id="initial-loader-bar"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

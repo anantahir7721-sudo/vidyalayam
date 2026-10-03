@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 export type Theme = 'dark' | 'light';
 
@@ -59,6 +61,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (metaTheme) metaTheme.setAttribute('content', '#080b0f');
     }
 
+    // Sync with Capacitor native Android / iOS status bar
+    try {
+      if (Capacitor.isPluginAvailable('StatusBar')) {
+        if (targetTheme === 'light') {
+          // Light theme: Light background, dark status bar text/icons
+          StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: '#F5F7FA' }).catch(() => {});
+          StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+        } else {
+          // Dark theme: Dark background, light status bar text/icons
+          StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: '#080b0f' }).catch(() => {});
+          StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+        }
+      }
+    } catch (e) {}
+
     try {
       localStorage.setItem('ekam_theme', targetTheme);
     } catch (e) {}
@@ -67,6 +86,27 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  // Listen for device system theme changes if user hasn't explicitly set a preference
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = (e: MediaQueryListEvent) => {
+      try {
+        const saved = localStorage.getItem('ekam_theme');
+        if (!saved) {
+          const next = e.matches ? 'dark' : 'light';
+          setThemeState(next);
+          applyTheme(next);
+        }
+      } catch (err) {}
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleSystemChange);
+      return () => mediaQuery.removeEventListener('change', handleSystemChange);
+    }
+  }, []);
 
   const toggleTheme = () => {
     setThemeState((prev) => {

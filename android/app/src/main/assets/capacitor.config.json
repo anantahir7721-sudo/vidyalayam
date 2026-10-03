@@ -1,0 +1,15 @@
+{
+	"appId": "com.vidyalayam.school",
+	"appName": "Vidyalayam",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"StatusBar": {
+			"overlaysWebView": false,
+			"style": "DEFAULT",
+			"backgroundColor": "#F5F7FA"
+		}
+	}
+}
