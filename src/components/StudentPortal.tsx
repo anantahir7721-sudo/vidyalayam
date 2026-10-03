@@ -43,6 +43,7 @@ import { DailyJanvaJevuTab } from './DailyJanvaJevuTab';
 import { DailyAbhivyaktiTab } from './DailyAbhivyaktiTab';
 import { DailySuvicharTab } from './DailySuvicharTab';
 import { DailyPresentationTab } from './DailyPresentationTab';
+import { SchoolNoticeBoardTab } from './SchoolNoticeBoardTab';
 import { ThemeToggle } from './ThemeToggle';
 import { subscribeToSchoolProfile } from '../services/authService';
 import { calculateClassResults } from '../utils/resultFormulaUtils';
@@ -57,6 +58,7 @@ interface StudentPortalProps {
 type StudentTab =
   | 'upcoming_exams'
   | 'samachar'
+  | 'notice_board'
   | 'prashnotari'
   | 'janva_jevu'
   | 'abhivyakti'
@@ -520,6 +522,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
 
             const portalTabs = [
               { id: 'upcoming_exams', label: '📝 આગામી પરીક્ષાઓ (Upcoming Exams)', count: upcomingExams.length },
+              { id: 'notice_board', label: '📌 શાળા નોટિસ બોર્ડ (Notice Board)' },
               ...(isNewsEnabled ? [{ id: 'samachar', label: '📰 આજના સમાચાર (Daily News)' }] : []),
               ...(isPrashnotariEnabled ? [{ id: 'prashnotari', label: '❓ આજની પ્રશ્નોત્તરી (Daily Q&A)' }] : []),
               ...(isJanvaJevuEnabled ? [{ id: 'janva_jevu', label: '💡 આજનું જાણવા જેવું (12 Facts)' }] : []),
@@ -1112,6 +1115,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
             schoolName={school.schoolName}
             diseCode={school.diseCode}
             district={school.district}
+          />
+        ) : activeTab === 'notice_board' ? (
+          <SchoolNoticeBoardTab
+            schoolName={school.schoolName}
+            diseCode={school.diseCode}
+            district={school.district}
+            taluka={(school as any).taluka}
+            isSchoolView={false}
           />
         ) : (
           /* Exam History View */

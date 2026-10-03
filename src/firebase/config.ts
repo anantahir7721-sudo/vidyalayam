@@ -1,6 +1,12 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, initializeFirestore, Firestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  Firestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore';
 import firebaseConfigData from '../../firebase-applet-config.json';
 
 // Firebase configuration loaded from provisioned project
@@ -32,15 +38,32 @@ if (typeof window !== 'undefined') {
 }
 
 // The single, consistent Firestore database instance for the entire application.
-// Using experimentalForceLongPolling eliminates the 10-second WebSocket backend connection timeout
-// which frequently occurs in preview iframes and restricted networks.
+// Enabled with IndexedDB Persistent Local Cache for 100% offline access and automatic sync.
+// experimentalForceLongPolling eliminates connection timeouts in preview iframes and restricted networks.
 let firestoreInstance: Firestore;
 try {
-  firestoreInstance = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-  }, FIRESTORE_DATABASE_ID);
+  firestoreInstance = initializeFirestore(
+    app,
+    {
+      experimentalForceLongPolling: true,
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    },
+    FIRESTORE_DATABASE_ID
+  );
 } catch (e) {
-  firestoreInstance = getFirestore(app, FIRESTORE_DATABASE_ID);
+  try {
+    firestoreInstance = initializeFirestore(
+      app,
+      {
+        experimentalForceLongPolling: true,
+      },
+      FIRESTORE_DATABASE_ID
+    );
+  } catch (e2) {
+    firestoreInstance = getFirestore(app, FIRESTORE_DATABASE_ID);
+  }
 }
 
 export const db = firestoreInstance;

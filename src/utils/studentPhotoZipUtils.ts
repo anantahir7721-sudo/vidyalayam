@@ -171,7 +171,7 @@ export async function resizePhotoToPassport(
         let currentBlob = await getCanvasBlob(initialQuality);
 
         // 2. If size is above 20 KB (20,480 bytes), iteratively reduce quality
-        const fallbackQualities = [0.85, 0.78, 0.70, 0.60, 0.50];
+        const fallbackQualities = [0.85, 0.78, 0.70, 0.60, 0.50, 0.40, 0.30, 0.20];
         let qIdx = 0;
         while (currentBlob.size > maxBytes && qIdx < fallbackQualities.length) {
           currentBlob = await getCanvasBlob(fallbackQualities[qIdx]);
@@ -290,12 +290,13 @@ export async function generateStudentPhotosZip(
     });
 
     try {
-      // 2. Resize photo to exact Width: 100px, Height: 120px
+      // 2. Resize photo to exact Width: 100px, Height: 120px and 5 KB - 20 KB
       const resizedBlob = await resizePhotoToPassport(
         st.photoUrl!,
         targetWidth,
         targetHeight,
-        0.90
+        5 * 1024,
+        20 * 1024
       );
 
       // Determine folder path

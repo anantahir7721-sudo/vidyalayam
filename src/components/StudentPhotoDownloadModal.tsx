@@ -185,7 +185,7 @@ export const StudentPhotoDownloadModal: React.FC<StudentPhotoDownloadModalProps>
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {schoolName} • ધોરણ વાઇઝ વિદ્યાર્થીઓના ફોટા ZIP માં ડાઉનલોડ કરો
+                ધોરણ વાઇઝ વિદ્યાર્થીઓના ફોટા ZIP માં ડાઉનલોડ કરો
               </p>
             </div>
           </div>

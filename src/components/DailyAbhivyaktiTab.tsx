@@ -189,7 +189,7 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
   const handleGenerateAiAbhivyakti = async (customPrompt?: string) => {
     const interest = customPrompt || aiInterestInput.trim();
     if (!interest) {
-      alert('કૃપા કરીને તમારો રસ કે ટેલેન્ટ લખો (દા.ત. સંગીતમાં રસ છે, ઢોલ વગાડવું છે, મિમિક્રી કરવી છે...)');
+      setAiError('કૃપા કરીને તમારો રસ કે ટેલેન્ટ લખો (દા.ત. સંગીતમાં રસ છે, વક્તૃત્વ, વિજ્ઞાન પ્રોજેક્ટ...)');
       return;
     }
 

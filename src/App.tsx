@@ -18,6 +18,7 @@ import { ReportsManager } from './components/ReportsManager';
 import { SchoolProfileManager } from './components/SchoolProfileManager';
 import { OnlineExamManager } from './components/OnlineExamManager';
 import { AdmissionManager } from './components/AdmissionManager';
+import { SchoolNoticeBoardTab } from './components/SchoolNoticeBoardTab';
 import { StudentPortal } from './components/StudentPortal';
 import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
 
@@ -387,6 +388,16 @@ export default function App() {
               onSchoolUpdated={(updated) =>
                 setSchool((prev) => (prev ? { ...prev, ...updated } : prev))
               }
+            />
+          )}
+
+          {activeTab === 'notice_board' && (
+            <SchoolNoticeBoardTab
+              schoolName={school.schoolName}
+              diseCode={school.diseCode}
+              district={school.district}
+              taluka={(school as any).taluka}
+              onBack={navigateBack}
             />
           )}
 

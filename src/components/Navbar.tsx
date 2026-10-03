@@ -26,6 +26,7 @@ import {
   Smartphone,
   Monitor,
   RotateCcw,
+  Bell,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -34,6 +35,7 @@ import { useDeviceType } from '../utils/useDeviceType';
 
 export type ActiveTabType =
   | 'overview'
+  | 'notice_board'
   | 'students'
   | 'admissions'
   | 'staff'
@@ -149,6 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const mainTabs: { id: ActiveTabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'ડેશબોર્ડ', icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
+    { id: 'notice_board', label: '📢 નોટિસ બોર્ડ', icon: <Bell className="w-3.5 h-3.5 text-amber-500" /> },
     { id: 'students', label: 'વિદ્યાર્થીઓ', icon: <Users className="w-3.5 h-3.5" /> },
     { id: 'admissions', label: 'નવા પ્રવેશ', icon: <UserPlus className="w-3.5 h-3.5 text-blue-500" /> },
     { id: 'staff', label: 'સ્ટાફ', icon: <UserCheck className="w-3.5 h-3.5" /> },
