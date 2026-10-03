@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { downloadOrSharePdf } from './printAndPdfUtils';
 import {
   DailyNewsBulletin,
   DailyJanvaJevuBulletin,
@@ -71,17 +72,10 @@ async function waitForFontsToRender(): Promise<void> {
 }
 
 /**
- * Helper to download Blob securely
+ * Helper to download/share Blob securely on Web and Android APK
  */
 function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  downloadOrSharePdf(blob, filename);
 }
 
 /**

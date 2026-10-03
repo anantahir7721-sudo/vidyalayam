@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { School, Student } from '../types';
+import { printHtmlDocument } from '../utils/printAndPdfUtils';
 import {
   FileText,
   Printer,
@@ -35,12 +36,6 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
   const handlePrintCertificate = () => {
     if (!selectedStudent) {
       alert('કૃપા કરીને પ્રથમ એક વિદ્યાર્થી પસંદ કરો.');
-      return;
-    }
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow popups to print certificate.');
       return;
     }
 
@@ -275,20 +270,11 @@ export const CertificatesManager: React.FC<CertificatesManagerProps> = ({
           </div>
         </div>
 
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 450);
-          };
-        </script>
       </body>
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    printHtmlDocument(html, titleText);
   };
 
   return (

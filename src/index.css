@@ -38,11 +38,6 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Ensure sticky app header stays fully below the Android/iOS status bar */
-.app-header {
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
 /* =========================================================================
    LIGHT THEME VARIABLES (Default / Light mode)
    iOS-Inspired Minimalist Glassmorphism Specification

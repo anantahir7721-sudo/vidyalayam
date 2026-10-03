@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { SubjectConfig } from '../data/ekamKasotiConfig';
 import { Student } from '../types';
+import { printHtmlDocument } from './printAndPdfUtils';
 
 export interface StudentMarkEntry {
   student: Student;
@@ -91,12 +92,6 @@ export function printEkamKasotiA4(
   entries: StudentMarkEntry[],
   schoolLogo?: string
 ) {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('Please allow popups to download or print the A4 Marks List.');
-    return;
-  }
-
   const totalMaxMarks = typeof subject.totalMarks === 'number' && subject.totalMarks > 0 ? subject.totalMarks : 25;
 
   const tableHeaders = subject.questions
@@ -332,18 +327,9 @@ export function printEkamKasotiA4(
         </div>
       </div>
 
-      <script>
-        window.onload = function() {
-          setTimeout(function() {
-            window.print();
-          }, 450);
-        };
-      </script>
     </body>
     </html>
   `;
 
-  printWindow.document.open();
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
+  printHtmlDocument(htmlContent, `${schoolName}_Ekam_Kasoti_${subject.name}`);
 }

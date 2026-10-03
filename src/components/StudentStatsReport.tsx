@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { School, Student } from '../types';
+import { printHtmlDocument } from '../utils/printAndPdfUtils';
 import {
   FileText,
   Printer,
@@ -181,12 +182,6 @@ export const StudentStatsReport: React.FC<StudentStatsReportProps> = ({ school, 
 
   // Print / PDF download handler
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('કૃપા કરીને પ્રિન્ટ વિન્ડો ખોલવા માટે તમારા બ્રાઉઝરમાં પોપ-અપ (Pop-up) મંજૂર કરો.');
-      return;
-    }
-
     const addressStr = [school.address, school.village, school.taluka, school.district]
       .filter(Boolean)
       .join(', ');
@@ -598,20 +593,11 @@ export const StudentStatsReport: React.FC<StudentStatsReportProps> = ({ school, 
           </div>
         </div>
 
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 500);
-          };
-        </script>
       </body>
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    printHtmlDocument(html, docTitle);
   };
 
   return (

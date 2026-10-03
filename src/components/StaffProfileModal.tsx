@@ -23,6 +23,7 @@ import {
 import { School, Staff } from '../types';
 import { updateStaff } from '../services/staffService';
 import { compressStudentPhoto } from '../utils/imageUtils';
+import { printHtmlDocument } from '../utils/printAndPdfUtils';
 
 interface StaffProfileModalProps {
   staff: Staff;
@@ -105,12 +106,6 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
 
   // Print Staff Profile / Bio-data
   const handlePrintProfile = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('પ્રિન્ટ વિન્ડો ખોલવા માટે કૃપા કરીને પોપ-અપ પરવાનગી આપો.');
-      return;
-    }
-
     const schoolName = school?.schoolName || 'શાળા નામ';
     const diseCode = school?.diseCode || '';
     const district = school?.district || '';
@@ -361,13 +356,7 @@ export const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 400);
+    printHtmlDocument(htmlContent, `${staff.fullName}_Staff_Profile`);
   };
 
   return (

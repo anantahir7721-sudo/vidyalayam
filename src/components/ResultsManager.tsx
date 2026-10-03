@@ -29,6 +29,7 @@ import {
   getSubjectsForStandard,
   getExamsForStandard,
 } from '../utils/resultFormulaUtils';
+import { printHtmlDocument } from '../utils/printAndPdfUtils';
 import { SendExamResultModal } from './SendExamResultModal';
 
 interface ResultsManagerProps {
@@ -188,12 +189,6 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
 
   // 3. Print Class Gazette (A4 Landscape)
   const handlePrintGazette = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('પ્રિન્ટ કરવા માટે પોપઅપ વિન્ડોને મંજૂરી આપો.');
-      return;
-    }
-
     const tableRows = classResults
       .map(
         (r, idx) => `
@@ -410,17 +405,11 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           <div class="sig-line">પરીક્ષા પ્રમુખશ્રીની સહી</div>
           <div class="sig-line">આચાર્યશ્રીની સહી અને સિક્કો</div>
         </div>
-
-        <script>
-          window.onload = function() { window.print(); }
-        </script>
       </body>
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    printHtmlDocument(html, `${school.schoolName.replace(/[\s/\\?%*:|"<>]/g, '_')}_Std_${selectedStandard}_Result_Gazette`);
   };
 
   // 4. Print Individual Student Progress Card (A4 Portrait)
@@ -428,12 +417,6 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
     const res = targetResult || activeStudentResult;
     if (!res) {
       alert('કૃપા કરીને વિદ્યાર્થી પસંદ કરો.');
-      return;
-    }
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('પ્રિન્ટ કરવા માટે પોપઅપ વિન્ડોને મંજૂરી આપો.');
       return;
     }
 
@@ -748,16 +731,12 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           </div>
         </div>
 
-        <script>
-          window.onload = function() { window.print(); }
-        </script>
       </body>
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    const studentName = res.student.studentName.replace(/[\s/\\?%*:|"<>]/g, '_');
+    printHtmlDocument(html, `${studentName}_Progress_Report`);
   };
 
   return (

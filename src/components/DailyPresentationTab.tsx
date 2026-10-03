@@ -167,10 +167,41 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
     fullText += `૧. પ્રારંભિક સંબોધન & શરૂઆત:\n${presentation.openingSpeech || presentation.hook || ''}\n\n`;
     fullText += `૨. વિષય પરિચય & સાદી વ્યાખ્યા:\n${presentation.topicIntroduction || presentation.introduction || ''}\n\n`;
     fullText += `૩. વિષયની ઊંડાણપૂર્વક સમજુતી (૫ મિનિટ બોલવાનું મુખ્ય લખાણ):\n${presentation.detailedExplanation || ''}\n\n`;
-    fullText += `૪. રોજિંદા જીવન સાથેનું જોડાણ:\n${presentation.realLifeExample || ''}\n\n`;
+    fullText += `૪. રોજિંદા જીવન સાથેનું સચોટ જોડાણ (ઉદાહરણોની સમજૂતી):\n${presentation.realLifeExample || ''}\n\n`;
+
+    if (presentation.detailedExamples && presentation.detailedExamples.length > 0) {
+      presentation.detailedExamples.forEach((ex) => {
+        fullText += `• ${ex.title}\n  - પરિસ્થિતિ: ${ex.context}\n  - વૈજ્ઞાનિક સમજૂતી: ${ex.scientificReason}\n`;
+        if (ex.speechQuote) fullText += `  - બોલવાની રીત: ${ex.speechQuote}\n`;
+      });
+      fullText += `\n`;
+    }
 
     if (presentation.practicalActivity?.hasActivity && presentation.practicalActivity.title) {
-      fullText += `૫. સરળ પ્રવૃત્તિ / ડેમો:\n• ${presentation.practicalActivity.title}\n${presentation.practicalActivity.description}\n\n`;
+      fullText += `૫. GSEB પાઠ્યપુસ્તક પ્રાયોગિક પ્રવૃત્તિ & ડેમો:\n• પ્રવૃત્તિ: ${presentation.practicalActivity.title}`;
+      if (presentation.practicalActivity.textbookRef) {
+        fullText += ` (${presentation.practicalActivity.textbookRef})`;
+      }
+      fullText += `\n`;
+      if (presentation.practicalActivity.materials?.length) {
+        fullText += `• સાધન સામગ્રી: ${presentation.practicalActivity.materials.join(', ')}\n`;
+      }
+      if (presentation.practicalActivity.procedure?.length) {
+        fullText += `• પદ્ધતિ:\n  ${presentation.practicalActivity.procedure.join('\n  ')}\n`;
+      }
+      if (presentation.practicalActivity.observation) {
+        fullText += `• પ્રત્યક્ષ અવલોકન: ${presentation.practicalActivity.observation}\n`;
+      }
+      if (presentation.practicalActivity.conclusion) {
+        fullText += `• વૈજ્ઞાનિક તારણ: ${presentation.practicalActivity.conclusion}\n`;
+      }
+      if (presentation.practicalActivity.stageDemoTip) {
+        fullText += `• સ્ટેજ ડેમો ટિપ: ${presentation.practicalActivity.stageDemoTip}\n`;
+      }
+      if (presentation.practicalActivity.description) {
+        fullText += `• વક્તવ્ય લખાણ: ${presentation.practicalActivity.description}\n`;
+      }
+      fullText += `\n`;
     }
 
     if (presentation.audienceQuestion?.question) {
@@ -600,41 +631,164 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
                 </div>
               </div>
 
-              {/* Section 4: Relatable Everyday Life Example (રોજિંદી જિંદગીનું ઉદાહરણ) */}
-              <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-4 sm:p-5 space-y-2">
+              {/* Section 4: Relatable Everyday Life Example (રોજિંદા જીવન સાથે જોડાણ) */}
+              <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-4 sm:p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-amber-900 dark:text-amber-300 font-bold text-xs uppercase tracking-wider">
                     <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-                    <span>૪. આપણી રોજિંદી જિંદગી સાથે જોડાણ (Relatable Everyday Example)</span>
+                    <span>૪. રોજિંદા જીવન સાથેનું સચોટ જોડાણ (Relatable Everyday Examples)</span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
                     આશરે ૪૫ સેકન્ડ
                   </span>
                 </div>
-                <p className={`text-slate-800 dark:text-amber-50 ${textSizeClass}`}>
+                
+                {/* Flowing spoken speech for student */}
+                <p className={`text-slate-800 dark:text-amber-50 leading-relaxed font-medium ${textSizeClass}`}>
                   {presentation.realLifeExample}
                 </p>
+
+                {/* Structured Breakdown Cards for each Concrete Example */}
+                {presentation.detailedExamples && presentation.detailedExamples.length > 0 && (
+                  <div className="space-y-2.5 pt-2 border-t border-amber-200/60 dark:border-amber-800/30">
+                    <div className="text-[11px] font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wide">
+                      💡 ઉદાહરણોની ઊંડાણપૂર્વક સમજૂતી (Detailed Explanation):
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      {presentation.detailedExamples.map((ex, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/90 border border-amber-200/80 dark:border-amber-800/50 shadow-2xs space-y-1.5"
+                        >
+                          <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-amber-100 flex items-center gap-1.5">
+                            <span>{ex.title}</span>
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-300 leading-snug">
+                            <span className="font-bold text-amber-800 dark:text-amber-300">પરિસ્થિતિ: </span>
+                            {ex.context}
+                          </div>
+                          <div className="text-xs text-slate-700 dark:text-slate-200 leading-snug">
+                            <span className="font-bold text-emerald-700 dark:text-emerald-400">વૈજ્ઞાનિક કારણ: </span>
+                            {ex.scientificReason}
+                          </div>
+                          {ex.speechQuote && (
+                            <div className="text-[11px] font-medium text-amber-800 dark:text-amber-200/90 italic bg-amber-50/80 dark:bg-amber-950/40 p-2 rounded-lg border border-amber-200/60 dark:border-amber-800/30">
+                              🗣️ સ્ટેજ પર બોલવાની રીત: {ex.speechQuote}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Section 5: Practical Demo (ONLY IF APPLICABLE AND RELEVANT - પ્રવૃત્તિ થઈ શકે તો જ) */}
+              {/* Section 5: Practical Demo & Activity (GSEB પાઠ્યપુસ્તક પ્રાયોગિક પ્રવૃત્તિ) */}
               {presentation.practicalActivity?.hasActivity && presentation.practicalActivity.title && (
-                <div className="bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-2xl p-4 sm:p-5 space-y-2">
-                  <div className="flex items-center justify-between">
+                <div className="bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-2xl p-4 sm:p-5 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2 text-purple-900 dark:text-purple-300 font-bold text-xs uppercase tracking-wider">
                       <FlaskConical className="w-3.5 h-3.5 text-purple-600" />
-                      <span>૫. સરળ વર્ગખંડ પ્રવૃત્તિ / ડેમો (જો શક્ય હોય તો જ)</span>
+                      <span>૫. GSEB પાઠ્યપુસ્તક પ્રાયોગિક પ્રવૃત્તિ & વર્ગખંડ ડેમો</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 dark:bg-purple-900/60 dark:text-purple-200">
-                      સરળ નિદર્શન
-                    </span>
+                    {presentation.practicalActivity.textbookRef && (
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 dark:bg-purple-900/60 dark:text-purple-200 border border-purple-300 dark:border-purple-700">
+                        📖 {presentation.practicalActivity.textbookRef}
+                      </span>
+                    )}
                   </div>
-                  <div className="space-y-1">
-                    <div className="font-bold text-sm text-purple-950 dark:text-purple-200">
+
+                  <div className="space-y-2">
+                    <div className="font-black text-sm sm:text-base text-purple-950 dark:text-purple-100">
                       {presentation.practicalActivity.title}
                     </div>
-                    <p className={`text-slate-700 dark:text-purple-100 ${textSizeClass}`}>
-                      {presentation.practicalActivity.description}
-                    </p>
+
+                    {/* Materials Tags */}
+                    {presentation.practicalActivity.materials && presentation.practicalActivity.materials.length > 0 && (
+                      <div className="space-y-1">
+                        <span className="text-[11px] font-bold text-purple-800 dark:text-purple-300">
+                          📦 જરૂરી સાધન સામગ્રી:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                          {presentation.practicalActivity.materials.map((mat, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[11px] font-semibold px-2.5 py-0.5 rounded-lg bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800/50 shadow-2xs"
+                            >
+                              • {mat}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Procedure Steps */}
+                    {presentation.practicalActivity.procedure && presentation.practicalActivity.procedure.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[11px] font-bold text-purple-800 dark:text-purple-300">
+                          📋 કરવાની સ્ટેપ-બાય-સ્ટેપ પદ્ધતિ:
+                        </span>
+                        <div className="space-y-1">
+                          {presentation.practicalActivity.procedure.map((step, idx) => (
+                            <div
+                              key={idx}
+                              className="text-xs text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-900/80 p-2 rounded-xl border border-purple-100 dark:border-purple-900/30 flex items-start gap-2"
+                            >
+                              <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 font-black text-[10px] flex items-center justify-center shrink-0">
+                                {idx + 1}
+                              </span>
+                              <span className="leading-snug pt-0.5">{step}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Observation & Conclusion Split */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      {presentation.practicalActivity.observation && (
+                        <div className="p-3 rounded-xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 space-y-1">
+                          <div className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1">
+                            <span>👁️ પ્રત્યક્ષ અવલોકન (Observation):</span>
+                          </div>
+                          <p className="text-xs text-slate-800 dark:text-amber-50 leading-relaxed font-medium">
+                            {presentation.practicalActivity.observation}
+                          </p>
+                        </div>
+                      )}
+
+                      {presentation.practicalActivity.conclusion && (
+                        <div className="p-3 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 space-y-1">
+                          <div className="text-[11px] font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1">
+                            <span>🎯 વૈજ્ઞાનિક તારણ (Conclusion):</span>
+                          </div>
+                          <p className="text-xs text-slate-800 dark:text-emerald-50 leading-relaxed font-medium">
+                            {presentation.practicalActivity.conclusion}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stage Demo Tip */}
+                    {presentation.practicalActivity.stageDemoTip && (
+                      <div className="p-2.5 rounded-xl bg-purple-100/70 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700/60 text-xs text-purple-950 dark:text-purple-100 flex items-start gap-2">
+                        <span className="text-base shrink-0">⚡</span>
+                        <div className="leading-relaxed">
+                          <strong className="text-purple-900 dark:text-purple-200">સ્ટેજ ડેમો ટિપ: </strong>
+                          {presentation.practicalActivity.stageDemoTip}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Spoken Speech Explanation for Student */}
+                    <div className="pt-1">
+                      <span className="text-[11px] font-bold text-purple-900 dark:text-purple-300">
+                        🗣️ વિદ્યાર્થી આ પ્રવૃત્તિ સ્ટેજ પર બોલીને કેવી રીતે સમજાવશે:
+                      </span>
+                      <p className={`text-slate-800 dark:text-purple-100 leading-relaxed font-medium mt-1 ${textSizeClass}`}>
+                        {presentation.practicalActivity.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}

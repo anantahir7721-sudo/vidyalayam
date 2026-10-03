@@ -25,6 +25,7 @@ import { updateStudent } from '../services/firestoreService';
 import { compressStudentPhoto } from '../utils/imageUtils';
 import { getStudentDiseCode } from '../utils/idCardPdf';
 import { printStudentIdCards } from '../utils/idCardPdf';
+import { printHtmlDocument } from '../utils/printAndPdfUtils';
 import { cleanAndNormalizeBloodGroup } from '../utils/bloodGroupUtils';
 import { IosDateInput } from './IosDatePicker';
 
@@ -229,9 +230,6 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
   // Trigger Print Slip for Student Profile
   const handlePrintSlip = () => {
-    const printWin = window.open('', '_blank');
-    if (!printWin) return;
-
     const html = `
       <!DOCTYPE html>
       <html lang="gu">
@@ -308,17 +306,10 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
           <div>આચાર્યશ્રી સહી & સિક્કો</div>
         </div>
 
-        <script>
-          window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => window.print(), 500);
-          });
-        </script>
       </body>
       </html>
     `;
-    printWin.document.open();
-    printWin.document.write(html);
-    printWin.document.close();
+    printHtmlDocument(html, `${student.studentName}_Student_Profile`);
   };
 
   return (

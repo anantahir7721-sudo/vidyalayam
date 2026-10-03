@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { School, Student, Staff, AllowedStandard } from '../types';
 import { getStudentDiseCode, getStudentDiseInlineStyle } from '../utils/idCardPdf';
+import { printHtmlDocument } from '../utils/printAndPdfUtils';
 import {
   CreditCard,
   Printer,
@@ -172,12 +173,6 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
 
   // Trigger Print with A4 Card Layout
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow popups to print ID cards.');
-      return;
-    }
-
     const isLightHeader = headerTheme === 'light';
     const isContrastLogo = logoContrast === 'contrast';
 
@@ -788,17 +783,14 @@ export const IdCardsManager: React.FC<IdCardsManagerProps> = ({
             fitNames();
             setTimeout(function() {
               fitNames();
-              window.print();
-            }, 450);
+            }, 300);
           };
         </script>
       </body>
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    printHtmlDocument(html, `${school.schoolName}_ID_Cards`);
   };
 
   return (

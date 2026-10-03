@@ -18,6 +18,7 @@ import {
 import { StudentReportCustomizer } from './StudentReportCustomizer';
 import { StaffReportCustomizer } from './StaffReportCustomizer';
 import { StudentStatsReport } from './StudentStatsReport';
+import { printHtmlDocument } from '../utils/printAndPdfUtils';
 
 interface ReportsManagerProps {
   school: School;
@@ -119,12 +120,6 @@ export const ReportsManager: React.FC<ReportsManagerProps> = ({
 
   // Print A4 Summary Report
   const handlePrintSummary = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow popups to print report.');
-      return;
-    }
-
     const html = `
       <!DOCTYPE html>
       <html lang="gu">
@@ -344,21 +339,11 @@ export const ReportsManager: React.FC<ReportsManagerProps> = ({
         <div class="footer-credit">
           Vidyalayam • Created by NR Chad • General School Management System
         </div>
-
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 450);
-          };
-        </script>
       </body>
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    printHtmlDocument(html, `${school.schoolName}_શાળા_સામાન્ય_અહેવાલ`);
   };
 
   return (

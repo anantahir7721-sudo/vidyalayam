@@ -42,7 +42,7 @@ import {
   getStoredStudentSession,
   clearStudentSession,
 } from './services/onlineExamService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, WifiOff, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   const [authStatus, setAuthStatus] = useState<AuthRoleStatus>('loading');
@@ -62,15 +62,69 @@ export default function App() {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
 
-  // Active Navigation Tab History Stack (enables one-by-one seamless step back)
-  const [tabHistory, setTabHistory] = useState<ActiveTabType[]>(['overview']);
+  // Active Navigation Tab History Stack with LocalStorage persistence to survive network reloads
+  const [tabHistory, setTabHistory] = useState<ActiveTabType[]>(() => {
+    try {
+      const savedHistory = localStorage.getItem('vidyalayam_tab_history');
+      if (savedHistory) {
+        const parsed = JSON.parse(savedHistory);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed as ActiveTabType[];
+        }
+      }
+      const lastTab = localStorage.getItem('vidyalayam_last_active_tab') as ActiveTabType;
+      if (lastTab && lastTab !== 'overview') {
+        return ['overview', lastTab];
+      }
+    } catch (e) {
+      console.warn('Could not restore tabHistory from localStorage:', e);
+    }
+    return ['overview'];
+  });
   const activeTab: ActiveTabType = tabHistory[tabHistory.length - 1] || 'overview';
   const isInternalPopRef = useRef(false);
+
+  // Network connectivity status
+  const [isOnline, setIsOnline] = useState<boolean>(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+  const [showOnlineRestored, setShowOnlineRestored] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setShowOnlineRestored(true);
+      const timer = setTimeout(() => setShowOnlineRestored(false), 3500);
+      return () => clearTimeout(timer);
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setShowOnlineRestored(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Persist tabHistory and activeTab across browser and app reloads
+  useEffect(() => {
+    try {
+      localStorage.setItem('vidyalayam_tab_history', JSON.stringify(tabHistory));
+      const current = tabHistory[tabHistory.length - 1] || 'overview';
+      localStorage.setItem('vidyalayam_last_active_tab', current);
+    } catch (e) {}
+  }, [tabHistory]);
 
   // Synchronize with browser / mobile hardware Back Button (popstate)
   useEffect(() => {
     try {
-      window.history.replaceState({ tab: 'overview' }, '');
+      const current = tabHistory[tabHistory.length - 1] || 'overview';
+      window.history.replaceState({ tab: current }, '');
     } catch (e) {
       // ignore in environments where history API might be restricted
     }
@@ -238,6 +292,10 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      try {
+        localStorage.removeItem('vidyalayam_tab_history');
+        localStorage.setItem('vidyalayam_last_active_tab', 'overview');
+      } catch (e) {}
       setAuthStatus('loading');
       await logoutSchool();
       setUser(null);
@@ -368,6 +426,20 @@ export default function App() {
           canGoBack={tabHistory.length > 1 || activeTab !== 'overview'}
           onBack={navigateBack}
         />
+
+        {/* Seamless Network Status Notification */}
+        {!isOnline && (
+          <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 text-xs font-semibold text-amber-800 dark:text-amber-200 flex items-center justify-center gap-2 animate-in fade-in duration-200">
+            <WifiOff className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>ઇન્ટરનેટ કનેક્શન મળતું નથી (ઑફલાઇન મોડ) • આપનું કામ સાચવેલું છે, નેટવર્ક આવતાં આપોઆપ સિંક થશે.</span>
+          </div>
+        )}
+        {showOnlineRestored && isOnline && (
+          <div className="bg-emerald-500/15 border-b border-emerald-500/30 px-4 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-200 flex items-center justify-center gap-2 animate-in fade-in duration-200">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>ઇન્ટરનેટ કનેક્શન પુનઃસ્થાપિત થયું છે • વિદ્યાલયમ ઓનલાઇન છે.</span>
+          </div>
+        )}
 
         <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 lg:pb-8">
           {dataLoading && (

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { School, Student } from '../types';
 import { getStudentDiseCode } from '../utils/idCardPdf';
+import { printHtmlDocument } from '../utils/printAndPdfUtils';
 import {
   FileText,
   Printer,
@@ -284,12 +285,6 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
   const handlePrintPDF = () => {
     if (filteredStudents.length === 0) {
       alert('પસંદ કરેલ ફિલ્ટર મુજબ કોઈ વિદ્યાર્થી મળ્યા નથી.');
-      return;
-    }
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('પ્રિન્ટ અથવા PDF ડાઉનલોડ કરવા માટે પોપ-અપ (Pop-up) ને મંજૂરી આપો.');
       return;
     }
 
@@ -647,20 +642,11 @@ export const StudentReportCustomizer: React.FC<StudentReportCustomizerProps> = (
           </div>
         </div>
 
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 500);
-          };
-        </script>
       </body>
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    printHtmlDocument(html, `${school.schoolName}_Student_Report`);
   };
 
   return (

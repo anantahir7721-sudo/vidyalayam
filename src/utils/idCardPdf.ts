@@ -1,4 +1,5 @@
 import { School, Student, Staff } from '../types';
+import { printHtmlDocument } from './printAndPdfUtils';
 
 /**
  * Computes font-size and letter-spacing for student names on ID cards.
@@ -151,12 +152,6 @@ export function getStudentDiseInlineStyle(code: string): string {
 export function printStudentIdCards(school: School, students: Student[]) {
   if (students.length === 0) {
     alert('કૃપા કરીને આઈડી કાર્ડ છાપવા માટે ઓછામાં ઓછો એક વિદ્યાર્થી પસંદ કરો (Please select at least one student).');
-    return;
-  }
-
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('કૃપા કરીને આઈડી કાર્ડ પ્રિન્ટ કરવા માટે બ્રાઉઝરમાં પોપ-અપની પરવાનગી આપો (Please allow popups to print ID cards).');
     return;
   }
 
@@ -755,17 +750,14 @@ export function printStudentIdCards(school: School, students: Student[]) {
           autoFitIdCardNames();
           setTimeout(() => {
             autoFitIdCardNames();
-            window.print();
-          }, 600);
+          }, 300);
         });
       </script>
     </body>
     </html>
   `;
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  printHtmlDocument(html, `${school.schoolName}_Student_ID_Cards`);
 }
 
 function formatDateGuj(d?: string): string {
@@ -791,12 +783,6 @@ function formatDateGuj(d?: string): string {
 export function printStaffIdCards(school: School, staffList: Staff[]) {
   if (staffList.length === 0) {
     alert('કૃપા કરીને આઈડી કાર્ડ છાપવા માટે ઓછામાં ઓછો એક સ્ટાફ સભ્ય પસંદ કરો (Please select at least one staff member).');
-    return;
-  }
-
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('કૃપા કરીને આઈડી કાર્ડ પ્રિન્ટ કરવા માટે બ્રાઉઝરમાં પોપ-અપની પરવાનગી આપો (Please allow popups to print ID cards).');
     return;
   }
 
@@ -1120,18 +1106,9 @@ export function printStaffIdCards(school: School, staffList: Staff[]) {
       <div class="page-grid">
         ${cardsHtml}
       </div>
-      <script>
-        window.addEventListener('DOMContentLoaded', () => {
-          setTimeout(() => {
-            window.print();
-          }, 500);
-        });
-      </script>
     </body>
     </html>
   `;
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  printHtmlDocument(html, `${school.schoolName}_Staff_ID_Cards`);
 }
