@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Graduation Cap / Vidyalayam School Emblem (Material You Monochrome) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,34 L28,47 L54,60 L80,47 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,55 L34,70 C34,77 43,82 54,82 C65,82 74,77 74,70 L74,55 L54,65 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M78,50 L78,74 L81,74 L81,50 Z" />
+</vector>

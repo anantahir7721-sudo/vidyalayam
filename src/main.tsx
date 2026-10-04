@@ -5,10 +5,14 @@ import { ThemeProvider } from './context/ThemeContext.tsx';
 import { VoiceProvider } from './context/VoiceContext.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { initializeGlobalHaptics } from './utils/haptics.ts';
+import { initStatusBarHelper } from './utils/statusBarHelper.ts';
 import './index.css';
 
 // Initialize professional haptic feedback engine across the entire app
 initializeGlobalHaptics();
+
+// Initialize full-screen edge-to-edge status bar insets protection
+initStatusBarHelper();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -164,6 +164,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [dobInputMode, setDobInputMode] = useState<'date' | 'text'>('text');
   const [iosStudentDobPickerOpen, setIosStudentDobPickerOpen] = useState(false);
   const [showExtraStudentFields, setShowExtraStudentFields] = useState(false);
+  const [studentTabSwitchedAt, setStudentTabSwitchedAt] = useState<number>(0);
 
   // Admin Form states (No hardcoded credentials!)
   const [adminIdentifier, setAdminIdentifier] = useState('');
@@ -518,6 +519,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   id="tab-portal-student"
                   type="button"
                   onClick={() => {
+                    if (document.activeElement instanceof HTMLElement) {
+                      document.activeElement.blur();
+                    }
+                    setStudentTabSwitchedAt(Date.now());
                     setPortalType('student');
                     setError(null);
                     setSuccessMessage(null);
@@ -923,9 +928,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     id="input-student-dise"
                     type="text"
                     required
-                    autoFocus
+                    autoFocus={false}
+                    autoComplete="off"
                     value={studentDiseCode}
                     onChange={(e) => setStudentDiseCode(e.target.value.trim())}
+                    onFocus={(e) => {
+                      // Prevent auto opening keyboard when switching to student tab; opens only on deliberate user tap to type
+                      if (Date.now() - studentTabSwitchedAt < 500) {
+                        e.target.blur();
+                      }
+                    }}
                     placeholder="દા.ત. 240104015021720076 (Child UID)"
                     className="glass-input block w-full pl-10 pr-3 py-3 rounded-xl text-sm placeholder-[#a99f91]/60 font-mono tracking-wide focus:border-emerald-500"
                   />

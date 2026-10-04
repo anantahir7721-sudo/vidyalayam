@@ -16,10 +16,12 @@ import {
   Share2,
   RotateCw,
   Loader2,
+  Bell,
 } from 'lucide-react';
 import { DailyNewsBulletin, NewsItem, NewsCategory } from '../types';
 import { getDailyNewsBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
 import { shareDailyNewsAsPdf } from '../utils/dailyPdfShareUtils';
+import { sendNotification } from '../utils/notificationUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
 
 interface DailyNewsTabProps {
@@ -158,6 +160,24 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
     }
   };
 
+  const [notifSent, setNotifSent] = useState(false);
+  const handleSendNotification = async () => {
+    if (!bulletin || !bulletin.items?.length) return;
+    const topItem = bulletin.items[0];
+    const secondItem = bulletin.items[1];
+    setNotifSent(true);
+    await sendNotification(
+      `📰 આજના મુખ્ય સમાચાર (${bulletin.editionDate})`,
+      `૧. ${topItem.headline}\n૨. ${secondItem ? secondItem.headline : ''} — દિવ્ય ભાસ્કર & ગુજરાત ન્યૂઝ`,
+      'daily'
+    );
+    setShareFeedback('✅ આજના સમાચાર સફળતાપૂર્વક મોબાઈલ નોટિફિકેશનમાં મોકલાયા!');
+    setTimeout(() => {
+      setNotifSent(false);
+      setShareFeedback(null);
+    }, 3500);
+  };
+
   const getCategoryBadgeClass = (category: NewsCategory) => {
     switch (category) {
       case 'kutch':
@@ -256,6 +276,18 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
                   <span>WhatsApp PDF શેર</span>
                 </>
               )}
+            </button>
+
+            {/* Send News as Notification Button */}
+            <button
+              type="button"
+              onClick={handleSendNotification}
+              disabled={notifSent}
+              className="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+              title="આજના મુખ્ય સમાચાર મોબાઈલ નોટિફિકેશનમાં મોકલો"
+            >
+              <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span>{notifSent ? 'મોકલી દીધા!' : 'નોટિફિકેશન મેળવો'}</span>
             </button>
 
             {/* Refresh Live News Button */}

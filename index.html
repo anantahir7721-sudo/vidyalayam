@@ -51,6 +51,10 @@
             var metaTheme = document.querySelector('meta[name="theme-color"]');
             if (metaTheme) metaTheme.setAttribute('content', '#080b0f');
           }
+          if (window.AndroidBridge && typeof window.AndroidBridge.getStatusBarHeight === 'function') {
+            var sbH = window.AndroidBridge.getStatusBarHeight();
+            if (sbH > 0) root.style.setProperty('--system-status-bar-height', sbH + 'px');
+          }
         } catch(e) {}
       })();
     </script>

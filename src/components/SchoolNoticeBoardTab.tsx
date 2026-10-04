@@ -31,6 +31,7 @@ import {
   cleanLocationName,
   generateCuratedSchoolNotices,
 } from '../data/schoolNoticeBoardData';
+import { sendNotification } from '../utils/notificationUtils';
 
 interface SchoolNoticeBoardTabProps {
   schoolName?: string;
@@ -428,6 +429,26 @@ export const SchoolNoticeBoardTab: React.FC<SchoolNoticeBoardTabProps> = ({
 
       {/* Notice Board Bulletin Board Section */}
       <div className="relative rounded-3xl p-4 sm:p-6 bg-[#fbf8f3] dark:bg-[#0c1218] border-2 border-amber-200 dark:border-white/10 shadow-inner">
+        {/* Authentic Verification Notice Banner */}
+        <div className="mb-5 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-xs text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-3 flex-wrap shadow-xs">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <div className="font-black text-emerald-950 dark:text-white flex items-center gap-1.5 text-xs sm:text-sm">
+                <span>૧૦૦% સત્તાવાર પ્રમાણિત માહિતી (Authentic Official Circulars Only)</span>
+              </div>
+              <p className="text-[11px] text-emerald-800 dark:text-emerald-300 mt-0.5 leading-relaxed">
+                અહીં માત્ર ગુજરાત સરકારના શિક્ષણ વિભાગ, GSEB, GCERT અને સત્તાવાર શિક્ષણ બોર્ડ દ્વારા પ્રમાણિત પરિપત્રો જ પ્રદર્શિત થાય છે. કોઈપણ કાલ્પનિક કે અપ્રમાણિત માહિતી અહીં દર્શાવવામાં આવતી નથી.
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-600 text-white shadow-xs shrink-0">
+            ✓ સરકાર દ્વારા માન્ય
+          </span>
+        </div>
+
         {/* Notice Board Header Bar */}
         <div className="flex items-center justify-between mb-5 px-1 flex-wrap gap-2">
           <div className="flex items-center gap-2">
@@ -506,6 +527,13 @@ export const SchoolNoticeBoardTab: React.FC<SchoolNoticeBoardTabProps> = ({
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
                       📍 {notice.scope}
                     </span>
+
+                    {notice.isVerifiedOfficial && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        <span>સત્તાવાર પ્રમાણિત</span>
+                      </span>
+                    )}
                   </div>
 
                   {/* Official Letter Number (if present) */}
@@ -564,20 +592,54 @@ export const SchoolNoticeBoardTab: React.FC<SchoolNoticeBoardTabProps> = ({
                       </div>
                     )}
 
-                    {/* Issuing Authority & Read Button */}
+                    {/* Official Portal Verification & Issuing Authority */}
                     <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 flex-wrap gap-2">
-                      <span className="truncate max-w-[240px] font-medium" title={notice.sourceAuthority}>
-                        🏛️ {notice.sourceAuthority || 'શિક્ષણ વિભાગ'}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="truncate max-w-[200px] font-medium" title={notice.sourceAuthority}>
+                          🏛️ {notice.sourceAuthority || 'શિક્ષણ વિભાગ'}
+                        </span>
+                        {notice.officialUrl && (
+                          <a
+                            href={notice.officialUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-700 dark:text-sky-400 hover:underline bg-sky-50 dark:bg-sky-950/40 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800"
+                            title="સત્તાવાર સરકારી પોર્ટલ પર ચકાસો"
+                          >
+                            <span>સત્તાવાર પોર્ટલ</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        )}
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setSelectedNoticeForModal(notice)}
-                        className="text-amber-700 dark:text-amber-400 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
-                      >
-                        <span>સંપૂર્ણ વિગત</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await sendNotification(
+                              `📢 સત્તાવાર નોટિસ: ${notice.title}`,
+                              `${notice.summary.slice(0, 120)}... (સ્ત્રોત: ${notice.sourceAuthority})`,
+                              'general'
+                            );
+                          }}
+                          className="p-1 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                          title="આ નોટિસને મોબાઈલ નોટિફિકેશન તરીકે મોકલો"
+                        >
+                          <Bell className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                          <span>નોટિફાય</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedNoticeForModal(notice)}
+                          className="text-amber-700 dark:text-amber-400 font-bold hover:underline flex items-center gap-0.5 cursor-pointer text-xs"
+                        >
+                          <span>સંપૂર્ણ વિગત</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

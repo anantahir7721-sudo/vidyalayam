@@ -483,3 +483,19 @@ export interface SchoolsStorageSummary {
   calculatedAt: string;
 }
 
+export interface NativeAndroidBridge {
+  isAndroidApp: () => boolean;
+  printHtml: (html: string, jobName: string) => void;
+  saveBase64Pdf: (base64Data: string, filename: string, mimeType: string) => void;
+  hasNotificationPermission: () => boolean;
+  requestNotificationPermission: () => void;
+  openNotificationSettings: () => void;
+  showNativeNotification: (title: string, body: string, type: string) => void;
+}
+
+declare global {
+  interface Window {
+    AndroidBridge?: NativeAndroidBridge;
+  }
+}
+

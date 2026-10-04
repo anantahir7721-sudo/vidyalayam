@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ChangePasswordModal } from './ChangePasswordModal';
+import { NotificationSettingsModal } from './NotificationSettingsModal';
 import { VidyalayamLogo } from './VidyalayamLogo';
 import { useDeviceType } from '../utils/useDeviceType';
 
@@ -72,6 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false);
   const moreMenuBtnRef = useRef<HTMLButtonElement>(null);
   const moreMenuDropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownCoords, setDropdownCoords] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
@@ -225,6 +227,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="bg-white/90 dark:bg-[#202d38] text-slate-800 dark:text-[#e4ded6] border border-[#E2E8F0] dark:border-white/15 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono shadow-xs hidden xs:inline">
             ગુજરાત શાળાઓ
           </span>
+          <button
+            type="button"
+            onClick={() => setNotificationSettingsOpen(true)}
+            className="p-1 sm:p-1.5 rounded-xl bg-white/90 dark:bg-[#202d38] text-slate-700 dark:text-[#e4ded6] border border-[#E2E8F0] dark:border-white/15 hover:text-amber-600 dark:hover:text-amber-400 shadow-xs cursor-pointer active:scale-95 transition-all flex items-center justify-center ml-1"
+            title="સૂચના સેટિંગ્સ (Notification Settings)"
+          >
+            <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400" />
+          </button>
           <ThemeToggle compact className="ml-1" />
         </div>
       </div>
@@ -456,7 +466,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <div className="w-full h-full max-h-[100dvh] bg-[#F5F7FA] dark:bg-[#0c1219] text-slate-800 dark:text-[#e4ded6] flex flex-col shadow-2xl overflow-hidden">
             {/* Drawer Header with Close Button */}
-            <div className="bg-white/90 dark:bg-[#121921] border-b border-[#E2E8F0] dark:border-white/15 px-4 pt-[max(12px,calc(env(safe-area-inset-top,0px)+8px))] pb-3 flex items-center justify-between shrink-0 shadow-xs backdrop-blur-xl">
+            <div className="bg-white/90 dark:bg-[#121921] border-b border-[#E2E8F0] dark:border-white/15 px-4 pt-[max(12px,calc(var(--safe-area-top,env(safe-area-inset-top,0px))+8px))] pb-3 flex items-center justify-between shrink-0 shadow-xs backdrop-blur-xl">
               <div className="flex items-center gap-3 min-w-0">
                 <VidyalayamLogo size={36} />
                 <div className="min-w-0">
@@ -615,6 +625,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Mobile Drawer Logout & Close Actions */}
               <div className="pt-3 border-t border-[#E2E8F0] dark:border-white/10 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    setNotificationSettingsOpen(true);
+                  }}
+                  className="w-full py-3 px-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-400/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] shadow-xs"
+                >
+                  <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>સૂચના સેટિંગ્સ (Notification Settings)</span>
+                </button>
+
                 {school && (
                   <button
                     onClick={() => {
@@ -733,6 +755,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           school={school}
         />
       )}
+
+      {/* School Notification Settings Modal */}
+      <NotificationSettingsModal
+        isOpen={notificationSettingsOpen}
+        onClose={() => setNotificationSettingsOpen(false)}
+        schoolName={school?.schoolName}
+      />
     </header>
   );
 };

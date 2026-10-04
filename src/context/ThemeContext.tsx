@@ -64,17 +64,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Sync with Capacitor native Android / iOS status bar
     try {
       if (Capacitor.isPluginAvailable('StatusBar')) {
+        // Keep status bar full screen (edge-to-edge transparent overlay)
+        StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
         if (targetTheme === 'light') {
-          // Light theme: Light background, dark status bar text/icons
+          // Light theme: Dark status bar text/icons over transparent light header
           StatusBar.setStyle({ style: Style.Light }).catch(() => {});
-          StatusBar.setBackgroundColor({ color: '#F5F7FA' }).catch(() => {});
-          StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => {});
         } else {
-          // Dark theme: Dark background, light status bar text/icons
+          // Dark theme: Light status bar text/icons over transparent dark header
           StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-          StatusBar.setBackgroundColor({ color: '#080b0f' }).catch(() => {});
-          StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => {});
         }
+        // Query status bar height to guarantee correct insets
+        StatusBar.getInfo().then((info) => {
+          if (info && typeof info.height === 'number' && info.height > 0) {
+            document.documentElement.style.setProperty('--system-status-bar-height', `${info.height}px`);
+          }
+        }).catch(() => {});
       }
     } catch (e) {}
 

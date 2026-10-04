@@ -5,16 +5,6 @@
  * 2. Chrome Web App & Desktop Browsers (via zero-popup hidden iframe & Web APIs)
  */
 
-declare global {
-  interface Window {
-    AndroidBridge?: {
-      isAndroidApp: () => boolean;
-      printHtml: (html: string, jobName: string) => void;
-      saveBase64Pdf: (base64Data: string, filename: string, mimeType: string) => void;
-    };
-  }
-}
-
 /**
  * Check if running inside the Android APK with native bridge
  */

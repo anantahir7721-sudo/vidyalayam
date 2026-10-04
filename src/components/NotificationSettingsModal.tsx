@@ -1,0 +1,370 @@
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Bell,
+  CheckCircle2,
+  AlertCircle,
+  Settings,
+  Send,
+  Sparkles,
+  ShieldCheck,
+  Smartphone,
+  Calendar,
+  BookOpen,
+  Award,
+} from 'lucide-react';
+import {
+  checkNotificationPermission,
+  requestNotificationPermission,
+  openNotificationSettings,
+  sendNotification,
+  isNativeAndroid,
+} from '../utils/notificationUtils';
+
+interface NotificationSettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  schoolName?: string;
+}
+
+export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
+  isOpen,
+  onClose,
+  schoolName = 'વિદ્યાલયમ',
+}) => {
+  const [permission, setPermission] = useState<'granted' | 'denied' | 'default'>('default');
+  const [testSent, setTestSent] = useState(false);
+  const [isNative, setIsNative] = useState(false);
+
+  // Preference toggles (saved to localStorage)
+  const [prefs, setPrefs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('vidyalayam_notification_prefs');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      dailyBulletin: true,
+      examAlerts: true,
+      attendanceAlerts: true,
+      systemUpdates: true,
+    };
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsNative(isNativeAndroid());
+      checkNotificationPermission().then((status) => {
+        setPermission(status);
+      });
+    }
+  }, [isOpen]);
+
+  const handleTogglePref = (key: keyof typeof prefs) => {
+    const updated = { ...prefs, [key]: !prefs[key] };
+    setPrefs(updated);
+    try {
+      localStorage.setItem('vidyalayam_notification_prefs', JSON.stringify(updated));
+    } catch (e) {}
+  };
+
+  const handleRequestPermission = async () => {
+    const result = await requestNotificationPermission();
+    setPermission(result);
+    if (result === 'granted') {
+      sendNotification(
+        'વિદ્યાલયમ • સૂચનાઓ સક્રિય થઈ',
+        `${schoolName} માટે સૂચનાઓ સફળતાપૂર્વક ચાલુ કરવામાં આવી છે.`,
+        'general'
+      );
+    }
+  };
+
+  const [activeTestKey, setActiveTestKey] = useState<string | null>(null);
+
+  const handleSendNewsNotification = async () => {
+    setActiveTestKey('news');
+    try {
+      const res = await fetch('/api/daily-news');
+      if (res.ok) {
+        const json = await res.json();
+        const topItem = json?.bulletin?.items?.[0];
+        if (topItem) {
+          await sendNotification(
+            `📰 દૈનિક તાજા સમાચાર • દિવ્ય ભાસ્કર`,
+            `${topItem.headline} (સ્ત્રોત: દિવ્ય ભાસ્કર & ગુજરાત લાઈવ)`,
+            'daily'
+          );
+          setTimeout(() => setActiveTestKey(null), 3000);
+          return;
+        }
+      }
+    } catch (e) {}
+
+    await sendNotification(
+      `📰 દૈનિક તાજા સમાચાર • દિવ્ય ભાસ્કર`,
+      'ગુજરાત શિક્ષણ અને વહીવટી વિભાગના મહત્વપૂર્ણ આજના તાજા સમાચાર.',
+      'daily'
+    );
+    setTimeout(() => setActiveTestKey(null), 3000);
+  };
+
+  const handleSendCircularNotification = async () => {
+    setActiveTestKey('circular');
+    await sendNotification(
+      `📜 સત્તાવાર GSEB / GCERT પરિપત્ર એલર્ટ`,
+      'ધોરણ ૧૦ & ૧૨ બોર્ડ પરીક્ષા આવેદન પત્રો અને એકમ કસોટી (PAT) સત્તાવાર માર્ગદર્શિકા પ્રસિદ્ધ (gseb.org).',
+      'general'
+    );
+    setTimeout(() => setActiveTestKey(null), 3000);
+  };
+
+  const handleSendThoughtNotification = async () => {
+    setActiveTestKey('thought');
+    await sendNotification(
+      `✨ આજનો પ્રેરક સુવિચાર & સંકલ્પ`,
+      'વિદ્યા વિનયેન શોભતે — શિક્ષણ અને સંસ્કાર દ્વારા રાષ્ટ્ર નિર્માણ. આપનો દિવસ શુભ રહે!',
+      'general'
+    );
+    setTimeout(() => setActiveTestKey(null), 3000);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-100">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-sm">
+              <Bell className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>સૂચના સેટિંગ્સ</span>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
+                  {isNative ? 'Native Android' : 'Web App'}
+                </span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                શાળા પરિપત્રો, દૈનિક પ્રાર્થના અને પરીક્ષા એલર્ટ્સ
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+          {/* Permission Status Banner */}
+          <div
+            className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+              permission === 'granted'
+                ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-800 dark:text-emerald-300'
+                : 'bg-amber-500/10 border-amber-500/25 text-amber-800 dark:text-amber-300'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              {permission === 'granted' ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              )}
+              <div>
+                <div className="font-bold text-sm">
+                  {permission === 'granted'
+                    ? 'સૂચના પરવાનગી સક્રિય છે (Enabled)'
+                    : 'સૂચના પરવાનગી જરૂરી છે (Action Required)'}
+                </div>
+                <div className="text-xs opacity-90 mt-0.5">
+                  {permission === 'granted'
+                    ? 'આપના ફોનમાં તમામ તાત્કાલિક શાળા એલર્ટ્સ પહોંચશે.'
+                    : 'મહત્વના પરિપત્રો અને સૂચનાઓ મેળવવા માટે પરવાનગી આપો.'}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {permission !== 'granted' ? (
+                <button
+                  type="button"
+                  onClick={handleRequestPermission}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+                >
+                  પરવાનગી આપો
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={openNotificationSettings}
+                className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors shadow-xs"
+                title="ફોનના સિસ્ટમ સેટિંગ્સ ખોલો"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Useful Quick Action Notification Triggers */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-3">
+            <div className="space-y-0.5">
+              <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>ઉપયોગી નોટિફિકેશન મોકલો (Useful School Alerts)</span>
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                નીચેનામાંથી કોઈપણ બટન પર ક્લિક કરીને તુરંત તમારા ફોનમાં ઉપયોગી માહિતી મેળવો:
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleSendNewsNotification}
+                disabled={activeTestKey !== null}
+                className="p-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 text-center shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                <div className="flex items-center gap-1">
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{activeTestKey === 'news' ? 'મોકલી દીધા!' : 'દિવ્ય ભાસ્કર સમાચાર'}</span>
+                </div>
+                <span className="text-[10px] font-normal opacity-90">આજના તાજા લાઈવ સમાચાર</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSendCircularNotification}
+                disabled={activeTestKey !== null}
+                className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 text-center shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                <div className="flex items-center gap-1">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>{activeTestKey === 'circular' ? 'મોકલી દીધો!' : 'GSEB બોર્ડ પરિપત્ર'}</span>
+                </div>
+                <span className="text-[10px] font-normal opacity-90">સત્તાવાર પરિપત્ર એલર્ટ</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSendThoughtNotification}
+                disabled={activeTestKey !== null}
+                className="p-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 text-center shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                <div className="flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{activeTestKey === 'thought' ? 'મોકલી દીધો!' : 'આજનો સુવિચાર'}</span>
+                </div>
+                <span className="text-[10px] font-normal opacity-90">શાળા પ્રાર્થના & સંકલ્પ</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Notification Preferences */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              સૂચનાના પ્રકાર (Notification Categories)
+            </h4>
+
+            <div className="space-y-2">
+              {/* Daily Morning Bulletin */}
+              <label className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-white/10 hover:border-amber-400/40 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      દૈનિક સવારની પ્રાર્થના & સમાચાર
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      આજના સમાચાર, સુવિચાર અને સામાન્ય જ્ઞાન તૈયાર થતાં નોટિફિકેશન
+                    </div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={prefs.dailyBulletin}
+                  onChange={() => handleTogglePref('dailyBulletin')}
+                  className="w-4 h-4 rounded text-terracotta accent-[#9d512d] focus:ring-amber-500 cursor-pointer"
+                />
+              </label>
+
+              {/* Exam & Results */}
+              <label className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-white/10 hover:border-amber-400/40 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                    <Award className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      પરીક્ષા, એકમ કસોટી & પરિણામ
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      પરીક્ષા સમયપત્રક, ગુણ એન્ટ્રી અને પરિણામ પ્રગતિ પત્રક અપડેટ્સ
+                    </div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={prefs.examAlerts}
+                  onChange={() => handleTogglePref('examAlerts')}
+                  className="w-4 h-4 rounded text-terracotta accent-[#9d512d] focus:ring-amber-500 cursor-pointer"
+                />
+              </label>
+
+              {/* Attendance & Records */}
+              <label className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-white/10 hover:border-amber-400/40 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      વિદ્યાર્થી અને સ્ટાફ પત્રક રીમાઇન્ડર
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      મહિનાના પત્રકો, હાજરી અને આઈડી કાર્ડ તૈયાર કરવાની યાદી
+                    </div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={prefs.attendanceAlerts}
+                  onChange={() => handleTogglePref('attendanceAlerts')}
+                  className="w-4 h-4 rounded text-terracotta accent-[#9d512d] focus:ring-amber-500 cursor-pointer"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Android Channel Info */}
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-white/10">
+            <Smartphone className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span>
+              ચેનલ: <strong>વિદ્યાલયમ સૂચનાઓ (Android 13+ High Priority)</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3.5 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-white/10 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+          >
+            સાચવો & બંધ કરો
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
