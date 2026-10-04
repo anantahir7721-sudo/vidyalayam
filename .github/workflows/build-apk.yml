@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Required to grant GitHub Actions permission to create a release and upload assets
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -66,3 +70,19 @@ jobs:
       with:
         name: Vidyalayam-APK
         path: android/app/build/outputs/apk/debug/*.apk
+
+    # 🚀 Automatically creates/updates a release on every push to main
+    - name: Create or Update GitHub Release
+      uses: softprops/action-gh-release@v2
+      if: github.ref == 'refs/heads/main' # Only runs on the main branch push (ignores Pull Requests)
+      with:
+        tag_name: latest
+        name: Latest Automated Build
+        body: |
+          Automated development build compiled straight from the `main` branch.
+          **Last updated:** ${{ github.event.head_commit.timestamp }}
+        files: android/app/build/outputs/apk/debug/*.apk
+        prerelease: true # Marks it as a pre-release since it's a rolling build
+        overwrite: true  # Replaces the older APK file with the newest one
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -6,6 +6,7 @@ import { VoiceProvider } from './context/VoiceContext.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { initializeGlobalHaptics } from './utils/haptics.ts';
 import { initStatusBarHelper } from './utils/statusBarHelper.ts';
+import { initNotificationScheduler } from './utils/notificationScheduler.ts';
 import './index.css';
 
 // Initialize professional haptic feedback engine across the entire app
@@ -13,6 +14,9 @@ initializeGlobalHaptics();
 
 // Initialize full-screen edge-to-edge status bar insets protection
 initStatusBarHelper();
+
+// Initialize automated notification scheduler (06:00 AM, 02:00 PM, 06:00 PM) & first-launch permission
+initNotificationScheduler();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
