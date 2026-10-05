@@ -27,8 +27,9 @@ import {
   Play,
   Newspaper,
   Lightbulb,
+  Bell,
 } from 'lucide-react';
-import { StudentSession, OnlineExam, MarkRecord } from '../types';
+import { StudentSession, OnlineExam, MarkRecord, AppNotification } from '../types';
 import {
   fetchStudentExams,
   fetchStudentMarks,
@@ -36,6 +37,11 @@ import {
   getAuthoritativeNow,
   clearStudentSession,
 } from '../services/onlineExamService';
+import {
+  subscribeToStudentNotifications,
+  checkUpcomingExamReminders,
+} from '../services/notificationService';
+import { NotificationCenterModal } from './NotificationCenterModal';
 import { StudentExamScreen } from './StudentExamScreen';
 import { DailyNewsTab } from './DailyNewsTab';
 import { DailyPrashnotariTab } from './DailyPrashnotariTab';
@@ -81,6 +87,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
   const [startExamError, setStartExamError] = useState<string | null>(null);
   const [isVerifyingStart, setIsVerifyingStart] = useState<boolean>(false);
   const autoStartTriggeredRef = React.useRef<{ [examId: string]: boolean }>({});
+
+  // Student In-App Notifications State
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
+  const unreadNotifCount = notifications.filter((n) => !n.read).length;
 
   const student = session.student;
   const initialSchool = session.school || {
@@ -131,6 +142,28 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
       setActiveTab('upcoming_exams');
     }
   }, [school?.dailyNewsEnabled, school?.dailyJanvaJevuEnabled, school?.dailySuvicharEnabled, activeTab]);
+
+  // Real-time subscription to notifications tailored strictly for this student
+  useEffect(() => {
+    const schoolId = session.schoolId || session.school?.id;
+    if (!schoolId || !student?.id) return;
+
+    const unsub = subscribeToStudentNotifications(schoolId, student.id, (list) => {
+      setNotifications(list);
+    });
+
+    return () => unsub();
+  }, [session.schoolId, session.school?.id, student?.id]);
+
+  // Active 5-minute countdown monitor for student's upcoming exams
+  useEffect(() => {
+    if (!exams.length) return;
+    checkUpcomingExamReminders(exams);
+    const interval = setInterval(() => {
+      checkUpcomingExamReminders(exams);
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [exams]);
 
   // Load Exams and Marks
   const loadPortalData = async () => {
@@ -342,6 +375,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
 
             <ThemeToggle compact className="shrink-0" />
 
+            {/* Notification Bell */}
+            <button
+              type="button"
+              onClick={() => setIsNotifModalOpen(true)}
+              className="relative p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 transition-all cursor-pointer shrink-0"
+              title="મારી સૂચનાઓ (My Notifications)"
+            >
+              <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              {unreadNotifCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse">
+                  {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={handleSignOut}
@@ -519,6 +567,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
             const isJanvaJevuEnabled = (school as any).dailyJanvaJevuEnabled !== false;
             const isAbhivyaktiEnabled = (school as any).dailyAbhivyaktiEnabled !== false;
             const isSuvicharEnabled = (school as any).dailySuvicharEnabled !== false;
+            let isPresentationEnabled = (school as any).dailyPresentationEnabled !== false;
+            try {
+              if (localStorage.getItem('vidyalayam_presentation_enabled') === 'false') {
+                isPresentationEnabled = false;
+              }
+            } catch {}
 
             const portalTabs = [
               { id: 'upcoming_exams', label: '📝 આગામી પરીક્ષાઓ (Upcoming Exams)', count: upcomingExams.length },
@@ -528,7 +582,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
               ...(isJanvaJevuEnabled ? [{ id: 'janva_jevu', label: '💡 આજનું જાણવા જેવું (12 Facts)' }] : []),
               ...(isAbhivyaktiEnabled ? [{ id: 'abhivyakti', label: '🎭 અભિવ્યક્તિ (Assembly Ideas)' }] : []),
               ...(isSuvicharEnabled ? [{ id: 'suvichar', label: '✨ આજનો સુવિચાર (Daily Suvichar)' }] : []),
-              { id: 'presentation', label: '🎤 પ્રેઝન્ટેશન (Presentation AI)' },
+              ...(isPresentationEnabled ? [{ id: 'presentation', label: '🎤 પ્રેઝન્ટેશન (Presentation AI)' }] : []),
               { id: 'marks', label: '📊 મારા ગુણ (My Marks)' },
               { id: 'result', label: '📄 પ્રગતિપત્રક (My Result)' },
               { id: 'idcard', label: '🪪 ID Card' },
@@ -1174,6 +1228,36 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
           </div>
         )}
       </main>
+
+      {/* Student Notification Center Modal */}
+      <NotificationCenterModal
+        isOpen={isNotifModalOpen}
+        onClose={() => setIsNotifModalOpen(false)}
+        notifications={notifications}
+        schoolId={session.schoolId || session.school?.id}
+        title="મારી શાળા સૂચનાઓ"
+        onNavigateTab={(tab) => {
+          if (
+            [
+              'upcoming_exams',
+              'samachar',
+              'notice_board',
+              'prashnotari',
+              'janva_jevu',
+              'abhivyakti',
+              'suvichar',
+              'presentation',
+              'marks',
+              'result',
+              'idcard',
+              'profile',
+              'history',
+            ].includes(tab)
+          ) {
+            setActiveTab(tab as StudentTab);
+          }
+        }}
+      />
     </div>
   );
 };

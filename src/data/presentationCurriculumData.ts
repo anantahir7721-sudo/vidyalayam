@@ -51,12 +51,20 @@ export interface PresentationScriptData {
   environment: string; // 'પ્રાર્થના સંમેલન / સભા' | 'વર્ગખંડ પ્રસ્તુતિ'
   studentName?: string;
 
+  // Simplified mode and domain fields:
+  isSimplified?: boolean;
+  hasRealLifeConnection?: boolean; // Only true when topic naturally connects to daily physical life
+  subjectDomain?: 'science' | 'math' | 'social' | 'language' | 'commerce' | 'general';
+  simplifiedPoints?: string[]; // 3-4 concise, clear bullet points for easy student delivery
+  cleanExampleTitle?: string;
+  cleanExampleExplanation?: string;
+
   // ૫ મિનિટ અસ્ખલિત બોલી શકાય તેવું સંપૂર્ણ સ્પીચ લખાણ (સરળ ગુજરાતીમાં):
   openingSpeech: string; // ૧. પ્રારંભિક સંબોધન & શરૂઆત (સભા અથવા ક્લાસરૂમ મુજબ)
   topicIntroduction: string; // ૨. વિષય પરિચય અને સાદી વ્યાખ્યા
   detailedExplanation: string; // ૩. વિષયની વિસ્તૃત સમજૂતી (૫ મિનિટ રજૂઆત માટેનું સમૃદ્ધ લખાણ)
-  realLifeExample: string; // ૪. રોજિંદા જીવન સાથે જોડાયેલું સચોટ ઉદાહરણ
-  detailedExamples?: DetailedExampleItem[]; // ઊંડાણપૂર્વક સમજાવેલા રોજિંદા ઉદાહરણો
+  realLifeExample: string; // ૪. વિષય આધારિત સચોટ ઉદાહરણ
+  detailedExamples?: DetailedExampleItem[]; // ઊંડાણપૂર્વક સમજાવેલા ઉદાહરણો
   practicalActivity?: PracticalActivityData; // GSEB પાઠ્યપુસ્તક આધારિત સચોટ પ્રવૃત્તિ
   audienceQuestion?: {
     question: string;
@@ -2058,6 +2066,9 @@ export function generateCurriculumPresentationScript(
     : `આમ, આદરણીય સર અને મારા વહાલા મિત્રો, ${subjectName} નો આ મહત્વપૂર્ણ વિષય "${topic}" આપણા અભ્યાસક્રમનો પાયો છે. મારી આ રજૂઆત શાંતિપૂર્વક સાંભળવા, પ્રશ્નોત્તરીમાં ઉત્સાહપૂર્વક ભાગ લેવા અને મને પ્રોત્સાહિત કરવા બદલ આપ સૌ મિત્રો અને ગુરુજીનો દિલથી ખૂબ ખૂબ આભાર! અસ્તુ, જય હિન્દ!`;
 
   if (matched) {
+    const isMathMatched = subjectName.includes('ગણિત') || /પ્રમેય|સૂત્ર|ભૂમિતિ/i.test(topic);
+    const hasRealLife = !isMathMatched && (matched.detailedExamples && matched.detailedExamples.length > 0 && !matched.detailedExamples[0].title.includes('સામાન્ય'));
+
     return {
       title: topic,
       standard: stdLabel,
@@ -2065,11 +2076,16 @@ export function generateCurriculumPresentationScript(
       duration,
       environment,
       studentName,
+      isSimplified: true,
+      hasRealLifeConnection: hasRealLife,
+      simplifiedPoints: matched.points?.length ? matched.points.slice(0, 4) : [matched.intro],
+      cleanExampleTitle: matched.detailedExamples?.[0]?.title,
+      cleanExampleExplanation: matched.detailedExamples?.[0]?.context || matched.realLife,
       openingSpeech: opening,
       topicIntroduction: matched.intro,
       detailedExplanation: matched.detailed,
       realLifeExample: matched.realLife,
-      detailedExamples: matched.detailedExamples,
+      detailedExamples: hasRealLife ? matched.detailedExamples : undefined,
       practicalActivity: matched.activity || {
         hasActivity: !!(matched as any).activityTitle,
         title: (matched as any).activityTitle || '',
@@ -2088,25 +2104,116 @@ export function generateCurriculumPresentationScript(
   }
 
   // Fallback for topics not yet in explicit knowledge base:
-  // Intelligent domain categorization without ANY inappropriate gravity/generic filler!
-  const isScience = subjectName.includes('વિજ્ઞાન');
-  const isSocial = subjectName.includes('સામાજિક') || subjectName.includes('ઇતિહાસ') || subjectName.includes('ભૂગોળ');
+  // Dynamically tailor presentation strictly to the nature of the topic without forcing daily life!
+  const isMath = subjectName.includes('ગણિત') || /પ્રમેય|સૂત્ર|સમીકરણ|ભૂમિતિ|ત્રિકોણ|વર્તુળ|ક્ષેત્રફળ|સંભાવના|સમાંતર/i.test(topic);
+  const isLanguage = subjectName.includes('ગુજરાતી') || subjectName.includes('સંસ્કૃત') || subjectName.includes('હિન્દી') || subjectName.includes('અંગ્રેજી') || /વ્યાકરણ|સમાસ|અલંકાર|છંદ|કાવ્ય|લેખન/i.test(topic);
+  const isSocial = subjectName.includes('સામાજિક') || subjectName.includes('ઇતિહાસ') || subjectName.includes('ભૂગોળ') || /બંધારણ|ચળવળ|આઝાદી|ઉદ્યોગ|આબોહવા|સરકાર/i.test(topic);
+  const isCommerce = subjectName.includes('વાણિજ્ય') || subjectName.includes('નામાના') || subjectName.includes('અર્થશાસ્ત્ર') || /બેંક|નાણું|બજેટ|વેપાર/i.test(topic);
+  const isPhysicalScience = !isMath && !isLanguage && !isSocial && !isCommerce && /બાષ્પીભવન|ઘર્ષણ|પ્રકાશ|બળ|ગતિ|ગરમી|વિદ્યુત|ચુંબક|ધ્વનિ|તરંગ|ઊર્જા|તાપમાન|પ્રસરણ/i.test(topic);
+  const isScience = !isMath && !isLanguage && !isSocial && !isCommerce;
 
-  const defaultIntro = `મિત્રો, ગુજરાત રાજ્ય પાઠ્યપુસ્તક મંડળ (GSEB) ના અભ્યાસક્રમમાં "${topic}" એ માત્ર પરીક્ષામાં માર્ક્સ મેળવવાનો મુદ્દો નથી, પરંતુ કુદરત અને સમાજ વ્યવસ્થાને વૈજ્ઞાનિક રીતે સમજવાનો અતિ મહત્વપૂર્ણ પાઠ છે. આ વિષયને જો આપણે સરળ ગુજરાતીમાં સમજીએ તો વિજ્ઞાન કે સામાજિક અભ્યાસ ખૂબ રોચક બની જાય છે.`;
+  // Decide domain and whether real-life comparison is genuinely relevant
+  let domain: 'science' | 'math' | 'social' | 'language' | 'commerce' | 'general' = 'general';
+  let hasRealLife = false;
+  let topicCategoryLabel = 'શૈક્ષણિક વિષય';
 
-  const defaultDetailed = isScience
-    ? `ચાલો મિત્રો, આપણે "${topic}" ના મૂળ સિદ્ધાંતને વિગતે સમજીએ. વિજ્ઞાનનો આ નિયમ મુખ્યત્વે ચોક્કસ કુદરતી પરિબળો અને પ્રાયોગિક અવલોકનો પર આધારિત છે.
+  if (isMath) {
+    domain = 'math';
+    hasRealLife = false; // Math focuses on geometric logic, formulas and proofs
+    topicCategoryLabel = 'ગણિત & તાર્કિક વિભાવના';
+  } else if (isLanguage) {
+    domain = 'language';
+    hasRealLife = false; // Language focuses on grammar rules and expression
+    topicCategoryLabel = 'ભાષા & વ્યાકરણ વિભાવના';
+  } else if (isSocial) {
+    domain = 'social';
+    hasRealLife = false; // History/Civics focuses on historical context & governance
+    topicCategoryLabel = 'સામાજિક & ઐતિહાસિક વિભાવના';
+  } else if (isCommerce) {
+    domain = 'commerce';
+    hasRealLife = true;
+    topicCategoryLabel = 'વાણિજ્ય & આર્થિક પ્રવાહ';
+  } else if (isPhysicalScience) {
+    domain = 'science';
+    hasRealLife = true; // Natural physical principle
+    topicCategoryLabel = 'પ્રાયોગિક ભૌતિક વિજ્ઞાન';
+  } else {
+    domain = 'science';
+    hasRealLife = false; // Theoretical science
+    topicCategoryLabel = 'વૈજ્ઞાનિક વિભાવના';
+  }
 
-પ્રથમ બાબત એ છે કે આ પ્રક્રિયા પાછળ ચોક્કસ ભૌતિક કે રાસાયણિક ફેરફારો કામ કરી રહ્યા છે. જ્યારે પદાર્થ પર બાહ્ય પરિબળો (જેવા કે તાપમાન, દબાણ, ઉર્જા કે આંતરક્રિયા) ની અસર થાય છે ત્યારે તેના ગુણધર્મોમાં ક્રમિક ફેરફારો નોંધાય છે.
+  // 1. Simple, concise opening
+  const defaultIntro = isMath
+    ? `મિત્રો, ગણિતમાં "${topic}" એ માત્ર સૂત્રો ગોખવાનો વિષય નથી, પરંતુ તાર્કિક વિચારશૈલી અને ચોક્કસ ગણતરીનો અતિ મહત્વનો પાયો છે. આ નિયમને જો આપણે સાચી સમજણ સાથે જોઈએ તો ગણિત અત્યંત સરળ અને રસપ્રદ બની જાય છે.`
+    : isLanguage
+    ? `મિત્રો, આપણી ભાષા અને સાહિત્યમાં "${topic}" નું સ્થાન અત્યંત ગૌરવપૂર્ણ છે. સાચી ભાષા અભિવ્યક્તિ, વ્યાકરણની શુદ્ધિ અને શબ્દોના સાચા ઉપયોગ માટે આ વિષયને સમજવો પાયારૂપ છે.`
+    : isSocial
+    ? `મિત્રો, આપણા અભ્યાસક્રમમાં "${topic}" એ આપણા દેશના ભવ્ય વારસા, શાસન વ્યવસ્થા અને ભૌગોલિક વાસ્તવિકતાને સમજવાની એક અદ્ભુત બારી છે. સામાજિક વિજ્ઞાન આપણને એક જાગૃત નાગરિક બનવાની પ્રેરણા આપે છે.`
+    : isPhysicalScience
+    ? `મિત્રો, વિજ્ઞાનનો આ નિયમ કુદરતમાં સતત બનતી ભૌતિક ઘટનાઓ સાથે સીધો જોડાયેલો છે. "${topic}" ના સિદ્ધાંતને સમજવાથી આપણે કુદરતના નિયમોને વૈજ્ઞાનિક દ્રષ્ટિથી જોઈ શકીએ છીએ.`
+    : `મિત્રો, વિજ્ઞાનના અભ્યાસક્રમમાં "${topic}" નો સિદ્ધાંત પદાર્થ અને પ્રકૃતિના મૂળભૂત ગુણધર્મો સમજવા માટે ખૂબ મહત્વપૂર્ણ છે. આ વિષયને સરળ ગુજરાતીમાં સમજવાથી વિજ્ઞાન વિષયમાં ઊંડો રસ જાગે છે.`;
 
-બીજી બાબત એ છે કે વિજ્ઞાનમાં કોઈ પણ ઘટના આપોઆપ નથી બનતી. દરેક ક્રિયા પાછળ કાર્ય-કારણનો સંબંધ (Cause and Effect) રહેલો હોય છે. જો આપણે આ મૂળભૂત કડીને સમજી લઈએ, તો પરીક્ષામાં ગોખ્યા વગર આપણા પોતાના શબ્દોમાં આત્મવિશ્વાસ સાથે જવાબ લખી શકીએ છીએ.`
-    : `ચાલો મિત્રો, આપણે "${topic}" ના ઐતિહાસિક અને સામાજિક પાયાને સરળતાથી સમજીએ. આપણો ઇતિહાસ, ભૂગોળ અને સમાજ વ્યવસ્થા એ આપણા પૂર્વજોના અનુભવો અને આપણા દેશના ભવ્ય વારસાની જીવતી જાગતી સાક્ષી છે.
+  // 2. Simplified bullet points (3-4 points)
+  const simplifiedPoints: string[] = isMath
+    ? [
+        `૧. "${topic}" ની મૂળભૂત વ્યાખ્યા અને મુખ્ય ગણિતીય નિયમ.`,
+        `૨. આ સિદ્ધાંતની તબક્કાવાર સાબિતી અથવા ગણતરીના સાચા પગલાં.`,
+        `૩. દાખલા ગણતી વખતે ધ્યાનમાં રાખવાના અગત્યના ચિહ્નો અને નિયમો.`,
+      ]
+    : isLanguage
+    ? [
+        `૧. "${topic}" ના મૂળભૂત નિયમો અને વ્યાકરણનું સાચું માળખું.`,
+        `૨. વાક્ય રચના કે લેખનમાં તેનો યોગ્ય અને અર્થસભર ઉપયોગ.`,
+        `૩. સામાન્ય રીતે થતી ભૂલો અને તેને સુધારવાની સરળ પદ્ધતિ.`,
+      ]
+    : isSocial
+    ? [
+        `૧. "${topic}" ની ઐતિહાસિક કે બંધારણીય પૃષ્ઠભૂમિ.`,
+        `૨. આપણા દેશના વિકાસ અને સમાજ વ્યવસ્થા પર તેની મહત્વપૂર્ણ અસર.`,
+        `૩. આજના યુગમાં આ વિષયનું શૈક્ષણિક અને નાગરિક મહત્વ.`,
+      ]
+    : isPhysicalScience
+    ? [
+        `૧. "${topic}" પાછળ કામ કરતો મૂળભૂત ભૌતિક કે રાસાયણિક નિયમ.`,
+        `૨. ચોક્કસ પરિબળો (તાપમાન, દબાણ કે ગતિ) ની અસર.`,
+        `૩. કુદરતી ઘટનાઓમાં આ સિદ્ધાંતનું પ્રત્યક્ષ પરિણામ.`,
+      ]
+    : [
+        `૧. "${topic}" ની વૈજ્ઞાનિક વ્યાખ્યા અને મૂળભૂત સંકલ્પના.`,
+        `૨. ઘટકો વચ્ચે થતી આંતરક્રિયા અને તેના ગુણધર્મો.`,
+        `૩. પાઠ્યપુસ્તકના પ્રકરણ મુજબ યાદ રાખવા યોગ્ય તારણો.`,
+      ];
 
-આ વિષય આપણને સ્પષ્ટ બતાવે છે કે આપણી સંસ્કૃતિ, આપણા બંધારણના મૂલ્યો અને ભૌગોલિક સંપત્તિએ આપણા રાષ્ટ્રના વિકાસમાં કેટલો મોટો ફાળો આપ્યો છે. સામાજિક વિજ્ઞાન આપણને માત્ર ભૂતકાળ નથી શીખવતું, પરંતુ વર્તમાન સમયમાં એક આદર્શ, જાગૃત અને જવાબદાર નાગરિક કેવી રીતે બનવું તેનો સાચો માર્ગ ચીંધે છે.`;
+  // 3. Detailed speech text
+  const defaultDetailed = isMath
+    ? `ચાલો મિત્રો, આપણે "${topic}" ના ગણિતીય પાયાને સ્પષ્ટ સમજીએ. ગણિતમાં દરેક સિદ્ધાંત ચોક્કસ તર્ક અને પુરાવા પર આધારિત હોય છે. જ્યારે આપણે કોઈ પ્રમેય કે સૂત્ર સાબિત કરીએ છીએ, ત્યારે પાયાની શરતો અને વ્યાખ્યાઓને સમજવી અનિવાર્ય છે. જો આ તબક્કાવાર પદ્ધતિ આપણા મગજમાં બેસી જાય, તો પરીક્ષામાં કોઈપણ દાખલો આવે, આપણે પૂર્ણ આત્મવિશ્વાસ સાથે સાચો ઉત્તર શોધી શકીએ છીએ.`
+    : isLanguage
+    ? `ચાલો મિત્રો, આપણે "${topic}" ના નિયમોને સરળ રીતે સમજીએ. ભાષા એ માત્ર બોલવાનું માધ્યમ નથી, પરંતુ વિચારોની અભિવ્યક્તિનું સશક્ત હથિયાર છે. વ્યાકરણના આ નિયમ વડે વાક્યમાં સચોટતા, લય અને અર્થગાંભીર્ય આવે છે. યોગ્ય નિયમનું પાલન કરવાથી આપણી ભાષા શુદ્ધ બને છે અને પરીક્ષામાં વ્યાકરણ વિભાગમાં પૂરા ગુણ મેળવી શકાય છે.`
+    : isSocial
+    ? `ચાલો મિત્રો, આપણે "${topic}" ના મહત્વના પાસાંને સમજીએ. આપણો ઇતિહાસ અને આપણી લોકશાહી વ્યવસ્થા એ આપણી શક્તિ છે. આ વિષય આપણને શીખવે છે કે કેવી રીતે સમાજના વિવિધ પરિબળો એકબીજા પર આધાર રાખે છે. ભૂતકાળના બનાવોમાંથી પ્રેરણા લઈને આપણે આજના પડકારોનો સામનો કરી શકીએ છીએ અને દેશના વિકાસમાં આપણું યોગદાન આપી શકીએ છીએ.`
+    : `ચાલો મિત્રો, આપણે "${topic}" ના મૂળ સિદ્ધાંતને વિગતે સમજીએ. વિજ્ઞાનનો નિયમ કુદરતી અવલોકનો અને કાર્ય-કારણના સંબંધ પર કામ કરે છે. પદાર્થમાં થતા ચોક્કસ ફેરફારો આપણને દર્શાવે છે કે વિજ્ઞાનના નિયમો ચોક્કસ અને અચળ હોય છે. જો આપણે મૂળ કડીને સમજી લઈએ, તો પરીક્ષામાં ગોખ્યા વગર આપણા પોતાના શબ્દોમાં આત્મવિશ્વાસ સાથે જવાબ લખી શકીએ છીએ.`;
 
-  const defaultRealLife = isScience
-    ? `આ વૈજ્ઞાનિક સિદ્ધાંત આપણા ઘરમાં, રસોડામાં, ખેતરમાં અને વાહનોના રોજિંદા ઉપયોગમાં સતત જોવા મળે છે. આપણી આસપાસ ઘટતી નાની-નાની ઘટનાઓનું જો આપણે ધ્યાનપૂર્વક અવલોકન કરીએ તો પાઠ્યપુસ્તકમાં છપાયેલા નિયમો આપણી નજર સામે પ્રત્યક્ષ સાબિત થતાં જોવા મળે છે.`
-    : `આ બાબત આપણી શાળાની શિસ્ત, ગામની ગ્રામ પંચાયત, ખેડૂતોની ખેતી પદ્ધતિ અને બજારના વ્યવહારમાં દરરોજ નજર સામે અનુભવાય છે. આપણે સમાજનો એક સક્રિય ભાગ છીએ અને આ તમામ નિયમો આપણા જીવનને પ્રત્યક્ષ સ્પર્શે છે.`;
+  // 4. Example: Only genuine example, no forced kitchen/home
+  const exampleTitle = isMath
+    ? `ગણિતીય ઉદાહરણ: "${topic}" ની સચોટ ગણતરી`
+    : isLanguage
+    ? `ભાષાકીય ઉદાહરણ: "${topic}" નો સાચો વાક્ય પ્રયોગ`
+    : isSocial
+    ? `ઐતિહાસિક / સામાજિક સંદર્ભ: "${topic}" નું વાસ્તવિક મહત્વ`
+    : isPhysicalScience
+    ? `પ્રાયોગિક ઉદાહરણ: "${topic}" નો પ્રત્યક્ષ અનુભવ`
+    : `શૈક્ષણિક ઉદાહરણ: "${topic}" ની વિભાવના`;
+
+  const exampleExplanation = isMath
+    ? `પાઠ્યપુસ્તકના ઉદાહરણ અનુસાર આપેલા મૂલ્યો મૂકીને તબક્કાવાર ગણતરી કરવાથી નિયમની સત્યાર્થતા સ્પષ્ટ થાય છે.`
+    : isLanguage
+    ? `સાહિત્ય અને પાઠ્યપુસ્તકના પાઠમાંથી લેવાયેલા ઉદાહરણમાં આ વ્યાકરણિક નિયમનું સ્પષ્ટ પ્રતિબિંબ દેખાય છે.`
+    : isSocial
+    ? `આપણા દેશના ઇતિહાસ અને બંધારણમાં આ સિદ્ધાંતે સામાજિક સમાનતા અને પ્રગતિ લાવવામાં અગ્રણી ભૂમિકા ભજવી છે.`
+    : isPhysicalScience
+    ? `આપણી આસપાસ વાતાવરણ અને કુદરતમાં આ ભૌતિક ફેરફાર સતત જોવા મળે છે, જે આ વૈજ્ઞાનિક નિયમને સાબિત કરે છે.`
+    : `પ્રયોગશાળા અને પાઠ્યપુસ્તકની આકૃતિ દ્વારા આ વૈજ્ઞાનિક વિભાવના સરળતાથી સાબિત થાય છે.`;
 
   return {
     title: topic,
@@ -2115,48 +2222,45 @@ export function generateCurriculumPresentationScript(
     duration,
     environment,
     studentName,
+    isSimplified: true,
+    hasRealLifeConnection: hasRealLife,
+    subjectDomain: domain,
+    simplifiedPoints,
+    cleanExampleTitle: exampleTitle,
+    cleanExampleExplanation: exampleExplanation,
     openingSpeech: opening,
     topicIntroduction: defaultIntro,
     detailedExplanation: defaultDetailed,
-    realLifeExample: defaultRealLife,
-    detailedExamples: [
-      {
-        title: `૧. રોજિંદા જીવનમાં ${topic} નો પ્રત્યક્ષ અનુભવ`,
-        context: isScience
-          ? `આપણી આસપાસ ઘર, રસોડા, શાળા કે કુદરતમાં જોવા મળતી વાસ્તવિક ઘટના.`
-          : `આપણા સમાજ, શાળાના સંચાલન કે નાગરિક જીવનમાં અનુભવાતો નિયમ.`,
-        scientificReason: isScience
-          ? `GSEB વિજ્ઞાન પાઠ્યપુસ્તકના સિદ્ધાંત મુજબ કાર્ય-કારણ સંબંધ.`
-          : `સામાજિક મૂલ્યો અને વ્યવસ્થાનું વ્યવહારુ પાસું.`,
-        speechQuote: `“મિત્રો, આપણે રોજિંદા જીવનમાં આ બાબત જોઈએ છીએ જે આપણા આજના વિષય સાથે સીધી જોડાયેલી છે!”`
-      }
-    ],
-    practicalActivity: {
-      hasActivity: isScience,
-      title: isScience ? `સરળ વર્ગખંડ નિદર્શન: "${topic}" ની પ્રાયોગિક સમજ` : '',
-      textbookRef: isScience ? `GSEB વિજ્ઞાન પાઠ્યપુસ્તક આધારિત` : undefined,
-      materials: isScience ? ['વર્ગખંડ કે પ્રયોગશાળામાં ઉપલબ્ધ સાધનો'] : undefined,
-      procedure: isScience
-        ? ['પગલું ૧: સાધનો ગોઠવો', 'પગલું ૨: અવલોકન હાથ ધરો', 'પગલું ૩: તારણ કાઢો']
-        : undefined,
-      observation: isScience ? 'વિષય આધારિત સ્પષ્ટ ફેરફાર જોવા મળે છે.' : undefined,
-      conclusion: isScience ? 'પાઠ્યપુસ્તકનો સિદ્ધાંત પ્રાયોગિક રીતે સાબિત થાય છે.' : undefined,
-      stageDemoTip: isScience ? 'વિદ્યાર્થી હાથમાં ૧ સાદું સાધન રાખી ૩૦ સેકન્ડમાં આખો હોલ રસપૂર્વક સમજે તેવો ડેમો બતાવી શકે છે.' : undefined,
-      description: isScience
-        ? `શાળાની પ્રયોગશાળા કે વર્ગખંડમાં ઉપલબ્ધ સાધનો વડે વિદ્યાર્થીઓ સમક્ષ વિષય આધારિત ૧૫ સેકન્ડનો સાચો ડેમો બતાવો, જેથી શ્રોતાઓનું ધ્યાન વિષયના હાર્દ પર કેન્દ્રિત થાય.`
-        : '',
-    },
+    realLifeExample: exampleExplanation,
+    detailedExamples: hasRealLife
+      ? [
+          {
+            title: exampleTitle,
+            context: `વિષયને અનુરૂપ વાસ્તવિક ઘટના કે પ્રાયોગિક અવલોકન.`,
+            scientificReason: `GSEB પાઠ્યપુસ્તકના સિદ્ધાંત અનુસાર વૈજ્ઞાનિક નિયમ.`,
+            speechQuote: `“મિત્રો, આ ઉદાહરણ આપણા આજના વિષયને એકદમ સ્પષ્ટ રીતે સાબિત કરે છે!”`,
+          },
+        ]
+      : undefined,
+    practicalActivity: isPhysicalScience
+      ? {
+          hasActivity: true,
+          title: `સરળ નિદર્શન: "${topic}" ની પ્રાયોગિક સમજ`,
+          textbookRef: `GSEB વિજ્ઞાન પાઠ્યપુસ્તક આધારિત`,
+          materials: ['પ્રયોગશાળા કે વર્ગખંડમાં ઉપલબ્ધ સાધનો'],
+          procedure: ['પગલું ૧: સાધનો ગોઠવો', 'પગલું ૨: અવલોકન હાથ ધરો', 'પગલું ૩: તારણ કાઢો'],
+          observation: 'વિષય આધારિત સ્પષ્ટ ફેરફાર જોવા મળે છે.',
+          conclusion: 'પાઠ્યપુસ્તકનો સિદ્ધાંત પ્રાયોગિક રીતે સાબિત થાય છે.',
+          stageDemoTip: 'વિદ્યાર્થી હાથમાં ૧ સાદું સાધન રાખી ૩૦ સેકન્ડમાં ડેમો બતાવી શકે છે.',
+          description: `વર્ગખંડમાં વિદ્યાર્થીઓ સમક્ષ વિષય આધારિત ટૂંકો ડેમો બતાવો.`,
+        }
+      : undefined,
     audienceQuestion: {
-      question: `મિત્રો, મારી રજૂઆતના આધારે મને કહો: આપણી રોજિંદી જિંદગીમાં "${topic}" સાથે જોડાયેલું અન્ય કયું સરસ ઉદાહરણ તમે જોયું છે?`,
+      question: `મિત્રો, મારી રજૂઆતના આધારે મને કહો: "${topic}" નો મુખ્ય સારાંશ તમારા શબ્દોમાં શું છે?`,
       expectedAnswer: `(શ્રોતા મિત્ર સાચો જવાબ આપે ત્યારે 'ખૂબ સરસ ઉત્તર!' કહીને બિરદાવો.)`,
     },
     closingSpeech: closing,
-    keyPointsToRemember: [
-      `૧. પાઠ્યપુસ્તક અનુસાર "${topic}" નો મૂળભૂત પાયો અને સાદી વ્યાખ્યા.`,
-      `૨. આ સિદ્ધાંત પાછળ કામ કરતા મુખ્ય વૈજ્ઞાનિક/સામાજિક પરિબળો.`,
-      `૩. રોજિંદા જીવન સાથેનું પ્રત્યક્ષ વાસ્તવિક જોડાણ.`,
-      `૪. પરીક્ષામાં પોતાના શબ્દોમાં આત્મવિશ્વાસપૂર્વક લખવાનો સંકલ્પ.`,
-    ],
+    keyPointsToRemember: simplifiedPoints,
     hook: opening,
     introduction: defaultIntro,
     conclusion: closing,

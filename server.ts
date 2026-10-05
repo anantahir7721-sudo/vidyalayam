@@ -23,6 +23,7 @@ import {
   limit,
 } from 'firebase/firestore';
 import { generateCurriculumPresentationScript } from './src/data/presentationCurriculumData';
+import { MASTER_NEWS_TOPICS } from './src/data/newsTopicsData';
 
 dotenv.config();
 
@@ -1238,90 +1239,76 @@ async function startServer() {
           });
 
           const isPrayer = String(environment).includes('પ્રાર્થના') || String(environment).includes('સભા');
-          const prompt = `તમે ગુજરાત માધ્યમિક અને ઉચ્ચતર માધ્યમિક શિક્ષણ બોર્ડ (GSEB) ના ઉત્કૃષ્ટ વિજ્ઞાન અને શિક્ષણ તજજ્ઞ છો. ધોરણ ૯ થી ૧૨ ના વિદ્યાર્થી માટે આપેલા વિષય પર ૫ મિનિટ સુધી અસ્ખલિત, અત્યંત સચોટ, શૈક્ષણિક રીતે શુદ્ધ અને પ્રભાવશાળી વક્તવ્ય તૈયાર કરો.
+          const prompt = `તમે ગુજરાત માધ્યમિક અને ઉચ્ચતર માધ્યમિક શિક્ષણ બોર્ડ (GSEB) ના ઉત્કૃષ્ટ શિક્ષણ તજજ્ઞ છો. ધોરણ ૯ થી ૧૨ ના વિદ્યાર્થીઓ માટે "${topic}" વિષય પર એક અત્યંત સરળ, સ્પષ્ટ અને પ્રભાવશાળી રજૂઆત (SIMPLIFIED Presentation) તૈયાર કરો.
 
-વિદ્યાર્થી અને રજૂઆતની વિગતો:
-- ધોરણ: ${standard} (Std 9 to 12)
+વિગતો:
+- ધોરણ: ${standard}
 - વિષય: ${subject}
-- રજૂઆતનો ચોક્કસ ટોપિક: "${topic}"
-- સમયગાળો: ૫ મિનિટ (સંપૂર્ણ રજૂઆત)
-- સેટિંગ: ${environment} (${isPrayer ? 'શાળાની પ્રાર્થના સભા / Prayer Assembly Hall' : 'વર્ગખંડ પ્રસ્તુતિ / Classroom Presentation'})
-- વિદ્યાર્થીનું નામ: ${studentName}
+- ટોપિક: "${topic}"
+- સેટિંગ: ${environment} (${isPrayer ? 'પ્રાર્થના સભા' : 'વર્ગખંડ પ્રસ્તુતિ'})
+- વિદ્યાર્થી: ${studentName}
 
-અતિ મહત્વપૂર્ણ શૈક્ષણિક નિયમો (Strict Pedagogical Relevance & Detailed Pravruti):
-૧. ઉદાહરણો અને પ્રવૃત્તિ ૧૦૦% વિષય અને પ્રકરણ મુજબ જ હોવા જોઈએ:
-   - દરેક ઉદાહરણ પાઠ્યપુસ્તકના સંબંધિત પ્રકરણનું જ હોવું જોઈએ.
-   - જો વિષય "દ્રવ્યની અવસ્થાઓ" (States of Matter) હોય તો ફક્ત ઘન, પ્રવાહી અને વાયુના ભૌતિક ગુણધર્મો, કણોની ગોઠવણી, વાયુની સંકોચનશીલતા (LPG / CNG સિલિન્ડર), કણોનું પ્રસરણ (અગરબત્તી / ગરમ ભોજનની સોડમ), અને પાણીની ત્રણેય અવસ્થાઓ (બરફ-પાણી-વરાળ) જ આપવી.
-   - જો વિષય "બાષ્પીભવન" હોય તો માટલાનું પાણી, પરસેવો, એસિટોન/સ્પિરિટ અને સુતરાઉ કપડાં જ આપવું.
-૨. પ્રવૃત્તિ (Pravruti / Practical Activity) ની ઊંડાણપૂર્વક સંપૂર્ણ સમજૂતી આપો:
-   - પાઠ્યપુસ્તક સંદર્ભ (દા.ત. GSEB ધોરણ ૯ વિજ્ઞાન પ્રવૃત્તિ ૧.૪).
-   - જરૂરી સાધન સામગ્રીની યાદી (materials).
-   - સ્ટેપ-બાય-સ્ટેપ પદ્ધતિ (procedure: પગલું ૧, ૨, ૩).
-   - પ્રત્યક્ષ અવલોકન (observation): પ્રયોગ કરતાં શું દેખાશે.
-   - વૈજ્ઞાનિક તારણ (conclusion): આ પ્રયોગથી શું સાબિત થાય છે.
-   - સ્ટેજ ડેમો ટિપ (stageDemoTip): સભા કે વર્ગખંડમાં ૧ મિનિટમાં આ પ્રયોગ વિદ્યાર્થી કેવી રીતે બતાવી શકે.
-૩. રોજિંદા જીવનના ઉદાહરણો (detailedExamples) નું સ્પષ્ટ વૈજ્ઞાનિક વિશ્લેષણ:
-   - ઘટના શું બને છે, પાછળનું વૈજ્ઞાનિક કારણ શું છે અને વિદ્યાર્થી સ્ટેજ પર શ્રોતાઓને કેવી રીતે સમજાવશે.
+અતિ મહત્વપૂર્ણ શૈક્ષણિક નિયમો:
+૧. પ્રેઝન્ટેશન એકદમ સરળ (SIMPLIFIED), સંક્ષિપ્ત અને વિદ્યાર્થી ૨-૩ મિનિટમાં આત્મવિશ્વાસથી બોલી શકે તેવું હોવું જોઈએ. બિનજરૂરી મોટું લખાણ ન આપો.
+૨. દરેક વિષયને જબરદસ્તી રોજિંદા જીવન (રસોડા/ઘર) સાથે સરખાવવાની બિલકુલ જરૂર નથી!
+   - જો વિષયમાં કોઈ સાચો કુદરતી સિદ્ધાંત હોય (જેમ કે બાષ્પીભવન, ઘર્ષણ, વિદ્યુત, ગુરુત્વાકર્ષણ) તો જ રોજિંદું ઉદાહરણ આપો.
+   - જો વિષય ગણિત, ઇતિહાસ, ભૂગોળ કે વ્યાકરણનો હોય (જેમ કે પાયથાગોરસ પ્રમેય, સ્વાતંત્ર્ય સંગ્રામ, સમાસ) તો તેના વિષય આધારિત સ્પષ્ટ શૈક્ષણિક સમજૂતી અને વિષય ઉદાહરણ આપો.
+   - જેવો વિષય હોય તે મુજબ જ પ્રસ્તુતિ બનાવો, સરળ અને સ્વાભાવિક.
+૩. ઉદાહરણ વિષયને ૧૦૦% સાચું અને અનુકૂળ હોવું જોઈએ. કોઈ પણ પુનરાવર્તિત સામાન્ય લખાણ ન હોવું જોઈએ.
 
 ચોક્કસ JSON ફોર્મેટમાં જ આઉટપુટ આપો:
 {
   "title": "${topic}",
   "standard": "${standard}",
   "subject": "${subject}",
-  "duration": "૫ મિનિટ (સંપૂર્ણ રજૂઆત)",
+  "duration": "૩-૪ મિનિટ",
   "environment": "${environment}",
-  "openingSpeech": "પ્રારંભિક સંબોધન અને આકર્ષક શરૂઆત (લગભગ ૪૦-૫૦ શબ્દો)",
-  "topicIntroduction": "વિષય પરિચય અને વ્યાખ્યા સરળ ભાષામાં (લગભગ ૬૦-૮૦ શબ્દો)",
-  "detailedExplanation": "વિષયની ઊંડાણપૂર્વકની વિસ્તૃત સરળ સમજૂતી જે વિદ્યાર્થી ૨ થી ૩ મિનિટ સુધી સરસ રીતે બોલી શકે (લગભગ ૨૦૦-૨૫૦ શબ્દો, ૩-૪ પેરાગ્રાફ)",
-  "realLifeExample": "આપણા રોજિંદા જીવન સાથે જોડાયેલું બોલવા માટેનું મુખ્ય લખાણ",
-  "detailedExamples": [
-    {
-      "title": "૧. ઉદાહરણનું શીર્ષક",
-      "context": "રોજિંદી પરિસ્થિતિ અથવા ઘટના",
-      "scientificReason": "આ ઘટના પાછળ કામ કરતો વૈજ્ઞાનિક સિદ્ધાંત",
-      "speechQuote": "વિદ્યાર્થી સ્ટેજ પર આ ઉદાહરણ શ્રોતાઓને કેવી રીતે રજૂ કરશે"
-    },
-    {
-      "title": "૨. બીજું ઉદાહરણ",
-      "context": "રોજિંદી પરિસ્થિતિ",
-      "scientificReason": "વૈજ્ઞાનિક કારણ",
-      "speechQuote": "સ્ટેજ પર બોલવાના શબ્દો"
-    }
-  ],
-  "practicalActivity": {
-    "hasActivity": true,
-    "title": "GSEB પાઠ્યપુસ્તક આધારિત સચોટ પ્રવૃત્તિનું નામ",
-    "textbookRef": "GSEB પાઠ્યપુસ્તક પ્રકરણ અને પ્રવૃત્તિ ક્રમાંક",
-    "materials": ["સાધન ૧", "સાધન ૨", "સાધન ૩"],
-    "procedure": ["પગલું ૧...", "પગલું ૨...", "પગલું ૩..."],
-    "observation": "પ્રત્યક્ષ અવલોકન (શું જોવા મળે છે)",
-    "conclusion": "વૈજ્ઞાનિક તારણ",
-    "stageDemoTip": "સભા કે વર્ગખંડમાં ૧ મિનિટમાં ડેમો બતાવવાની સરળ રીત",
-    "description": "વિદ્યાર્થી આ પ્રવૃત્તિ સ્ટેજ પર બોલીને કેવી રીતે સમજાવશે તે સંપૂર્ણ લખાણ"
-  },
-  "audienceQuestion": {
-    "question": "શ્રોતાઓને પૂછવાનો એક સુંદર વિચારપ્રેરક પ્રશ્ન",
-    "expectedAnswer": "અપેક્ષિત ઉત્તર"
-  },
-  "closingSpeech": "પ્રેરણાદાયી સમાપન અને આભારવિધિ (લગભગ ૪૦-૫૦ શબ્દો)",
-  "keyPointsToRemember": [
-    "૧. પહેલો મુખ્ય મુદ્દો",
+  "isSimplified": true,
+  "hasRealLifeConnection": true/false (ફક્ત જો વિષયને સ્વાભાવિક રીતે રોજિંદો સિદ્ધાંત લાગુ પડતો હોય તો જ true),
+  "subjectDomain": "science / math / social / language / commerce",
+  "topicCategoryLabel": "વિષયનું સાદું લેબલ",
+  "openingSpeech": "નમ્ર, સુંદર શરૂઆત (લગભગ ૩૦-૪૦ શબ્દો)",
+  "topicIntroduction": "વિષયની સાદી વ્યાખ્યા અને મૂળ વિચાર (લગભગ ૪૦-૫૦ શબ્દો)",
+  "simplifiedPoints": [
+    "૧. પહેલો મુખ્ય મુદ્દો (સરળ ભાષામાં)",
     "૨. બીજો મુખ્ય મુદ્દો",
-    "૩. ત્રીજો મુખ્ય મુદ્દો",
-    "૪. ચોથો મુખ્ય મુદ્દો"
-  ]
+    "૩. ત્રીજો મુખ્ય મુદ્દો"
+  ],
+  "detailedExplanation": "સરળ ગુજરાતીમાં વિષયની સ્પષ્ટ સમજૂતી (લગભગ ૧૦૦-૧૨૦ શબ્દો)",
+  "realLifeExample": "જો લાગુ પડતું હોય તો જ ઉદાહરણ, નહીં તો વિષયની સાદી સમજૂતી",
+  "cleanExampleTitle": "ઉદાહરણનું શીર્ષક",
+  "cleanExampleExplanation": "ઉદાહરણની સચોટ સરળ સમજૂતી",
+  "keyPointsToRemember": [
+    "૧. યાદ રાખવાનો મુખ્ય મુદ્દો ૧",
+    "૨. યાદ રાખવાનો મુખ્ય મુદ્દો ૨",
+    "૩. યાદ રાખવાનો મુખ્ય મુદ્દો ૩"
+  ],
+  "closingSpeech": "પ્રેરણાદાયી સમાપન (લગભગ ૩૦ શબ્દો)"
 }`;
 
-          const response = await ai.models.generateContent({
-            model: 'gemini-3.8-flash',
-            contents: prompt,
-            config: {
-              responseMimeType: 'application/json',
-            },
-          });
+          // Robust model selection with fallback
+          const candidateModels = ['gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+          let aiText = '';
+          for (const candidateModel of candidateModels) {
+            try {
+              const response = await ai.models.generateContent({
+                model: candidateModel,
+                contents: prompt,
+                config: {
+                  responseMimeType: 'application/json',
+                },
+              });
+              if (response && response.text) {
+                aiText = response.text;
+                break;
+              }
+            } catch (err) {
+              console.warn(`Model ${candidateModel} failed, trying next:`, (err as any)?.message?.slice(0, 80));
+            }
+          }
 
-          if (response && response.text) {
-            const parsed = JSON.parse(response.text);
+          if (aiText) {
+            const parsed = JSON.parse(aiText);
             return res.json({ success: true, data: parsed, source: 'ai' });
           }
         } catch (aiErr) {
@@ -2488,8 +2475,45 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
     }
   });
 
+  // GET /api/app-update-check: Checks GitHub repository for the latest commit or release
+  app.get('/api/app-update-check', async (req: Request, res: Response) => {
+    try {
+      const repo = String(req.query.repo || 'anantahir7721/vidyalayam').trim();
+      const ghRes = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, {
+        headers: {
+          'User-Agent': 'Vidyalayam-App-Update-Checker',
+          Accept: 'application/vnd.github.v3+json',
+        },
+        signal: AbortSignal.timeout(6000),
+      });
+
+      if (!ghRes.ok) {
+        return res.status(ghRes.status).json({ error: `GitHub repo returned status ${ghRes.status}` });
+      }
+
+      const commits = await ghRes.json();
+      if (Array.isArray(commits) && commits.length > 0) {
+        const top = commits[0];
+        return res.json({
+          success: true,
+          latestCommit: {
+            sha: top.sha,
+            message: top.commit?.message || '',
+            date: top.commit?.committer?.date || '',
+            author: top.commit?.author?.name || 'GitHub Developer',
+            htmlUrl: top.html_url,
+          },
+        });
+      }
+
+      return res.json({ success: false, message: 'No commits found' });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message || 'Failed to check GitHub update' });
+    }
+  });
+
   // =========================================================================
-  // DAILY KNOWLEDGE & NEWS API (5:00 AM News & 1:00 PM Janva Jevu)
+  // DAILY KNOWLEDGE & NEWS API (6:00 AM News & 2:00 PM Janva Jevu)
   // =========================================================================
 
   // Helper: decode HTML entities in RSS XML
@@ -2515,37 +2539,100 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
       .trim();
   }
 
-  // Helper: Verify news is strictly appropriate and beneficial for school students
-  function isStudentFriendlyNews(headline: string, summary: string): boolean {
-    const text = `${headline} ${summary}`;
-    // Strictly reject negative, violent, criminal, or inappropriate content
-    const rejectRegex = /હત્યા|મર્ડર|દુષ્કર્મ|બળાત્કાર|છેડતી|આત્મહત્યા|ફાંસો|ઝેર|લાશ|અકસ્માતમાં મોત|મોત નીપજ્યું|કડડભૂસ|જુગાર|દારૂ|ચોરી|લૂંટ|હનીટ્રેપ|અશ્લીલ|યૌન|વિવાદ|મારામારી|હુમલો|ચાકુ|ફાયરિંગ|ધમકી|તોડફોડ|ફડાકા|જાતિ વિષયક|કૌભાંડ|ગાળાગાળી|પ્રેમી|પત્નીની હત્યા|પતિની હત્યા|ત્રાસ|ગેંગ|તસ્કર|હથિયાર|હવાલો|ડ્રગ્સ|ગાંજો|ચરસ|અપહરણ|ડૂબી જતાં|ખાડામાં|તૂટી પડ્યું|વીજળી પડતાં|આગ લાગતાં|ખાઈ ગયા|ભ્રષ્ટાચાર|દરોડા|ધરપકડ|ઝડપાયા|જેલ|રિમાન્ડ|તપાસમાં સાબિત|આરોપી/i;
-    if (rejectRegex.test(text)) return false;
+  // Helper: Verify if a headline or summary is a 100% grammatically complete and meaningful statement
+  function isValidCompleteStatement(text: string): boolean {
+    if (!text || text.trim().length < 25) return false;
+    const clean = text.trim().replace(/[.!?।]+$/, '').trim();
 
-    // Reject clickbaits or unhelpful tabloid phrases
-    if (/વાયરલ વિડીયો|વાયરલ વિડિયો|તસવીરો વાયરલ|ફજેતો|પિત્તો ગુમાવ્યો|ગજબ|ચોંકાવનારું/i.test(text)) return false;
+    // Reject if ends with dangling number or symbol like '1' or '3.0' or 'રૂ.'
+    if (/\b\d+(\.\d+)?$/.test(clean) || /[રૂ₹]\.?$/.test(clean)) return false;
+
+    // Reject if ends with dangling Gujarati preposition/conjunction/case-marker
+    if (/(કો|કે|અને|પરંતુ|તેમજ|જેમાં|સાથે|માટે|હોવાથી|ત્યારે|દરમિયાન|વચ્ચે|અંગે|સુધી|પણ|ના|ની|નું|નો|ને|થી|પર|દ્વારા|હેઠળ|સામે|વિશે|સુધ્ધાં|વગર|બાબતે|કહ્યું|કરશે|હશે)\?*$/.test(clean)) {
+      // Allow complete sentences ending with valid auxiliary verbs
+      if (/(કહ્યું|કરશે|હશે|છે|હતું|હતી|હતા|આવ્યા|આવ્યું|રહ્યા|રહ્યો|લીધો|આપ્યો|થયો|થઈ|થયા|નોંધાયો|નોંધાઈ|બન્યો|બની)\?*$/.test(clean)) {
+        // valid ending
+      } else {
+        return false;
+      }
+    }
+
+    // Reject sensational prefixes/keywords or political gossip
+    if (/breaking news|લાઇવ અપડેટ|વાઇરલ વિડિયો|નમાઝ|ફિયાન્સી|જાસૂસી|ટ્રેકર|કૌભાંડ|લાંચ|ખાઈ ગયા/i.test(text)) return false;
+
+    // Must have at least 4 words
+    const words = clean.split(/\s+/).filter(Boolean);
+    if (words.length < 4) return false;
 
     return true;
   }
 
-  // Helper: Ensure news is strictly fresh (published within last 24 hours, rejecting 3-4 days old items)
-  function isStrictlyFreshNews(pubDateStr?: string, maxAgeHours = 26): boolean {
-    if (!pubDateStr) return true;
-    try {
-      const pub = new Date(pubDateStr).getTime();
-      if (isNaN(pub)) return true;
-      const ageHours = (Date.now() - pub) / (1000 * 60 * 60);
-      return ageHours >= 0 && ageHours <= maxAgeHours;
-    } catch {
-      return true;
+  // Helper: Verify if news item is strictly suitable and knowledge-enhancing for school students (Classes 9-12), parents and school
+  function isSchoolStudentNews(headline: string, summary: string): boolean {
+    if (!isValidCompleteStatement(headline)) return false;
+    if (!isValidCompleteStatement(summary)) return false;
+
+    const text = `${headline} ${summary}`.toLowerCase();
+
+    // Inappropriate keyword blacklist: crime, murder, suicide, accidents, sensational politics, corruption, scandals, spying, domestic disputes
+    const blacklist = [
+      'હત્યા', 'ખૂન', 'આત્મહત્યા', 'દુષ્કર્મ', 'અકસ્માત', 'મોત', 'લાશ', 'ચોરી', 'લૂંટ',
+      'દારૂ', 'જુગાર', 'હુમલો', 'ગોળીબાર', 'ઝઘડો', 'પોલીસ ફરિયાદ', 'કૌભાંડ', 'લાંચ',
+      'ફાંસો', 'ડૂબી જવાથી', 'ગંભીર ઇજા', 'વિવાદ', 'ધરપકડ', 'ગેંગસ્ટર', 'આતંકી',
+      'રાજકારણ', 'વિરોધ પક્ષ', 'ભાજપ', 'કોંગ્રેસ', 'આપ', 'રેલી', 'આંદોલન', 'ખાઈ ગયા',
+      'ભ્રષ્ટાચાર', 'તપાસના આદેશ', 'આરોપ', 'વિજિલન્સ', 'ઈડી', 'સીબીઆઈ', 'fir', 'એફઆઈઆર',
+      'ગેરરીતિ', 'ચકચાર', 'હોબાળો', 'કડક કાર્યવાહી', 'ખોટી સહી', 'જાસૂસી', 'ફિયાન્સી',
+      'લવ', 'પ્રેમ સંબંધ', 'અફેર', 'છૂટાછેડા', 'સસ્પેન્ડ', 'ઠગાઈ', 'છેતરપિંડી', 'સાયબર ફ્રોડ',
+      'ટ્રેકર', 'નકલી', 'ડુપ્લિકેટ', 'ડ્રગ્સ', 'ગાંજો', 'અફીણ', 'શરાબ', 'પકડાયા', 'પ્રેગ્નન્ટ'
+    ];
+    for (const bad of blacklist) {
+      if (text.includes(bad)) return false;
     }
+
+    return true;
+  }
+
+  // Helper: Ensure news sentences are 100% complete sentences and never cut off in the middle
+  function ensureCompleteSentence(text: string, maxLen = 220): string {
+    if (!text) return '';
+    let clean = text.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    // Strip trailing ellipsis, multiple dots, dashes, colons or pipes
+    clean = clean.replace(/(\.{2,}|…|[-|~—_:]+)$/g, '').trim();
+
+    // Look for valid sentence ending punctuation (. ! ? ।)
+    const matches = [...clean.matchAll(/([.!?।])\s*/g)];
+    let bestSentence = '';
+    for (const m of matches) {
+      const endIdx = m.index! + m[1].length;
+      if (endIdx >= 30 && endIdx <= maxLen) {
+        bestSentence = clean.slice(0, endIdx).trim();
+      }
+    }
+    if (bestSentence) {
+      return bestSentence;
+    }
+
+    // If within limit and already ends with punctuation
+    if (clean.length <= maxLen && /[.!?।]$/.test(clean)) {
+      return clean;
+    }
+
+    // Strip trailing hanging conjunctions/connectors
+    clean = clean.replace(/\s+(અને|કે|પરંતુ|તેમજ|જેમાં|સાથે|માટે|હોવાથી|ત્યારે|દરમિયાન|વચ્ચે|અંગે|સુધી|પણ|કરીને|જ્યારે|તો|જોકે)\s*$/g, '').trim();
+
+    if (!/[.!?।]$/.test(clean)) {
+      clean += '.';
+    }
+    return clean;
   }
 
   // Helper: Fetch real-time live articles directly from Divya Bhaskar (દિવ્ય ભાસ્કર)
   async function fetchLiveDivyaBhaskarNews(): Promise<Array<{ headline: string; summary: string; source: string; tag?: string; pubDate?: string }>> {
     const urls = [
+      'https://www.divyabhaskar.co.in/local/gujarat/kutch/',
       'https://www.divyabhaskar.co.in/local/gujarat/',
-      'https://www.divyabhaskar.co.in/',
+      'https://www.divyabhaskar.co.in/education/',
+      'https://www.divyabhaskar.co.in/sports/',
     ];
     const items: Array<{ headline: string; summary: string; source: string; tag?: string; pubDate?: string }> = [];
     const seen = new Set<string>();
@@ -2572,7 +2659,6 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
             const title = obj.title.trim();
             if (
               !seen.has(title) &&
-              isStudentFriendlyNews(title, '') &&
               !title.includes('દિવ્ય ભાસ્કર એપ') &&
               !title.includes('ડિસ્ક્લેમર') &&
               !title.includes('વર્ચ્યુઅલ દર્શન') &&
@@ -2580,10 +2666,20 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
             ) {
               seen.add(title);
               const tag = obj.tag && obj.tag.text ? obj.tag.text.trim() : '';
-              const summary = tag ? `[${tag}] ${title}` : title;
+              let headline = title.replace(/\s*[-|]\s*દિવ્ય\s*ભાસ્કર.*$/i, '').trim();
+              headline = ensureCompleteSentence(headline, 160);
+
+              const fullSummary = tag ? `${tag}: ${headline}` : headline;
+              const cleanSummary = ensureCompleteSentence(fullSummary, 220);
+
+              // Strictly check appropriateness for school students, parents and schools
+              if (!isSchoolStudentNews(headline, cleanSummary)) {
+                return;
+              }
+
               items.push({
-                headline: title,
-                summary: `${summary}. (સ્ત્રોત: દિવ્ય ભાસ્કર)`,
+                headline,
+                summary: `${cleanSummary} (સ્ત્રોત: દિવ્ય ભાસ્કર)`,
                 source: 'દિવ્ય ભાસ્કર (Divya Bhaskar)',
                 tag,
               });
@@ -2603,7 +2699,20 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
     return items;
   }
 
-  // Helper: fetch RSS feed items in Gujarati with strict freshness and student-friendly filters
+  // Helper: Verify if news item is fresh (within 30 hours, strictly no 3-4 days old news)
+  function isFreshNewsItem(pubDateStr?: string): boolean {
+    if (!pubDateStr) return true;
+    try {
+      const pub = new Date(pubDateStr).getTime();
+      if (isNaN(pub)) return true;
+      const diffHours = (Date.now() - pub) / (1000 * 60 * 60);
+      return diffHours <= 30; // Strictly under 30 hours
+    } catch {
+      return true;
+    }
+  }
+
+  // Helper: fetch RSS feed items in Gujarati with strict freshness and complete sentence guarantees
   async function fetchLiveGujaratiRss(url: string, defaultSource = 'ગુજરાત લાઈવ', maxItems = 6): Promise<Array<{ headline: string; summary: string; source: string; pubDate?: string }>> {
     try {
       const res = await fetch(url, {
@@ -2619,13 +2728,13 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
       const itemRegex = /<item>[\s\S]*?<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>[\s\S]*?(?:<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>)?[\s\S]*?(?:<pubDate>(.*?)<\/pubDate>)?[\s\S]*?<\/item>/g;
       let match;
       while ((match = itemRegex.exec(text)) !== null && items.length < maxItems) {
+        // Enforce strict freshness (under 30 hours)
+        if (match[3] && !isFreshNewsItem(match[3])) {
+          continue;
+        }
+
         let rawTitle = decodeRssHtml(match[1]);
         if (!rawTitle || rawTitle.includes('Google News') || rawTitle.includes(' - Google')) continue;
-
-        const pubDateStr = match[3];
-        // Enforce strictly fresh news: reject anything older than 26 hours (no 3-4 days old items)
-        if (!isStrictlyFreshNews(pubDateStr, 26)) continue;
-
         let source = defaultSource;
         const sourceMatch = rawTitle.match(/\s*[-|]\s*([^-|]+)$/);
         if (sourceMatch) {
@@ -2642,18 +2751,21 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
         }
 
         const rawDesc = match[2] ? decodeRssHtml(match[2]).replace(/<[^>]+>/g, '').trim() : '';
-        let summary = rawDesc.length > 20 && !rawDesc.includes('http') ? rawDesc.slice(0, 160) : rawTitle;
-        if (!summary.endsWith('.')) summary += '.';
-        summary += ` (સ્ત્રોત: ${source})`;
+        // Never cut off sentences! Use ensureCompleteSentence
+        let fullSentenceText = rawDesc.length > 25 && !rawDesc.includes('http') ? rawDesc : rawTitle;
+        fullSentenceText = ensureCompleteSentence(fullSentenceText, 200);
+        const summary = `${fullSentenceText} (સ્ત્રોત: ${source})`;
 
-        // Enforce student-appropriate, inspiring, educational content
-        if (!isStudentFriendlyNews(rawTitle, summary)) continue;
+        // Filter for school student, parent & school helpfulness
+        if (!isSchoolStudentNews(rawTitle, summary)) {
+          continue;
+        }
 
         items.push({
           headline: rawTitle,
           summary,
           source,
-          pubDate: pubDateStr,
+          pubDate: match[3],
         });
       }
       return items;
@@ -2674,7 +2786,7 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
   // GET /api/daily-news: returns active 6 AM news bulletin with real-time live sourcing
   app.get('/api/daily-news', async (req: Request, res: Response) => {
     try {
-      // Calculate active edition cycle in Indian Standard Time (Asia/Kolkata) at 6:00 AM
+      // Calculate active edition cycle in Indian Standard Time (Asia/Kolkata)
       const now = new Date();
       const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
       const istNow = new Date(istString);
@@ -2706,7 +2818,6 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
             const data = snap.data();
             const updatedAtTime = data.updatedAt ? new Date(data.updatedAt).getTime() : 0;
             const ageMs = Date.now() - updatedAtTime;
-            // Cache valid if within 30 minutes and has 10 live items
             if (
               data.isLiveNews &&
               Array.isArray(data.items) &&
@@ -2721,24 +2832,22 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
         }
       }
 
-      // Fetch live fresh Gujarati news directly from real-time sources, predominantly Divya Bhaskar & TV9 & BBC
+      // Fetch live fresh Gujarati news directly from real-time sources, predominantly Divya Bhaskar (દિવ્ય ભાસ્કર)
       const [
         bhaskarItems,
-        tv9GujaratFeeds,
-        tv9NationalFeeds,
-        tv9CareerFeeds,
-        tv9SportsFeeds,
         bbcWorldFeeds,
+        tv9CareerFeeds,
+        tv9NationalFeeds,
+        tv9SportsFeeds,
       ] = await Promise.all([
         fetchLiveDivyaBhaskarNews(),
-        fetchLiveGujaratiRss('https://tv9gujarati.com/gujarat/feed', 'ટીવી૯ ગુજરાત લાઈવ (TV9 Gujarati)', 8),
-        fetchLiveGujaratiRss('https://tv9gujarati.com/national/feed', 'ટીવી૯ રાષ્ટ્રીય (TV9 Gujarati)', 6),
-        fetchLiveGujaratiRss('https://tv9gujarati.com/career/feed', 'શિક્ષણ & કારકિર્દી (Career & Exams)', 5),
-        fetchLiveGujaratiRss('https://tv9gujarati.com/sports/feed', 'ટીવી૯ સ્પોર્ટ્સ (TV9 Gujarati)', 5),
         fetchLiveGujaratiRss('https://feeds.bbci.co.uk/gujarati/rss.xml', 'બીબીસી ન્યૂઝ ગુજરાતી (BBC Gujarati)', 6),
+        fetchLiveGujaratiRss('https://tv9gujarati.com/career/feed', 'ટીવી૯ શિક્ષણ & ભરતી (TV9 Gujarati)', 5),
+        fetchLiveGujaratiRss('https://tv9gujarati.com/national/feed', 'ટીવી૯ રાષ્ટ્રીય (TV9 Gujarati)', 5),
+        fetchLiveGujaratiRss('https://tv9gujarati.com/sports/feed', 'ટીવી૯ સ્પોર્ટ્સ (TV9 Gujarati)', 5),
       ]);
 
-      // Categorize Divya Bhaskar items with student-friendly check
+      // Categorize Divya Bhaskar items
       const bhaskarKutch = bhaskarItems.filter(i => /કચ્છ|ભુજ|ગાંધીધામ|અંજાર|માંડવી|મુન્દ્રા|નખત્રાણા|રાપર|ભચાઉ|વાગડ/i.test(i.headline));
       const bhaskarEducation = bhaskarItems.filter(i => /શિક્ષણ|શાળા|કોલેજ|પરીક્ષા|બોર્ડ|વિદ્યાર્થી|શિક્ષક|GSEB|યુનિવર્સિટી|નોકરી|ભરતી|અભ્યાસ|ધોરણ/i.test(i.headline));
       const bhaskarSports = bhaskarItems.filter(i => /મેચ|ક્રિકેટ|રમત|ખેલ|વિકેટ|ટીમ|ગિલ|વિરાટ|રોહિત|કપ|સ્પોર્ટ્સ|ટેસ્ટ|વનડે/i.test(i.headline));
@@ -2749,9 +2858,26 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
       const items: any[] = [];
       let itemCounter = 1;
 
-      // 1. કચ્છ વિશેષ (2 items)
+      function getFallbackItemForCategory(category: 'kutch' | 'gujarat' | 'india' | 'world' | 'science_education' | 'sports', label: string, offset = 0) {
+        const pool = MASTER_NEWS_TOPICS[category] || [];
+        if (pool.length === 0) return null;
+        const hash = dateKey.split('-').reduce((acc, part) => acc * 31 + Number(part), 7);
+        const idx = (hash + offset * 7) % pool.length;
+        const base = pool[idx];
+        return {
+          id: `news-${dateKey}-${itemCounter++}`,
+          category,
+          categoryLabel: label,
+          headline: base.headline,
+          summary: base.summary,
+          impact: base.impact,
+          sourceDate: dateKey,
+        };
+      }
+
+      // 1. કચ્છ વિશેષ (2 items) — From Divya Bhaskar or verified Kutch pool
       for (let i = 0; i < 2; i++) {
-        const item = bhaskarKutch[i] || tv9GujaratFeeds.find(f => /કચ્છ|ભુજ|સૌરાષ્ટ્ર/i.test(f.headline)) || bhaskarGeneral.shift() || tv9GujaratFeeds.shift();
+        const item: any = bhaskarKutch[i] || bhaskarGeneral.shift() || getFallbackItemForCategory('kutch', 'કચ્છ વિશેષ', i);
         if (item) {
           items.push({
             id: `news-${dateKey}-${itemCounter++}`,
@@ -2759,15 +2885,15 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
             categoryLabel: 'કચ્છ વિશેષ',
             headline: item.headline,
             summary: item.summary,
-            impact: 'કચ્છ-સૌરાષ્ટ્ર વિસ્તારના વિકાસ, શિક્ષણ અને પર્યાવરણ અંગે વિદ્યાર્થીઓને પ્રદેશ પરિચય આપતી ઉપયોગી માહિતી.',
+            impact: item.impact || 'કચ્છ અને સૌરાષ્ટ્ર વિસ્તારના વિકાસ, વહીવટ, શિક્ષણ અને સમાજ જીવન વિષયક મહત્વપૂર્ણ તાજા સમાચાર.',
             sourceDate: dateKey,
           });
         }
       }
 
-      // 2. ગુજરાત સમાચાર (3 items) — Live Gujarat & Divya Bhaskar
+      // 2. ગુજરાત સમાચાર (3 items) — From Divya Bhaskar or verified Gujarat pool
       for (let i = 0; i < 3; i++) {
-        const item = bhaskarGeneral.shift() || tv9GujaratFeeds.shift();
+        const item: any = bhaskarGeneral.shift() || getFallbackItemForCategory('gujarat', 'ગુજરાત સમાચાર', i);
         if (item) {
           items.push({
             id: `news-${dateKey}-${itemCounter++}`,
@@ -2775,15 +2901,15 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
             categoryLabel: 'ગુજરાત સમાચાર',
             headline: item.headline,
             summary: item.summary,
-            impact: 'ગુજરાત રાજ્યના શિક્ષણ, વિજ્ઞાન, સંસ્કૃતિ અને લોક કલ્યાણકારી કાર્યો અંગે સામાન્ય જ્ઞાનમાં વધારો કરતા સમાચાર.',
+            impact: item.impact || 'ગુજરાત રાજ્યના શૈક્ષણિક, વહીવટી અને નાગરિક વિકાસ સાથે સંકળાયેલ વર્તમાન પ્રવાહ.',
             sourceDate: dateKey,
           });
         }
       }
 
-      // 3. રાષ્ટ્રીય / ભારત (2 items) — National development & Science
-      const nationalCandidate1 = tv9NationalFeeds.shift() || bhaskarGeneral.shift();
-      const nationalCandidate2 = tv9NationalFeeds.shift() || bhaskarGeneral.shift();
+      // 3. રાષ્ટ્રીય / ભારત (2 items) — Divya Bhaskar / Live National or verified pool
+      const nationalCandidate1: any = bhaskarGeneral.shift() || tv9NationalFeeds.shift() || getFallbackItemForCategory('india', 'રાષ્ટ્રીય / ભારત', 1);
+      const nationalCandidate2: any = tv9NationalFeeds.shift() || bhaskarGeneral.shift() || getFallbackItemForCategory('india', 'રાષ્ટ્રીય / ભારત', 2);
       if (nationalCandidate1) {
         items.push({
           id: `news-${dateKey}-${itemCounter++}`,
@@ -2791,24 +2917,24 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
           categoryLabel: 'રાષ્ટ્રીય / ભારત',
           headline: nationalCandidate1.headline,
           summary: nationalCandidate1.summary,
-          impact: 'રાષ્ટ્રીય સ્તરે ભારતીય ટેકનોલોજી, ઈસરો (ISRO), ખેલકૂદ અને દેશની પ્રગતિ વિષયક પ્રેરણારૂપ માહિતી.',
+          impact: nationalCandidate1.impact || 'રાષ્ટ્રીય સ્તરે નીતિ, અર્થતંત્ર, સંરક્ષણ અને સામાન્ય જ્ઞાન વિષયક પ્રેરણારૂપ માહિતી.',
           sourceDate: dateKey,
         });
       }
-      if (nationalCandidate2) {
+      if (nationalCandidate2 && nationalCandidate2.headline !== nationalCandidate1?.headline) {
         items.push({
           id: `news-${dateKey}-${itemCounter++}`,
           category: 'india',
           categoryLabel: 'રાષ્ટ્રીય / ભારત',
           headline: nationalCandidate2.headline,
           summary: nationalCandidate2.summary,
-          impact: 'દેશના સર્વાંગી વિકાસ, નવપ્રવર્તન અને મહત્વપૂર્ણ ઘટનાઓ વિષયક પ્રેરક માહિતી.',
+          impact: nationalCandidate2.impact || 'દેશના સર્વાંગી વિકાસ અને મહત્વપૂર્ણ ઘટનાઓ વિષયક માહિતી.',
           sourceDate: dateKey,
         });
       }
 
-      // 4. વિશ્વ સમાચાર (1 item) — BBC News Gujarati (Official & Live)
-      const worldItem = bbcWorldFeeds.shift() || tv9NationalFeeds.shift() || bhaskarGeneral.shift();
+      // 4. વિશ્વ સમાચાર (1 item) — BBC News Gujarati (Official & Live) or verified pool
+      const worldItem: any = bbcWorldFeeds.shift() || bhaskarGeneral.shift() || getFallbackItemForCategory('world', 'વિશ્વ સમાચાર', 1);
       if (worldItem) {
         items.push({
           id: `news-${dateKey}-${itemCounter++}`,
@@ -2816,13 +2942,13 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
           categoryLabel: 'વિશ્વ સમાચાર',
           headline: worldItem.headline,
           summary: worldItem.summary,
-          impact: 'વિશ્વના દેશો, આંતરરાષ્ટ્રીય ભૂગોળ, પર્યાવરણ અને વૈશ્વિક શોધ સંશોધનો અંગે વિદ્યાર્થીઓની જાણકારી.',
+          impact: worldItem.impact || 'આંતરરાષ્ટ્રીય ઘટનાઓ, વૈશ્વિક વિજ્ઞાન અને ભૂગોળ વિષયક વિસ્તૃત સમજૂતી.',
           sourceDate: dateKey,
         });
       }
 
-      // 5. વિજ્ઞાન અને શિક્ષણ (1 item) — Education & Exams
-      const eduItem = bhaskarEducation[0] || tv9CareerFeeds.shift() || bhaskarGeneral.shift() || tv9GujaratFeeds.shift();
+      // 5. વિજ્ઞાન અને શિક્ષણ (1 item) — Divya Bhaskar / Education Live or verified pool
+      const eduItem: any = bhaskarEducation.shift() || tv9CareerFeeds.shift() || bhaskarGeneral.shift() || getFallbackItemForCategory('science_education', 'વિજ્ઞાન અને શિક્ષણ', 1);
       if (eduItem) {
         items.push({
           id: `news-${dateKey}-${itemCounter++}`,
@@ -2830,13 +2956,13 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
           categoryLabel: 'વિજ્ઞાન અને શિક્ષણ',
           headline: eduItem.headline,
           summary: eduItem.summary,
-          impact: 'વિદ્યાર્થીઓ માટે પરીક્ષાલક્ષી માર્ગદર્શન, ગણિત-વિજ્ઞાન ક્ષેત્રની નવીનતાઓ અને અભ્યાસ સંકલ્પ.',
+          impact: eduItem.impact || 'વિદ્યાર્થીઓ માટે શિક્ષણ વિભાગના પરિપત્રો, વિજ્ઞાન પ્રોજેક્ટ્સ અને કારકિર્દી માર્ગદર્શન.',
           sourceDate: dateKey,
         });
       }
 
-      // 6. રમતગમત અને યુવા (1 item) — Sports Live
-      const sportsItem = bhaskarSports[0] || tv9SportsFeeds.shift() || bhaskarGeneral.shift();
+      // 6. રમતગમત અને યુવા (1 item) — Divya Bhaskar / Sports Live or verified pool
+      const sportsItem: any = bhaskarSports.shift() || tv9SportsFeeds.shift() || bhaskarGeneral.shift() || getFallbackItemForCategory('sports', 'રમતગમત અને યુવા', 1);
       if (sportsItem) {
         items.push({
           id: `news-${dateKey}-${itemCounter++}`,
@@ -2844,23 +2970,27 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
           categoryLabel: 'રમતગમત અને યુવા',
           headline: sportsItem.headline,
           summary: sportsItem.summary,
-          impact: 'ખેલ મહાકુંભ, રાષ્ટ્રીય રમતો, ક્રિકેટ અને ખેલદિલી દ્વારા શારીરિક-માનસિક વિકાસની પ્રેરણા.',
+          impact: sportsItem.impact || 'શાળા રમતગમત સ્પર્ધાઓ, ખેલ મહાકુંભ અને યુવા ખેલાડીઓ માટે પ્રેરણાદાયક સિદ્ધિ.',
           sourceDate: dateKey,
         });
       }
 
       // Ensure full 10 items if any slot was missed
-      while (items.length < 10 && (bhaskarGeneral.length > 0 || tv9GujaratFeeds.length > 0)) {
-        const item = bhaskarGeneral.shift() || tv9GujaratFeeds.shift()!;
-        items.push({
-          id: `news-${dateKey}-${itemCounter++}`,
-          category: 'gujarat',
-          categoryLabel: 'ગુજરાત સામાન્ય જ્ઞાન',
-          headline: item.headline,
-          summary: item.summary,
-          impact: 'વિદ્યાર્થીઓ માટે દૈનિક તાજા પ્રેરક સમાચાર.',
-          sourceDate: dateKey,
-        });
+      while (items.length < 10) {
+        const extraItem: any = bhaskarGeneral.shift() || getFallbackItemForCategory('gujarat', 'ગુજરાત સમાચાર', items.length);
+        if (extraItem) {
+          items.push({
+            id: `news-${dateKey}-${itemCounter++}`,
+            category: extraItem.category || 'gujarat',
+            categoryLabel: extraItem.categoryLabel || 'ગુજરાત સમાચાર',
+            headline: extraItem.headline,
+            summary: extraItem.summary,
+            impact: extraItem.impact || 'દૈનિક તાજા ગુજરાત સમાચાર.',
+            sourceDate: dateKey,
+          });
+        } else {
+          break;
+        }
       }
 
       if (items.length >= 8) {
@@ -2868,8 +2998,8 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
           id: dateKey,
           editionDate: formatServerGujaratiDate(editionDate),
           dateKey,
-          cycleTime: 'સવારે ૬:૦૦ વાગ્યાની તાજી આવૃત્તિ (શાળા વિદ્યાર્થીઓ માટે જ્ઞાનવર્ધક)',
-          nextCycleTime: 'આવતીકાલે સવારે ૬:૦૦ વાગ્યે',
+          cycleTime: 'સવારે ૫:૦૦ વાગ્યાની તાજી આવૃત્તિ (દિવ્ય ભાસ્કર & લાઈવ)',
+          nextCycleTime: 'આવતીકાલે સવારે ૫:૦૦ વાગ્યે',
           nextUpdateTimeTimestamp: nextUpdate.getTime(),
           items,
           morningPrayerShloka: 'સર્વેભવન્તુ સુખિનઃ સર્વે સન્તુ નિરામયાઃ । સર્વે ભદ્રાણિ પશ્યન્તુ મા કશ્ચિદ્ દુઃખભાગ્ભવેત્ ॥',
@@ -2893,8 +3023,8 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
           id: dateKey,
           editionDate: formatServerGujaratiDate(editionDate),
           dateKey,
-          cycleTime: 'સવારે ૬:૦૦ વાગ્યે પ્રકાશિત (દૈનિક તાજા સમાચાર)',
-          nextCycleTime: 'આવતીકાલે સવારે ૬:૦૦ વાગ્યે',
+          cycleTime: 'સવારે ૫:૦૦ વાગ્યે પ્રકાશિત',
+          nextCycleTime: 'આવતીકાલે સવારે ૫:૦૦ વાગ્યે',
           nextUpdateTimeTimestamp: nextUpdate.getTime(),
           items,
           morningPrayerShloka: 'સર્વેભવન્તુ સુખિનઃ સર્વે સન્તુ નિરામયાઃ । સર્વે ભદ્રાણિ પશ્યન્તુ મા કશ્ચિદ્ દુઃખભાગ્ભવેત્ ॥',

@@ -31,10 +31,12 @@ interface DailyPresentationTabProps {
   diseCode?: string;
   district?: string;
   isSchoolView?: boolean;
+  onToggleEnabled?: () => void;
 }
 
 export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
   schoolName,
+  onToggleEnabled,
 }) => {
   // Form state
   const [selectedStandard, setSelectedStandard] = useState<number>(9);
@@ -58,7 +60,7 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
   });
 
   const [copied, setCopied] = useState<boolean>(false);
-  const [viewTab, setViewTab] = useState<'speech' | 'summary'>('speech');
+  const [viewTab, setViewTab] = useState<'simplified' | 'speech' | 'summary'>('simplified');
   const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg'>('md');
 
   // Filter available subjects based on selected standard
@@ -249,6 +251,17 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {onToggleEnabled && (
+              <button
+                type="button"
+                onClick={onToggleEnabled}
+                className="px-3.5 py-2 rounded-2xl bg-white/20 hover:bg-white/30 border border-white/30 backdrop-blur-md text-xs font-bold text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                title="પ્રેઝન્ટેશન ટેબ બંધ કરો"
+              >
+                <Presentation className="w-4 h-4" />
+                <span>પ્રેઝન્ટેશન: ચાલુ (ON)</span>
+              </button>
+            )}
             <div className="px-3.5 py-2 rounded-2xl bg-black/20 border border-white/20 backdrop-blur-md text-right text-xs">
               <div className="text-emerald-200 text-[10px] font-semibold">GSEB પાઠ્યપુસ્તક આધારિત</div>
               <div className="font-bold text-white">ધોરણ ૯ થી ૧૨ • સરળ ગુજરાતી</div>
@@ -498,8 +511,21 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
 
             {/* Quick Actions & Controls */}
             <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
-              {/* Tab Selector: Full Speech vs Key Summary */}
+              {/* Tab Selector: Simplified Cards vs Spoken Speech vs Key Points */}
               <div className="flex items-center bg-slate-100 dark:bg-white/10 p-1 rounded-xl text-xs gap-1">
+                <button
+                  type="button"
+                  onClick={() => setViewTab('simplified')}
+                  className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    viewTab === 'simplified'
+                      ? 'bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400'
+                  }`}
+                  title="સરળ સ્લાઇડ મોડ"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>સરળ પ્રસ્તુતિ</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setViewTab('speech')}
@@ -508,9 +534,10 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
                       ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 shadow-xs'
                       : 'text-slate-600 dark:text-slate-400'
                   }`}
+                  title="બોલવાનું સંપૂર્ણ લખાણ"
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  <span>બોલવાની સ્ક્રિપ્ટ</span>
+                  <span>સ્પીચ સ્ક્રિપ્ટ</span>
                 </button>
                 <button
                   type="button"
@@ -520,6 +547,7 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
                       ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs'
                       : 'text-slate-600 dark:text-slate-400'
                   }`}
+                  title="મુખ્ય મુદ્દાઓ"
                 >
                   <ListOrdered className="w-3.5 h-3.5" />
                   <span>મુખ્ય મુદ્દાઓ</span>
@@ -580,6 +608,115 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
             </div>
           </div>
 
+          {/* VIEW TAB 0: SIMPLIFIED PRESENTATION (સરળ અને સંક્ષિપ્ત રજૂઆત) */}
+          {viewTab === 'simplified' && (
+            <div className="space-y-4">
+              {/* 1. Introduction Card */}
+              <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl p-4 sm:p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-xs uppercase tracking-wider">
+                    <BookOpen className="w-4 h-4" />
+                    <span>૧. વિષય પરિચય & સરળ વ્યાખ્યા (Simple Intro)</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
+                    આશરે ૪૦ સેકન્ડ
+                  </span>
+                </div>
+                <p className={`font-semibold text-slate-900 dark:text-emerald-50 ${textSizeClass}`}>
+                  {presentation.topicIntroduction || presentation.introduction}
+                </p>
+              </div>
+
+              {/* 2. Simplified Key Explanation Points */}
+              <div className="bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-blue-900 dark:text-blue-300 font-bold text-xs uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span>૨. વિષયની સરળ સમજૂતી (Core Concept Points)</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300">
+                    ૩-૪ સ્પષ્ટ મુદ્દા
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {(presentation.simplifiedPoints && presentation.simplifiedPoints.length > 0
+                    ? presentation.simplifiedPoints
+                    : presentation.keyPointsToRemember || [presentation.detailedExplanation]
+                  ).map((pt, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/40 flex items-start gap-2.5 shadow-2xs"
+                    >
+                      <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-black text-xs flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <p className={`text-slate-800 dark:text-slate-200 font-medium ${textSizeClass}`}>
+                        {pt}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Authentic Example (ONLY if naturally appropriate to topic) */}
+              {(presentation.hasRealLifeConnection !== false || presentation.cleanExampleTitle) && (
+                <div className="bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-4 sm:p-5 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-amber-900 dark:text-amber-300 font-bold text-xs uppercase tracking-wider">
+                      <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span>૩. વિષય આધારિત સચોટ ઉદાહરણ (Relevant Example)</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-300">
+                      વિષય સમજણ
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 shadow-2xs space-y-1">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-amber-100">
+                      {presentation.cleanExampleTitle || presentation.detailedExamples?.[0]?.title || `વિષય ઉદાહરણ`}
+                    </h4>
+                    <p className={`text-slate-700 dark:text-slate-200 ${textSizeClass}`}>
+                      {presentation.cleanExampleExplanation || presentation.realLifeExample}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. Audience Question */}
+              {presentation.audienceQuestion?.question && (
+                <div className="bg-sky-50/70 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-800/40 rounded-2xl p-4 sm:p-5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sky-900 dark:text-sky-300 font-bold text-xs uppercase tracking-wider">
+                      <HelpCircle className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                      <span>૪. શ્રોતાઓ માટે સવાલ (Question for Audience)</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className={`font-bold text-slate-900 dark:text-white ${textSizeClass}`}>
+                      "{presentation.audienceQuestion.question}"
+                    </div>
+                    <div className="text-xs text-sky-700 dark:text-sky-300 font-medium italic">
+                      👉 અપેક્ષિત ઉત્તર: {presentation.audienceQuestion.expectedAnswer}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. Closing */}
+              <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 rounded-2xl p-4 sm:p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-bold text-xs uppercase tracking-wider">
+                    <span>૫. સમાપન & આભારવિધિ (Closing & Thank You)</span>
+                  </div>
+                </div>
+                <p className={`font-semibold text-slate-900 dark:text-emerald-50 ${textSizeClass}`}>
+                  "{presentation.closingSpeech || presentation.conclusion}"
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* VIEW TAB 1: Complete Flowing Spoken Speech for Student (બોલવાનું સંપૂર્ણ લખાણ) */}
           {viewTab === 'speech' && (
             <div className="space-y-5">
@@ -631,17 +768,22 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
                 </div>
               </div>
 
-              {/* Section 4: Relatable Everyday Life Example (રોજિંદા જીવન સાથે જોડાણ) */}
-              <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-4 sm:p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-amber-900 dark:text-amber-300 font-bold text-xs uppercase tracking-wider">
-                    <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-                    <span>૪. રોજિંદા જીવન સાથેનું સચોટ જોડાણ (Relatable Everyday Examples)</span>
+              {/* Section 4: Relevant Example (રોજિંદા જીવન સાથે જોડાણ જો લાગુ પડતું હોય તો જ) */}
+              {(presentation.hasRealLifeConnection !== false || presentation.cleanExampleTitle || (presentation.detailedExamples && presentation.detailedExamples.length > 0)) && (
+                <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-4 sm:p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-amber-900 dark:text-amber-300 font-bold text-xs uppercase tracking-wider">
+                      <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
+                      <span>
+                        {presentation.hasRealLifeConnection !== false
+                          ? '૪. રોજિંદા જીવન સાથેનું સચોટ જોડાણ (Real-Life Connection)'
+                          : '૪. વિષય આધારિત સચોટ ઉદાહરણ (Subject Example)'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
+                      આશરે ૪૫ સેકન્ડ
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
-                    આશરે ૪૫ સેકન્ડ
-                  </span>
-                </div>
                 
                 {/* Flowing spoken speech for student */}
                 <p className={`text-slate-800 dark:text-amber-50 leading-relaxed font-medium ${textSizeClass}`}>
@@ -682,8 +824,9 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
                   </div>
                 )}
               </div>
+            )}
 
-              {/* Section 5: Practical Demo & Activity (GSEB પાઠ્યપુસ્તક પ્રાયોગિક પ્રવૃત્તિ) */}
+            {/* Section 5: Practical Demo & Activity (GSEB પાઠ્યપુસ્તક પ્રાયોગિક પ્રવૃત્તિ) */}
               {presentation.practicalActivity?.hasActivity && presentation.practicalActivity.title && (
                 <div className="bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-2xl p-4 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between flex-wrap gap-2">

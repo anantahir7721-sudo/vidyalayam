@@ -633,11 +633,11 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
       {/* Full Presentation Modal */}
       {activeIdeaModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 overflow-y-auto p-2 sm:p-4 md:p-6 flex items-start sm:items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
           onClick={() => setActiveIdeaModal(null)}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/20 rounded-3xl p-5 sm:p-7 text-slate-800 dark:text-white shadow-2xl overflow-y-auto space-y-5"
+            className="relative w-full max-w-2xl my-auto max-h-[calc(100dvh-2rem)] bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/20 rounded-3xl p-5 sm:p-7 text-slate-800 dark:text-white shadow-2xl overflow-y-auto space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}

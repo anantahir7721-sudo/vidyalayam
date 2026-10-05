@@ -78,7 +78,7 @@ export function openNotificationSettings(): void {
   }
 
   if (typeof window !== 'undefined') {
-    alert('કૃપા કરીને તમારા ફોનના સેટિંગ્સ > એપ્લિકેશન્સ > વિદ્યાલયમ > નોટિફિકેશન ચાલુ કરો.');
+    console.info('[Notifications] Please enable notifications in your browser or device settings.');
   }
 }
 
