@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
+import { ThemeProvider } from './context/ThemeContext.tsx';
 import { initializeGlobalHaptics } from './utils/haptics.ts';
 import { initStatusBarHelper } from './utils/statusBarHelper.ts';
 import { initNotificationScheduler } from './utils/notificationScheduler.ts';
@@ -13,6 +14,8 @@ initNotificationScheduler();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </React.StrictMode>
 );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface VidyalayamLogoProps {
   size?: number | string;
@@ -13,8 +13,7 @@ interface VidyalayamLogoProps {
 /**
  * Official Vidyalayam Brand Logo
  * Features the signature papercraft Schoolhouse on Open Book emblem
- * with fluttering pennant flag, radiant golden sun rays, and arched entryway,
- * matching the official appstore.png artwork.
+ * with fluttering pennant flag, radiant golden sun rays, and arched entryway.
  */
 export const VidyalayamLogo: React.FC<VidyalayamLogoProps> = ({
   size = 40,
@@ -42,7 +41,7 @@ export const VidyalayamLogo: React.FC<VidyalayamLogoProps> = ({
           />
         )}
 
-        {/* Clean High-Resolution Vector SVG - Warm Parchment & Terracotta, Never Dark */}
+        {/* Clean High-Resolution Vector SVG - Warm Parchment & Terracotta */}
         <svg
           viewBox="0 0 512 512"
           width="100%"
@@ -64,7 +63,7 @@ export const VidyalayamLogo: React.FC<VidyalayamLogoProps> = ({
             </filter>
           </defs>
 
-          {/* Base Warm Parchment Canvas (Light and Radiant) */}
+          {/* Base Warm Parchment Canvas */}
           <rect width="512" height="512" rx="104" fill="url(#vl-bg-grad)" />
 
           {/* Emblem (Centered) */}
@@ -143,7 +142,7 @@ export const VidyalayamLogo: React.FC<VidyalayamLogoProps> = ({
             </p>
           ) : creatorTag ? (
             <p className="text-[10px] sm:text-[11px] text-[#9d512d] dark:text-[#f59c73] font-bold tracking-wide truncate mt-0.5">
-              by NRChad
+              by NR Chad
             </p>
           ) : null}
         </div>

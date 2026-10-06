@@ -49,6 +49,7 @@ export const SchoolNoticeBoardTab: React.FC<SchoolNoticeBoardTabProps> = ({
   schoolName = 'શ્રી સ્વામિનારાયણ હાઇસ્કૂલ, અંજાર',
   district = 'Kutch',
   taluka = 'અંજાર (Anjar)',
+  schoolId,
   onBack,
 }) => {
   // Local state for taluka and district filters
@@ -81,7 +82,7 @@ export const SchoolNoticeBoardTab: React.FC<SchoolNoticeBoardTabProps> = ({
   const handleOpenNotifyNoticeModal = (item: SchoolNoticeItem) => {
     setNotifyNoticeModal(item);
     setCustomNotifyTitle(`📢 શાળા સત્તાવાર નોટિસ: ${item.title}`);
-    setCustomNotifyBody(item.summary || item.details?.[0] || '');
+    setCustomNotifyBody(item.summary || (item as any).details?.[0] || '');
     setNoticeDispatchFeedback(null);
   };
 
@@ -106,7 +107,7 @@ export const SchoolNoticeBoardTab: React.FC<SchoolNoticeBoardTabProps> = ({
         title: titleToSend,
         body: `${bodyToSend.slice(0, 300)} (વિભાગ: ${targetLabel})`,
         category: 'general_notice',
-        targetType: notifyTarget === 'all' ? 'all' : 'standard',
+        targetType: notifyTarget === 'all' ? 'all' : 'student',
         targetId: notifyTarget === 'all' ? 'all' : notifyTarget,
         standard: notifyTarget === 'all' ? undefined : notifyTarget,
         schoolId: resolvedSchoolId,

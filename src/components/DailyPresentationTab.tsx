@@ -32,6 +32,7 @@ interface DailyPresentationTabProps {
   diseCode?: string;
   district?: string;
   isSchoolView?: boolean;
+  onToggleEnabled?: () => void;
 }
 
 export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
