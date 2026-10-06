@@ -202,35 +202,9 @@
         }
       },
       "required": ["date"]
-    },
-    "AppNotification": {
-      "title": "AppNotification",
-      "description": "Short and to-the-point school, student, and admin in-app notification records",
-      "type": "object",
-      "properties": {
-        "title": { "type": "string" },
-        "body": { "type": "string" },
-        "targetType": { "type": "string", "enum": ["all", "school", "admin", "student"] },
-        "targetId": { "type": "string" },
-        "schoolId": { "type": "string" },
-        "standard": { "type": "string" },
-        "category": { "type": "string" },
-        "createdAt": { "type": "string" },
-        "timestamp": { "type": "number" },
-        "read": { "type": "boolean" }
-      },
-      "required": ["title", "body", "targetType", "category", "createdAt"]
     }
   },
   "firestore": {
-    "/system_notifications/{notificationId}": {
-      "schema": { "$ref": "#/entities/AppNotification" },
-      "description": "Global system notifications for admins and platform events"
-    },
-    "/schools/{schoolId}/notifications/{notificationId}": {
-      "schema": { "$ref": "#/entities/AppNotification" },
-      "description": "School, student and staff personalized in-app notifications"
-    },
     "/daily_news/{newsId}": {
       "schema": { "$ref": "#/entities/DailyNews" },
       "description": "Daily morning news bulletins"

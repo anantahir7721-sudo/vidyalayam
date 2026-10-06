@@ -493,38 +493,6 @@ export interface NativeAndroidBridge {
   showNativeNotification: (title: string, body: string, type: string) => void;
 }
 
-export type NotificationTargetType = 'all' | 'school' | 'admin' | 'student';
-
-export type AppNotificationCategory =
-  | 'daily_news'
-  | 'daily_knowledge'
-  | 'daily_evening'
-  | 'exam_scheduled'
-  | 'exam_reminder_5min'
-  | 'exam_result'
-  | 'school_approval'
-  | 'password_reset'
-  | 'admission_update'
-  | 'general_notice';
-
-export interface AppNotification {
-  id: string;
-  title: string;
-  body: string;
-  targetType: NotificationTargetType;
-  targetId?: string; // studentId or schoolId or 'admin'
-  schoolId?: string;
-  schoolName?: string;
-  studentName?: string;
-  standard?: string;
-  category: AppNotificationCategory;
-  createdAt: string;
-  timestamp: number;
-  read?: boolean;
-  actionUrl?: string;
-  metadata?: Record<string, any>;
-}
-
 declare global {
   interface Window {
     AndroidBridge?: NativeAndroidBridge;

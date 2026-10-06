@@ -41,7 +41,6 @@ import {
   getServerTime,
   findConflictingExam,
 } from '../services/onlineExamService';
-import { createBulkStudentNotifications } from '../services/notificationService';
 import { OnlineExamEditor } from './OnlineExamEditor';
 import { OnlineExamAnalyticsModal } from './OnlineExamAnalyticsModal';
 import { QuestionBankModal } from './QuestionBankModal';
@@ -173,27 +172,6 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
       // Strictly create a new exam entry: 1 exam = 1 result. Completed exam results are preserved!
       await createOnlineExam(school.id, examPayload, questions);
     }
-
-    // Automatically trigger individualized in-app notifications for students of this standard
-    try {
-      const concerned = students.filter(
-        (st) =>
-          examPayload.standard === 'all' ||
-          String(st.standard).replace(/^class\s*/i, '') === String(examPayload.standard)
-      );
-      if (concerned.length > 0) {
-        const notifItems = concerned.map((st) => ({
-          studentId: st.id,
-          studentName: st.studentName,
-          standard: String(st.standard),
-          title: `📝 પરીક્ષા સમયપત્રક: ${examPayload.subject || examPayload.title}`,
-          body: `પ્રિય ${st.studentName}, ધોરણ ${st.standard} માટે ${examPayload.subject || 'વિષય'} પરીક્ષા (${examPayload.title}) તા. ${examPayload.scheduledDate || 'આજે'} ના રોજ ${examPayload.scheduledStartTime || ''} વાગ્યે નિર્ધારિત થયેલ છે.`,
-          category: 'exam_scheduled' as const,
-        }));
-        createBulkStudentNotifications(school.id, notifItems).catch(() => {});
-      }
-    } catch (e) {}
-
     setIsEditing(false);
     setEditingExam(null);
     setEditingQuestions([]);

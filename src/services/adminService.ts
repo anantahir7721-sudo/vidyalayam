@@ -19,7 +19,6 @@ import {
   projectId,
   FIRESTORE_DATABASE_ID,
 } from '../firebase/config';
-import { createAppNotification } from './notificationService';
 import {
   School,
   SchoolStatus,
@@ -295,18 +294,6 @@ export async function submitPasswordResetRequest(params: {
     status: 'pending',
     createdAt: new Date().toISOString(),
   });
-
-  // Notify system administrators about the password reset request
-  try {
-    createAppNotification({
-      targetType: 'admin',
-      title: '🔑 પાસવર્ડ રીસેટ વિનંતી',
-      body: `${params.schoolName || 'શાળા'} (DISE: ${params.diseCode}) તરફથી પાસવર્ડ રીસેટ કરવાની નવી વિનંતી આવી છે.`,
-      category: 'password_reset',
-      metadata: { requestId: docRef.id, diseCode: params.diseCode },
-    }).catch(() => {});
-  } catch (e) {}
-
   return docRef.id;
 }
 

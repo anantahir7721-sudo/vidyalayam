@@ -22,7 +22,6 @@ import {
   ExamAttempt,
   StudentSession,
 } from '../types';
-import { apiUrl } from '../utils/apiConfig';
 
 /**
  * Fetch all online exams for a given school.
@@ -412,7 +411,7 @@ export async function extractQuestionsWithAI(
         onStatusUpdate('Google AI સર્વર વ્યસ્ત હતું, ફરી પ્રયાસ થઈ રહ્યો છે...');
       }
 
-      const res = await fetch(apiUrl('/api/ai/extract-questions'), {
+      const res = await fetch('/api/ai/extract-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -486,7 +485,7 @@ let isServerTimeSynced = false;
 export async function getServerTime(): Promise<number> {
   try {
     const t0 = performance.now();
-    const res = await fetch(apiUrl('/api/time'));
+    const res = await fetch('/api/time');
     const t1 = performance.now();
     if (res.ok) {
       const data = await res.json();
@@ -790,7 +789,7 @@ export async function studentLogin(params: {
   let serverError = '';
 
   try {
-    const res = await fetch(apiUrl('/api/student/login'), {
+    const res = await fetch('/api/student/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -856,7 +855,7 @@ export function clearStudentSession() {
 export async function fetchStudentExams(token: string) {
   let res: Response | null = null;
   try {
-    res = await fetch(apiUrl('/api/student/exams'), {
+    res = await fetch('/api/student/exams', {
       headers: { 'x-student-token': token },
     });
     const contentType = res.headers.get('content-type') || '';
@@ -942,7 +941,7 @@ export async function fetchStudentExams(token: string) {
 
 export async function startStudentExam(token: string, examId: string) {
   try {
-    const res = await fetch(apiUrl('/api/student/start-exam'), {
+    const res = await fetch('/api/student/start-exam', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1098,7 +1097,7 @@ export async function saveStudentAnswers(
   answers: Record<string, string>
 ) {
   try {
-    const res = await fetch(apiUrl('/api/student/save-answers'), {
+    const res = await fetch('/api/student/save-answers', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1132,7 +1131,7 @@ export async function submitStudentExam(
   answers: Record<string, string>
 ) {
   try {
-    const res = await fetch(apiUrl('/api/student/submit-exam'), {
+    const res = await fetch('/api/student/submit-exam', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1204,7 +1203,7 @@ export async function submitStudentExam(
 
 export async function fetchStudentMarks(token: string) {
   try {
-    const res = await fetch(apiUrl('/api/student/my-marks'), {
+    const res = await fetch('/api/student/my-marks', {
       headers: { 'x-student-token': token },
     });
     const contentType = res.headers.get('content-type') || '';

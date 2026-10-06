@@ -1,10 +1,5 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
-
-interface StatusBarPlugin {
-  getInfo(): Promise<{ visible: boolean; style: string; color: string; overlays: boolean; height?: number }>;
-}
-
-const StatusBar = registerPlugin<StatusBarPlugin>('StatusBar');
+import { Capacitor } from '@capacitor/core';
+import { StatusBar } from '@capacitor/status-bar';
 
 /**
  * Initializes and dynamically maintains full-screen edge-to-edge status bar insets.

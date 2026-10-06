@@ -21,9 +21,7 @@ import { AdmissionManager } from './components/AdmissionManager';
 import { SchoolNoticeBoardTab } from './components/SchoolNoticeBoardTab';
 import { StudentPortal } from './components/StudentPortal';
 import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
-import { FirstLaunchPermissionModal } from './components/FirstLaunchPermissionModal';
-import { runScheduledNotificationCheck } from './services/notificationService';
-import { checkForGitHubUpdate, applyAppUpdate, GitHubUpdateInfo } from './services/appUpdateService';
+
 import { School, Student, MarkRecord, Staff, SchoolStatus, StudentSession } from './types';
 import { checkIsAdmin } from './services/adminService';
 import {
@@ -44,7 +42,7 @@ import {
   getStoredStudentSession,
   clearStudentSession,
 } from './services/onlineExamService';
-import { Loader2, WifiOff, CheckCircle2, ArrowUpCircle, X } from 'lucide-react';
+import { Loader2, WifiOff, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   const [authStatus, setAuthStatus] = useState<AuthRoleStatus>('loading');
@@ -111,27 +109,6 @@ export default function App() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
-
-  // Automated 06:00 AM, 02:00 PM, 06:00 PM Scheduled Notifications Engine
-  useEffect(() => {
-    runScheduledNotificationCheck();
-    const schedInterval = setInterval(() => {
-      runScheduledNotificationCheck();
-    }, 30000);
-    return () => clearInterval(schedInterval);
-  }, []);
-
-  // Check for updates pushed to GitHub
-  const [appUpdate, setAppUpdate] = useState<GitHubUpdateInfo | null>(null);
-  const [dismissUpdateBanner, setDismissUpdateBanner] = useState(false);
-
-  useEffect(() => {
-    checkForGitHubUpdate().then((info) => {
-      if (info && info.updateAvailable) {
-        setAppUpdate(info);
-      }
-    });
   }, []);
 
   // Persist tabHistory and activeTab across browser and app reloads
@@ -346,16 +323,13 @@ export default function App() {
   // 0. Active Student Session: Render dedicated Student Portal
   if (studentSession) {
     return (
-      <>
-        <StudentPortal
-          session={studentSession}
-          onLogout={() => {
-            clearStudentSession();
-            setStudentSession(null);
-          }}
-        />
-        <FirstLaunchPermissionModal schoolName={studentSession.schoolName} />
-      </>
+      <StudentPortal
+        session={studentSession}
+        onLogout={() => {
+          clearStudentSession();
+          setStudentSession(null);
+        }}
+      />
     );
   }
 
@@ -364,40 +338,10 @@ export default function App() {
     return <VidyalayamLoadingScreen />;
   }
 
-  // Common App Update Banner Component
-  const renderUpdateBanner = () => {
-    if (!appUpdate?.updateAvailable || dismissUpdateBanner) return null;
-    return (
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between shadow-md shrink-0 z-50">
-        <div className="flex items-center gap-2">
-          <ArrowUpCircle className="w-4 h-4 shrink-0" />
-          <span>🚀 નવી એપ અપડેટ GitHub પર ઉપલબ્ધ છે! ({appUpdate.latestCommitMessage || 'નવી સુવિધાઓ'})</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => applyAppUpdate(appUpdate.latestCommitSha)}
-            className="px-3 py-1 bg-white text-emerald-800 rounded-lg text-[11px] font-black hover:bg-slate-100 transition-all cursor-pointer shadow-xs"
-          >
-            અપડેટ કરો
-          </button>
-          <button
-            type="button"
-            onClick={() => setDismissUpdateBanner(true)}
-            className="p-1 hover:bg-white/20 rounded-md cursor-pointer"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   // 2. Unauthenticated: Show AuthScreen (School Login / Register or Admin Login or Student Login)
   if (authStatus === 'unauthenticated' || !user) {
     return (
       <div className="min-h-screen app-container flex flex-col">
-        {renderUpdateBanner()}
         <Navbar
           school={null}
           onLogout={() => {}}
@@ -422,7 +366,6 @@ export default function App() {
             General School Management System • Powered by Google Firebase
           </div>
         </footer>
-        <FirstLaunchPermissionModal />
       </div>
     );
   }
@@ -430,14 +373,10 @@ export default function App() {
   // 3. Authenticated as System Administrator: Show Admin Dashboard
   if (authStatus === 'admin' || isAdmin) {
     return (
-      <>
-        {renderUpdateBanner()}
-        <AdminDashboard
-          adminEmail={user.email}
-          onLogout={handleLogout}
-        />
-        <FirstLaunchPermissionModal />
-      </>
+      <AdminDashboard
+        adminEmail={user.email}
+        onLogout={handleLogout}
+      />
     );
   }
 
@@ -479,7 +418,6 @@ export default function App() {
     // Status is 'approved': Render the full General School Management Application!
     return (
       <div className="min-h-screen app-container flex flex-col">
-        {renderUpdateBanner()}
         <Navbar
           school={school}
           onLogout={handleLogout}
@@ -676,7 +614,6 @@ export default function App() {
             General School Management System • Gujarat Education Department Reference Standard
           </div>
         </footer>
-        <FirstLaunchPermissionModal schoolName={school.schoolName} />
       </div>
     );
   }

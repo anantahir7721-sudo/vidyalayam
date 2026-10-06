@@ -97,19 +97,6 @@ public class MainActivity extends BridgeActivity {
         // Initialize Android Notification Channel
         createNotificationChannel();
 
-        // Request notification permission immediately on first launch (Android 13+)
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(
-                        this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        NOTIFICATION_PERMISSION_REQUEST_CODE
-                    );
-                }
-            }
-        } catch (Exception ignored) {}
-
         // Register Android Native Bridge for seamless printing, PDF handling and native notifications
         try {
             if (bridge != null && bridge.getWebView() != null) {

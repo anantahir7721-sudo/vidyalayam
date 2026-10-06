@@ -32,7 +32,6 @@ import {
   replaceSmartVariables,
 } from '../utils/parentMessageUtils';
 import { getParentMessageBroadcasts } from '../services/firestoreService';
-import { createBulkStudentNotifications } from '../services/notificationService';
 import { useTheme } from '../context/ThemeContext';
 import { ParentMessageDispatcherModal } from './ParentMessageDispatcherModal';
 import { SendExamResultModal } from './SendExamResultModal';
@@ -73,82 +72,6 @@ export const ParentMessagingManager: React.FC<ParentMessagingManagerProps> = ({
 
   // Exam Result Modal State
   const [examResultModalOpen, setExamResultModalOpen] = useState(false);
-
-  // Group WhatsApp Generator State
-  const [groupShareModalOpen, setGroupShareModalOpen] = useState(false);
-  const [groupMessageText, setGroupMessageText] = useState('');
-  const [groupMessageCopied, setGroupMessageCopied] = useState(false);
-
-  // In-App Notification Dispatch State
-  const [isSendingInApp, setIsSendingInApp] = useState(false);
-  const [inAppSuccessCount, setInAppSuccessCount] = useState<number | null>(null);
-
-  const handleGenerateGroupMessage = () => {
-    const selected = filteredStudents.filter((st) => selectedStudentIds.has(st.id));
-    if (selected.length === 0) {
-      setNoticeError('કૃપા કરીને ઓછામાં ઓછો એક વિદ્યાર્થી અથવા વર્ગ પસંદ કરો.');
-      return;
-    }
-
-    const stdText = filterStandard === 'all' ? 'તમામ ધોરણ' : `ધોરણ ${filterStandard}`;
-    const secText = filterSection === 'all' ? '' : ` વર્ગ: ${filterSection}`;
-    const today = new Date().toLocaleDateString('gu-IN');
-
-    // Clean placeholder notice text for general group sharing
-    const cleanNotice = noticeText
-      .replace(/{વિદ્યાર્થી_નામ}/g, 'વિદ્યાર્થીઓ')
-      .replace(/{વાલી_નામ}/g, 'વાલીશ્રી')
-      .replace(/{ધોરણ}/g, stdText)
-      .replace(/{રોલ_નંબર}/g, '')
-      .replace(/{જીઆર_નંબર}/g, '')
-      .replace(/{શાળા_નામ}/g, school.schoolName || 'શાળા')
-      .replace(/{તારીખ}/g, today);
-
-    const msg = `📢 *શાળા સત્તાવાર સૂચના • ${school.schoolName}*
-📌 *વિષય:* ${noticeSubject}
-🎯 *વિભાગ:* ${stdText}${secText} (કુલ ${selected.length} વિદ્યાર્થીઓ)
-
-${cleanNotice.trim()}
-
-🗓️ *તારીખ:* ${today}
-📱 *વિદ્યાલયમ શાળા પોર્ટલ*`;
-
-    setGroupMessageText(msg);
-    setGroupShareModalOpen(true);
-  };
-
-  const handleSendPersonalizedInApp = async () => {
-    const selected = filteredStudents.filter((st) => selectedStudentIds.has(st.id));
-    if (selected.length === 0) {
-      setNoticeError('કૃપા કરીને ઓછામાં ઓછો એક વિદ્યાર્થી પસંદ કરો.');
-      return;
-    }
-
-    setIsSendingInApp(true);
-    setNoticeError(null);
-    try {
-      const records = selected.map((st) => {
-        const personalizedMsg = replaceSmartVariables(noticeText, st, school);
-        return {
-          studentId: st.id,
-          studentName: st.studentName,
-          standard: String(st.standard).replace(/^class\s*/i, ''),
-          title: `📢 ${noticeSubject}`,
-          body: personalizedMsg,
-          category: 'general_notice' as const,
-        };
-      });
-
-      const count = await createBulkStudentNotifications(school.id, records);
-      setInAppSuccessCount(count);
-      setTimeout(() => setInAppSuccessCount(null), 4000);
-    } catch (err: any) {
-      console.error('Error sending in-app notifications:', err);
-      setNoticeError('ઇન-એપ સૂચના મોકલવામાં સમસ્યા આવી.');
-    } finally {
-      setIsSendingInApp(false);
-    }
-  };
 
   // Broadcast History State
   const [historyList, setHistoryList] = useState<ParentBroadcastRecord[]>([]);
@@ -806,51 +729,16 @@ ${cleanNotice.trim()}
                 </div>
               )}
 
-              {/* In-App Success Banner */}
-              {inAppSuccessCount !== null && (
-                <div className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2 font-bold animate-in fade-in">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>
-                    સફળતાપૂર્વક {inAppSuccessCount} વિદ્યાર્થીઓને એમની વ્યક્તિગત માહિતી સાથેની ઇન-એપ સૂચના મોકલાઈ ગઈ!
-                  </span>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="space-y-2 pt-2">
-                {/* 1. Personalized In-App Notification (Student-Specific) */}
-                <button
-                  type="button"
-                  disabled={selectedStudentIds.size === 0 || !noticeText.trim() || isSendingInApp}
-                  onClick={handleSendPersonalizedInApp}
-                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transform active:scale-98"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>
-                    {isSendingInApp
-                      ? 'સૂચનાઓ મોકલાઈ રહી છે...'
-                      : `📲 દરેક વિદ્યાર્થીને વ્યક્તિગત ઇન-એપ સૂચના મોકલો (${selectedStudentIds.size})`}
-                  </span>
-                </button>
-
-                {/* 2. WhatsApp Group Share Message Generator */}
+              {/* Primary Action Button */}
+              <div className="pt-2">
                 <button
                   type="button"
                   disabled={selectedStudentIds.size === 0 || !noticeText.trim()}
-                  onClick={handleGenerateGroupMessage}
-                  className="w-full py-2.5 px-4 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>📢 WhatsApp ગ્રૂપમાં શેર કરવા માટે મેસેજ બનાવો</span>
-                </button>
-
-                {/* 3. Optional 1-by-1 manual dispatcher */}
-                <button
-                  type="button"
                   onClick={handleLaunchNoticeDispatcher}
-                  className="w-full py-1.5 text-center text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-medium cursor-pointer"
+                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transform active:scale-98"
                 >
-                  વૈયક્તિક ૧-બાય-૧ મેસેજ મોડ ખોલો (વૈકલ્પિક)
+                  <Send className="w-4 h-4" />
+                  <span>📢 સામૂહિક બ્રોડકાસ્ટ / મોકલો ({selectedStudentIds.size}) 🚀</span>
                 </button>
               </div>
             </div>
@@ -942,84 +830,6 @@ ${cleanNotice.trim()}
         school={school}
         onRefresh={onRefresh}
       />
-
-      {/* MODAL 3: WhatsApp Group Message Generator Modal */}
-      {groupShareModalOpen && (
-        <div className="fixed inset-0 z-[160] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-slate-800 dark:text-slate-100">
-            <div className="flex items-center justify-between px-5 py-4 bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                  <Send className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    WhatsApp ગ્રૂપ શેરિંગ મેસેજ
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    વર્ગ અથવા શાળાના WhatsApp ગ્રૂપમાં સીધો શેર કરો
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setGroupShareModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4 overflow-y-auto flex-1">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  તૈયાર થયેલ મેસેજ (Message Text):
-                </label>
-                <textarea
-                  rows={9}
-                  value={groupMessageText}
-                  onChange={(e) => setGroupMessageText(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/10 text-xs font-sans leading-relaxed focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                />
-              </div>
-
-              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                <span>
-                  આ મેસેજ તમારા વર્ગના વોટ્સએપ ગ્રૂપમાં શેર કરવા માટે એકદમ ટૂંકો, સ્પષ્ટ અને યોગ્ય ફોર્મેટમાં તૈયાર છે.
-                </span>
-              </div>
-            </div>
-
-            <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-800/70 border-t border-slate-200 dark:border-white/10 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(groupMessageText);
-                  setGroupMessageCopied(true);
-                  setTimeout(() => setGroupMessageCopied(false), 2500);
-                }}
-                className="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                {groupMessageCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{groupMessageCopied ? 'કૉપી થઈ ગયો!' : 'મેસેજ કૉપી કરો'}</span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                <a
-                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(groupMessageText)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>WhatsApp ગ્રૂપમાં શેર કરો</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

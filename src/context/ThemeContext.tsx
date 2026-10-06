@@ -1,22 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Capacitor, registerPlugin } from '@capacitor/core';
-
-export enum Style {
-  Dark = 'DARK',
-  Light = 'LIGHT',
-  Default = 'DEFAULT',
-}
-
-interface StatusBarPlugin {
-  setStyle(options: { style: Style }): Promise<void>;
-  setBackgroundColor(options: { color: string }): Promise<void>;
-  setOverlaysWebView(options: { overlay: boolean }): Promise<void>;
-  getInfo(): Promise<{ visible: boolean; style: string; color: string; overlays: boolean; height?: number }>;
-  show(): Promise<void>;
-  hide(): Promise<void>;
-}
-
-const StatusBar = registerPlugin<StatusBarPlugin>('StatusBar');
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 export type Theme = 'dark' | 'light';
 

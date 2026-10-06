@@ -28,7 +28,6 @@ import {
   ShieldCheck,
   Lock,
   ExternalLink,
-  Bell,
 } from 'lucide-react';
 import {
   buildWhatsAppLink,
@@ -39,7 +38,6 @@ import {
   exportParentContactsVcf,
 } from '../utils/parentMessageUtils';
 import { saveParentMessageBroadcast } from '../services/firestoreService';
-import { createBulkStudentNotifications } from '../services/notificationService';
 
 interface ParentMessageDispatcherModalProps {
   isOpen: boolean;
@@ -64,16 +62,11 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
   school,
   onRefresh,
 }) => {
-  // Four distinct dispatch options:
-  // 1. 'in_app_alert': Direct In-App Notification onto Student's installed app with child name & exam info!
-  // 2. 'auto_personal': Individual personal WhatsApp to each parent automatically (100% Private, child's marks only)
-  // 3. 'group_notice': 1-Click WhatsApp Group Announcement with Secure Student Portal Link
-  // 4. 'individual': Manual student-by-student preview & send
-  const [dispatcherTab, setDispatcherTab] = useState<'in_app_alert' | 'auto_personal' | 'group_notice' | 'individual'>('in_app_alert');
-
-  // Direct In-App Notification Sender State
-  const [isSendingInAppAlerts, setIsSendingInAppAlerts] = useState(false);
-  const [inAppSuccessCount, setInAppSuccessCount] = useState<number | null>(null);
+  // Three distinct dispatch options:
+  // 1. 'auto_personal': Individual personal WhatsApp to each parent automatically (100% Private, child's marks only)
+  // 2. 'group_notice': 1-Click WhatsApp Group Announcement with Secure Student Portal Link
+  // 3. 'individual': Manual student-by-student preview & send
+  const [dispatcherTab, setDispatcherTab] = useState<'auto_personal' | 'group_notice' | 'individual'>('auto_personal');
 
   const [recipients, setRecipients] = useState<ParentMessageRecipient[]>(initialRecipients);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -351,52 +344,6 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
     }
   };
 
-  // Direct In-App Notification Sender to Student & Parent Installed App
-  const handleSendAllInAppAlerts = async () => {
-    if (!school?.id || recipients.length === 0) return;
-    setIsSendingInAppAlerts(true);
-    setSaveError(null);
-    try {
-      const records = recipients.map((r) => {
-        const notifTitle = broadcastType === 'exam_result'
-          ? `📊 પરિણામ: ${r.studentName} (${examTitle || 'કસોટી'})`
-          : `📢 સૂચના: ${r.studentName} (${school.schoolName || 'શાળા'})`;
-
-        return {
-          studentId: r.studentId,
-          studentName: r.studentName,
-          standard: r.standard ? String(r.standard).replace(/^class\s*/i, '') : undefined,
-          title: notifTitle,
-          body: r.messageText,
-          category: (broadcastType === 'exam_result' ? 'exam_alert' : 'general_notice') as any,
-          metadata: {
-            rollNumber: r.rollNumber,
-            grNumber: r.grNumber,
-            examScore: r.examScore,
-            schoolId: school.id,
-          },
-        };
-      });
-
-      const count = await createBulkStudentNotifications(school.id, records);
-      setInAppSuccessCount(count);
-
-      // Mark all recipients as sent
-      handleMarkAllAsSent();
-      // Auto save to history
-      await handleSaveToHistory();
-
-      setTimeout(() => {
-        setInAppSuccessCount(null);
-      }, 5000);
-    } catch (err: any) {
-      console.error('Error dispatching in-app alerts:', err);
-      setSaveError('ઇન-એપ સૂચના મોકલવામાં સમસ્યા આવી. કૃપા કરીને ફરી પ્રયાસ કરો.');
-    } finally {
-      setIsSendingInAppAlerts(false);
-    }
-  };
-
   // Auto-Broadcast Sequence Runner Engine
   // Opens WhatsApp for each parent sequentially with ONLY their child's marks!
   useEffect(() => {
@@ -488,26 +435,9 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
           </div>
         </div>
 
-        {/* FOUR WORKFLOW TABS */}
+        {/* THREE WORKFLOW TABS */}
         <div className="shrink-0 px-4 sm:px-6 py-2 bg-slate-100/80 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1 p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs w-full lg:w-auto overflow-x-auto shadow-xs">
-            {/* TAB 0: Direct In-App Notification */}
-            <button
-              type="button"
-              onClick={() => {
-                setDispatcherTab('in_app_alert');
-                setAutoRunning(false);
-              }}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap ${
-                dispatcherTab === 'in_app_alert'
-                  ? 'bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-md shadow-amber-950/40'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Bell className="w-3.5 h-3.5 text-amber-300" />
-              <span>📲 એપ નોટિફિકેશન (App Push)</span>
-            </button>
-
             {/* TAB 1: Auto Personal Send */}
             <button
               type="button"
@@ -522,7 +452,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
               }`}
             >
               <RotateCcw className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-300" />
-              <span>⚡ ઓટો WhatsApp (ખાનગી મેસેજ)</span>
+              <span>⚡ ઓટો-પર્સનલ સેન્ડર (ખાનગી મેસેજ)</span>
             </button>
 
             {/* TAB 2: Group Announcement Notice */}
@@ -612,119 +542,6 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
             >
               <X className="w-3.5 h-3.5" />
             </button>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 0: 📲 DIRECT IN-APP NOTIFICATION (Pushes straight into installed Student app) */}
-        {/* ========================================================================= */}
-        {dispatcherTab === 'in_app_alert' && (
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50 dark:bg-slate-900/60">
-            {/* IN-APP DIRECT PUSH HIGHLIGHT BANNER */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 shadow-sm">
-                  <Bell className="w-5 h-5 animate-bounce" />
-                </div>
-                <div className="text-xs space-y-1">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>વિદ્યાર્થીના મોબાઇલ પર સીધી એપ નોટિફિકેશન મોકલો</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500 text-white font-bold">
-                      Direct In-App Push
-                    </span>
-                  </h4>
-                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                    જો વિદ્યાર્થી કે વાલીના ફોનમાં વિદ્યાલયમ એપ ઇન્સ્ટોલ હશે, તો તેમના ફોન પર તેમના બાળકના નામ અને વિગત સાથેનું નોટિફિકેશન પોપ-અપ થશે.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                disabled={isSendingInAppAlerts || recipients.length === 0}
-                onClick={handleSendAllInAppAlerts}
-                className="py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-950/40 active:scale-95 transition-all cursor-pointer disabled:opacity-50 shrink-0"
-              >
-                <Bell className="w-4 h-4 fill-current" />
-                <span>
-                  {isSendingInAppAlerts
-                    ? 'નોટિફિકેશન મોકલાઈ રહી છે...'
-                    : `બધા (${recipients.length}) વિદ્યાર્થીઓની એપ પર મોકલો 🚀`}
-                </span>
-              </button>
-            </div>
-
-            {/* SUCCESS BANNER */}
-            {inAppSuccessCount !== null && (
-              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/40 flex items-center justify-between text-xs text-emerald-900 dark:text-emerald-300">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span className="font-bold">
-                    🎉 કુલ {inAppSuccessCount} વિદ્યાર્થીઓ અને વાલીઓના મોબાઇલ પર નોટિફિકેશન સફળતાપૂર્વક ડિલિવર થઈ ગઈ!
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setInAppSuccessCount(null)}
-                  className="p-1 text-emerald-700 dark:text-emerald-400 hover:opacity-75 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* PREVIEW OF PERSONALIZED NOTIFICATIONS */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 shadow-md dark:shadow-xl">
-              <div className="flex items-center justify-between">
-                <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  <span>દરેક વિદ્યાર્થીને કેવું નોટિફિકેશન દેખાશે? (Sample Live Preview)</span>
-                </h5>
-                <span className="text-[11px] font-mono text-slate-500">
-                  કુલ {recipients.length} વિદ્યાર્થીઓ
-                </span>
-              </div>
-
-              {/* Sample Device Preview Card */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                {recipients.slice(0, 4).map((rec, i) => (
-                  <div
-                    key={rec.studentId || i}
-                    className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 space-y-2 text-xs"
-                  >
-                    <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <strong className="text-slate-900 dark:text-white font-bold truncate">
-                          {rec.studentName}
-                        </strong>
-                      </div>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
-                        ધોરણ {rec.standard || '૧૦'}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="font-bold text-slate-800 dark:text-slate-200 block text-[11px]">
-                        🔔 {broadcastType === 'exam_result' ? `પરિણામ જાહેર: ${rec.studentName}` : `શાળા સૂચના: ${rec.studentName}`}
-                      </span>
-                      <p className="text-slate-600 dark:text-slate-400 text-[11px] line-clamp-3 whitespace-pre-wrap leading-relaxed">
-                        {rec.messageText}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                      <span>રોલ નં: {rec.rollNumber || '-'}</span>
-                      {rec.examScore && (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                          ગુણ: {rec.examScore.obtainedMarks}/{rec.examScore.totalMarks}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
