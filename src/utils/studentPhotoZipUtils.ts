@@ -184,7 +184,7 @@ export async function resizePhotoToPassport(
           const uint8 = new Uint8Array(arrayBuffer);
           const targetSweetSpot = 10 * 1024; // 10 KB, safely inside [5 KB, 20 KB]
           const padded = padJpegBuffer(uint8, targetSweetSpot);
-          currentBlob = new Blob([padded], { type: 'image/jpeg' });
+          currentBlob = new Blob([padded as unknown as BlobPart], { type: 'image/jpeg' });
         }
 
         // Final verification: ensure size is strictly within [5 KB, 20 KB]

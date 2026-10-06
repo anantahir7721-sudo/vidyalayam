@@ -15,6 +15,7 @@ import {
 import { db } from '../firebase/config';
 import { AppNotification, AppNotificationCategory } from '../types';
 import { sendNotification } from '../utils/notificationUtils';
+import { apiUrl } from '../utils/apiConfig';
 
 /**
  * Dispatch an individual in-app and push notification.
@@ -279,7 +280,7 @@ export function runScheduledNotificationCheck(): void {
       if (!morningSent) {
         localStorage.setItem(`vidyalayam_sched_06am_${todayKey}`, 'true');
         // Fetch top headline if available
-        fetch('/api/daily-news')
+        fetch(apiUrl('/api/daily-news'))
           .then((res) => (res.ok ? res.json() : null))
           .then((data) => {
             const topItem = data?.bulletin?.items?.[0];

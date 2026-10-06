@@ -27,6 +27,7 @@ import { MASTER_NEWS_TOPICS } from '../data/newsTopicsData';
 import { SUVICHAR_COLLECTION, RawSuvichar } from '../data/suvicharData';
 import { MASTER_INTERESTING_FACTS_POOL } from '../data/interestingFactsData';
 import { MASTER_ABHIVYAKTI_POOL } from '../data/abhivyaktiData';
+import { apiUrl } from '../utils/apiConfig';
 
 // Gujarati numbers conversion helper
 export function toGujaratiDigits(num: number | string): string {
@@ -281,7 +282,7 @@ export async function getDailyNewsBulletin(now = new Date(), forceRefresh = fals
   if (typeof window !== 'undefined' && window.fetch) {
     try {
       const url = `/api/daily-news?dateKey=${dateKey}${forceRefresh ? '&forceRefresh=true' : ''}`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(7000) });
+      const res = await fetch(apiUrl(url), { signal: AbortSignal.timeout(7000) });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.bulletin && Array.isArray(data.bulletin.items) && data.bulletin.items.length >= 8) {

@@ -3,6 +3,8 @@
  * Automatically verifies whether a new commit or release has been pushed to GitHub.
  */
 
+import { apiUrl } from '../utils/apiConfig';
+
 export interface GitHubUpdateInfo {
   updateAvailable: boolean;
   currentVersion: string;
@@ -45,7 +47,7 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
     let commitData: any = null;
 
     try {
-      const serverRes = await fetch(`/api/app-update-check?repo=${encodeURIComponent(repo)}`, {
+      const serverRes = await fetch(apiUrl(`/api/app-update-check?repo=${encodeURIComponent(repo)}`), {
         signal: AbortSignal.timeout(6000),
       });
       if (serverRes.ok) {

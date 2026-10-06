@@ -70,9 +70,9 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md p-2 sm:p-4 md:p-6 flex items-start sm:items-center justify-center animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md p-3 sm:p-4 md:p-6 flex items-center justify-center animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-5xl my-auto max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2.5rem)] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-[#090c10] border border-[#E2E8F0] dark:border-white/15 shadow-2xl text-slate-800 dark:text-white overflow-hidden"
+        className="relative w-full max-w-5xl my-auto max-h-[min(94vh,calc(100dvh-1.5rem))] sm:max-h-[min(92vh,calc(100dvh-2.5rem))] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-[#090c10] border border-[#E2E8F0] dark:border-white/15 shadow-2xl text-slate-800 dark:text-white overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}

@@ -181,7 +181,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="app-header bg-white/85 dark:bg-[#121921]/95 border-b border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-[#e4ded6] sticky top-0 z-40 shadow-xs dark:shadow-xl backdrop-blur-xl transition-colors duration-200">
+    <>
+      <header className="app-header bg-white/85 dark:bg-[#121921]/95 border-b border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-[#e4ded6] sticky top-0 z-40 shadow-xs dark:shadow-xl backdrop-blur-xl transition-colors duration-200">
       {/* Top institutional strip: Visible on tablet & desktop (hidden on mobile to prevent status bar collision) */}
       <div className="top-strip hidden md:flex bg-[#F8FAFC]/90 dark:bg-[#090c10]/95 px-3 sm:px-4 py-1.5 border-b border-[#E2E8F0] dark:border-white/10 text-xs justify-between items-center text-slate-600 dark:text-[#a99f91] transition-colors duration-200">
         <div className="flex items-center gap-1.5 sm:gap-2">
@@ -365,18 +366,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </nav>
 
-              {/* Notification & Schedule Settings (Desktop) */}
-              <button
-                id="btn-nav-notification-settings"
-                type="button"
-                onClick={() => setNotificationSettingsOpen(true)}
-                className="flex items-center gap-1.5 bg-amber-500/10 dark:bg-amber-500/20 hover:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-400/40 dark:border-amber-500/30 px-3 py-2 rounded-2xl text-xs font-semibold transition-all shrink-0 touch-manipulation min-h-[38px] cursor-pointer shadow-xs"
-                title="સૂચના સેટિંગ્સ & સમયપત્રક (૬ AM, ૨ PM, ૬ PM & અપડેટ્સ)"
-              >
-                <Bell className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                <span className="hidden xl:inline">સૂચનાઓ</span>
-              </button>
-
               {school && (
                 <button
                   id="btn-nav-change-password"
@@ -431,16 +420,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Theme Toggle directly accessible in the mobile header! */}
               <ThemeToggle compact />
-
-              {/* Mobile Notification Button */}
-              <button
-                type="button"
-                onClick={() => setNotificationSettingsOpen(true)}
-                className="p-1.5 sm:p-2 rounded-xl bg-white/90 dark:bg-white/5 hover:bg-amber-50 dark:hover:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-[#E2E8F0] dark:border-white/15 transition-all cursor-pointer touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center shadow-xs shrink-0"
-                title="સૂચના સેટિંગ્સ"
-              >
-                <Bell className="w-4 h-4" />
-              </button>
 
               {/* Mobile Drawer Menu Button */}
               <button
@@ -768,22 +747,23 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>,
         document.body
       )}
-
-      {/* School Change Password Modal */}
-      {school && changePasswordOpen && (
-        <ChangePasswordModal
-          isOpen={changePasswordOpen}
-          onClose={() => setChangePasswordOpen(false)}
-          school={school}
-        />
-      )}
-
-      {/* School Notification Settings Modal */}
-      <NotificationSettingsModal
-        isOpen={notificationSettingsOpen}
-        onClose={() => setNotificationSettingsOpen(false)}
-        schoolName={school?.schoolName}
-      />
     </header>
-  );
+
+    {/* School Change Password Modal */}
+    {school && changePasswordOpen && (
+      <ChangePasswordModal
+        isOpen={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+        school={school}
+      />
+    )}
+
+    {/* School Notification Settings Modal */}
+    <NotificationSettingsModal
+      isOpen={notificationSettingsOpen}
+      onClose={() => setNotificationSettingsOpen(false)}
+      schoolName={school?.schoolName}
+    />
+  </>
+);
 };

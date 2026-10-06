@@ -126,9 +126,23 @@ async function startServer() {
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
+  // Enable CORS for web, PWA and native Android Capacitor APK
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
   // =========================================================================
-  // API: Health & Server Time
+  // API: Health, Version & Server Time
   // =========================================================================
+  app.get('/api/version', (_req: Request, res: Response) => {
+    res.json({ version: '1.0.0', time: Date.now() });
+  });
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', time: Date.now() });
   });
