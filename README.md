@@ -161,8 +161,8 @@ To run the application locally on your computer:
 ### 2. Clone & Install
 ```bash
 # Clone the repository
-git clone https://github.com/anantahir7721/Vidyalayam.git
-cd Vidyalayam
+git clone https://github.com/anantahir7721-sudo/vidyalayam.git
+cd vidyalayam
 
 # Install dependencies
 npm install --legacy-peer-deps
