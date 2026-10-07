@@ -9,6 +9,16 @@
     "StatusBar": {
       "overlaysWebView": true,
       "style": "DEFAULT"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#A8502E",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": true
     }
   }
 }

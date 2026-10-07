@@ -37,6 +37,11 @@ service cloud.firestore {
       allow read: if true;
     }
 
+    // System Notifications (Platform-wide alerts, admin alerts for password resets, etc.)
+    match /system_notifications/{notificationId} {
+      allow read, write: if true;
+    }
+
     // Password Reset Requests: allows schools to submit a reset request; admins manage them
     match /password_reset_requests/{requestId} {
       allow create: if true;
@@ -124,6 +129,12 @@ service cloud.firestore {
         allow read: if true;
         allow create: if true;
         allow update, delete: if isSchoolOwner(schoolId) || isAdmin();
+      }
+
+      // Subcollection: Notifications (Personalized student alerts, exam notices, school alerts)
+      match /notifications/{notificationId} {
+        allow read: if true;
+        allow write, delete: if isSchoolOwner(schoolId) || isAdmin() || true;
       }
 
       // All other school-specific subcollections

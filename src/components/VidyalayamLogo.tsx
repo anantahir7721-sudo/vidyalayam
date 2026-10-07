@@ -12,9 +12,8 @@ interface VidyalayamLogoProps {
 
 /**
  * Official Vidyalayam Brand Logo
- * Features the signature papercraft Schoolhouse on Open Book emblem
- * with fluttering pennant flag, radiant golden sun rays, and arched entryway,
- * matching the official appstore.png artwork.
+ * Features the custom circular emblem:
+ * Guru, students disciples, temple, mandala ring, and open book
  */
 export const VidyalayamLogo: React.FC<VidyalayamLogoProps> = ({
   size = 40,
@@ -24,6 +23,7 @@ export const VidyalayamLogo: React.FC<VidyalayamLogoProps> = ({
   subtitle,
   creatorTag = true,
 }) => {
+  const [imageError, setImageError] = useState(false);
   const pixelSize = typeof size === 'number' ? `${size}px` : size;
 
   return (
@@ -37,19 +37,29 @@ export const VidyalayamLogo: React.FC<VidyalayamLogoProps> = ({
       >
         {glow && (
           <div
-            className="absolute -inset-1 rounded-2xl bg-[#9d512d]/20 blur-md pointer-events-none animate-pulse"
+            className="absolute -inset-1 rounded-full bg-[#9d512d]/30 blur-md pointer-events-none animate-pulse"
             aria-hidden="true"
           />
         )}
 
-        {/* Clean High-Resolution Vector SVG - Warm Parchment & Terracotta, Never Dark */}
-        <svg
-          viewBox="0 0 512 512"
-          width="100%"
-          height="100%"
-          className="relative z-10 drop-shadow-sm rounded-[22%] border border-[#e2d8cb]/80 dark:border-white/10"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+        {!imageError ? (
+          <img
+            src="/logo.png"
+            alt="વિદ્યાલયમ • Vidyalayam"
+            className="w-full h-full object-contain rounded-full drop-shadow-sm relative z-10 transition-transform duration-200"
+            onError={() => setImageError(true)}
+            loading="eager"
+            decoding="async"
+          />
+        ) : (
+          /* Clean High-Resolution Vector SVG Fallback */
+          <svg
+            viewBox="0 0 512 512"
+            width="100%"
+            height="100%"
+            className="relative z-10 drop-shadow-sm rounded-[22%] border border-[#e2d8cb]/80 dark:border-white/10"
+            xmlns="http://www.w3.org/2000/svg"
+          >
           <defs>
             <radialGradient id="vl-bg-grad" cx="50%" cy="46%" r="65%">
               <stop offset="0%" stopColor="#fbf6ee" />
@@ -64,7 +74,7 @@ export const VidyalayamLogo: React.FC<VidyalayamLogoProps> = ({
             </filter>
           </defs>
 
-          {/* Base Warm Parchment Canvas (Light and Radiant) */}
+          {/* Base Warm Parchment Canvas */}
           <rect width="512" height="512" rx="104" fill="url(#vl-bg-grad)" />
 
           {/* Emblem (Centered) */}
@@ -124,6 +134,7 @@ export const VidyalayamLogo: React.FC<VidyalayamLogoProps> = ({
             <path d="M 240 254 L 240 210 C 240 200 248 194 256 194 C 264 194 272 200 272 210 L 272 254 Z" fill="#4d210d" />
           </g>
         </svg>
+        )}
       </div>
 
       {/* Typography Brand Block */}
@@ -143,7 +154,7 @@ export const VidyalayamLogo: React.FC<VidyalayamLogoProps> = ({
             </p>
           ) : creatorTag ? (
             <p className="text-[10px] sm:text-[11px] text-[#9d512d] dark:text-[#f59c73] font-bold tracking-wide truncate mt-0.5">
-              by NRChad
+              by NR Chad
             </p>
           ) : null}
         </div>

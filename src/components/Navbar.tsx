@@ -181,7 +181,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="app-header bg-white/85 dark:bg-[#121921]/95 border-b border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-[#e4ded6] sticky top-0 z-40 shadow-xs dark:shadow-xl backdrop-blur-xl transition-colors duration-200">
+    <>
+      <header className="app-header bg-white/85 dark:bg-[#121921]/95 border-b border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-[#e4ded6] sticky top-0 z-40 shadow-xs dark:shadow-xl backdrop-blur-xl transition-colors duration-200">
       {/* Top institutional strip: Visible on tablet & desktop (hidden on mobile to prevent status bar collision) */}
       <div className="top-strip hidden md:flex bg-[#F8FAFC]/90 dark:bg-[#090c10]/95 px-3 sm:px-4 py-1.5 border-b border-[#E2E8F0] dark:border-white/10 text-xs justify-between items-center text-slate-600 dark:text-[#a99f91] transition-colors duration-200">
         <div className="flex items-center gap-1.5 sm:gap-2">
@@ -746,22 +747,23 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>,
         document.body
       )}
-
-      {/* School Change Password Modal */}
-      {school && changePasswordOpen && (
-        <ChangePasswordModal
-          isOpen={changePasswordOpen}
-          onClose={() => setChangePasswordOpen(false)}
-          school={school}
-        />
-      )}
-
-      {/* School Notification Settings Modal */}
-      <NotificationSettingsModal
-        isOpen={notificationSettingsOpen}
-        onClose={() => setNotificationSettingsOpen(false)}
-        schoolName={school?.schoolName}
-      />
     </header>
-  );
+
+    {/* School Change Password Modal */}
+    {school && changePasswordOpen && (
+      <ChangePasswordModal
+        isOpen={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+        school={school}
+      />
+    )}
+
+    {/* School Notification Settings Modal */}
+    <NotificationSettingsModal
+      isOpen={notificationSettingsOpen}
+      onClose={() => setNotificationSettingsOpen(false)}
+      schoolName={school?.schoolName}
+    />
+  </>
+);
 };

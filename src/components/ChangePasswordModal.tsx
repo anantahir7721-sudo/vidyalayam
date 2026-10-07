@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { School } from '../types';
 import { changeSchoolPassword } from '../services/authService';
 import { Lock, Eye, EyeOff, ShieldCheck, CheckCircle2, AlertCircle, X, KeyRound } from 'lucide-react';
@@ -77,9 +78,36 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/70 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 text-left relative animate-fadeIn">
+  // Handle Escape key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] bg-black/70 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl max-w-md w-full my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2.5rem)] p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 text-left relative flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -118,7 +146,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 flex-1 min-h-0 overflow-y-auto pr-1">
           {/* Current Password */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -230,6 +258,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

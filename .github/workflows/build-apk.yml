@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout Source Code
@@ -40,6 +42,13 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
 
+    - name: Ensure Debug Keystore Exists
+      run: |
+        mkdir -p android/app
+        if [ ! -f android/app/debug.keystore ]; then
+          keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+        fi
+
     - name: Enable AndroidX Flags Automatically
       run: |
         cd android
@@ -59,3 +68,24 @@ jobs:
       with:
         name: Vidyalayam-APK
         path: android/app/build/outputs/apk/debug/*.apk
+
+    - name: Create or Update GitHub Release (Latest)
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: latest
+        name: "Vidyalayam v1.0.${{ github.run_number }} (Latest)"
+        body: |
+          ### 🚀 Vidyalayam Latest Android Release
+          - **Build**: #${{ github.run_number }}
+          - **Commit**: `${{ github.sha }}`
+          - Automatically compiled and released via GitHub Actions.
+          - Download the `.apk` file below to install directly on Android.
+        draft: false
+        prerelease: false
+        make_latest: true
+        files: |
+          android/app/build/outputs/apk/debug/*.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

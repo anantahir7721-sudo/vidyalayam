@@ -11,6 +11,7 @@ import {
   PhotoOptimizationResult,
 } from '../services/adminService';
 import { logoutSchool } from '../services/authService';
+import { createAppNotification } from '../services/notificationService';
 import {
   Shield,
   Building2,
@@ -317,6 +318,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           : newStatus === 'rejected'
           ? 'Rejected (અસ્વીકાર)'
           : 'Activated (સક્રિય)';
+
+      if (newStatus === 'approved') {
+        createAppNotification({
+          schoolId,
+          schoolName,
+          targetType: 'school',
+          targetId: schoolId,
+          title: '🎉 શાળા મંજૂર થઈ ગઈ!',
+          body: `અભિનંદન! ${schoolName} ની નોંધણી એડમિન દ્વારા મંજૂર કરવામાં આવી છે. આપનું એકાઉન્ટ સક્રિય થઈ ગયું છે.`,
+          category: 'school_approval',
+        }).catch(() => {});
+      }
+
       setFeedback({
         type: 'success',
         message: `School "${schoolName}" has been successfully updated to ${actionLabel}.`,

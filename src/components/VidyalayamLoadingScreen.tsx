@@ -86,11 +86,16 @@ export const VidyalayamLoadingScreen: React.FC = () => {
 
         {/* Minimal loading indicator */}
         <div
-          className={`relative w-36 h-1.5 rounded-full overflow-hidden mb-8 shadow-inner ${
+          className={`relative w-44 h-1.5 rounded-full overflow-hidden mb-8 shadow-inner ${
             isDark ? 'bg-white/10' : 'bg-slate-200'
           }`}
         >
-          <div className="absolute top-0 bottom-0 left-0 w-1/3 bg-gradient-to-r from-[#C45A2D] via-[#e8733a] to-[#fbd38d] rounded-full animate-[progress_1.6s_ease-in-out_infinite]" />
+          <div
+            className="absolute top-0 bottom-0 left-0 w-1/3 bg-gradient-to-r from-[#C45A2D] via-[#e8733a] to-[#fbd38d] rounded-full"
+            style={{
+              animation: 'progress 1.5s ease-in-out infinite',
+            }}
+          />
         </div>
 
         {/* Sacred Sanskrit Shloka Card */}

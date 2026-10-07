@@ -12,6 +12,8 @@
  *    - Chrome 15s freeze prevention keep-alive.
  */
 
+import { apiUrl } from '../utils/apiConfig';
+
 export interface VoiceOptions {
   rate?: number;
   pitch?: number;
@@ -280,7 +282,7 @@ class VoiceService {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout for high-capacity synthesis
 
-        const response = await fetch('/api/tts', {
+        const response = await fetch(apiUrl('/api/tts'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

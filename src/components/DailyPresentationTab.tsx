@@ -22,15 +22,17 @@ import {
 import {
   GSEB_STANDARDS,
   GSEB_SUBJECTS,
-  PresentationScriptData,
   generateCurriculumPresentationScript,
 } from '../data/presentationCurriculumData';
+
+export type PresentationScriptData = ReturnType<typeof generateCurriculumPresentationScript>;
 
 interface DailyPresentationTabProps {
   schoolName?: string;
   diseCode?: string;
   district?: string;
   isSchoolView?: boolean;
+  onToggleEnabled?: () => void;
 }
 
 export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
