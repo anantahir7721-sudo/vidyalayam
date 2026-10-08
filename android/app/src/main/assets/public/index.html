@@ -4,6 +4,69 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Vidyalayam</title>
+    <script>
+      // Suppress Vite HMR WebSocket connection failure in container iframe where HMR is disabled
+      (function() {
+        const OrigWS = window.WebSocket;
+        if (OrigWS) {
+          window.WebSocket = function(url, protocols) {
+            if (protocols === 'vite-hmr' || (typeof url === 'string' && (url.includes('vite-hmr') || url.includes('token=')))) {
+              const listeners = {};
+              return {
+                readyState: 1,
+                CONNECTING: 0,
+                OPEN: 1,
+                CLOSING: 2,
+                CLOSED: 3,
+                send: function() {},
+                close: function() {},
+                addEventListener: function(event, fn) {
+                  if (!listeners[event]) listeners[event] = [];
+                  listeners[event].push(fn);
+                  if (event === 'open') {
+                    setTimeout(fn, 0);
+                  }
+                },
+                removeEventListener: function(event, fn) {
+                  if (listeners[event]) {
+                    listeners[event] = listeners[event].filter(function(cb) { return cb !== fn; });
+                  }
+                },
+                dispatchEvent: function() { return true; }
+              };
+            }
+            return new OrigWS(url, protocols);
+          };
+          window.WebSocket.prototype = OrigWS.prototype;
+          window.WebSocket.CONNECTING = 0;
+          window.WebSocket.OPEN = 1;
+          window.WebSocket.CLOSING = 2;
+          window.WebSocket.CLOSED = 3;
+        }
+        window.addEventListener('unhandledrejection', function(event) {
+          if (event.reason && (
+            (event.reason.stack && event.reason.stack.includes('@vite/client')) ||
+            (event.reason.message && (event.reason.message.includes('WebSocket') || event.reason.message.includes('vite'))) ||
+            (typeof event.reason === 'string' && event.reason.includes('WebSocket'))
+          )) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        });
+        window.addEventListener('error', function(event) {
+          if (event.filename && event.filename.includes('@vite/client')) {
+            event.preventDefault();
+            event.stopPropagation();
+            return true;
+          }
+          if (event.message && (event.message.includes('WebSocket') || event.message.includes('createWebSocketModuleRunnerTransport'))) {
+            event.preventDefault();
+            event.stopPropagation();
+            return true;
+          }
+        }, true);
+      })();
+    </script>
     <meta name="description" content="Vidyalayam — General School Management System & એકમ કસોટી ગુણપત્રક • by NRChad" />
     <meta property="og:title" content="Vidyalayam" />
     <meta property="og:description" content="Vidyalayam — General School Management System & એકમ કસોટી ગુણપત્રક • by NRChad" />
@@ -13,10 +76,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/index-W8-eBVYF.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DxGtwrbk.css">
+    <link rel="icon" type="image/png" href="/logo.png" />
   </head>
   <body class="bg-slate-50 dark:bg-[#080b0f] text-slate-900 dark:text-[#e4ded6] font-sans antialiased min-h-screen">
     <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

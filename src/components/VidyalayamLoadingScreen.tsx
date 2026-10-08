@@ -97,6 +97,8 @@ export const VidyalayamLoadingScreen: React.FC = () => {
             }`}
             style={{
               animation: 'spin-reverse-slow 48s linear infinite',
+              transformOrigin: 'center center',
+              willChange: 'transform',
             }}
           />
 
@@ -112,18 +114,23 @@ export const VidyalayamLoadingScreen: React.FC = () => {
 
           {/* 3. The Slowly Spinning Sacred Lotus Mandala Ring */}
           <div
-            className="absolute inset-0 w-full h-full pointer-events-none z-10 transition-transform"
+            className="absolute inset-0 w-full h-full pointer-events-none z-10 transition-transform flex items-center justify-center"
             style={{
-              animation: 'spin-slow 34s linear infinite',
+              animation: 'spin-slow 32s linear infinite',
+              transformOrigin: 'center center',
+              willChange: 'transform',
               filter: isDark
-                ? 'drop-shadow(0 0 14px rgba(244, 178, 102, 0.45))'
-                : 'drop-shadow(0 0 10px rgba(255, 230, 216, 0.35))',
+                ? 'drop-shadow(0 0 16px rgba(244, 178, 102, 0.5))'
+                : 'drop-shadow(0 0 12px rgba(255, 230, 216, 0.45))',
             }}
           >
             <img
               src={isDark ? '/splash/mandala-dark.svg' : '/splash/mandala-light.svg'}
               alt="Sacred Mandala Ring"
               className="w-full h-full object-contain select-none"
+              style={{
+                transformOrigin: 'center center',
+              }}
               draggable={false}
             />
           </div>
