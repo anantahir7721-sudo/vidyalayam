@@ -1,17 +1,41 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
-interface StatusBarPlugin {
-  getInfo(): Promise<{ visible: boolean; style: string; color: string; overlays: boolean; height?: number }>;
+/**
+ * Dynamically synchronizes native Android and iOS status bar styling with current theme.
+ * Light theme -> dark icons (Style.Light / appearanceLightStatusBars = true)
+ * Dark theme -> white icons (Style.Dark / appearanceLightStatusBars = false)
+ */
+export async function syncNativeStatusBarTheme(isDark: boolean): Promise<void> {
+  // 1. Android Native Bridge
+  try {
+    const androidBridge = (window as any).AndroidBridge;
+    if (androidBridge && typeof androidBridge.setStatusBarTheme === 'function') {
+      androidBridge.setStatusBarTheme(isDark);
+    }
+  } catch {}
+
+  // 2. Capacitor StatusBar Plugin
+  try {
+    if (Capacitor.isPluginAvailable('StatusBar')) {
+      await StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
+      if (isDark) {
+        await StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+        await StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => {});
+      } else {
+        await StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+        await StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => {});
+      }
+    }
+  } catch {}
 }
-
-const StatusBar = registerPlugin<StatusBarPlugin>('StatusBar');
 
 /**
  * Initializes and dynamically maintains full-screen edge-to-edge status bar insets.
  * Guarantees that:
  * 1. The app remains 100% full screen (background bleeds seamlessly into status bar).
- * 2. Status bar text/clock/icons are always clearly visible.
- * 3. App headers, logos, navigation buttons, and text NEVER go behind status bar text.
+ * 2. Status bar text/clock/icons are always clearly visible with appropriate contrast.
+ * 3. App headers, logos, navigation buttons, and text NEVER go behind status bar icons.
  */
 export function initStatusBarHelper(): () => void {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -19,6 +43,12 @@ export function initStatusBarHelper(): () => void {
   }
 
   const root = document.documentElement;
+
+  // Set an immediate baseline inset if running inside Capacitor native APK
+  if (Capacitor.isNativePlatform()) {
+    root.style.setProperty('--system-status-bar-height', '28px');
+    root.style.setProperty('--safe-area-top', '28px');
+  }
 
   const updateStatusBarMetrics = async () => {
     let detectedHeight = 0;
@@ -38,14 +68,13 @@ export function initStatusBarHelper(): () => void {
     try {
       if (Capacitor.isPluginAvailable('StatusBar')) {
         const info = await StatusBar.getInfo();
-        if (info && typeof info.height === 'number' && info.height > 0) {
-          detectedHeight = Math.max(detectedHeight, info.height);
+        if (info && typeof (info as any).height === 'number' && (info as any).height > 0) {
+          detectedHeight = Math.max(detectedHeight, (info as any).height);
         }
       }
     } catch {}
 
     // 3. Fallback for standalone PWA / Mobile Web edge-to-edge
-    // If running in standalone display mode on a mobile device and env() is 0px
     try {
       const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
@@ -59,21 +88,19 @@ export function initStatusBarHelper(): () => void {
         navigator.maxTouchPoints > 0;
 
       if (isStandalone && isMobileDevice && detectedHeight === 0) {
-        // Test computed safe area inset top
-        const computedSafeTop = parseFloat(
-          getComputedStyle(root).getPropertyValue('--safe-area-top') || '0'
-        );
-        if (computedSafeTop <= 0) {
-          // Standard modern smartphone status bar height (approx 28px - 32px on Android, 44px on iPhone)
-          const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
-          detectedHeight = isIos ? 44 : 28;
-        }
+        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        detectedHeight = isIos ? 44 : 28;
       }
     } catch {}
 
     if (detectedHeight > 0) {
       root.style.setProperty('--system-status-bar-height', `${detectedHeight}px`);
+      root.style.setProperty('--safe-area-top', `${detectedHeight}px`);
     }
+
+    // Sync status bar theme with current active theme
+    const isDark = root.classList.contains('dark') || document.body.classList.contains('theme-dark');
+    syncNativeStatusBarTheme(isDark);
   };
 
   // Immediate execution

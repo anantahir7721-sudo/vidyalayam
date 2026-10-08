@@ -336,7 +336,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
   return (
     <div className="min-h-screen bg-[#F5F7FA] dark:bg-[#090c10] text-slate-800 dark:text-[#e4ded6] font-['Anek_Gujarati'] transition-colors">
       {/* Top Glassmorphic Navigation Bar */}
-      <header className="app-header sticky top-0 z-40 bg-white/90 dark:bg-[#121921]/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 shadow-sm dark:shadow-lg">
+      <header
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top, 0px), var(--system-status-bar-height, 0px))',
+        }}
+        className="app-header sticky top-0 z-40 bg-white/90 dark:bg-[#121921]/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 shadow-sm dark:shadow-lg"
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
           {/* Brand & School info with School Logo */}
           <div className="flex items-center gap-3">

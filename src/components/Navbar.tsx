@@ -678,7 +678,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Convenient Bottom Navigation Bar via Portal to document.body */}
       {school && !mobileDrawerOpen && typeof document !== 'undefined' && createPortal(
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/90 dark:bg-[#0e141c]/95 backdrop-blur-xl border-t border-[#E2E8F0] dark:border-white/10 py-1.5 px-3 flex items-center justify-around shadow-xl safe-area-pb transition-colors duration-200">
+        <div className="mobile-bottom-nav lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/90 dark:bg-[#0e141c]/95 backdrop-blur-xl border-t border-[#E2E8F0] dark:border-white/10 py-1.5 px-3 flex items-center justify-around shadow-xl transition-colors duration-200">
           <button
             onClick={() => handleSelectTab('overview')}
             className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition-all cursor-pointer ${

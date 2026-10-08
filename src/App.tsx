@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Navbar, ActiveTabType } from './components/Navbar';
 import { AuthScreen } from './components/AuthScreen';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -46,9 +47,134 @@ import {
 } from './services/onlineExamService';
 import { Loader2, WifiOff, CheckCircle2, ArrowUpCircle, X } from 'lucide-react';
 
+interface SafeAreaInsets {
+  top: number;
+  bottom: number;
+  right: number;
+  left: number;
+}
+
+interface SafeAreaPlugin {
+  getSafeAreaInsets(): Promise<{ insets: SafeAreaInsets }>;
+  getStatusBarHeight?(): Promise<{ height: number }>;
+  addListener?(
+    eventName: 'safeAreaChanged',
+    listenerFunc: (data: { insets: SafeAreaInsets }) => void
+  ): Promise<{ remove: () => void }>;
+}
+
+const SafeArea = registerPlugin<SafeAreaPlugin>('SafeArea');
+
 export default function App() {
   const [authStatus, setAuthStatus] = useState<AuthRoleStatus>('loading');
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
+
+  // Dynamically detect and apply real system status bar height using Capacitor SafeArea plugin
+  useEffect(() => {
+    let removeListener: (() => void) | null = null;
+    let isMounted = true;
+
+    const applyStatusBarHeight = (heightPx: number) => {
+      if (typeof document === 'undefined') return;
+      if (typeof heightPx === 'number' && !isNaN(heightPx) && heightPx > 0) {
+        document.documentElement.style.setProperty('--system-status-bar-height', `${heightPx}px`);
+      }
+    };
+
+    const detectStatusBarHeight = async () => {
+      let detectedTop = 0;
+
+      // 1. Query Capacitor SafeArea plugin
+      try {
+        if (Capacitor.isPluginAvailable('SafeArea')) {
+          const res = await SafeArea.getSafeAreaInsets();
+          if (res?.insets?.top && res.insets.top > 0) {
+            detectedTop = res.insets.top;
+          }
+        }
+      } catch (err) {}
+
+      // 2. Query Native Android Bridge interface (injected via BridgeActivity in WebView)
+      if (detectedTop === 0) {
+        try {
+          const androidBridge = (window as any).AndroidBridge;
+          if (androidBridge && typeof androidBridge.getStatusBarHeight === 'function') {
+            const bridgeH = Number(androidBridge.getStatusBarHeight());
+            if (!isNaN(bridgeH) && bridgeH > 0) {
+              detectedTop = bridgeH;
+            }
+          }
+        } catch (err) {}
+      }
+
+      // 3. Fallback for mobile devices and notches
+      if (detectedTop === 0) {
+        try {
+          const isNative = Capacitor.isNativePlatform() || (window as any).AndroidBridge !== undefined;
+          const isMobileDevice =
+            window.innerWidth < 768 ||
+            'ontouchstart' in window ||
+            navigator.maxTouchPoints > 0 ||
+            /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+          if (isNative || isMobileDevice) {
+            const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            detectedTop = isIos ? 44 : 36;
+          }
+        } catch (err) {}
+      }
+
+      if (isMounted && detectedTop > 0) {
+        applyStatusBarHeight(detectedTop);
+      }
+    };
+
+    // Immediate detection on mount
+    detectStatusBarHeight();
+
+    // Listen for real-time status bar / safe area changes (device orientation, window resizing, notch posture)
+    try {
+      if (Capacitor.isPluginAvailable('SafeArea') && typeof SafeArea.addListener === 'function') {
+        SafeArea.addListener('safeAreaChanged', (data: { insets: SafeAreaInsets }) => {
+          if (isMounted && data?.insets?.top !== undefined && data.insets.top > 0) {
+            applyStatusBarHeight(data.insets.top);
+          }
+        }).then((handle) => {
+          if (!isMounted) {
+            handle?.remove?.();
+          } else {
+            removeListener = () => handle?.remove?.();
+          }
+        }).catch(() => {});
+      }
+    } catch (err) {}
+
+    // Listen to resize and orientation changes
+    const handleViewportChange = () => {
+      detectStatusBarHeight();
+    };
+
+    window.addEventListener('resize', handleViewportChange, { passive: true });
+    window.addEventListener('orientationchange', handleViewportChange, { passive: true });
+
+    return () => {
+      isMounted = false;
+      if (removeListener) {
+        removeListener();
+      }
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('orientationchange', handleViewportChange);
+    };
+  }, []);
+
+  // Minimum splash display duration for smooth meditative animation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinSplashElapsed(true);
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, []);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [school, setSchool] = useState<School | null>(null);
   const [statusRefreshing, setStatusRefreshing] = useState(false);
@@ -174,6 +300,13 @@ export default function App() {
       const current = prev[prev.length - 1];
       if (current === newTab) return prev; // Do not push consecutive duplicate tabs
 
+      if (newTab === 'overview') {
+        try {
+          window.history.replaceState({ tab: 'overview' }, '');
+        } catch (e) {}
+        return ['overview'];
+      }
+
       if (replace) {
         const next = [...prev.slice(0, -1), newTab];
         try {
@@ -192,14 +325,32 @@ export default function App() {
 
   const navigateBack = useCallback(() => {
     setTabHistory((prev) => {
-      if (prev.length <= 1) return prev;
+      if (prev.length <= 1) {
+        return ['overview'];
+      }
       try {
         isInternalPopRef.current = true;
         window.history.back();
       } catch (e) {}
-      return prev.slice(0, -1);
+      const next = prev.slice(0, -1);
+      return next.length > 0 ? next : ['overview'];
     });
   }, []);
+
+  // Expose native back button handler for Android hardware back and edge swipe
+  useEffect(() => {
+    (window as any).__handleNativeBack = () => {
+      const current = tabHistory[tabHistory.length - 1] || 'overview';
+      if (current !== 'overview' || tabHistory.length > 1) {
+        navigateBack();
+        return true;
+      }
+      return false;
+    };
+    return () => {
+      delete (window as any).__handleNativeBack;
+    };
+  }, [tabHistory, navigateBack]);
 
   // Listen for Firebase Auth state changes and determine Admin vs School role
   useEffect(() => {
@@ -359,8 +510,8 @@ export default function App() {
     );
   }
 
-  // 1. Initial Auth Loading Screen & Role Verification
-  if (authStatus === 'loading') {
+  // 1. Initial Auth Loading Screen & Role Verification + Splash Animation
+  if (authStatus === 'loading' || !minSplashElapsed) {
     return <VidyalayamLoadingScreen />;
   }
 
@@ -485,7 +636,7 @@ export default function App() {
           onLogout={handleLogout}
           activeTab={activeTab}
           setActiveTab={(tab) => navigateToTab(tab)}
-          canGoBack={tabHistory.length > 1 || activeTab !== 'overview'}
+          canGoBack={activeTab !== 'overview'}
           onBack={navigateBack}
         />
 

@@ -7,6 +7,23 @@
   --font-gujarati: 'Anek Gujarati', 'Noto Sans Gujarati', 'Gujarati Sangam MN', 'Shruti', sans-serif;
 }
 
+:root {
+  --system-status-bar-height: env(safe-area-inset-top, 0px);
+  --system-nav-bar-height: env(safe-area-inset-bottom, 0px);
+  --safe-area-top: var(--system-status-bar-height, env(safe-area-inset-top, 0px));
+  --safe-area-bottom: var(--system-nav-bar-height, env(safe-area-inset-bottom, 0px));
+}
+
+/* Ensure app header seamlessly adapts to status bar with zero overlap */
+.app-header {
+  padding-top: var(--system-status-bar-height, env(safe-area-inset-top, 0px));
+}
+
+/* Ensure mobile bottom bar seamlessly adapts to navigation bar */
+.mobile-bottom-nav {
+  padding-bottom: max(6px, calc(var(--system-nav-bar-height, env(safe-area-inset-bottom, 0px)) + 4px));
+}
+
 @keyframes progress {
   0% {
     transform: translateX(-100%);

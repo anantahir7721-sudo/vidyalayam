@@ -1,22 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Capacitor, registerPlugin } from '@capacitor/core';
-
-export enum Style {
-  Dark = 'DARK',
-  Light = 'LIGHT',
-  Default = 'DEFAULT',
-}
-
-interface StatusBarPlugin {
-  setStyle(options: { style: Style }): Promise<void>;
-  setBackgroundColor(options: { color: string }): Promise<void>;
-  setOverlaysWebView(options: { overlay: boolean }): Promise<void>;
-  getInfo(): Promise<{ visible: boolean; style: string; color: string; overlays: boolean; height?: number }>;
-  show(): Promise<void>;
-  hide(): Promise<void>;
-}
-
-const StatusBar = registerPlugin<StatusBarPlugin>('StatusBar');
+import { syncNativeStatusBarTheme } from '../utils/statusBarHelper';
 
 export type Theme = 'dark' | 'light';
 
@@ -77,27 +60,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (metaTheme) metaTheme.setAttribute('content', '#080b0f');
     }
 
-    // Sync with Capacitor native Android / iOS status bar
+    // Sync with Capacitor native Android / iOS status bar & Native Bridge
     try {
-      if (Capacitor.isPluginAvailable('StatusBar')) {
-        // Keep status bar full screen (edge-to-edge transparent overlay)
-        StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
-        if (targetTheme === 'light') {
-          // Light theme: Dark status bar text/icons over transparent light header
-          StatusBar.setStyle({ style: Style.Light }).catch(() => {});
-          StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => {});
-        } else {
-          // Dark theme: Light status bar text/icons over transparent dark header
-          StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-          StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => {});
-        }
-        // Query status bar height to guarantee correct insets
-        StatusBar.getInfo().then((info) => {
-          if (info && typeof info.height === 'number' && info.height > 0) {
-            document.documentElement.style.setProperty('--system-status-bar-height', `${info.height}px`);
-          }
-        }).catch(() => {});
-      }
+      syncNativeStatusBarTheme(targetTheme === 'dark');
     } catch (e) {}
 
     try {

@@ -2,5 +2,9 @@
 	{
 		"pkg": "@capacitor/haptics",
 		"classpath": "com.capacitorjs.plugins.haptics.HapticsPlugin"
+	},
+	{
+		"pkg": "@capacitor/status-bar",
+		"classpath": "com.capacitorjs.plugins.statusbar.StatusBarPlugin"
 	}
 ]

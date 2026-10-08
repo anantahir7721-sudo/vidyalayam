@@ -84,7 +84,9 @@ public class MainActivity extends BridgeActivity {
                         bridge.getWebView().post(() -> {
                             bridge.getWebView().evaluateJavascript(
                                 "document.documentElement.style.setProperty('--system-status-bar-height', '" + finalStatusDp + "px');" +
-                                "document.documentElement.style.setProperty('--system-nav-bar-height', '" + finalNavDp + "px');",
+                                "document.documentElement.style.setProperty('--safe-area-top', '" + finalStatusDp + "px');" +
+                                "document.documentElement.style.setProperty('--system-nav-bar-height', '" + finalNavDp + "px');" +
+                                "document.documentElement.style.setProperty('--safe-area-bottom', '" + finalNavDp + "px');",
                                 null
                             );
                         });
@@ -167,6 +169,44 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public int getStatusBarHeight() {
             return getStatusBarHeightDp();
+        }
+
+        @JavascriptInterface
+        public void setStatusBarTheme(final boolean isDark) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Window window = getWindow();
+                        WindowInsetsControllerCompat insetsController =
+                            WindowCompat.getInsetsController(window, window.getDecorView());
+                        if (insetsController != null) {
+                            // isDark: false for appearanceLightStatusBars means white icons for dark theme
+                            // isDark: true for appearanceLightStatusBars means dark icons for light theme
+                            insetsController.setAppearanceLightStatusBars(!isDark);
+                            insetsController.setAppearanceLightNavigationBars(!isDark);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void setStatusBarColor(final String hexColor) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (hexColor != null && !hexColor.isEmpty()) {
+                            getWindow().setStatusBarColor(Color.parseColor(hexColor));
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
         }
 
         // ================= NOTIFICATION METHODS ================= //
