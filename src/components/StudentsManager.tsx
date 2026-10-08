@@ -932,14 +932,14 @@ export const StudentsManager: React.FC<StudentsManagerProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="glass-card border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl">
+      <div className="glass-card border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             {onBack && (
               <button
                 type="button"
                 onClick={onBack}
-                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1"
+                className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-[#C45A2D] dark:text-[#f59c73] border border-slate-200 dark:border-white/10 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 mt-1"
                 title="પાછળના મેનુ પર જાઓ (Go Back)"
               >
                 <ArrowLeft className="w-5 h-5 text-terracotta" />

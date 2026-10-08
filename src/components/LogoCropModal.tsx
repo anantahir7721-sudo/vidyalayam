@@ -228,25 +228,25 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-lg bg-[#141b2b] border border-white/15 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[86dvh] sm:max-h-[90dvh] my-auto animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#141b2b] border border-slate-200 dark:border-white/15 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[86dvh] sm:max-h-[90dvh] my-auto animate-in fade-in zoom-in-95 duration-200 text-slate-800 dark:text-white">
         {/* Header */}
-        <div className="shrink-0 px-5 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+        <div className="shrink-0 px-5 py-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-white/[0.02]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#f59c73]/20 border border-[#f59c73]/40 flex items-center justify-center text-[#f59c73]">
               <Crop className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">
                 શાળા લોગો ક્રોપ & ફિટિંગ (Logo Crop & Alignment)
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 લોગોને ચોરસ બોક્સમાં યોગ્ય રીતે ગોઠવો જેથી તમામ ID કાર્ડમાં સરખી સાઇઝ રહે
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -444,7 +444,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
         </div>
 
         {/* Footer Buttons */}
-        <div className="shrink-0 px-5 py-3.5 border-t border-white/10 flex flex-wrap items-center justify-between gap-2.5 bg-white/[0.02]">
+        <div className="shrink-0 px-5 py-3.5 border-t border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 dark:bg-white/[0.02]">
           <button
             type="button"
             onClick={handleUseOriginal}

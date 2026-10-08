@@ -326,23 +326,23 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
                       <div className="text-xs text-slate-500 dark:text-slate-400">{sub.englishName}</div>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-cyan-950/80 text-cyan-300 border border-cyan-800/80 shrink-0">
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-cyan-100 text-cyan-800 border border-cyan-300 dark:bg-cyan-950/80 dark:text-cyan-300 dark:border-cyan-800/80 shrink-0">
                     GSEB નિયત પેપર
                   </span>
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
-                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-white/5 space-y-2">
+                  <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     પ્રશ્ન / વિભાગ માળખું (Sections):
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                     {sub.questions.map((q) => (
                       <div
                         key={q.id}
-                        className="bg-slate-950/60 rounded-lg p-2 border border-white/5 text-center text-xs"
+                        className="bg-slate-100 dark:bg-slate-950/60 rounded-lg p-2 border border-slate-200 dark:border-white/5 text-center text-xs"
                       >
-                        <div className="font-semibold text-slate-200 truncate">{q.label}</div>
-                        <div className="text-[10px] text-emerald-400 font-mono font-medium">
+                        <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">{q.label}</div>
+                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-medium">
                           {typeof q.maxMarks === 'number' ? `${q.maxMarks} ગુણ` : 'નિયત નથી'}
                         </div>
                       </div>
@@ -351,8 +351,8 @@ export const SubjectManager: React.FC<SubjectManagerProps> = ({ school, onBack }
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
-                <span>કુલ ગુણ: <strong className="text-emerald-400 font-bold">{sub.totalMarks || 25}</strong></span>
+              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-white/5 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>કુલ ગુણ: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{sub.totalMarks || 25}</strong></span>
                 <span className="text-[11px] text-slate-500">ગુરુત્તમ સુરક્ષા (Protected)</span>
               </div>
             </div>
