@@ -3,7 +3,15 @@
 	"appName": "Vidyalayam",
 	"webDir": "dist",
 	"server": {
-		"androidScheme": "https"
+		"androidScheme": "https",
+		"cleartext": true,
+		"allowNavigation": [
+			"ais-pre-zfvtkxwqh2zdkbq5lhk34q-908899511909.asia-southeast1.run.app",
+			"ais-dev-zfvtkxwqh2zdkbq5lhk34q-908899511909.asia-southeast1.run.app",
+			"*.run.app",
+			"*.googleapis.com",
+			"*.firebaseio.com"
+		]
 	},
 	"plugins": {
 		"StatusBar": {
@@ -13,7 +21,7 @@
 		"SplashScreen": {
 			"launchShowDuration": 2000,
 			"launchAutoHide": true,
-			"backgroundColor": "#A8502E",
+			"backgroundColor": "#B05C38",
 			"androidSplashResourceName": "splash",
 			"androidScaleType": "CENTER_CROP",
 			"showSpinner": false,

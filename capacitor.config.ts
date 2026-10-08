@@ -6,6 +6,14 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
+    cleartext: true,
+    allowNavigation: [
+      'ais-pre-zfvtkxwqh2zdkbq5lhk34q-908899511909.asia-southeast1.run.app',
+      'ais-dev-zfvtkxwqh2zdkbq5lhk34q-908899511909.asia-southeast1.run.app',
+      '*.run.app',
+      '*.googleapis.com',
+      '*.firebaseio.com',
+    ],
   },
   plugins: {
     StatusBar: {

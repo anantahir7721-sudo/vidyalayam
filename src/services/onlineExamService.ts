@@ -22,7 +22,7 @@ import {
   ExamAttempt,
   StudentSession,
 } from '../types';
-import { apiUrl } from '../utils/apiConfig';
+import { apiUrl, apiFetch } from '../utils/apiConfig';
 
 /**
  * Fetch all online exams for a given school.
@@ -412,11 +412,15 @@ export async function extractQuestionsWithAI(
         onStatusUpdate('Google AI સર્વર વ્યસ્ત હતું, ફરી પ્રયાસ થઈ રહ્યો છે...');
       }
 
-      const res = await fetch(apiUrl('/api/ai/extract-questions'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
+      const res = await apiFetch(
+        '/api/ai/extract-questions',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+        },
+        60000
+      );
 
       const data = await res.json().catch(() => ({}));
       if (res.ok) {

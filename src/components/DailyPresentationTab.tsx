@@ -24,6 +24,7 @@ import {
   GSEB_SUBJECTS,
   generateCurriculumPresentationScript,
 } from '../data/presentationCurriculumData';
+import { apiUrl } from '../utils/apiConfig';
 
 export type PresentationScriptData = ReturnType<typeof generateCurriculumPresentationScript>;
 
@@ -109,7 +110,7 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
     setCopied(false);
 
     try {
-      const res = await fetch('/api/generate-presentation', {
+      const res = await fetch(apiUrl('/api/generate-presentation'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

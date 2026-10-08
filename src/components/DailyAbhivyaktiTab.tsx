@@ -27,7 +27,7 @@ import { DailyAbhivyaktiBulletin, DailyAbhivyaktiIdea } from '../types';
 import { getDailyAbhivyaktiBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
 import { haptic } from '../utils/haptics';
 import { WhatsAppIcon } from './WhatsAppIcon';
-import { apiUrl } from '../utils/apiConfig';
+import { apiUrl, apiFetch } from '../utils/apiConfig';
 
 interface DailyAbhivyaktiTabProps {
   schoolName?: string;
@@ -199,14 +199,14 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
     setAiError(null);
 
     try {
-      const res = await fetch(apiUrl('/api/ai/abhivyakti-generate'), {
+      const res = await apiFetch('/api/ai/abhivyakti-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           interest,
           standard: selectedStandard,
         }),
-      });
+      }, 35000);
 
       const data = await res.json();
       if (!res.ok || !data.success) {

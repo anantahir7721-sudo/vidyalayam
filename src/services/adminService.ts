@@ -31,6 +31,7 @@ import {
   Staff,
 } from '../types';
 import { autoResizeBase64 } from '../utils/imageUtils';
+import { apiUrl } from '../utils/apiConfig';
 
 export interface DatabaseCheckDiagnostic {
   databaseId: string;
@@ -380,7 +381,7 @@ export async function setTemporaryPasswordForSchool(
 
   // Call backend API for reliable updates and automatic reset request resolution
   try {
-    const res = await fetch('/api/admin/set-temp-password', {
+    const res = await fetch(apiUrl('/api/admin/set-temp-password'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -468,7 +469,7 @@ export async function deleteSchoolCompletely(
 
   // Notify backend route (graceful fallback)
   try {
-    await fetch('/api/admin/delete-school', {
+    await fetch(apiUrl('/api/admin/delete-school'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ schoolId, diseCode }),
@@ -495,7 +496,7 @@ export async function getSchoolsStorageMetrics(
   fromCache?: boolean;
 }> {
   try {
-    const url = `/api/admin/schools-storage${forceRefresh ? '?force=true' : ''}`;
+    const url = apiUrl(`/api/admin/schools-storage${forceRefresh ? '?force=true' : ''}`);
     const res = await fetch(url);
     if (!res.ok) {
       throw new Error(`Server returned HTTP ${res.status}`);

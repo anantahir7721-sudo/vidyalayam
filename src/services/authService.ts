@@ -21,6 +21,7 @@ import {
 import { auth, db } from '../firebase/config';
 import { School } from '../types';
 import { checkIsAdmin } from './adminService';
+import { apiUrl } from '../utils/apiConfig';
 
 /**
  * Format School DISE code into a valid Firebase Auth identifier.
@@ -275,7 +276,7 @@ export async function resetSchoolPasswordWithTemp(params: {
   }
 
   // 1. Call backend to update Firestore
-  const res = await fetch('/api/school/reset-password-with-temp', {
+  const res = await fetch(apiUrl('/api/school/reset-password-with-temp'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -353,7 +354,7 @@ export async function changeSchoolPassword(params: {
   }
 
   // Call backend to update Firestore
-  const res = await fetch('/api/school/change-password', {
+  const res = await fetch(apiUrl('/api/school/change-password'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ schoolId, currentPassword, newPassword }),

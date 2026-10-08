@@ -21,6 +21,7 @@ import {
   sendNotification,
   isNativeAndroid,
 } from '../utils/notificationUtils';
+import { apiUrl } from '../utils/apiConfig';
 
 interface NotificationSettingsModalProps {
   isOpen: boolean;
@@ -97,7 +98,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   const handleSendNewsNotification = async () => {
     setActiveTestKey('news');
     try {
-      const res = await fetch('/api/daily-news');
+      const res = await fetch(apiUrl('/api/daily-news'));
       if (res.ok) {
         const json = await res.json();
         const topItem = json?.bulletin?.items?.[0];

@@ -33,7 +33,7 @@ import {
 } from '../data/schoolNoticeBoardData';
 import { sendNotification } from '../utils/notificationUtils';
 import { createAppNotification } from '../services/notificationService';
-import { apiUrl } from '../utils/apiConfig';
+import { apiUrl, apiFetch } from '../utils/apiConfig';
 
 interface SchoolNoticeBoardTabProps {
   schoolName?: string;
@@ -142,7 +142,7 @@ export const SchoolNoticeBoardTab: React.FC<SchoolNoticeBoardTabProps> = ({
     setCopied(false);
 
     try {
-      const res = await fetch(apiUrl('/api/ai/school-notice-board'), {
+      const res = await apiFetch('/api/ai/school-notice-board', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -150,7 +150,7 @@ export const SchoolNoticeBoardTab: React.FC<SchoolNoticeBoardTabProps> = ({
           district: dist,
           taluka: tal,
         }),
-      });
+      }, 35000);
 
       if (res.ok) {
         const json = await res.json();
