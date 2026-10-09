@@ -123,17 +123,18 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
                 type="button"
                 onClick={handlePrint}
                 disabled={attempts.length === 0}
-                className="hidden sm:inline-flex px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold items-center gap-1.5 shadow-md shadow-indigo-600/30 cursor-pointer disabled:opacity-40 transition-all"
+                className="px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30 cursor-pointer disabled:opacity-40 transition-all shrink-0"
                 title="પ્રિન્ટર પર પ્રિન્ટ કાઢો અથવા PDF તરીકે સેવ કરો"
               >
-                <Printer className="w-4 h-4" />
-                <span>પ્રિન્ટ / PDF ({targetCount})</span>
+                <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="hidden sm:inline">પ્રિન્ટ / PDF</span>
+                <span className="text-[10px] sm:text-xs">({targetCount})</span>
               </button>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 sm:p-2 rounded-xl bg-slate-200/80 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                className="p-1.5 sm:p-2 rounded-xl bg-slate-200/80 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer shrink-0"
                 title="બંધ કરો"
               >
                 <X className="w-5 h-5" />
@@ -219,18 +220,18 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
               </p>
             </div>
           ) : (
-            <div className="w-full max-w-4xl min-h-[600px] h-full bg-white rounded-xl shadow-xl overflow-hidden border border-slate-300 dark:border-white/10 flex flex-col">
+            <div className="w-full max-w-4xl h-full min-h-[320px] sm:min-h-[500px] bg-white rounded-xl shadow-xl overflow-hidden border border-slate-300 dark:border-white/10 flex flex-col">
               <iframe
                 title="OMR Answer Sheet Preview"
                 srcDoc={htmlContent}
-                className="w-full h-full min-h-[600px] border-0 bg-white"
+                className="w-full h-full min-h-[320px] sm:min-h-[500px] border-0 bg-white"
               />
             </div>
           )}
         </div>
 
         {/* Mobile & Desktop Bottom Bar: Always Visible, Never Cut Off */}
-        <div className="shrink-0 p-2.5 sm:p-3 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/90 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 text-xs">
+        <div className="shrink-0 p-2 sm:p-3 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/95 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 text-xs">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 truncate">
             <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span className="truncate">
@@ -238,11 +239,11 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handleDownloadHtml}
-              className="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer text-xs"
+              className="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer text-xs shrink-0"
               title="HTML ફાઇલ ડાઉનલોડ કરો"
             >
               <Download className="w-3.5 h-3.5" />
@@ -253,7 +254,7 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
               type="button"
               onClick={handlePrint}
               disabled={attempts.length === 0}
-              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 shadow-md shadow-indigo-600/30 text-xs sm:text-sm"
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 shadow-md shadow-indigo-600/30 text-xs sm:text-sm shrink-0"
             >
               <Printer className="w-4 h-4 shrink-0" />
               <span>પ્રિન્ટ / PDF ({targetCount})</span>

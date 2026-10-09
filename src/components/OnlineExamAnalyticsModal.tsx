@@ -270,8 +270,8 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
             </button>
           </div>
 
-          {/* Action Toolbar: Horizontal Scrolling on mobile, Wrap on desktop */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+          {/* Action Toolbar: Horizontal Smooth Touch Scrolling on mobile, Wrap on desktop */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1 scrollbar-none flex-nowrap">
             {/* OMR Button */}
             <button
               type="button"
@@ -413,96 +413,193 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
           {loading ? (
             <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-xs">ડેટા લોડ થઈ રહ્યો છે...</div>
           ) : activeTab === 'students' ? (
-            /* Student-wise Table */
+            /* Student-wise Results */
             filteredAttempts.length === 0 ? (
               <div className="text-center py-12 text-slate-500 text-xs">
                 હજુ સુધી કોઈ વિદ્યાર્થીએ આ પરીક્ષા સબમિટ કરી નથી.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-white/10 text-[11px]">
-                      <th className="p-3">#</th>
-                      <th className="p-3">વિદ્યાર્થીનું નામ</th>
-                      <th className="p-3">રોલ નં / GR</th>
-                      <th className="p-3">મેળવેલ ગુણ</th>
-                      <th className="p-3">ટકાવારી</th>
-                      <th className="p-3">સાચા / ખોટા</th>
-                      <th className="p-3">પરિણામ</th>
-                      <th className="p-3">સબમિશન સમય</th>
-                      <th className="p-3 text-right">OMR ઉત્તરવહી</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-white/5">
-                    {filteredAttempts.map((at, idx) => {
-                      const passingMarks = exam.passingMarks || Math.ceil(exam.totalMarks * 0.35);
-                      const isPass = (at.score || 0) >= passingMarks;
+              <div className="space-y-3">
+                {/* 1. Mobile Optimized Cards View (md:hidden) — Name always visible, buttons never cut off */}
+                <div className="block md:hidden space-y-3">
+                  {filteredAttempts.map((at, idx) => {
+                    const passingMarks = exam.passingMarks || Math.ceil(exam.totalMarks * 0.35);
+                    const isPass = (at.score || 0) >= passingMarks;
 
-                      return (
-                        <tr key={at.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
-                          <td className="p-3 text-slate-500">{idx + 1}</td>
-                          <td className="p-3 font-semibold text-slate-900 dark:text-white">{at.studentName}</td>
-                          <td className="p-3 text-slate-500 dark:text-slate-400">
-                            {at.rollNumber ? `રોલ: ${at.rollNumber}` : ''} {at.grNumber ? `(GR: ${at.grNumber})` : ''}
-                          </td>
-                          <td className="p-3 font-bold text-slate-900 dark:text-white">
-                            <span className="text-emerald-600 dark:text-emerald-400 text-sm">{at.score}</span> / {exam.totalMarks}
-                          </td>
-                          <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">{at.percentage || 0}%</td>
-                          <td className="p-3">
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">{at.correctCount}</span> સાચા •{' '}
-                            <span className="text-rose-600 dark:text-rose-400 font-bold">{at.incorrectCount}</span> ખોટા
-                          </td>
-                          <td className="p-3">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                isPass
-                                  ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30'
-                                  : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30'
-                              }`}
-                            >
-                              {isPass ? 'પાસ (PASS)' : 'સુધારણા જરૂરી'}
+                    return (
+                      <div
+                        key={at.id}
+                        className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-white/10 shadow-xs space-y-2.5"
+                      >
+                        {/* Student Name & Result Badge: Pinned at top, always visible */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0">
+                              #{idx + 1}
                             </span>
-                          </td>
-                          <td className="p-3 text-slate-500 text-[11px]">
-                            {at.submittedAt ? new Date(at.submittedAt).toLocaleTimeString('gu-IN') : '-'}
-                          </td>
-                          <td className="p-3 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOmrModalStudentId(at.id);
-                                  setOmrModalMode('checked');
-                                  setOmrModalOpen(true);
-                                }}
-                                title="આ વિદ્યાર્થીની તપાસેલ OMR શીટ (✓ / ✗ સાથે) ડાઉનલોડ / પ્રિન્ટ કરો"
-                                className="px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                              >
-                                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                                <span>તપાસેલ OMR</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOmrModalStudentId(at.id);
-                                  setOmrModalMode('unchecked');
-                                  setOmrModalOpen(true);
-                                }}
-                                title="આ વિદ્યાર્થીની અનચેક્ડ OMR શીટ (માત્ર સબમિટ જવાબો) ડાઉનલોડ / પ્રિન્ટ કરો"
-                                className="px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/15 dark:hover:bg-indigo-500/25 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                              >
-                                <FileText className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
-                                <span>અનચેક્ડ OMR</span>
-                              </button>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                                {at.studentName}
+                              </h4>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                {at.rollNumber ? `રોલ: ${at.rollNumber} ` : ''}
+                                {at.grNumber ? `• GR: ${at.grNumber}` : ''}
+                              </p>
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          </div>
+
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                              isPass
+                                ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30'
+                                : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30'
+                            }`}
+                          >
+                            {isPass ? 'પાસ (PASS)' : 'સુધારણા જરૂરી'}
+                          </span>
+                        </div>
+
+                        {/* Marks & Stats Strip */}
+                        <div className="grid grid-cols-2 gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-white/5 text-xs">
+                          <div>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">મેળવેલ ગુણ:</span>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              <strong className="text-emerald-600 dark:text-emerald-400 text-sm">{at.score}</strong> / {exam.totalMarks} ({at.percentage || 0}%)
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">જવાબો:</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                              <span className="text-emerald-600 font-bold">✓ {at.correctCount}</span> • <span className="text-rose-600 font-bold">✗ {at.incorrectCount}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* OMR Action Buttons: 2-Column Equal Grid, Never Cut Off */}
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-white/5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOmrModalStudentId(at.id);
+                              setOmrModalMode('checked');
+                              setOmrModalOpen(true);
+                            }}
+                            className="w-full py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
+                            title="તપાસેલ OMR શીટ ડાઉનલોડ / પ્રિન્ટ કરો"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>તપાસેલ OMR</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOmrModalStudentId(at.id);
+                              setOmrModalMode('unchecked');
+                              setOmrModalOpen(true);
+                            }}
+                            className="w-full py-2 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
+                            title="અનચેક્ડ OMR શીટ ડાઉનલોડ / પ્રિન્ટ કરો"
+                          >
+                            <FileText className="w-3.5 h-3.5 shrink-0" />
+                            <span>અનચેક્ડ OMR</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 2. Desktop Table View (hidden md:block) with Sticky Student Name Column */}
+                <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-white/10 text-[11px]">
+                        <th className="p-3 w-10">#</th>
+                        <th className="p-3 sticky left-0 z-20 bg-slate-100 dark:bg-slate-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                          વિદ્યાર્થીનું નામ
+                        </th>
+                        <th className="p-3">રોલ નં / GR</th>
+                        <th className="p-3">મેળવેલ ગુણ</th>
+                        <th className="p-3">ટકાવારી</th>
+                        <th className="p-3">સાચા / ખોટા</th>
+                        <th className="p-3">પરિણામ</th>
+                        <th className="p-3">સબમિશન સમય</th>
+                        <th className="p-3 text-right">OMR ઉત્તરવહી</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-white/5">
+                      {filteredAttempts.map((at, idx) => {
+                        const passingMarks = exam.passingMarks || Math.ceil(exam.totalMarks * 0.35);
+                        const isPass = (at.score || 0) >= passingMarks;
+
+                        return (
+                          <tr key={at.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
+                            <td className="p-3 text-slate-500">{idx + 1}</td>
+                            <td className="p-3 font-semibold text-slate-900 dark:text-white sticky left-0 z-10 bg-white dark:bg-[#121921] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                              {at.studentName}
+                            </td>
+                            <td className="p-3 text-slate-500 dark:text-slate-400">
+                              {at.rollNumber ? `રોલ: ${at.rollNumber}` : ''} {at.grNumber ? `(GR: ${at.grNumber})` : ''}
+                            </td>
+                            <td className="p-3 font-bold text-slate-900 dark:text-white">
+                              <span className="text-emerald-600 dark:text-emerald-400 text-sm">{at.score}</span> / {exam.totalMarks}
+                            </td>
+                            <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">{at.percentage || 0}%</td>
+                            <td className="p-3">
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">{at.correctCount}</span> સાચા •{' '}
+                              <span className="text-rose-600 dark:text-rose-400 font-bold">{at.incorrectCount}</span> ખોટા
+                            </td>
+                            <td className="p-3">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  isPass
+                                    ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30'
+                                    : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30'
+                                }`}
+                              >
+                                {isPass ? 'પાસ (PASS)' : 'સુધારણા જરૂરી'}
+                              </span>
+                            </td>
+                            <td className="p-3 text-slate-500 text-[11px]">
+                              {at.submittedAt ? new Date(at.submittedAt).toLocaleTimeString('gu-IN') : '-'}
+                            </td>
+                            <td className="p-3 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOmrModalStudentId(at.id);
+                                    setOmrModalMode('checked');
+                                    setOmrModalOpen(true);
+                                  }}
+                                  title="આ વિદ્યાર્થીની તપાસેલ OMR શીટ (✓ / ✗ સાથે) ડાઉનલોડ / પ્રિન્ટ કરો"
+                                  className="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                  <span>તપાસેલ OMR</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOmrModalStudentId(at.id);
+                                    setOmrModalMode('unchecked');
+                                    setOmrModalOpen(true);
+                                  }}
+                                  title="આ વિદ્યાર્થીની અનચેક્ડ OMR શીટ (માત્ર સબમિટ જવાબો) ડાઉનલોડ / પ્રિન્ટ કરો"
+                                  className="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/15 dark:hover:bg-indigo-500/25 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                >
+                                  <FileText className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                                  <span>અનચેક્ડ OMR</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )
           ) : (

@@ -152,67 +152,46 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
     }
   };
 
-  // Helper to ensure presentation is strictly 1-2 short, crystal-clear paragraphs
-  // with greeting, topic, theory and real-life everyday example seamlessly integrated
-  const { paragraph1, paragraph2 } = useMemo(() => {
-    if (!presentation) return { paragraph1: '', paragraph2: '' };
+  // Helper to provide comprehensive, crystal-clear 5-minute presentation paragraphs
+  // based on textbook concepts, covering the whole topic with natural examples where fitting
+  const { paragraph1, paragraph2, paragraph3 } = useMemo(() => {
+    if (!presentation) return { paragraph1: '', paragraph2: '', paragraph3: '' };
 
-    // 1. Direct AI generated clean paragraphs
-    if (presentation.paragraph1 && presentation.paragraph2) {
+    // 1. If AI generated dedicated paragraphs (paragraph1, paragraph2, paragraph3)
+    if (presentation.paragraph1) {
       return {
         paragraph1: presentation.paragraph1.trim(),
-        paragraph2: presentation.paragraph2.trim(),
+        paragraph2: (presentation.paragraph2 || '').trim(),
+        paragraph3: (presentation.paragraph3 || '').trim(),
       };
     }
 
-    // 2. Synthesize Paragraph 1: Core Concept / Theory (Short & simple)
-    let p1 = presentation.paragraph1 || presentation.topicIntroduction || presentation.introduction || '';
-    if (!p1 && presentation.detailedExplanation) {
-      p1 = presentation.detailedExplanation;
-    }
+    // 2. Fallback synthesis from knowledge base:
+    let p1 = presentation.topicIntroduction || presentation.introduction || '';
+    let p2 = presentation.detailedExplanation || '';
+    let p3 = presentation.realLifeExample || '';
 
-    p1 = p1
-      .replace(/\b[૧૨૩૪૫૬૭૮૯૦\d]+[\.\)]\s*/g, '')
-      .replace(/\([A-Da-d]\)\s*/g, '')
-      .replace(/^(A|B|C|D)[\.\)]\s*/gm, '')
-      .replace(/મુખ્ય સિદ્ધાંત:?/gi, '')
-      .replace(/પાઠ્યપુસ્તક અનુસાર:?/gi, '')
-      .trim();
+    // Clean formatting markers
+    const cleanText = (t: string) =>
+      t
+        .replace(/\b[૧૨૩૪૫૬૭૮૯૦\d]+[\.\)]\s*/g, '')
+        .replace(/\([A-Da-d]\)\s*/g, '')
+        .replace(/^(A|B|C|D)[\.\)]\s*/gm, '')
+        .replace(/મુખ્ય સિદ્ધાંત:?/gi, '')
+        .replace(/પાઠ્યપુસ્તક અનુસાર:?/gi, '')
+        .trim();
 
-    const p1Sentences = p1.split(/(?<=[.!?।])\s+/).filter(Boolean);
-    if (p1Sentences.length > 4) {
-      p1 = p1Sentences.slice(0, 4).join(' ');
-    }
-
-    // 3. Synthesize Paragraph 2: Everyday Life Comparison & Concrete Example
-    let p2 = presentation.paragraph2 || presentation.realLifeExample || '';
-    if (!p2 && presentation.detailedExplanation && presentation.detailedExplanation.length > p1.length) {
-      p2 = presentation.detailedExplanation.substring(p1.length).trim();
-    }
-
-    p2 = p2
-      .replace(/\b[૧૨૩૪૫૬૭૮૯૦\d]+[\.\)]\s*/g, '')
-      .replace(/\([A-Da-d]\)\s*/g, '')
-      .replace(/રોજિંદા જીવનમાં ઉદાહરણ:?/gi, '')
-      .replace(/વાસ્તવિક ઉદાહરણ:?/gi, '')
-      .trim();
-
-    const p2Sentences = p2.split(/(?<=[.!?।])\s+/).filter(Boolean);
-    if (p2Sentences.length > 4) {
-      p2 = p2Sentences.slice(0, 4).join(' ');
-    }
-
-    if (p2 && !p2.includes('ઉદાહરણ') && !p2.includes('જીવન')) {
-      p2 = `આ સિદ્ધાંતને આપણા રોજિંદા જીવન સાથે સરખાવીએ તો, ${p2}`;
-    }
-
-    return { paragraph1: p1, paragraph2: p2 };
+    return {
+      paragraph1: cleanText(p1),
+      paragraph2: cleanText(p2),
+      paragraph3: cleanText(p3),
+    };
   }, [presentation]);
 
   // Full clean speech text strictly following user's structure:
   // 1. Sambodhan
   // 2. Topic
-  // 3. 1-2 Paragraphs containing all info and everyday life examples
+  // 3. Comprehensive, clear topic paragraphs (~5 minutes spoken length)
   // 4. Closing
   const fullSpeechText = useMemo(() => {
     if (!presentation) return '';
@@ -226,8 +205,10 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
     const topicIntro = `આજે હું આપ સૌની સમક્ષ ${presentation.standard || `ધોરણ ${selectedStandard}`} ના ${presentation.subject || currentSubject.name} વિષયના મહત્વના ટોપિક "${presentation.title}" વિશે સરળ રજૂઆત કરવા જઈ રહ્યો/રહી છું.`;
     const closing = presentation.closingSpeech || 'મારી આ રજૂઆત શાંતિપૂર્વક સાંભળવા બદલ આપ સૌનો ખૂબ ખૂબ આભાર. અસ્તુ, જય હિન્દ!';
 
-    return `🎤 વિદ્યાર્થી વક્તવ્ય પ્રસ્તુતિ\nશાળા: ${schoolName || 'શ્રી વિદ્યાલય'}\nધોરણ: ${presentation.standard} | વિષય: ${presentation.subject}\nટોપિક: ${presentation.title}\nસ્થળ: ${presentation.environment || 'પ્રાર્થના સભા'}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n૧. સંબોધન:\n"${opening}"\n\n૨. વિષય રજૂઆત:\n${topicIntro}\n\n૩. વિગતવાર સરળ સમજૂતી (૧-૨ ફકરામાં):\n${paragraph1}\n\n${paragraph2}\n\n૪. સમાપન:\n"${closing}"`;
-  }, [presentation, paragraph1, paragraph2, schoolName, selectedStandard, currentSubject]);
+    const speechParagraphs = [paragraph1, paragraph2, paragraph3].filter(Boolean).join('\n\n');
+
+    return `🎤 વિદ્યાર્થી વક્તવ્ય પ્રસ્તુતિ (~૫ મિનિટ)\nશાળા: ${schoolName || 'શ્રી વિદ્યાલય'}\nધોરણ: ${presentation.standard} | વિષય: ${presentation.subject}\nટોપિક: ${presentation.title}\nસ્થળ: ${presentation.environment || 'પ્રાર્થના સભા'}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n૧. સંબોધન:\n"${opening}"\n\n૨. વિષય રજૂઆત:\n${topicIntro}\n\n૩. વિગતવાર વિષય સમજૂતી (૫ મિનિટ વક્તવ્ય):\n${speechParagraphs}\n\n૪. સમાપન:\n"${closing}"`;
+  }, [presentation, paragraph1, paragraph2, paragraph3, schoolName, selectedStandard, currentSubject]);
 
   // Copy full clean spoken speech
   const handleCopyScript = () => {
@@ -587,7 +568,7 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
         <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/10 flex-wrap gap-3">
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
             <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>૧-૨ ફકરામાં રોજિંદા જીવનના ઉદાહરણ સાથે ટૂંકું લખાણ તૈયાર થશે.</span>
+            <span>આશરે ૫ મિનિટમાં બોલી શકાય તેવું સંપૂર્ણ અને સચોટ લખાણ તૈયાર થશે.</span>
           </div>
 
           <button
@@ -599,12 +580,12 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>સ્ક્રિપ્ટ તૈયાર થઈ રહી છે...</span>
+                <span>૫-મિનિટ સ્ક્રિપ્ટ તૈયાર થઈ રહી છે...</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>ટૂંકી વક્તવ્ય સ્ક્રિપ્ટ બનાવો</span>
+                <span>૫-મિનિટ વક્તવ્ય સ્ક્રિપ્ટ બનાવો</span>
               </>
             )}
           </button>
@@ -634,8 +615,8 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                   {presentation.environment === 'પ્રાર્થના સંમેલન / સભા' ? '🏛️ પ્રાર્થના સભા' : '🏫 વર્ગખંડ'}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300">
-                  ⏱️ ૧-૨ ફકરા (ટૂંકી સ્ક્રિપ્ટ)
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                  ⏱️ આશરે ૫ મિનિટ (સંપૂર્ણ વક્તવ્ય)
                 </span>
               </div>
               <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
@@ -778,19 +759,19 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
                 </div>
               </div>
               <p className={`font-semibold text-slate-800 dark:text-blue-100 ${textSizeClass}`}>
-                "આજે હું આપ સૌની સમક્ષ {presentation.standard || `ધોરણ ${selectedStandard}`} ના {presentation.subject || currentSubject.name} વિષયના અત્યંત મહત્વના અને રોચક ટોપિક <strong className="text-blue-900 dark:text-white underline">"{presentation.title}"</strong> વિશે ટૂંકી અને સરળ રજૂઆત કરવા જઈ રહ્યો/રહી છું."
+                "આજે હું આપ સૌની સમક્ષ {presentation.standard || `ધોરણ ${selectedStandard}`} ના {presentation.subject || currentSubject.name} વિષયના અત્યંત મહત્વના અને રોચક ટોપિક <strong className="text-blue-900 dark:text-white underline">"{presentation.title}"</strong> વિશે આત્મવિશ્વાસપૂર્વક સંપૂર્ણ રજૂઆત કરવા જઈ રહ્યો/રહી છું."
               </p>
             </div>
 
-            {/* Step 3: ૧ કે ૨ ફકરામાં સંપૂર્ણ માહિતી (સાથે રોજિંદા જીવન સાથેનું સરખામણીભર્યું ઉદાહરણ) */}
-            <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-6 space-y-3">
+            {/* Step 3: સંપૂર્ણ અને સરળ વક્તવ્ય (૫ મિનિટ પ્રસ્તુતિ) */}
+            <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-6 space-y-3.5">
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2">
                 <div className="flex items-center gap-2 text-slate-900 dark:text-white font-extrabold text-xs uppercase tracking-wider">
                   <Presentation className="w-4 h-4 text-emerald-600" />
-                  <span>૩. વિષયની સરળ સમજૂતી & રોજિંદા જીવનનું વાસ્તવિક ઉદાહરણ (૧-૨ ફકરામાં)</span>
+                  <span>૩. વિષયની સંપૂર્ણ અને સરળ રજૂઆત (~૫ મિનિટ વક્તવ્ય)</span>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300">
-                  આશરે ૧ થી ૨ મિનિટ
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                  આશરે ૫ મિનિટ
                 </span>
               </div>
 
@@ -798,23 +779,35 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
               {paragraph1 && (
                 <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 shadow-2xs space-y-1">
                   <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-                    મુખ્ય સિદ્ધાંત / પાઠ્યપુસ્તક સમજૂતી:
+                    ૧. પાયાની વિભાવના & પાઠ્યપુસ્તક સિદ્ધાંત:
                   </div>
-                  <p className={`text-slate-800 dark:text-slate-200 font-medium ${textSizeClass}`}>
+                  <p className={`text-slate-800 dark:text-slate-200 font-medium leading-relaxed ${textSizeClass}`}>
                     {paragraph1}
                   </p>
                 </div>
               )}
 
-              {/* Paragraph 2: Real-Life Comparison & Application */}
+              {/* Paragraph 2: In-Depth Explanation / Concept Details */}
               {paragraph2 && (
+                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 shadow-2xs space-y-1">
+                  <div className="text-[11px] font-bold text-blue-700 dark:text-blue-400">
+                    ૨. વિગતવાર વિશ્લેષણ & સમજૂતી:
+                  </div>
+                  <p className={`text-slate-800 dark:text-slate-200 font-medium whitespace-pre-line leading-relaxed ${textSizeClass}`}>
+                    {paragraph2}
+                  </p>
+                </div>
+              )}
+
+              {/* Paragraph 3: Summary, Relevance or Natural Example if any */}
+              {paragraph3 && (
                 <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 shadow-2xs space-y-1">
                   <div className="text-[11px] font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
                     <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-                    <span>રોજિંદા જીવન સાથે જોડાણ & ઉદાહરણ:</span>
+                    <span>૩. ઉપસંહાર & વાસ્તવિક જોડાણ:</span>
                   </div>
-                  <p className={`text-slate-800 dark:text-amber-100 font-medium whitespace-pre-line ${textSizeClass}`}>
-                    {paragraph2}
+                  <p className={`text-slate-800 dark:text-amber-100 font-medium whitespace-pre-line leading-relaxed ${textSizeClass}`}>
+                    {paragraph3}
                   </p>
                 </div>
               )}

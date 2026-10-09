@@ -906,6 +906,7 @@ export async function sharePresentationAsPdf(
     topicIntroduction?: string;
     paragraph1?: string;
     paragraph2?: string;
+    paragraph3?: string;
     detailedExplanation?: string;
     realLifeExample?: string;
     closingSpeech?: string;
@@ -939,11 +940,8 @@ export async function sharePresentationAsPdf(
   container.style.flexDirection = 'column';
 
   const p1 = presentation.paragraph1 || presentation.topicIntroduction || '';
-  const p2 = presentation.paragraph2 || (
-    presentation.detailedExplanation
-      ? presentation.detailedExplanation + (presentation.realLifeExample ? `\n\nરોજિંદા જીવનમાં ઉદાહરણ: ${presentation.realLifeExample}` : '')
-      : presentation.realLifeExample || ''
-  );
+  const p2 = presentation.paragraph2 || presentation.detailedExplanation || '';
+  const p3 = presentation.paragraph3 || presentation.realLifeExample || '';
 
   container.innerHTML = `
     <div style="border: 3px double #059669; border-radius: 14px; padding: 16px 20px; background: #ffffff; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
@@ -954,7 +952,7 @@ export async function sharePresentationAsPdf(
           ${schoolName}
         </h1>
         <div style="font-size: 13px; color: #475569; font-weight: 700;">
-          શાળા વક્તવ્ય & પ્રસ્તુતિ સ્ક્રિપ્ટ (Student Presentation Speech)
+          શાળા વક્તવ્ય & પ્રસ્તુતિ સ્ક્રિપ્ટ (~૫ મિનિટ વક્તવ્ય)
         </div>
       </div>
 
@@ -967,6 +965,7 @@ export async function sharePresentationAsPdf(
           <span>ધોરણ: ${presentation.standard}</span>
           <span>• વિષય: ${presentation.subject}</span>
           <span>• સેટિંગ: ${presentation.environment || 'પ્રાર્થના સભા'}</span>
+          <span>• સમય: ~૫ મિનિટ</span>
           ${presentation.studentName ? `<span>• વક્તા: ${presentation.studentName}</span>` : ''}
         </div>
       </div>
@@ -981,13 +980,14 @@ export async function sharePresentationAsPdf(
         </div>
       </div>
 
-      <!-- Part 2: Main Explanation in 1-2 Paragraphs with Relatable Real-Life Example -->
+      <!-- Part 2: Main Explanation in Rich Flowing Paragraphs -->
       <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-top: 8px; flex: 1; display: flex; flex-direction: column; justify-content: center;">
         <div style="font-size: 12.5px; font-weight: 800; color: #047857; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">
-          ૨. વિષયની સરળ સમજૂતી & રોજિંદા જીવન સાથે સરખામણી
+          ૨. મુખ્ય વિષયની સરળ અને સંપૂર્ણ સમજૂતી (~૫ મિનિટ વક્તવ્ય)
         </div>
-        ${p1 ? `<p style="font-size: 14.5px; line-height: 1.65; color: #1e293b; margin: 0 0 10px 0; text-align: justify;">${p1}</p>` : ''}
-        ${p2 ? `<p style="font-size: 14.5px; line-height: 1.65; color: #1e293b; margin: 0; text-align: justify; font-weight: 500;">${p2}</p>` : ''}
+        ${p1 ? `<p style="font-size: 14px; line-height: 1.6; color: #1e293b; margin: 0 0 8px 0; text-align: justify;">${p1}</p>` : ''}
+        ${p2 ? `<p style="font-size: 14px; line-height: 1.6; color: #1e293b; margin: 0 0 8px 0; text-align: justify; font-weight: 500;">${p2}</p>` : ''}
+        ${p3 ? `<p style="font-size: 13.5px; line-height: 1.55; color: #334155; margin: 0; text-align: justify;">${p3}</p>` : ''}
       </div>
 
       <!-- Part 3: Conclusion -->

@@ -829,6 +829,55 @@ export function generateOmrSheetHtml(options: GenerateOmrHtmlOptions): string {
       height: 5px;
     }
 
+    /* MOBILE SCREEN PREVIEW RULES (Fits gracefully on small mobile screens) */
+    @media screen and (max-width: 820px) {
+      body {
+        padding: 4px !important;
+        background-color: #f1f5f9 !important;
+      }
+      .omr-page {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: auto !important;
+        max-height: none !important;
+        margin: 4px auto !important;
+        padding: 3mm !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1) !important;
+      }
+      .omr-container {
+        padding: 4px !important;
+      }
+      .omr-header {
+        margin-bottom: 4px !important;
+      }
+      .omr-school-title {
+        font-size: 11px !important;
+      }
+      .omr-main-title {
+        font-size: 10px !important;
+        letter-spacing: 0 !important;
+      }
+      .bubble-circle {
+        width: 13px !important;
+        height: 13px !important;
+        font-size: 8px !important;
+      }
+      .q-num {
+        font-size: 8.5px !important;
+        min-width: 13px !important;
+      }
+      .meta-lbl, .meta-val {
+        font-size: 8.5px !important;
+      }
+      .omr-meta-strip {
+        gap: 3px !important;
+        padding: 3px 4px !important;
+      }
+      .omr-row {
+        padding: 1px 2px !important;
+      }
+    }
+
     /* PRINT RULES */
     @media print {
       body {
