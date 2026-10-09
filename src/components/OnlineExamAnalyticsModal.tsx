@@ -16,11 +16,15 @@ import {
   ArrowUpDown,
   Filter,
   Send,
+  FileCheck2,
+  FileText,
+  Printer,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { OnlineExam, MCQQuestion, ExamAttempt, Student, School } from '../types';
 import { getExamQuestions, getExamAttempts } from '../services/onlineExamService';
 import { SendExamResultModal } from './SendExamResultModal';
+import { OnlineExamOmrModal } from './OnlineExamOmrModal';
 
 interface OnlineExamAnalyticsModalProps {
   isOpen: boolean;
@@ -46,6 +50,9 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PASS' | 'FAIL'>('ALL');
   const [sendResultModalOpen, setSendResultModalOpen] = useState(false);
+  const [omrModalOpen, setOmrModalOpen] = useState(false);
+  const [omrModalStudentId, setOmrModalStudentId] = useState<string>('ALL');
+  const [omrModalMode, setOmrModalMode] = useState<'checked' | 'unchecked'>('checked');
 
   useEffect(() => {
     if (isOpen && exam?.id) {
@@ -247,6 +254,20 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => {
+                setOmrModalStudentId('ALL');
+                setOmrModalMode('checked');
+                setOmrModalOpen(true);
+              }}
+              disabled={attempts.length === 0}
+              className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-md shadow-indigo-950/30"
+              title="વિદ્યાર્થીઓની OMR ઉત્તરવહી ડાઉનલોડ / પ્રિન્ટ કરો (૧ પેજ પ્રતિ વિદ્યાર્થી)"
+            >
+              <FileCheck2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">📄 OMR ઉત્તરવહી ડાઉનલોડ</span>
+              <span className="sm:hidden">OMR શીટ્સ</span>
+            </button>
+            <button
               onClick={() => setSendResultModalOpen(true)}
               disabled={attempts.length === 0}
               className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-md shadow-emerald-950/30"
@@ -376,6 +397,7 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                       <th className="p-3">સાચા / ખોટા</th>
                       <th className="p-3">પરિણામ</th>
                       <th className="p-3">સબમિશન સમય</th>
+                      <th className="p-3 text-right">OMR ઉત્તરવહી</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-white/5">
@@ -411,6 +433,36 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                           </td>
                           <td className="p-3 text-slate-500 text-[11px]">
                             {at.submittedAt ? new Date(at.submittedAt).toLocaleTimeString('gu-IN') : '-'}
+                          </td>
+                          <td className="p-3 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOmrModalStudentId(at.id);
+                                  setOmrModalMode('checked');
+                                  setOmrModalOpen(true);
+                                }}
+                                title="આ વિદ્યાર્થીની તપાસેલ OMR શીટ (✓ / ✗ સાથે) ડાઉનલોડ / પ્રિન્ટ કરો"
+                                className="px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                <span>તપાસેલ OMR</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOmrModalStudentId(at.id);
+                                  setOmrModalMode('unchecked');
+                                  setOmrModalOpen(true);
+                                }}
+                                title="આ વિદ્યાર્થીની અનચેક્ડ OMR શીટ (માત્ર સબમિટ જવાબો) ડાઉનલોડ / પ્રિન્ટ કરો"
+                                className="px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/15 dark:hover:bg-indigo-500/25 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <FileText className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                                <span>અનચેક્ડ OMR</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -506,6 +558,20 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
           marks={[]}
           initialOnlineExam={exam}
           initialExamAttempts={attempts}
+        />
+      )}
+
+      {/* Online Exam OMR Answer Sheet Modal */}
+      {omrModalOpen && (
+        <OnlineExamOmrModal
+          isOpen={omrModalOpen}
+          onClose={() => setOmrModalOpen(false)}
+          exam={exam}
+          questions={questions}
+          attempts={attempts}
+          school={school}
+          initialStudentId={omrModalStudentId}
+          initialMode={omrModalMode}
         />
       )}
     </div>

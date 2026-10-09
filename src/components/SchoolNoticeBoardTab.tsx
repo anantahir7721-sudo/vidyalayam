@@ -33,7 +33,8 @@ import {
 } from '../data/schoolNoticeBoardData';
 import { sendNotification } from '../utils/notificationUtils';
 import { createAppNotification } from '../services/notificationService';
-import { apiUrl, apiFetch } from '../utils/apiConfig';
+import { apiUrl, apiFetch, isNativeApp } from '../utils/apiConfig';
+import { directGenerateSchoolNoticeBoard } from '../services/directGeminiService';
 
 interface SchoolNoticeBoardTabProps {
   schoolName?: string;
@@ -142,6 +143,23 @@ export const SchoolNoticeBoardTab: React.FC<SchoolNoticeBoardTabProps> = ({
     setCopied(false);
 
     try {
+      if (isNativeApp()) {
+        try {
+          const directRes = await directGenerateSchoolNoticeBoard({
+            schoolName,
+            district: dist,
+            taluka: tal,
+          });
+          if (directRes?.success && directRes.data) {
+            setNoticeData(directRes.data);
+            setIsLoading(false);
+            return;
+          }
+        } catch (directErr) {
+          console.warn('[APK NoticeBoard] Direct call fallback to server:', directErr);
+        }
+      }
+
       const res = await apiFetch('/api/ai/school-notice-board', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

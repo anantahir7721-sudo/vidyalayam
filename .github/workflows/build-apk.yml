@@ -26,6 +26,9 @@ jobs:
 
     - name: Build Production Web Assets
       run: npm run build --if-present
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
     - name: Initialize Capacitor Android Container
       run: npx cap sync android || true

@@ -34,7 +34,12 @@ async function callGeminiRest(
     throw new Error('Gemini API Key ઉપલબ્ધ નથી. કૃપા કરીને સેટિંગ્સમાં API Key દાખલ કરો.');
   }
 
-  const candidateModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+  const candidateModels = [
+    'gemini-3.8-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-flash-latest',
+  ];
   let lastError: any = null;
 
   for (const model of candidateModels) {
@@ -308,3 +313,63 @@ export async function directGenerateAbhivyakti(params: {
     throw new Error('AI અભિવ્યક્તિ JSON પાર્સ થઈ શક્યું નહીં.');
   }
 }
+
+/**
+ * Direct School Notice Board Generator for Mobile APK
+ */
+export async function directGenerateSchoolNoticeBoard(params: {
+  schoolName?: string;
+  district?: string;
+  taluka?: string;
+}): Promise<any> {
+  const cleanTaluka = String(params.taluka || 'અંજાર').replace(/\(.*?\)/g, '').trim() || 'અંજાર';
+  const cleanDistrict = String(params.district || 'કચ્છ').replace(/\(.*?\)/g, '').trim() || 'કચ્છ';
+  const schoolName = params.schoolName || 'ગુજરાત માધ્યમિક શાળા';
+
+  const todayDateStr = new Date().toLocaleDateString('gu-IN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const prompt = `તમે ગુજરાત સરકાર શિક્ષણ વિભાગ અને GSEB ના સત્તાવાર નોટિસ બોર્ડ ઓડિટર છો.
+માત્ર અધિકૃત પ્રમાણિત શિક્ષણ વિભાગના પરિપત્રો અને સૂચનાઓ દર્શાવો (gseb.org, gcert.gujarat.gov.in, digitalgujarat, sebexam).
+શાળા: "${schoolName}", તાલુકો: "${cleanTaluka}", જિલ્લો: "${cleanDistrict}", તારીખ: "${todayDateStr}".
+
+આઉટપુટ શુદ્ધ JSON બ્લોકમાં જ આપો:
+{
+  "noticeBulletinTitle": "અધિકૃત શાળા નોટિસ બોર્ડ — ${cleanTaluka} તાલુકો & ${cleanDistrict} જિલ્લો",
+  "bulletinDate": "${todayDateStr}",
+  "academicYear": "૨૦૨૬-૨૭",
+  "verifiedNotices": [
+    {
+      "id": "notice-1",
+      "category": "પરીક્ષા / મૂલ્યાંકન",
+      "title": "એકમ કસોટી અને માધ્યમિક મૂલ્યાંકન સૂચના",
+      "description": "ગુજરાત માધ્યમિક શિક્ષણ બોર્ડ દ્વારા આયોજિત કસોટી સંદર્ભે સમયપત્રક મુજબ કામગીરી પૂર્ણ કરવા બાબત.",
+      "issuedBy": "GSEB / GCERT ગાંધીનગર",
+      "priority": "high",
+      "date": "${todayDateStr}",
+      "officialRefNo": "GSEB/SHIKSHAN/2026",
+      "actionRequired": "તમામ શિક્ષકો અને વિદ્યાર્થીઓએ નોંધ લેવી"
+    }
+  ]
+}`;
+
+  const rawJson = await callGeminiRest(
+    [{ role: 'user', parts: [{ text: prompt }] }],
+    'Return strictly valid JSON only.',
+    0.2,
+    45000
+  );
+
+  try {
+    const parsed = JSON.parse(rawJson);
+    return { success: true, data: parsed };
+  } catch {
+    const match = rawJson.match(/\{[\s\S]*\}/);
+    if (match) return { success: true, data: JSON.parse(match[0]) };
+    throw new Error('AI નોટિસ બોર્ડ JSON પાર્સ થઈ શક્યું નહીં.');
+  }
+}
+
