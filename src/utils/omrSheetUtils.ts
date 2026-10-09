@@ -319,6 +319,13 @@ export function generateOmrSheetHtml(options: GenerateOmrHtmlOptions): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${exam.title} - OMR ઉત્તરવહી (${isChecked ? 'Checked' : 'Unchecked'})</title>
+  
+  <!-- Vidyalayam Native Gujarati Font (Anek Gujarati) -->
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
   <style>
     /* CSS Reset & Print Page Discipline: Strictly 1 Student Page per A4 */
     @page {
@@ -333,7 +340,7 @@ export function generateOmrSheetHtml(options: GenerateOmrHtmlOptions): string {
     body {
       background-color: #f1f5f9;
       color: #0f172a;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Gujarati", Helvetica, Arial, sans-serif;
+      font-family: 'Anek Gujarati', 'Noto Sans Gujarati', 'Gujarati Sangam MN', 'Shruti', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-size: 11px;
       line-height: 1.25;
       -webkit-print-color-adjust: exact !important;

@@ -18,6 +18,7 @@ import {
   Send,
   FileCheck2,
   FileText,
+  FileQuestion,
   Printer,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -25,6 +26,7 @@ import { OnlineExam, MCQQuestion, ExamAttempt, Student, School } from '../types'
 import { getExamQuestions, getExamAttempts } from '../services/onlineExamService';
 import { SendExamResultModal } from './SendExamResultModal';
 import { OnlineExamOmrModal } from './OnlineExamOmrModal';
+import { OnlineExamQuestionPaperModal } from './OnlineExamQuestionPaperModal';
 
 interface OnlineExamAnalyticsModalProps {
   isOpen: boolean;
@@ -53,6 +55,8 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
   const [omrModalOpen, setOmrModalOpen] = useState(false);
   const [omrModalStudentId, setOmrModalStudentId] = useState<string>('ALL');
   const [omrModalMode, setOmrModalMode] = useState<'checked' | 'unchecked'>('checked');
+  const [questionPaperModalOpen, setQuestionPaperModalOpen] = useState(false);
+  const [questionPaperModalMode, setQuestionPaperModalMode] = useState<'without_answers' | 'with_answers'>('without_answers');
 
   useEffect(() => {
     if (isOpen && exam?.id) {
@@ -230,66 +234,96 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/60 dark:bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-5xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[86dvh] sm:max-h-[90dvh] flex flex-col text-slate-800 dark:text-[#e4ded6] animate-fadeIn">
-        {/* Header */}
-        <div className="shrink-0 p-4 sm:p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-wide">
-                  📊 પરીક્ષા પરિણામ અને એનાલિટિક્સ (Results & Analytics)
-                </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300">
-                  {exam.title}
-                </span>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-1.5 sm:p-4 bg-black/70 backdrop-blur-md">
+      <div className="relative w-full max-w-5xl h-[96dvh] sm:h-[90dvh] max-h-[96dvh] sm:max-h-[90dvh] bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-[#e4ded6] animate-fadeIn">
+        {/* Responsive Mobile-Optimized Header */}
+        <div className="shrink-0 p-3 sm:p-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex flex-col gap-2.5">
+          {/* Top Row: Title, Exam Badge & Close Button */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                ધોરણ: {exam.standard} • વિષય: {exam.subject} • કુલ ગુણ: {exam.totalMarks} • પ્રશ્નો: {exam.questionsCount}
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide truncate">
+                    📊 પરીક્ષા પરિણામ અને એનાલિટિક્સ
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300 truncate max-w-[140px] sm:max-w-none">
+                    {exam.title}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                  ધોરણ: {exam.standard} • {exam.subject} • ગુણ: {exam.totalMarks} • પ્રશ્નો: {exam.questionsCount}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+
+            {/* Always visible and easily clickable Close button on mobile */}
             <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer shrink-0"
+              title="બંધ કરો"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Action Toolbar: Horizontal Scrolling on mobile, Wrap on desktop */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+            {/* OMR Button */}
+            <button
+              type="button"
               onClick={() => {
                 setOmrModalStudentId('ALL');
                 setOmrModalMode('checked');
                 setOmrModalOpen(true);
               }}
               disabled={attempts.length === 0}
-              className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-md shadow-indigo-950/30"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
               title="વિદ્યાર્થીઓની OMR ઉત્તરવહી ડાઉનલોડ / પ્રિન્ટ કરો (૧ પેજ પ્રતિ વિદ્યાર્થી)"
             >
               <FileCheck2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">📄 OMR ઉત્તરવહી ડાઉનલોડ</span>
-              <span className="sm:hidden">OMR શીટ્સ</span>
+              <span>📄 OMR શીટ્સ</span>
             </button>
+
+            {/* Question Paper Button */}
             <button
+              type="button"
+              onClick={() => {
+                setQuestionPaperModalMode('without_answers');
+                setQuestionPaperModalOpen(true);
+              }}
+              disabled={questions.length === 0}
+              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
+              title="પ્રશ્નપત્ર ડાઉનલોડ / પ્રિન્ટ કરો (જવાબ સાથે અથવા જવાબ વિના)"
+            >
+              <FileQuestion className="w-3.5 h-3.5" />
+              <span>📝 પ્રશ્નપત્ર ડાઉનલોડ</span>
+            </button>
+
+            {/* Send Result to Parents Button */}
+            <button
+              type="button"
               onClick={() => setSendResultModalOpen(true)}
               disabled={attempts.length === 0}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-md shadow-emerald-950/30"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
               title="વાલીઓને ઓનલાઇન કસોટીના ગુણ WhatsApp / SMS દ્વારા મોકલો"
             >
               <Send className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">વાલીઓને પરિણામ મોકલો 🚀</span>
-              <span className="sm:hidden">પરિણામ મોકલો</span>
+              <span>🚀 પરિણામ મોકલો</span>
             </button>
+
+            {/* Excel Export Button */}
             <button
+              type="button"
               onClick={handleExportExcel}
               disabled={attempts.length === 0}
-              className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 border border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 border border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shrink-0"
             >
-              <FileSpreadsheet className="w-4 h-4" />
-              Excel Export
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Excel Export</span>
             </button>
           </div>
         </div>
@@ -572,6 +606,18 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
           school={school}
           initialStudentId={omrModalStudentId}
           initialMode={omrModalMode}
+        />
+      )}
+
+      {/* Online Exam Question Paper Modal */}
+      {questionPaperModalOpen && (
+        <OnlineExamQuestionPaperModal
+          isOpen={questionPaperModalOpen}
+          onClose={() => setQuestionPaperModalOpen(false)}
+          exam={exam}
+          questions={questions}
+          school={school}
+          initialMode={questionPaperModalMode}
         />
       )}
     </div>

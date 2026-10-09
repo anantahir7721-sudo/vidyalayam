@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Copy,
+  FileQuestion,
 } from 'lucide-react';
 import {
   School,
@@ -45,6 +46,7 @@ import { createBulkStudentNotifications } from '../services/notificationService'
 import { OnlineExamEditor } from './OnlineExamEditor';
 import { OnlineExamAnalyticsModal } from './OnlineExamAnalyticsModal';
 import { QuestionBankModal } from './QuestionBankModal';
+import { OnlineExamQuestionPaperModal } from './OnlineExamQuestionPaperModal';
 
 interface OnlineExamManagerProps {
   school: School;
@@ -83,6 +85,25 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
 
   // Analytics Modal
   const [analyticsExam, setAnalyticsExam] = useState<OnlineExam | null>(null);
+
+  // Question Paper Modal from Exam Card
+  const [questionPaperTarget, setQuestionPaperTarget] = useState<{
+    exam: OnlineExam;
+    questions: MCQQuestion[];
+  } | null>(null);
+  const [loadingPaperExamId, setLoadingPaperExamId] = useState<string | null>(null);
+
+  const handleOpenQuestionPaper = async (exam: OnlineExam) => {
+    try {
+      setLoadingPaperExamId(exam.id);
+      const qs = await getExamQuestions(school.id, exam.id);
+      setQuestionPaperTarget({ exam, questions: qs });
+    } catch (err) {
+      console.error('Error loading questions for paper:', err);
+    } finally {
+      setLoadingPaperExamId(null);
+    }
+  };
 
   // Question Bank Modal
   const [showQuestionBank, setShowQuestionBank] = useState(false);
@@ -532,11 +553,25 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                     <button
                       type="button"
                       onClick={() => setAnalyticsExam(exam)}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-950 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-950 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                       title="વિદ્યાર્થી પરિણામ અને પ્રશ્નવાર એનાલિટિક્સ"
                     >
                       <BarChart3 className="w-3.5 h-3.5 text-emerald-800 dark:text-emerald-300" />
                       <span className="text-emerald-950 dark:text-emerald-300 font-bold">પરિણામ</span>
+                    </button>
+
+                    {/* Question Paper Download */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenQuestionPaper(exam)}
+                      disabled={loadingPaperExamId === exam.id}
+                      className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 text-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                      title="પ્રશ્નપત્ર પ્રિન્ટ & PDF ડાઉનલોડ (જવાબ સાથે અથવા જવાબ વિના)"
+                    >
+                      <FileQuestion className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />
+                      <span className="text-amber-950 dark:text-amber-300 font-bold">
+                        {loadingPaperExamId === exam.id ? '...' : 'પેપર'}
+                      </span>
                     </button>
 
                     {/* Edit or Retake New Entry */}
@@ -634,6 +669,17 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Online Exam Question Paper Modal */}
+      {questionPaperTarget && (
+        <OnlineExamQuestionPaperModal
+          isOpen={Boolean(questionPaperTarget)}
+          onClose={() => setQuestionPaperTarget(null)}
+          exam={questionPaperTarget.exam}
+          questions={questionPaperTarget.questions}
+          school={school}
+        />
       )}
     </div>
   );
