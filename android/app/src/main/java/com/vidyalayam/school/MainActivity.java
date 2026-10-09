@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -113,6 +114,16 @@ public class MainActivity extends BridgeActivity {
         } catch (Exception ignored) {}
 
         // Register Android Native Bridge for seamless printing, PDF handling and native notifications
+        registerAndroidBridge();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        registerAndroidBridge();
+    }
+
+    private void registerAndroidBridge() {
         try {
             if (bridge != null && bridge.getWebView() != null) {
                 bridge.getWebView().addJavascriptInterface(new AndroidBridgeInterface(), "AndroidBridge");
@@ -395,7 +406,195 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
-        public void saveBase64Pdf(final String base64Data, final String rawFilename, final String mimeType) {
+        public void downloadBase64Pdf(final String base64Data, final String rawFilename, final String mimeType) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        String cleanName = (rawFilename != null && !rawFilename.trim().isEmpty())
+                            ? rawFilename.trim().replaceAll("[\\\\/:*?\"<>|]", "_")
+                            : "Vidyalayam_Document_" + System.currentTimeMillis() + ".pdf";
+                        if (!cleanName.toLowerCase().endsWith(".pdf")) {
+                            cleanName += ".pdf";
+                        }
+                        final String filename = cleanName;
+                        final String actualMime = (mimeType != null && !mimeType.trim().isEmpty())
+                            ? mimeType
+                            : "application/pdf";
+
+                        byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
+
+                        // 1. Save to app cache for reliable FileProvider viewing and immediate opening
+                        File cacheDir = getCacheDir();
+                        File cacheFile = new File(cacheDir, filename);
+                        FileOutputStream fos = new FileOutputStream(cacheFile);
+                        fos.write(bytes);
+                        fos.flush();
+                        fos.close();
+
+                        // 2. Also save to app external files directory (guaranteed accessible on all Android versions)
+                        try {
+                            File extDownloads = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                            if (extDownloads != null) {
+                                if (!extDownloads.exists()) extDownloads.mkdirs();
+                                File extFile = new File(extDownloads, filename);
+                                FileOutputStream efos = new FileOutputStream(extFile);
+                                efos.write(bytes);
+                                efos.flush();
+                                efos.close();
+                            }
+                        } catch (Exception extErr) {
+                            extErr.printStackTrace();
+                        }
+
+                        // 3. Save directly to public Downloads folder
+                        File savedPublicFile = null;
+                        boolean savedToDownloads = false;
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            try {
+                                ContentValues values = new ContentValues();
+                                values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+                                values.put(MediaStore.MediaColumns.MIME_TYPE, actualMime);
+                                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                                values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+
+                                Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                                if (uri == null) {
+                                    // Retry with safe timestamp name if OEM media provider choked on unicode name
+                                    String safeAscii = "Vidyalayam_" + System.currentTimeMillis() + ".pdf";
+                                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, safeAscii);
+                                    uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                                }
+
+                                if (uri != null) {
+                                    OutputStream os = getContentResolver().openOutputStream(uri);
+                                    if (os != null) {
+                                        os.write(bytes);
+                                        os.flush();
+                                        os.close();
+                                        savedToDownloads = true;
+                                    }
+                                    values.clear();
+                                    values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                                    getContentResolver().update(uri, values, null, null);
+                                }
+                            } catch (Exception qErr) {
+                                qErr.printStackTrace();
+                            }
+                        }
+
+                        // Direct filesystem fallback for Downloads (Android 9 and below or legacy storage)
+                        if (!savedToDownloads) {
+                            try {
+                                File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                                if (!downloadsDir.exists()) {
+                                    downloadsDir.mkdirs();
+                                }
+                                savedPublicFile = new File(downloadsDir, filename);
+                                FileOutputStream dfos = new FileOutputStream(savedPublicFile);
+                                dfos.write(bytes);
+                                dfos.flush();
+                                dfos.close();
+                                savedToDownloads = true;
+                            } catch (Exception legacyErr) {
+                                legacyErr.printStackTrace();
+                            }
+                        }
+
+                        // Scan file with MediaScanner so it immediately registers in phone's Downloads app
+                        try {
+                            if (savedPublicFile != null && savedPublicFile.exists()) {
+                                MediaScannerConnection.scanFile(
+                                    MainActivity.this,
+                                    new String[]{savedPublicFile.getAbsolutePath()},
+                                    new String[]{actualMime},
+                                    null
+                                );
+                            }
+                        } catch (Exception scanErr) {
+                            scanErr.printStackTrace();
+                        }
+
+                        // 4. User feedback Toast
+                        Toast.makeText(
+                            MainActivity.this,
+                            "✅ PDF સફળતાપૂર્વક ડાઉનલોડ થઈ ગઈ: " + filename + " (Downloads ફોલ્ડર)",
+                            Toast.LENGTH_LONG
+                        ).show();
+
+                        // 5. System Notification with Tap to Open
+                        try {
+                            Uri contentUri = FileProvider.getUriForFile(
+                                MainActivity.this,
+                                getPackageName() + ".fileprovider",
+                                cacheFile
+                            );
+                            Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+                            viewIntent.setDataAndType(contentUri, actualMime);
+                            viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                            int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
+                            }
+
+                            PendingIntent pendingIntent = PendingIntent.getActivity(
+                                MainActivity.this,
+                                (int) System.currentTimeMillis(),
+                                Intent.createChooser(viewIntent, "PDF ઓપન કરો"),
+                                pendingFlags
+                            );
+
+                            int iconRes = getApplicationInfo().icon;
+                            if (iconRes == 0) iconRes = android.R.drawable.stat_sys_download_done;
+
+                            NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this, NOTIFICATION_CHANNEL_ID)
+                                .setSmallIcon(iconRes)
+                                .setContentTitle("📄 PDF ડાઉનલોડ પૂર્ણ")
+                                .setContentText(filename + " (ઓપન કરવા અડકો)")
+                                .setStyle(new NotificationCompat.BigTextStyle().bigText("ફાઈલ ડાઉનલોડ થઈ ગઈ છે: " + filename + "\nઓપન કરવા માટે અહીં ક્લિક કરો."))
+                                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                                .setAutoCancel(true)
+                                .setColor(Color.parseColor("#9d512d"))
+                                .setContentIntent(pendingIntent);
+
+                            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(MainActivity.this);
+                            notificationManager.notify((int) (System.currentTimeMillis() % 100000), builder.build());
+                        } catch (Exception notifErr) {
+                            notifErr.printStackTrace();
+                        }
+
+                        // 6. IMMEDIATELY launch Open Chooser so the user can instantly open and view their downloaded PDF
+                        try {
+                            Uri openUri = FileProvider.getUriForFile(
+                                MainActivity.this,
+                                getPackageName() + ".fileprovider",
+                                cacheFile
+                            );
+                            Intent openIntent = new Intent(Intent.ACTION_VIEW);
+                            openIntent.setDataAndType(openUri, actualMime);
+                            openIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            openIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                            Intent openChooser = Intent.createChooser(openIntent, "PDF ઓપન કરો (" + filename + ")");
+                            openChooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(openChooser);
+                        } catch (Exception openErr) {
+                            openErr.printStackTrace();
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Toast.makeText(MainActivity.this, "PDF ડાઉનલોડ કરવામાં ક્ષતિ: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void shareBase64Pdf(final String base64Data, final String rawFilename, final String mimeType, final String shareText) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -409,7 +608,7 @@ public class MainActivity extends BridgeActivity {
 
                         byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
 
-                        // 1. Save to app cache for FileProvider intent sharing/viewing
+                        // Save to cache dir for FileProvider
                         File cacheDir = getCacheDir();
                         File outputFile = new File(cacheDir, filename);
                         FileOutputStream fos = new FileOutputStream(outputFile);
@@ -417,61 +616,36 @@ public class MainActivity extends BridgeActivity {
                         fos.flush();
                         fos.close();
 
-                        // 2. Also save directly to user's device Downloads folder
-                        try {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                ContentValues values = new ContentValues();
-                                values.put(MediaStore.Downloads.DISPLAY_NAME, filename);
-                                values.put(MediaStore.Downloads.MIME_TYPE, actualMime);
-                                values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Vidyalayam");
-                                Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-                                if (uri != null) {
-                                    OutputStream os = getContentResolver().openOutputStream(uri);
-                                    if (os != null) {
-                                        os.write(bytes);
-                                        os.flush();
-                                        os.close();
-                                    }
-                                }
-                            } else {
-                                File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                                File targetFile = new File(downloadsDir, filename);
-                                FileOutputStream dfos = new FileOutputStream(targetFile);
-                                dfos.write(bytes);
-                                dfos.flush();
-                                dfos.close();
-                            }
-                        } catch (Exception saveErr) {
-                            saveErr.printStackTrace();
+                        Uri contentUri = FileProvider.getUriForFile(
+                            MainActivity.this,
+                            getPackageName() + ".fileprovider",
+                            outputFile
+                        );
+
+                        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                        shareIntent.setType(actualMime);
+                        shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                        if (shareText != null && !shareText.trim().isEmpty()) {
+                            shareIntent.putExtra(Intent.EXTRA_TEXT, shareText.trim());
                         }
+                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-                        Toast.makeText(MainActivity.this, "PDF ડાઉનલોડ થઈ: " + filename, Toast.LENGTH_SHORT).show();
-
-                        // 3. Open chooser so user can view with PDF viewer or share via WhatsApp
-                        try {
-                            Uri contentUri = FileProvider.getUriForFile(
-                                MainActivity.this,
-                                getPackageName() + ".fileprovider",
-                                outputFile
-                            );
-                            Intent viewIntent = new Intent(Intent.ACTION_VIEW);
-                            viewIntent.setDataAndType(contentUri, actualMime);
-                            viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-                            Intent chooser = Intent.createChooser(viewIntent, "PDF ઓપન કરો અથવા શેર કરો");
-                            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(chooser);
-                        } catch (Exception intentErr) {
-                            intentErr.printStackTrace();
-                        }
+                        Intent chooser = Intent.createChooser(shareIntent, "PDF શેર કરો (WhatsApp)");
+                        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(chooser);
 
                     } catch (Exception e) {
                         e.printStackTrace();
-                        Toast.makeText(MainActivity.this, "PDF સેવ કરવામાં ક્ષતિ: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(MainActivity.this, "PDF શેર કરવામાં ક્ષતિ: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 }
             });
+        }
+
+        @JavascriptInterface
+        public void saveBase64Pdf(final String base64Data, final String rawFilename, final String mimeType) {
+            downloadBase64Pdf(base64Data, rawFilename, mimeType);
         }
     }
 }

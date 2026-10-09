@@ -12,10 +12,11 @@ import {
   Clock,
   ListChecks,
   Loader2,
+  Download,
 } from 'lucide-react';
 import { DailySuvicharBulletin } from '../types';
 import { getDailySuvicharBulletin } from '../services/dailyKnowledgeService';
-import { shareDailySuvicharAsPdf } from '../utils/dailyPdfShareUtils';
+import { shareDailySuvicharAsPdf, downloadDailySuvicharAsPdf } from '../utils/dailyPdfShareUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
 
 interface DailySuvicharTabProps {
@@ -81,6 +82,30 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
     navigator.clipboard?.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  // Direct PDF Download
+  const handleDownloadPdf = async () => {
+    if (!bulletin || isDownloadingPdf) return;
+    setIsDownloadingPdf(true);
+    setShareFeedback('સુવિચાર PDF ડાઉનલોડ થઈ રહી છે...');
+
+    try {
+      await downloadDailySuvicharAsPdf(bulletin, {
+        schoolName: schoolName || 'શાળા શૈક્ષણિક પોર્ટલ',
+        diseCode,
+        district,
+      });
+      setShareFeedback('✅ સુવિચાર PDF સફળતાપૂર્વક ડિવાઇસના Downloads ફોલ્ડરમાં સેવ થઈ ગઈ!');
+    } catch (err) {
+      console.error('PDF Download Error:', err);
+      setShareFeedback('❌ PDF ડાઉનલોડ કરવામાં સમસ્યા થઈ.');
+    } finally {
+      setIsDownloadingPdf(false);
+      setTimeout(() => setShareFeedback(null), 4000);
+    }
   };
 
   // WhatsApp 1-Page PDF Share
@@ -163,8 +188,29 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons: WhatsApp PDF & Next Thought */}
+          {/* Action Buttons: Download PDF, WhatsApp PDF & Next Thought */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Direct PDF Download */}
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="px-4 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs flex items-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer disabled:opacity-50 border border-white/20"
+              title="સુવિચારની 1-Page PDF ફાઈલ ડિવાઇસના Downloads ફોલ્ડરમાં સાચવો"
+            >
+              {isDownloadingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>ડાઉનલોડ થઈ રહી છે...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>PDF ડાઉનલોડ</span>
+                </>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={handleSharePdf}

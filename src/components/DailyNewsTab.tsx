@@ -17,10 +17,11 @@ import {
   RotateCw,
   Loader2,
   Bell,
+  Download,
 } from 'lucide-react';
 import { DailyNewsBulletin, NewsItem, NewsCategory } from '../types';
 import { getDailyNewsBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
-import { shareDailyNewsAsPdf } from '../utils/dailyPdfShareUtils';
+import { shareDailyNewsAsPdf, downloadDailyNewsAsPdf } from '../utils/dailyPdfShareUtils';
 import { sendNotification } from '../utils/notificationUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
 
@@ -130,6 +131,31 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  // Direct PDF Download to Device (Downloads Folder)
+  const handleDownloadPdf = async () => {
+    if (!bulletin || isDownloadingPdf) return;
+
+    setIsDownloadingPdf(true);
+    setShareFeedback('સમાચાર PDF ડાઉનલોડ થઈ રહી છે...');
+
+    try {
+      await downloadDailyNewsAsPdf(bulletin, {
+        schoolName: schoolName || 'શાળા શૈક્ષણિક પોર્ટલ',
+        diseCode,
+        district,
+      });
+      setShareFeedback('✅ સમાચાર PDF સફળતાપૂર્વક ડિવાઇસમાં ડાઉનલોડ થઈ ગઈ!');
+    } catch (err) {
+      console.error('PDF download error:', err);
+      setShareFeedback('PDF ડાઉનલોડ કરવામાં સમસ્યા આવી. કૃપા કરીને પુનઃ પ્રયાસ કરો.');
+    } finally {
+      setIsDownloadingPdf(false);
+      setTimeout(() => setShareFeedback(null), 4000);
+    }
   };
 
   // WhatsApp Share as PDF: Creates PDF with School Name, Date, and 10 news points
@@ -255,8 +281,29 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons: WhatsApp Share PDF, Copy, Print */}
+          {/* Action Buttons: Download PDF, WhatsApp Share PDF, Copy, Print */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Direct PDF Download Button */}
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-indigo-900/30 disabled:opacity-50"
+              title="આજના સમાચારની PDF ફાઈલ સીધી ડિવાઇસના Downloads ફોલ્ડરમાં સેવ કરો"
+            >
+              {isDownloadingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>ડાઉનલોડ થઈ રહી છે...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 text-white" />
+                  <span>PDF ડાઉનલોડ</span>
+                </>
+              )}
+            </button>
+
             {/* WhatsApp Share PDF Button */}
             <button
               type="button"

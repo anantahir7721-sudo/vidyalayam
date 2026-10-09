@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { downloadOrSharePdf } from './printAndPdfUtils';
+import { downloadPdfFile, sharePdfFile, downloadOrSharePdf } from './printAndPdfUtils';
 import {
   DailyNewsBulletin,
   DailyJanvaJevuBulletin,
@@ -15,11 +15,12 @@ export interface ShareOptions {
   schoolName: string;
   diseCode?: string;
   district?: string;
+  mode?: 'share' | 'download';
 }
 
 export interface ShareResult {
   success: boolean;
-  method: 'native_share' | 'whatsapp_web' | 'downloaded';
+  method: 'native_share' | 'whatsapp_web' | 'downloaded' | 'android_native_share' | 'android_native_download' | 'browser_download' | string;
   fileName: string;
   message?: string;
 }
@@ -218,28 +219,21 @@ export async function shareDailyNewsAsPdf(
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
     const pdfBlob = pdf.output('blob');
-    const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-    // Download to device
-    downloadBlob(pdfBlob, fileName);
-
-    // Native Share API (WhatsApp mobile)
-    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-      try {
-        await navigator.share({
-          files: [pdfFile],
-          title: `${schoolName} — આજના સમાચાર (${bulletin.editionDate})`,
-          text: `📰 *${schoolName}*\nઆજના મુખ્ય ૧૦ સમાચાર (${bulletin.editionDate})\nપીડીએફ ફાઇલ મોકલેલ છે.`,
-        });
-        return { success: true, method: 'native_share', fileName };
-      } catch (shareErr: any) {
-        if (shareErr.name === 'AbortError') {
-          return { success: true, method: 'downloaded', fileName };
-        }
-      }
+    // 1. If explicit download mode was requested, save directly to Downloads without WhatsApp prompt
+    if (options.mode === 'download') {
+      await downloadPdfFile(pdfBlob, fileName);
+      return { success: true, method: 'downloaded', fileName };
     }
 
-    // WhatsApp fallback
+    // 2. Share mode: Try native file share or WhatsApp
+    const shareText = `📰 *${schoolName}*\nઆજના મુખ્ય ૧૦ સમાચાર (${bulletin.editionDate})\nપીડીએફ ફાઇલ મોકલેલ છે.`;
+    const shareRes = await sharePdfFile(pdfBlob, fileName, `${schoolName} — આજના સમાચાર (${bulletin.editionDate})`, shareText);
+    if (shareRes.success) {
+      return { success: true, method: shareRes.method, fileName };
+    }
+
+    // WhatsApp text link fallback
     const sampleHighlights = bulletin.items.slice(0, 3).map((item) => `• ${item.headline}`).join('\n');
     const waText = encodeURIComponent(
       `📰 *${schoolName}*\n` +
@@ -421,26 +415,18 @@ export async function shareDailyJanvaJevuAsPdf(
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
     const pdfBlob = pdf.output('blob');
-    const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-    // Download to device
-    downloadBlob(pdfBlob, fileName);
+    // 1. If explicit download mode was requested, save directly to Downloads without WhatsApp prompt
+    if (options.mode === 'download') {
+      await downloadPdfFile(pdfBlob, fileName);
+      return { success: true, method: 'downloaded', fileName };
+    }
 
-    // Native Share API
-    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-      try {
-        await navigator.share({
-          files: [pdfFile],
-          title: `${schoolName} — આજનું જાણવા જેવું (${bulletin.editionDate})`,
-          text: `💡 *${schoolName}*\nઆજનું જાણવા જેવું — ૨૦ પ્રશ્નોત્તરી (${bulletin.editionDate})\nપીડીએફ ફાઇલ મોકલેલ છે.`,
-        });
-        return { success: true, method: 'native_share', fileName };
-      } catch (shareErr: any) {
-        if (shareErr.name !== 'AbortError') {
-          console.warn('Native file share failed, falling back:', shareErr);
-        }
-        return { success: true, method: 'downloaded', fileName };
-      }
+    // 2. Share mode: Try native file share or WhatsApp
+    const shareText = `💡 *${schoolName}*\nઆજનું જાણવા જેવું — ૨૦ પ્રશ્નોત્તરી (${bulletin.editionDate})\nપીડીએફ ફાઇલ મોકલેલ છે.`;
+    const shareRes = await sharePdfFile(pdfBlob, fileName, `${schoolName} — આજનું જાણવા જેવું (${bulletin.editionDate})`, shareText);
+    if (shareRes.success) {
+      return { success: true, method: shareRes.method, fileName };
     }
 
     // Fallback WhatsApp
@@ -708,26 +694,18 @@ export async function shareDailySuvicharAsPdf(
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
     const pdfBlob = pdf.output('blob');
-    const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-    // Download to device
-    downloadBlob(pdfBlob, fileName);
+    // 1. If explicit download mode was requested, save directly to Downloads without WhatsApp prompt
+    if (options.mode === 'download') {
+      await downloadPdfFile(pdfBlob, fileName);
+      return { success: true, method: 'downloaded', fileName };
+    }
 
-    // Native Share API
-    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-      try {
-        await navigator.share({
-          files: [pdfFile],
-          title: `${schoolName} — આજનો સુવિચાર (${bulletin.editionDate})`,
-          text: `✨ *${schoolName}*\nઆજનો સુવિચાર (${bulletin.editionDate})\n"${thought}"\nપીડીએફ ફાઇલ મોકલેલ છે.`,
-        });
-        return { success: true, method: 'native_share', fileName };
-      } catch (shareErr: any) {
-        if (shareErr.name !== 'AbortError') {
-          console.warn('Native file share failed, falling back:', shareErr);
-        }
-        return { success: true, method: 'downloaded', fileName };
-      }
+    // 2. Share mode: Try native file share or WhatsApp
+    const shareText = `✨ *${schoolName}*\nઆજનો સુવિચાર (${bulletin.editionDate})\n"${thought}"\nપીડીએફ ફાઇલ મોકલેલ છે.`;
+    const shareRes = await sharePdfFile(pdfBlob, fileName, `${schoolName} — આજનો સુવિચાર (${bulletin.editionDate})`, shareText);
+    if (shareRes.success) {
+      return { success: true, method: shareRes.method, fileName };
     }
 
     // Fallback WhatsApp
@@ -860,7 +838,12 @@ export async function shareDailyInterestingFactsAsPdf(
     pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
 
     const pdfBlob = pdf.output('blob');
-    downloadBlob(pdfBlob, fileName);
+
+    // 1. If explicit download mode was requested, save directly to Downloads without WhatsApp prompt
+    if (options.mode === 'download') {
+      await downloadPdfFile(pdfBlob, fileName);
+      return { success: true, method: 'downloaded', fileName };
+    }
 
     if (navigator.canShare && navigator.canShare({ files: [new File([pdfBlob], fileName, { type: 'application/pdf' })] })) {
       try {
@@ -884,3 +867,195 @@ export async function shareDailyInterestingFactsAsPdf(
     throw err;
   }
 }
+
+/**
+ * Direct PDF Download Helpers (Saves file to device Downloads without WhatsApp prompt)
+ */
+export async function downloadDailyNewsAsPdf(
+  bulletin: DailyNewsBulletin,
+  options: Omit<ShareOptions, 'mode'>
+): Promise<ShareResult> {
+  return shareDailyNewsAsPdf(bulletin, { ...options, mode: 'download' });
+}
+
+export async function downloadDailyJanvaJevuAsPdf(
+  bulletin: DailyJanvaJevuBulletin,
+  options: Omit<ShareOptions, 'mode'>
+): Promise<ShareResult> {
+  return shareDailyJanvaJevuAsPdf(bulletin, { ...options, mode: 'download' });
+}
+
+export async function downloadDailySuvicharAsPdf(
+  bulletin: DailySuvicharBulletin,
+  options: Omit<ShareOptions, 'mode'>
+): Promise<ShareResult> {
+  return shareDailySuvicharAsPdf(bulletin, { ...options, mode: 'download' });
+}
+
+/**
+ * 1-Page A4 Presentation Speech Slip Downloader & Sharer
+ */
+export async function sharePresentationAsPdf(
+  presentation: {
+    title: string;
+    standard: string | number;
+    subject: string;
+    environment?: string;
+    studentName?: string;
+    openingSpeech?: string;
+    topicIntroduction?: string;
+    paragraph1?: string;
+    paragraph2?: string;
+    detailedExplanation?: string;
+    realLifeExample?: string;
+    closingSpeech?: string;
+  },
+  options: ShareOptions
+): Promise<ShareResult> {
+  await waitForFontsToRender();
+
+  const schoolName = options.schoolName || 'શ્રી વિદ્યાલય';
+  const cleanSchool = schoolName.replace(/[\s/\\?%*:|"<>]/g, '_');
+  const cleanTopic = (presentation.title || 'પ્રસ્તુતિ').replace(/[\s/\\?%*:|"<>]/g, '_');
+  const fileName = `${cleanSchool}_પ્રસ્તુતિ_${cleanTopic}.pdf`;
+
+  // Standard A4 dimensions at 96 DPI: 794px width x 1120px height
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '0';
+  container.style.top = '0';
+  container.style.zIndex = '-9999';
+  container.style.pointerEvents = 'none';
+  container.style.width = '794px';
+  container.style.height = '1120px';
+  container.style.maxHeight = '1120px';
+  container.style.overflow = 'hidden';
+  container.style.backgroundColor = '#ffffff';
+  container.style.color = '#0f172a';
+  container.style.fontFamily = GUJARATI_FONT_FAMILY;
+  container.style.padding = '18px 20px';
+  container.style.boxSizing = 'border-box';
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+
+  const p1 = presentation.paragraph1 || presentation.topicIntroduction || '';
+  const p2 = presentation.paragraph2 || (
+    presentation.detailedExplanation
+      ? presentation.detailedExplanation + (presentation.realLifeExample ? `\n\nરોજિંદા જીવનમાં ઉદાહરણ: ${presentation.realLifeExample}` : '')
+      : presentation.realLifeExample || ''
+  );
+
+  container.innerHTML = `
+    <div style="border: 3px double #059669; border-radius: 14px; padding: 16px 20px; background: #ffffff; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+      
+      <!-- School Header -->
+      <div style="text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+        <h1 style="font-size: 24px; font-weight: 900; color: #065f46; margin: 0 0 4px 0; font-family: ${GUJARATI_FONT_FAMILY};">
+          ${schoolName}
+        </h1>
+        <div style="font-size: 13px; color: #475569; font-weight: 700;">
+          શાળા વક્તવ્ય & પ્રસ્તુતિ સ્ક્રિપ્ટ (Student Presentation Speech)
+        </div>
+      </div>
+
+      <!-- Topic Badge Strip -->
+      <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 10px; padding: 8px 14px; margin-top: 8px;">
+        <div style="font-size: 16px; font-weight: 900; color: #065f46;">
+          📌 વિષય: ${presentation.title}
+        </div>
+        <div style="font-size: 12px; color: #047857; font-weight: 700; margin-top: 3px; display: flex; gap: 12px;">
+          <span>ધોરણ: ${presentation.standard}</span>
+          <span>• વિષય: ${presentation.subject}</span>
+          <span>• સેટિંગ: ${presentation.environment || 'પ્રાર્થના સભા'}</span>
+          ${presentation.studentName ? `<span>• વક્તા: ${presentation.studentName}</span>` : ''}
+        </div>
+      </div>
+
+      <!-- Part 1: Salutation -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 14px; margin-top: 8px;">
+        <div style="font-size: 12px; font-weight: 800; color: #0f766e; text-transform: uppercase; margin-bottom: 4px;">
+          ૧. આદરપૂર્વક સંબોધન (Opening Salutation)
+        </div>
+        <div style="font-size: 14.5px; font-weight: 700; color: #1e293b; line-height: 1.5;">
+          "${presentation.openingSpeech || 'માનનીય આચાર્યશ્રી, વંદનીય ગુરુજનો અને મારા વહાલા વિદ્યાર્થી મિત્રો, સૌને મારા સાદર પ્રણામ.'}"
+        </div>
+      </div>
+
+      <!-- Part 2: Main Explanation in 1-2 Paragraphs with Relatable Real-Life Example -->
+      <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-top: 8px; flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <div style="font-size: 12.5px; font-weight: 800; color: #047857; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">
+          ૨. વિષયની સરળ સમજૂતી & રોજિંદા જીવન સાથે સરખામણી
+        </div>
+        ${p1 ? `<p style="font-size: 14.5px; line-height: 1.65; color: #1e293b; margin: 0 0 10px 0; text-align: justify;">${p1}</p>` : ''}
+        ${p2 ? `<p style="font-size: 14.5px; line-height: 1.65; color: #1e293b; margin: 0; text-align: justify; font-weight: 500;">${p2}</p>` : ''}
+      </div>
+
+      <!-- Part 3: Conclusion -->
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 14px; margin-top: 8px;">
+        <div style="font-size: 12px; font-weight: 800; color: #15803d; text-transform: uppercase; margin-bottom: 4px;">
+          ૩. પ્રેરણાદાયી સમાપન (Conclusion)
+        </div>
+        <div style="font-size: 14px; font-weight: 700; color: #166534; line-height: 1.5;">
+          "${presentation.closingSpeech || 'મારી આ રજૂઆત શાંતિપૂર્વક સાંભળવા બદલ આપ સૌનો હૃદયપૂર્વક આભાર. અસ્તુ, જય હિન્દ!'}"
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #e2e8f0; padding-top: 6px; margin-top: 8px; font-size: 11px; color: #64748b;">
+        <span>વિદ્યાલયમ શૈક્ષણિક પોર્ટલ • GSEB અભ્યાસક્રમ પ્રસ્તુતિ</span>
+        <span>A4 વક્તવ્ય સ્લિપ</span>
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(container);
+
+  try {
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+
+    if (document.body.contains(container)) {
+      document.body.removeChild(container);
+    }
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+
+    const pdfBlob = pdf.output('blob');
+
+    if (options.mode === 'download') {
+      await downloadPdfFile(pdfBlob, fileName);
+      return { success: true, method: 'downloaded', fileName };
+    }
+
+    const shareText = `🎤 *${schoolName}*\nવક્તવ્ય પ્રસ્તુતિ: *${presentation.title}* (ધોરણ ${presentation.standard})\nPDF ફાઇલ મોકલેલ છે.`;
+    const shareRes = await sharePdfFile(pdfBlob, fileName, `${schoolName} — ${presentation.title}`, shareText);
+    return { success: true, method: shareRes.method, fileName };
+  } catch (err) {
+    if (document.body.contains(container)) {
+      document.body.removeChild(container);
+    }
+    throw err;
+  }
+}
+
+export async function downloadPresentationAsPdf(
+  presentation: any,
+  options: Omit<ShareOptions, 'mode'>
+): Promise<ShareResult> {
+  return sharePresentationAsPdf(presentation, { ...options, mode: 'download' });
+}
+

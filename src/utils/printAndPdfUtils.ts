@@ -10,7 +10,13 @@
  */
 export function isAndroidNativeApp(): boolean {
   try {
-    return Boolean(typeof window !== 'undefined' && window.AndroidBridge && window.AndroidBridge.isAndroidApp?.());
+    return Boolean(
+      typeof window !== 'undefined' &&
+      window.AndroidBridge &&
+      (window.AndroidBridge.isAndroidApp?.() ||
+       typeof window.AndroidBridge.downloadBase64Pdf === 'function' ||
+       typeof window.AndroidBridge.saveBase64Pdf === 'function')
+    );
   } catch (e) {
     return false;
   }
@@ -129,6 +135,119 @@ export function printHtmlDocument(html: string, jobTitle: string = 'Vidyalayam_D
 }
 
 /**
+ * Explicit PDF File Downloader
+ * - On Native Android APK: Saves directly to device's public Downloads directory,
+ *   registers in system download history, and pops a system completion notification with tap to open!
+ * - On Web: Uses reliable blob object URL with standard a.download anchor click.
+ */
+export async function downloadPdfFile(
+  source: Blob | string,
+  filename: string
+): Promise<{ success: boolean; method: string }> {
+  const cleanFilename = filename.trim().replace(/[\\/:*?"<>|]/g, '_') || 'Vidyalayam_Document.pdf';
+
+  // 1. Android APK Native Path
+  if (isAndroidNativeApp()) {
+    try {
+      const base64Data = typeof source === 'string' ? source : await blobToBase64(source);
+      if (window.AndroidBridge!.downloadBase64Pdf) {
+        window.AndroidBridge!.downloadBase64Pdf(base64Data, cleanFilename, 'application/pdf');
+      } else {
+        window.AndroidBridge!.saveBase64Pdf(base64Data, cleanFilename, 'application/pdf');
+      }
+      return { success: true, method: 'android_native_download' };
+    } catch (err) {
+      console.warn('[downloadPdfFile] AndroidBridge download failed, falling back to web:', err);
+    }
+  }
+
+  // 2. Browser Blob Download
+  try {
+    let blob: Blob;
+    if (typeof source === 'string') {
+      const byteCharacters = atob(source);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
+    } else {
+      blob = source;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = cleanFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    return { success: true, method: 'browser_download' };
+  } catch (err) {
+    console.error('[downloadPdfFile] Browser download failed:', err);
+    return { success: false, method: 'failed' };
+  }
+}
+
+/**
+ * Explicit PDF File Sharer (WhatsApp & Native Share)
+ */
+export async function sharePdfFile(
+  source: Blob | string,
+  filename: string,
+  title?: string,
+  shareText?: string
+): Promise<{ success: boolean; method: string }> {
+  const cleanFilename = filename.trim().replace(/[\\/:*?"<>|]/g, '_') || 'Vidyalayam_Document.pdf';
+
+  // 1. Android APK Native Path
+  if (isAndroidNativeApp()) {
+    try {
+      const base64Data = typeof source === 'string' ? source : await blobToBase64(source);
+      if (window.AndroidBridge!.shareBase64Pdf) {
+        window.AndroidBridge!.shareBase64Pdf(base64Data, cleanFilename, 'application/pdf', shareText || title || '');
+        return { success: true, method: 'android_native_share' };
+      }
+    } catch (err) {
+      console.warn('[sharePdfFile] AndroidBridge share failed, falling back:', err);
+    }
+  }
+
+  // 2. Web Share API
+  try {
+    let blob: Blob;
+    if (typeof source === 'string') {
+      const byteCharacters = atob(source);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
+    } else {
+      blob = source;
+    }
+
+    const pdfFile = new File([blob], cleanFilename, { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      await navigator.share({
+        files: [pdfFile],
+        title: title || cleanFilename,
+        text: shareText || '',
+      });
+      return { success: true, method: 'web_share' };
+    }
+  } catch (shareErr: any) {
+    if (shareErr.name === 'AbortError') {
+      return { success: true, method: 'user_cancelled_share' };
+    }
+  }
+
+  // Fallback to direct download
+  return downloadPdfFile(source, cleanFilename);
+}
+
+/**
  * Universal PDF Download and Sharing Handler
  * - On Native Android APK: Saves file directly to Downloads using AndroidBridge,
  *   displays a native Toast confirmation, and opens the system Open/Share chooser!
@@ -139,62 +258,5 @@ export async function downloadOrSharePdf(
   filename: string,
   title?: string
 ): Promise<{ success: boolean; method: string }> {
-  const cleanFilename = filename.trim().replace(/[\\/:*?"<>|]/g, '_') || 'Vidyalayam_Document.pdf';
-
-  // 1. Android APK Native Path
-  if (isAndroidNativeApp()) {
-    try {
-      const base64Data = typeof source === 'string' ? source : await blobToBase64(source);
-      window.AndroidBridge!.saveBase64Pdf(base64Data, cleanFilename, 'application/pdf');
-      return { success: true, method: 'android_native' };
-    } catch (err) {
-      console.warn('[downloadOrSharePdf] AndroidBridge save failed, falling back to web:', err);
-    }
-  }
-
-  // Ensure we have a Blob for Web APIs
-  let blob: Blob;
-  if (typeof source === 'string') {
-    const byteCharacters = atob(source);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    blob = new Blob([byteArray], { type: 'application/pdf' });
-  } else {
-    blob = source;
-  }
-
-  // 2. Web Share API (mobile Chrome / Safari)
-  try {
-    const pdfFile = new File([blob], cleanFilename, { type: 'application/pdf' });
-    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-      await navigator.share({
-        files: [pdfFile],
-        title: title || cleanFilename,
-      });
-      return { success: true, method: 'web_share' };
-    }
-  } catch (shareErr: any) {
-    if (shareErr.name === 'AbortError') {
-      return { success: true, method: 'user_cancelled_share' };
-    }
-  }
-
-  // 3. Standard Browser Blob Download
-  try {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = cleanFilename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-    return { success: true, method: 'browser_download' };
-  } catch (err) {
-    console.error('[downloadOrSharePdf] Browser download failed:', err);
-    return { success: false, method: 'failed' };
-  }
+  return downloadPdfFile(source, filename);
 }

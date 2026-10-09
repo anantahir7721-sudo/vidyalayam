@@ -12,6 +12,7 @@ import {
   Loader2,
   GraduationCap,
   Share2,
+  Download,
 } from 'lucide-react';
 import { DailyInterestingFactsBulletin, DailyInterestingFact } from '../types';
 import { getDailyInterestingFactsBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
@@ -115,6 +116,31 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
     window.print();
   };
 
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (!bulletin || isDownloadingPdf) return;
+
+    setIsDownloadingPdf(true);
+    setShareFeedback('૧૨ તથ્યોની PDF ડાઉનલોડ થઈ રહી છે...');
+
+    try {
+      await shareDailyInterestingFactsAsPdf(bulletin, {
+        schoolName: schoolName || 'શાળા શૈક્ષણિક પોર્ટલ',
+        diseCode,
+        district,
+        mode: 'download',
+      });
+      setShareFeedback('✅ PDF સફળતાપૂર્વક ડિવાઇસના Downloads ફોલ્ડરમાં સેવ થઈ ગઈ!');
+    } catch (err) {
+      console.error('PDF download error:', err);
+      setShareFeedback('PDF ડાઉનલોડ કરવામાં સમસ્યા આવી.');
+    } finally {
+      setIsDownloadingPdf(false);
+      setTimeout(() => setShareFeedback(null), 4000);
+    }
+  };
+
   const handleSharePdfWhatsApp = async () => {
     if (!bulletin || isGeneratingPdf) return;
 
@@ -206,6 +232,27 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Direct PDF Download */}
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 active:scale-[0.98] text-white flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-amber-950/40 disabled:opacity-50"
+              title="૧૨ તથ્યોની PDF ફાઈલ ડિવાઇસના Downloads ફોલ્ડરમાં સાચવો"
+            >
+              {isDownloadingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>ડાઉનલોડ થઈ રહી છે...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 text-white" />
+                  <span>PDF ડાઉનલોડ</span>
+                </>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={handleSharePdfWhatsApp}
