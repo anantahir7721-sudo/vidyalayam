@@ -57,6 +57,7 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
   const [omrModalMode, setOmrModalMode] = useState<'checked' | 'unchecked'>('checked');
   const [questionPaperModalOpen, setQuestionPaperModalOpen] = useState(false);
   const [questionPaperModalMode, setQuestionPaperModalMode] = useState<'without_answers' | 'with_answers'>('without_answers');
+  const [showStatsMobile, setShowStatsMobile] = useState(false);
 
   useEffect(() => {
     if (isOpen && exam?.id) {
@@ -234,45 +235,44 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-1.5 sm:p-4 bg-black/70 backdrop-blur-md">
-      <div className="relative w-full max-w-5xl h-[96dvh] sm:h-[90dvh] max-h-[96dvh] sm:max-h-[90dvh] bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-[#e4ded6] animate-fadeIn">
-        {/* Responsive Mobile-Optimized Header */}
-        <div className="shrink-0 p-3 sm:p-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex flex-col gap-2.5">
-          {/* Top Row: Title, Exam Badge & Close Button */}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-1 sm:p-4 bg-black/75 backdrop-blur-md">
+      <div className="relative w-full max-w-5xl h-[98dvh] sm:h-[92dvh] max-h-[98dvh] sm:max-h-[92dvh] bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-[#e4ded6] animate-fadeIn">
+        {/* Header: Compact, responsive */}
+        <div className="shrink-0 px-3 py-2.5 sm:px-4 sm:py-3 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/90 flex flex-col gap-2">
+          {/* Top Row: Title, Exam Info & Close Button */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                <BarChart3 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide truncate">
-                    📊 પરીક્ષા પરિણામ અને એનાલિટિક્સ
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="text-xs sm:text-base font-bold text-slate-900 dark:text-white truncate">
+                    📊 પરિણામ અને એનાલિટિક્સ
                   </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300 truncate max-w-[140px] sm:max-w-none">
+                  <span className="px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 truncate max-w-[130px] sm:max-w-none">
                     {exam.title}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  ધોરણ: {exam.standard} • {exam.subject} • ગુણ: {exam.totalMarks} • પ્રશ્નો: {exam.questionsCount}
+                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
+                  ધોરણ {exam.standard} • {exam.subject} • કુલ ગુણ: {exam.totalMarks} • {exam.questionsCount} પ્રશ્નો
                 </p>
               </div>
             </div>
 
-            {/* Always visible and easily clickable Close button on mobile */}
+            {/* Close Button */}
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 sm:p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer shrink-0"
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-200/80 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors cursor-pointer shrink-0"
               title="બંધ કરો"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
             </button>
           </div>
 
-          {/* Action Toolbar: Horizontal Smooth Touch Scrolling on mobile, Wrap on desktop */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1 scrollbar-none flex-nowrap">
-            {/* OMR Button */}
+          {/* Action Toolbar: Smooth scroll, buttons never cut off */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-0.5 scrollbar-none flex-nowrap text-xs">
             <button
               type="button"
               onClick={() => {
@@ -281,14 +281,13 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                 setOmrModalOpen(true);
               }}
               disabled={attempts.length === 0}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
-              title="વિદ્યાર્થીઓની OMR ઉત્તરવહી ડાઉનલોડ / પ્રિન્ટ કરો (૧ પેજ પ્રતિ વિદ્યાર્થી)"
+              className="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-xs shrink-0 whitespace-nowrap text-[11px] sm:text-xs"
+              title="વિદ્યાર્થીઓની OMR ઉત્તરવહી ડાઉનલોડ / પ્રિન્ટ કરો"
             >
-              <FileCheck2 className="w-3.5 h-3.5" />
+              <FileCheck2 className="w-3.5 h-3.5 shrink-0" />
               <span>📄 OMR શીટ્સ</span>
             </button>
 
-            {/* Question Paper Button */}
             <button
               type="button"
               onClick={() => {
@@ -296,111 +295,169 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                 setQuestionPaperModalOpen(true);
               }}
               disabled={questions.length === 0}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
-              title="પ્રશ્નપત્ર ડાઉનલોડ / પ્રિન્ટ કરો (જવાબ સાથે અથવા જવાબ વિના)"
+              className="px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-xs shrink-0 whitespace-nowrap text-[11px] sm:text-xs"
+              title="પ્રશ્નપત્ર ડાઉનલોડ / પ્રિન્ટ કરો"
             >
-              <FileQuestion className="w-3.5 h-3.5" />
-              <span>📝 પ્રશ્નપત્ર ડાઉનલોડ</span>
+              <FileQuestion className="w-3.5 h-3.5 shrink-0" />
+              <span>📝 પ્રશ્નપત્ર</span>
             </button>
 
-            {/* Send Result to Parents Button */}
             <button
               type="button"
               onClick={() => setSendResultModalOpen(true)}
               disabled={attempts.length === 0}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-sm shrink-0"
+              className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-xs shrink-0 whitespace-nowrap text-[11px] sm:text-xs"
               title="વાલીઓને ઓનલાઇન કસોટીના ગુણ WhatsApp / SMS દ્વારા મોકલો"
             >
-              <Send className="w-3.5 h-3.5" />
+              <Send className="w-3.5 h-3.5 shrink-0" />
               <span>🚀 પરિણામ મોકલો</span>
             </button>
 
-            {/* Excel Export Button */}
             <button
               type="button"
               onClick={handleExportExcel}
               disabled={attempts.length === 0}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 border border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shrink-0"
+              className="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 border border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shrink-0 whitespace-nowrap text-[11px] sm:text-xs"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
               <span>Excel Export</span>
             </button>
           </div>
         </div>
 
-        {/* Overview Stat Cards */}
-        <div className="shrink-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 p-4 bg-slate-100/70 dark:bg-slate-900/60 border-b border-slate-200 dark:border-white/10 text-xs">
-          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
-            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">કુલ પાત્ર વિદ્યાર્થી</div>
-            <div className="text-lg font-bold text-slate-900 dark:text-white">{stats.totalEligible}</div>
+        {/* Overview Stat Section: Compact strip on mobile with toggle; Full 6-cards on desktop */}
+        <div className="shrink-0 bg-slate-100/90 dark:bg-slate-900/60 border-b border-slate-200 dark:border-white/10">
+          {/* Mobile Strip View */}
+          <div className="sm:hidden px-3 py-1.5 flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-0.5">
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                હાજર: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{stats.attemptedCount}</strong>/{stats.totalEligible}
+              </span>
+              <span className="text-slate-400">•</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                સરેરાશ: <strong className="text-blue-600 dark:text-blue-400 font-bold">{stats.avgScore}</strong>
+              </span>
+              <span className="text-slate-400">•</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                પાસ: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{stats.passPct}%</strong>
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowStatsMobile(!showStatsMobile)}
+              className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-[10px] font-bold flex items-center gap-1 shrink-0 cursor-pointer ml-1"
+            >
+              <span>{showStatsMobile ? 'ઓછું' : 'વિગત'}</span>
+              <ChevronDown className={`w-3 h-3 transition-transform ${showStatsMobile ? 'rotate-180' : ''}`} />
+            </button>
           </div>
-          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
-            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">પરીક્ષા આપી (Attempted)</div>
-            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{stats.attemptedCount}</div>
-          </div>
-          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
-            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">બાકી (Not Attempted)</div>
-            <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{stats.notAttemptedCount}</div>
-          </div>
-          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
-            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">સૌથી વધુ ગુણ (Highest)</div>
-            <div className="text-lg font-bold text-teal-700 dark:text-teal-300">{stats.highestScore} / {exam.totalMarks}</div>
-          </div>
-          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
-            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">સરેરાશ ગુણ (Average)</div>
-            <div className="text-lg font-bold text-blue-700 dark:text-blue-300">{stats.avgScore} ({stats.avgPercentage}%)</div>
-          </div>
-          <div className="p-3 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-sm">
-            <div className="text-slate-500 dark:text-slate-400 text-[11px] mb-1">પાસ ટકાવારી (Pass %)</div>
-            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{stats.passPct}%</div>
+
+          {/* Mobile Expanded 6 cards (only shown if user clicks 'વિગત') */}
+          {showStatsMobile && (
+            <div className="grid grid-cols-3 gap-1.5 p-2.5 sm:hidden text-xs border-t border-slate-200/80 dark:border-white/5 animate-fadeIn">
+              <div className="p-2 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/5 text-center">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">કુલ પાત્ર</div>
+                <div className="text-sm font-extrabold text-slate-900 dark:text-white">{stats.totalEligible}</div>
+              </div>
+              <div className="p-2 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/5 text-center">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">પરીક્ષા આપી</div>
+                <div className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{stats.attemptedCount}</div>
+              </div>
+              <div className="p-2 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/5 text-center">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">બાકી</div>
+                <div className="text-sm font-extrabold text-amber-600 dark:text-amber-400">{stats.notAttemptedCount}</div>
+              </div>
+              <div className="p-2 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/5 text-center">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">સૌથી વધુ</div>
+                <div className="text-sm font-extrabold text-teal-700 dark:text-teal-300">{stats.highestScore}/{exam.totalMarks}</div>
+              </div>
+              <div className="p-2 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/5 text-center">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">સરેરાશ ગુણ</div>
+                <div className="text-sm font-extrabold text-blue-700 dark:text-blue-300">{stats.avgScore}</div>
+              </div>
+              <div className="p-2 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/5 text-center">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">પાસ %</div>
+                <div className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{stats.passPct}%</div>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop View (6 full cards always visible on desktop) */}
+          <div className="hidden sm:grid grid-cols-3 lg:grid-cols-6 gap-2.5 p-3 text-xs">
+            <div className="p-2.5 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-xs">
+              <div className="text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">કુલ પાત્ર વિદ્યાર્થી</div>
+              <div className="text-base font-bold text-slate-900 dark:text-white">{stats.totalEligible}</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-xs">
+              <div className="text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">પરીક્ષા આપી</div>
+              <div className="text-base font-bold text-emerald-600 dark:text-emerald-400">{stats.attemptedCount}</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-xs">
+              <div className="text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">બાકી (Not Attempted)</div>
+              <div className="text-base font-bold text-amber-600 dark:text-amber-400">{stats.notAttemptedCount}</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-xs">
+              <div className="text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">સૌથી વધુ ગુણ</div>
+              <div className="text-base font-bold text-teal-700 dark:text-teal-300">{stats.highestScore} / {exam.totalMarks}</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-xs">
+              <div className="text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">સરેરાશ ગુણ</div>
+              <div className="text-base font-bold text-blue-700 dark:text-blue-300">{stats.avgScore} ({stats.avgPercentage}%)</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 shadow-xs">
+              <div className="text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">પાસ ટકાવારી</div>
+              <div className="text-base font-bold text-emerald-600 dark:text-emerald-400">{stats.passPct}%</div>
+            </div>
           </div>
         </div>
 
-        {/* Tab Toggle */}
-        <div className="shrink-0 p-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/40 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex rounded-xl bg-slate-200 dark:bg-slate-800 p-1 border border-slate-300 dark:border-white/10">
+        {/* Tab Switcher & Search Bar: Compact bar pinned above results */}
+        <div className="shrink-0 p-2 sm:p-3 border-b border-slate-200 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 p-0.5 border border-slate-300 dark:border-white/10 w-full sm:w-auto shrink-0">
             <button
+              type="button"
               onClick={() => setActiveTab('students')}
-              className={`py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`py-1.5 px-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 activeTab === 'students'
-                  ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow'
+                  ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              <Users className="w-3.5 h-3.5" />
-              વિદ્યાર્થી પરિણામ ({attempts.length})
+              <Users className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">વિદ્યાર્થી પરિણામ ({attempts.length})</span>
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('questions')}
-              className={`py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`py-1.5 px-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 activeTab === 'questions'
-                  ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow'
+                  ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              <BarChart3 className="w-3.5 h-3.5" />
-              પ્રશ્ન-વાર એનાલિટિક્સ ({questions.length})
+              <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">પ્રશ્ન એનાલિટિક્સ ({questions.length})</span>
             </button>
           </div>
 
           {activeTab === 'students' && (
-            <div className="flex items-center gap-2 flex-1 max-w-md justify-end">
+            <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto flex-1 max-w-md sm:justify-end">
               <div className="relative flex-1">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="નામ / રોલ નં શોધો..."
-                  className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
+                  className="w-full pl-7.5 pr-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
                 />
               </div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer"
+                className="px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none cursor-pointer shrink-0"
               >
-                <option value="ALL">બધા</option>
+                <option value="ALL">બધા પરિણામ</option>
                 <option value="PASS">માત્ર પાસ</option>
                 <option value="FAIL">સુધારણા જરૂરી</option>
               </select>
@@ -408,8 +465,8 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
           )}
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Content Area: Single Large Unified Scroll Area giving 100% height to results */}
+        <div className="flex-1 overflow-y-auto min-h-0 p-2 sm:p-4">
           {loading ? (
             <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-xs">ડેટા લોડ થઈ રહ્યો છે...</div>
           ) : activeTab === 'students' ? (
@@ -420,8 +477,8 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
               </div>
             ) : (
               <div className="space-y-3">
-                {/* 1. Mobile Optimized Cards View (md:hidden) — Name always visible, buttons never cut off */}
-                <div className="block md:hidden space-y-3">
+                {/* 1. Mobile Optimized Cards View (md:hidden) */}
+                <div className="block md:hidden space-y-2.5">
                   {filteredAttempts.map((at, idx) => {
                     const passingMarks = exam.passingMarks || Math.ceil(exam.totalMarks * 0.35);
                     const isPass = (at.score || 0) >= passingMarks;
@@ -429,19 +486,19 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                     return (
                       <div
                         key={at.id}
-                        className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-white/10 shadow-xs space-y-2.5"
+                        className="p-3 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-white/10 shadow-xs space-y-2"
                       >
-                        {/* Student Name & Result Badge: Pinned at top, always visible */}
+                        {/* Student Name & Result Badge: Clear & Full width, never cut off */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <span className="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0">
                               #{idx + 1}
                             </span>
                             <div className="min-w-0 flex-1">
-                              <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                              <h4 className="font-bold text-slate-900 dark:text-white text-sm leading-snug">
                                 {at.studentName}
                               </h4>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                                 {at.rollNumber ? `રોલ: ${at.rollNumber} ` : ''}
                                 {at.grNumber ? `• GR: ${at.grNumber}` : ''}
                               </p>
@@ -484,7 +541,7 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                               setOmrModalMode('checked');
                               setOmrModalOpen(true);
                             }}
-                            className="w-full py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
+                            className="w-full py-2 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
                             title="તપાસેલ OMR શીટ ડાઉનલોડ / પ્રિન્ટ કરો"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
@@ -498,7 +555,7 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
                               setOmrModalMode('unchecked');
                               setOmrModalOpen(true);
                             }}
-                            className="w-full py-2 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
+                            className="w-full py-2 px-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
                             title="અનચેક્ડ OMR શીટ ડાઉનલોડ / પ્રિન્ટ કરો"
                           >
                             <FileText className="w-3.5 h-3.5 shrink-0" />
@@ -665,17 +722,6 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
               })}
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="shrink-0 p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/90 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/15 text-slate-800 dark:text-white text-xs font-semibold cursor-pointer"
-          >
-            બંધ કરો
-          </button>
         </div>
       </div>
 
