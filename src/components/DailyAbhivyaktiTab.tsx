@@ -27,7 +27,8 @@ import { DailyAbhivyaktiBulletin, DailyAbhivyaktiIdea } from '../types';
 import { getDailyAbhivyaktiBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
 import { haptic } from '../utils/haptics';
 import { WhatsAppIcon } from './WhatsAppIcon';
-import { apiUrl, apiFetch } from '../utils/apiConfig';
+import { apiUrl, apiFetch, isNativeApp } from '../utils/apiConfig';
+import { directGenerateAbhivyakti } from '../services/directGeminiService';
 
 interface DailyAbhivyaktiTabProps {
   schoolName?: string;
@@ -198,6 +199,38 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
     setIsAiGenerating(true);
     setAiError(null);
 
+    // 1. In Native APK, prioritize direct Google Gemini API call
+    if (isNativeApp()) {
+      try {
+        const directData = await directGenerateAbhivyakti({
+          interest,
+          standard: String(selectedStandard),
+        });
+        if (directData && directData.fullScript) {
+          const directIdea: DailyAbhivyaktiIdea = {
+            id: `ai-direct-${Date.now()}`,
+            title: directData.title || interest,
+            category: 'ekpatriya_abhinay',
+            categoryLabel: directData.category || 'પ્રાર્થના સભા પ્રસ્તુતિ',
+            duration: directData.duration || '૫ મિનિટ',
+            targetAudience: directData.targetAudience || 'શાળા પ્રાર્થના સભા',
+            summary: directData.summary || interest,
+            timeBreakdown: directData.timeBreakdown || [],
+            fullScript: directData.fullScript,
+            deliveryTips: directData.deliveryTips || 'આત્મવિશ્વાસથી રજૂઆત કરવી.',
+            aiGenerated: true,
+          };
+          setAiGeneratedIdea(directIdea);
+          setActiveIdeaModal(directIdea);
+          haptic.success();
+          setIsAiGenerating(false);
+          return;
+        }
+      } catch (directErr) {
+        console.warn('[APK Direct Abhivyakti] Note, trying server proxy:', directErr);
+      }
+    }
+
     try {
       const res = await apiFetch('/api/ai/abhivyakti-generate', {
         method: 'POST',
@@ -217,6 +250,35 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
       setActiveIdeaModal(data.data);
       haptic.success();
     } catch (err: any) {
+      // Direct fallback if server request failed
+      try {
+        const directData = await directGenerateAbhivyakti({
+          interest,
+          standard: String(selectedStandard),
+        });
+        if (directData && directData.fullScript) {
+          const directIdea: DailyAbhivyaktiIdea = {
+            id: `ai-direct-${Date.now()}`,
+            title: directData.title || interest,
+            category: 'ekpatriya_abhinay',
+            categoryLabel: directData.category || 'પ્રાર્થના સભા પ્રસ્તુતિ',
+            duration: directData.duration || '૫ મિનિટ',
+            targetAudience: directData.targetAudience || 'શાળા પ્રાર્થના સભા',
+            summary: directData.summary || interest,
+            timeBreakdown: directData.timeBreakdown || [],
+            fullScript: directData.fullScript,
+            deliveryTips: directData.deliveryTips || 'આત્મવિશ્વાસથી રજૂઆત કરવી.',
+            aiGenerated: true,
+          };
+          setAiGeneratedIdea(directIdea);
+          setActiveIdeaModal(directIdea);
+          haptic.success();
+          setIsAiGenerating(false);
+          return;
+        }
+      } catch (fallbackDirectErr) {
+        console.warn('Final direct fallback failed:', fallbackDirectErr);
+      }
       console.error('AI generation error:', err);
       let errorMsg = err.message || 'AI સેવા હાલમાં વ્યસ્ત છે. કૃપા કરીને થોડીવાર પછી પ્રયાસ કરો.';
       if (

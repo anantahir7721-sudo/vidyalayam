@@ -22,7 +22,8 @@ import {
   ExamAttempt,
   StudentSession,
 } from '../types';
-import { apiUrl, apiFetch } from '../utils/apiConfig';
+import { apiUrl, apiFetch, isNativeApp } from '../utils/apiConfig';
+import { directExtractQuestions } from './directGeminiService';
 
 /**
  * Fetch all online exams for a given school.
@@ -403,6 +404,19 @@ export async function extractQuestionsWithAI(
   },
   onStatusUpdate?: (statusMsg: string) => void
 ): Promise<{ success: boolean; count: number; questions: MCQQuestion[]; error?: string }> {
+  // If running inside Native Android APK, prioritize direct Google Gemini API call
+  if (isNativeApp()) {
+    try {
+      if (onStatusUpdate) onStatusUpdate('Google AI સાથે સીધો સંપર્ક થઈ રહ્યો છે...');
+      const directResult = await directExtractQuestions(params);
+      if (directResult && directResult.questions && directResult.questions.length > 0) {
+        return directResult;
+      }
+    } catch (directErr: any) {
+      console.warn('[APK Direct AI] Direct call note, falling back to server:', directErr?.message || directErr);
+    }
+  }
+
   const maxAttempts = 2;
   let lastError: Error | null = null;
 
@@ -473,6 +487,17 @@ export async function extractQuestionsWithAI(
         continue;
       }
     }
+  }
+
+  // Final direct fallback if server failed
+  try {
+    if (onStatusUpdate) onStatusUpdate('સીધા AI સર્વિસ સાથે પુનઃપ્રયાસ...');
+    const directFallback = await directExtractQuestions(params);
+    if (directFallback && directFallback.questions && directFallback.questions.length > 0) {
+      return directFallback;
+    }
+  } catch (finalDirectErr) {
+    console.warn('Final direct fallback note:', finalDirectErr);
   }
 
   throw lastError || new Error('AI પ્રશ્ન એક્સટ્રેક્શન નિષ્ફળ રહ્યું. કૃપા કરીને ફરી પ્રયાસ કરો.');

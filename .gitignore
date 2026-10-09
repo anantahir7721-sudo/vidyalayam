@@ -6,3 +6,20 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Android & Capacitor build artifacts
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/app/src/main/res/xml/config.xml
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/debug.keystore
+*.apk
+*.aab
+
+# Large generated archive bundles
+*.zip
+

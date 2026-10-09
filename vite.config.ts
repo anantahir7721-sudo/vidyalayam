@@ -5,6 +5,11 @@ import tailwindcss from '@tailwindcss/vite';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(
+      process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || ''
+    ),
+  },
   server: {
     port: 3000,
     host: true,

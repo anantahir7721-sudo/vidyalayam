@@ -24,7 +24,8 @@ import {
   GSEB_SUBJECTS,
   generateCurriculumPresentationScript,
 } from '../data/presentationCurriculumData';
-import { apiUrl } from '../utils/apiConfig';
+import { apiUrl, isNativeApp } from '../utils/apiConfig';
+import { directGeneratePresentation } from '../services/directGeminiService';
 
 export type PresentationScriptData = ReturnType<typeof generateCurriculumPresentationScript>;
 
@@ -109,6 +110,26 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
     setIsGenerating(true);
     setCopied(false);
 
+    // 1. In Native Android APK, prioritize direct Google Gemini REST call
+    if (isNativeApp()) {
+      try {
+        const directData = await directGeneratePresentation({
+          standard: `ધોરણ ${selectedStandard}`,
+          subject: currentSubject.name,
+          topic: finalTopic,
+          environment: finalEnv,
+          studentName: finalStudentName,
+        });
+        if (directData && directData.title) {
+          setPresentation(directData);
+          setIsGenerating(false);
+          return;
+        }
+      } catch (directErr) {
+        console.warn('[APK Direct Presentation] Note, trying server:', directErr);
+      }
+    }
+
     try {
       const res = await fetch(apiUrl('/api/generate-presentation'), {
         method: 'POST',
@@ -132,7 +153,25 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
         }
       }
     } catch (e) {
-      console.warn('API call failed, falling back to curriculum script:', e);
+      console.warn('API call failed, trying direct generation fallback:', e);
+    }
+
+    // Direct fallback if server request failed
+    try {
+      const directData = await directGeneratePresentation({
+        standard: `ધોરણ ${selectedStandard}`,
+        subject: currentSubject.name,
+        topic: finalTopic,
+        environment: finalEnv,
+        studentName: finalStudentName,
+      });
+      if (directData && directData.title) {
+        setPresentation(directData);
+        setIsGenerating(false);
+        return;
+      }
+    } catch (secondDirectErr) {
+      console.warn('Direct fallback note:', secondDirectErr);
     }
 
     // High quality offline fallback
