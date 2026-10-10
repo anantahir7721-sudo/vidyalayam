@@ -440,3 +440,73 @@ export function exportParentContactsVcf(
   return true;
 }
 
+/**
+ * Builds a clean, easy-to-read Class Summary Table formatted for WhatsApp group sharing.
+ * Displays Roll No, Student Name, Marks/Total, % and Status in a neat list.
+ */
+export function buildClassSummaryTableMessage(
+  school: School,
+  recipients: Array<{
+    studentName: string;
+    standard: string;
+    rollNumber?: string;
+    grNumber?: string;
+    section?: string;
+    examScore?: {
+      obtainedMarks: number;
+      totalMarks: number;
+      percentage: number;
+      grade?: string;
+      statusText?: string;
+    };
+  }>,
+  examTitle: string = 'પરીક્ષા',
+  standard?: string
+): string {
+  const stdDisplay = standard ? `ધોરણ ${standard}` : 'વિદ્યાર્થીઓ';
+  const today = new Date().toLocaleDateString('gu-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  const header = `🏫 *${school.schoolName?.trim() || 'વિદ્યાલયમ શાળા'}*\n📊 *કસોટી પરિણામ પત્રક (Class Result Summary)*\n📝 પરીક્ષા: *${examTitle.trim()}* | ધોરણ: *${stdDisplay}*\n📅 તારીખ: *${today}*\n━━━━━━━━━━━━━━━━━━━━\n*રોલ | વિદ્યાર્થી | ગુણ / કુલ | ટકા | સ્થિતિ*\n━━━━━━━━━━━━━━━━━━━━`;
+
+  // Sort by roll number if available, else by name
+  const sorted = [...recipients].sort((a, b) => {
+    const rollA = parseInt(a.rollNumber || '999', 10);
+    const rollB = parseInt(b.rollNumber || '999', 10);
+    if (!isNaN(rollA) && !isNaN(rollB) && rollA !== rollB) return rollA - rollB;
+    return a.studentName.localeCompare(b.studentName);
+  });
+
+  let passedCount = 0;
+  let totalScore = 0;
+  let maxPossibleScore = 0;
+  let validScoreCount = 0;
+
+  const rows = sorted.map((r, idx) => {
+    const roll = r.rollNumber ? `#${r.rollNumber}` : `${idx + 1}.`;
+    const name = r.studentName.trim();
+    if (r.examScore) {
+      const score = `${r.examScore.obtainedMarks}/${r.examScore.totalMarks}`;
+      const pct = `${r.examScore.percentage.toFixed(0)}%`;
+      const isPass = r.examScore.percentage >= 33 || (r.examScore.statusText || '').includes('ઉત્તીર્ણ');
+      if (isPass) passedCount++;
+      totalScore += r.examScore.obtainedMarks;
+      maxPossibleScore = r.examScore.totalMarks;
+      validScoreCount++;
+      const statusIcon = isPass ? '✅ પાસ' : '⚠️ સુધારણા';
+      return `${roll} *${name}* - ${score} (${pct}) ${statusIcon}`;
+    }
+    return `${roll} *${name}* - ગુણ ઉપલબ્ધ નથી`;
+  });
+
+  const avgPct = validScoreCount > 0 && maxPossibleScore > 0
+    ? ((totalScore / (validScoreCount * maxPossibleScore)) * 100).toFixed(1)
+    : '0';
+
+  const footer = `\n━━━━━━━━━━━━━━━━━━━━\n📈 *કુલ વિદ્યાર્થી:* ${recipients.length} | *પાસ:* ${passedCount} (${validScoreCount > 0 ? ((passedCount / validScoreCount) * 100).toFixed(0) : 0}%)\n📊 *વર્ગ સરેરાશ:* ${avgPct}%\n\n📱 વિદ્યાર્થી પોર્ટલ પરથી પણ વ્યક્તિગત પરિણામ જોઈ શકાશે.\nઆભાર સહ,\n*${school.schoolName?.trim() || 'શાળા પરિવાર'}*`;
+
+  return `${header}\n${rows.join('\n')}${footer}`;
+}

@@ -494,27 +494,6 @@ export default function App() {
     setAuthStatus('admin');
   };
 
-  // 0. Active Student Session: Render dedicated Student Portal
-  if (studentSession) {
-    return (
-      <>
-        <StudentPortal
-          session={studentSession}
-          onLogout={() => {
-            clearStudentSession();
-            setStudentSession(null);
-          }}
-        />
-        <FirstLaunchPermissionModal schoolName={studentSession.schoolName} />
-      </>
-    );
-  }
-
-  // 1. Initial Auth Loading Screen & Role Verification + Splash Animation
-  if (authStatus === 'loading' || !minSplashElapsed) {
-    return <VidyalayamLoadingScreen />;
-  }
-
   // Common App Update Banner Component
   const renderUpdateBanner = () => {
     if (!appUpdate?.updateAvailable || dismissUpdateBanner) return null;
@@ -543,6 +522,28 @@ export default function App() {
       </div>
     );
   };
+
+  // 0. Active Student Session: Render dedicated Student Portal
+  if (studentSession) {
+    return (
+      <>
+        {renderUpdateBanner()}
+        <StudentPortal
+          session={studentSession}
+          onLogout={() => {
+            clearStudentSession();
+            setStudentSession(null);
+          }}
+        />
+        <FirstLaunchPermissionModal schoolName={studentSession.schoolName} />
+      </>
+    );
+  }
+
+  // 1. Initial Auth Loading Screen & Role Verification + Splash Animation
+  if (authStatus === 'loading' || !minSplashElapsed) {
+    return <VidyalayamLoadingScreen />;
+  }
 
   // 2. Unauthenticated: Show AuthScreen (School Login / Register or Admin Login or Student Login)
   if (authStatus === 'unauthenticated' || !user) {

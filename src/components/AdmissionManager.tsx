@@ -13,6 +13,7 @@ import {
   rejectAdmissionApplication,
   deleteAdmissionApplication,
 } from '../services/firestoreService';
+import { createAppNotification } from '../services/notificationService';
 import {
   UserPlus,
   Settings,
@@ -200,6 +201,19 @@ export const AdmissionManager: React.FC<AdmissionManagerProps> = ({
     try {
       const newStudent = await acceptAdmissionApplication(school.id, acceptingApp, admissionDate);
       showToast(`વિદ્યાર્થી "${newStudent.studentName}" ને ધોરણ ${newStudent.standard} માં સફળતાપૂર્વક પ્રવેશ આપવામાં આવ્યો!`);
+
+      // Send In-App notification tailored to student
+      createAppNotification({
+        title: `🎉 પ્રવેશ મંજૂર: ધોરણ ${newStudent.standard}`,
+        body: `અભિનંદન! ${newStudent.studentName} નો શાળા પ્રવેશ માન્ય થયો છે. (G.R. નં: ${newStudent.grNumber || 'પ્રક્રિયામાં'}, રોલ નં: ${newStudent.rollNumber || '-'})`,
+        targetType: 'student',
+        targetId: newStudent.id,
+        studentName: newStudent.studentName,
+        schoolId: school.id,
+        standard: String(newStudent.standard),
+        category: 'admission_update',
+      }).catch(() => {});
+
       setAcceptingApp(null);
       onRefresh();
     } catch (err: any) {

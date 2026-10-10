@@ -1,0 +1,8 @@
+{
+  "version": "1.0.3",
+  "build": 3,
+  "releaseDate": "2026-10-10",
+  "releaseNotes": "પર્સનલાઇઝ્ડ ઍપ નોટિફિકેશન, WhatsApp ગ્રૂપ પરિણામ સમરી પત્રક અને ગિટહબ અપડેટ ચેકર",
+  "githubRepo": "anantahir7721/vidyalayam",
+  "minRequiredVersion": "1.0.0"
+}

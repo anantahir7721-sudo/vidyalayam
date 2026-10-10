@@ -35,6 +35,7 @@ import {
   buildSmsLink,
   exportParentMessagesToExcel,
   buildClassConsolidatedBroadcastMessage,
+  buildClassSummaryTableMessage,
   buildGroupSmsLink,
   exportParentContactsVcf,
 } from '../utils/parentMessageUtils';
@@ -87,6 +88,21 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
   const [saveError, setSaveError] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'pending' | 'sent' | 'no_phone'>('all');
 
+  // Mode for Group Message: 'summary_table' (Roll, Name, Score, %, Pass) or 'portal_notice' (Official announcement)
+  const [groupFormatMode, setGroupFormatMode] = useState<'summary_table' | 'portal_notice'>(
+    broadcastType === 'exam_result' ? 'summary_table' : 'portal_notice'
+  );
+
+  // Class Summary Table formatted for WhatsApp group
+  const summaryTableText = useMemo(() => {
+    return buildClassSummaryTableMessage(
+      school,
+      recipients,
+      examTitle || title || 'કસોટી',
+      standard
+    );
+  }, [school, recipients, examTitle, title, standard]);
+
   // Consolidated Group Notice Message (Private: NO marks leaked to other parents)
   const defaultNoticeText = useMemo(() => {
     return buildClassConsolidatedBroadcastMessage(
@@ -100,7 +116,7 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
 
   const [customNoticeText, setCustomNoticeText] = useState<string>('');
   const [isEditingNoticeText, setIsEditingNoticeText] = useState(false);
-  const activeNoticeText = customNoticeText || defaultNoticeText;
+  const activeNoticeText = customNoticeText || (groupFormatMode === 'summary_table' ? summaryTableText : defaultNoticeText);
 
   // Auto-Broadcast Personal Dispatcher Runner State
   const [autoRunning, setAutoRunning] = useState(false);
@@ -922,8 +938,44 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
                   WhatsApp વાલી ગ્રૂપમાં સત્તાવાર પરિણામ નોટિસ ૧-ક્લિકથી મોકલો
                 </h4>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
-                  આ મેસેજમાં કોઈપણ વિદ્યાર્થીના માર્ક્સ જાહેર દેખાશે <strong>નહીં</strong>. દરેક વાલીશ્રી લિંક પર ક્લિક કરી પોતાના બાળકના રોલ નંબર / G.R. નંબર દ્વારા <strong>ફક્ત પોતાના બાળકના જ ગુણ અને પ્રગતિપત્રક</strong> ખાનગી રીતે જોઈ શકશે.
+                  {groupFormatMode === 'summary_table'
+                    ? 'સમગ્ર વર્ગના પરિણામનું વ્યવસ્થિત પત્રક (રોલ, નામ, મેળવેલ ગુણ, ટકાવારી અને પાસ/નાપાસ) WhatsApp ગ્રૂપમાં ૧-ક્લિકમાં શેર થશે.'
+                    : 'આ મેસેજમાં વિદ્યાર્થીઓના માર્ક્સ ખાનગી રાખી ફક્ત સત્તાવાર નોટિસ અને પોર્ટલ લિંક જશે જેથી વાલી રોલ નંબર નાખીને પરિણામ જોઈ શકે.'}
                 </p>
+
+                {/* Format Toggle Pill */}
+                {broadcastType === 'exam_result' && (
+                  <div className="flex items-center gap-1.5 p-1 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-cyan-200 dark:border-cyan-500/30 w-fit text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGroupFormatMode('summary_table');
+                        setCustomNoticeText('');
+                      }}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        groupFormatMode === 'summary_table'
+                          ? 'bg-cyan-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <span>📊 વર્ગ સમરી પત્રક (Summary Table)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGroupFormatMode('portal_notice');
+                        setCustomNoticeText('');
+                      }}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        groupFormatMode === 'portal_notice'
+                          ? 'bg-cyan-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <span>🔒 ખાનગી પોર્ટલ લિંક નોટિસ</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* ACTION BUTTONS */}

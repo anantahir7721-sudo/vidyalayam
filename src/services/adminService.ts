@@ -278,6 +278,16 @@ export async function updateSchoolStatus(
     status: newStatus,
     updatedAt: new Date().toISOString(),
   });
+
+  if (newStatus === 'approved') {
+    createAppNotification({
+      targetType: 'school',
+      schoolId,
+      title: '✅ શાળા એકાઉન્ટ માન્ય કરવામાં આવ્યું',
+      body: 'એડમિન દ્વારા તમારી શાળા મંજૂર કરવામાં આવી છે. હવે તમામ પોર્ટલ સેવાઓ સક્રિય છે.',
+      category: 'school_approval',
+    }).catch(() => {});
+  }
 }
 
 /**

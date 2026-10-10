@@ -307,10 +307,10 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
               onClick={() => setSendResultModalOpen(true)}
               disabled={attempts.length === 0}
               className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-xs shrink-0 whitespace-nowrap text-[11px] sm:text-xs"
-              title="વાલીઓને ઓનલાઇન કસોટીના ગુણ WhatsApp / SMS દ્વારા મોકલો"
+              title="૧-ક્લિકમાં વિદ્યાર્થીઓને એપ નોટિફિકેશન અથવા WhatsApp ગ્રૂપમાં રિઝલ્ટ મોકલો"
             >
               <Send className="w-3.5 h-3.5 shrink-0" />
-              <span>🚀 પરિણામ મોકલો</span>
+              <span>🚀 ૧-ક્લિક પરિણામ મોકલો</span>
             </button>
 
             <button

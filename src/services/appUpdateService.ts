@@ -43,7 +43,58 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
   const currentAppSha = localStorage.getItem('vidyalayam_installed_app_sha') || '';
 
   try {
-    // 1. Try server proxy or direct GitHub API
+    // 1. Try version.json check: First remote GitHub version.json, then local /version.json
+    try {
+      const storedBuild = localStorage.getItem('vidyalayam_app_build') || '100';
+      const storedVersion = localStorage.getItem('vidyalayam_app_version') || '1.0.0';
+
+      // Attempt to fetch latest version.json pushed to GitHub repository
+      let remoteVData: any = null;
+      const remoteUrls = [
+        `https://raw.githubusercontent.com/${repo}/main/public/version.json?_t=${Date.now()}`,
+        `https://raw.githubusercontent.com/${repo}/master/public/version.json?_t=${Date.now()}`,
+        `https://raw.githubusercontent.com/${repo}/main/version.json?_t=${Date.now()}`,
+      ];
+
+      for (const rUrl of remoteUrls) {
+        try {
+          const rRes = await fetch(rUrl, { signal: AbortSignal.timeout(3000) });
+          if (rRes.ok) {
+            remoteVData = await rRes.json();
+            break;
+          }
+        } catch {
+          // try next
+        }
+      }
+
+      // If remote wasn't reachable, check local version.json
+      const vData = remoteVData || (await fetch(`/version.json?_t=${Date.now()}`, {
+        signal: AbortSignal.timeout(3000),
+      }).then(r => r.ok ? r.json() : null).catch(() => null));
+
+      if (vData && (vData.build || vData.version)) {
+        const vBuildNum = Number(vData.build || 0);
+        const storedBuildNum = Number(storedBuild);
+
+        if (!localStorage.getItem('vidyalayam_app_build')) {
+          localStorage.setItem('vidyalayam_app_build', String(vBuildNum || 104));
+          localStorage.setItem('vidyalayam_app_version', vData.version || '1.0.4');
+        } else if (vBuildNum > storedBuildNum || (vData.version && vData.version !== storedVersion && force)) {
+          return {
+            updateAvailable: true,
+            currentVersion: `v${storedVersion}`,
+            latestVersion: `v${vData.version || '1.0.4'}`,
+            latestCommitMessage: vData.releaseNotes || 'GitHub પર નવી સુવિધાઓ અને અપડેટ ઉપલબ્ધ છે',
+            repo,
+          };
+        }
+      }
+    } catch (e) {
+      // Continue to commit check
+    }
+
+    // 2. Try server proxy or direct GitHub API
     let commitData: any = null;
 
     try {

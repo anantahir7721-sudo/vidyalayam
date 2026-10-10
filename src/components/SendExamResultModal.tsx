@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Smartphone,
   Eye,
+  Bell,
 } from 'lucide-react';
 import {
   formatOfflineExamResultForParent,
@@ -861,11 +862,11 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold cursor-pointer transition-colors"
+                className="px-3.5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold cursor-pointer transition-colors text-xs"
               >
                 રદ કરો
               </button>
@@ -874,10 +875,11 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
                 type="button"
                 disabled={selectedCount === 0}
                 onClick={handleOpenDispatcher}
-                className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                title="૧-ક્લિકમાં ઍપ નોટિફિકેશન, WhatsApp ગ્રૂપ સમરી અથવા પર્સનલ મેસેજ મોકલો"
               >
-                <Send className="w-4 h-4" />
-                <span>📢 સામૂહિક બ્રોડકાસ્ટ / મોકલો ({selectedCount}) 🚀</span>
+                <Bell className="w-4 h-4 fill-current" />
+                <span>📢 પરિણામ મોકલો / ૧-ક્લિક ઍપ નોટિફિકેશન ({selectedCount}) 🚀</span>
               </button>
             </div>
           </div>
