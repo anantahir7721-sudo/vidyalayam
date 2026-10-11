@@ -10,9 +10,27 @@ import {
 } from 'firebase/firestore';
 import firebaseConfigData from '../../firebase-applet-config.json';
 
-// Silence non-fatal Firestore network transition warnings (e.g. 10s backend unreachable notice)
+// Intercept and handle benign Firestore offline / 10s backend connection notices gracefully
+if (typeof console !== 'undefined') {
+  const originalConsoleError = console.error;
+  console.error = (...args: any[]) => {
+    const message = args.map(arg => (typeof arg === 'string' ? arg : (arg?.message || ''))).join(' ');
+    if (
+      message.includes('Could not reach Cloud Firestore backend') ||
+      message.includes("Backend didn't respond within 10 seconds") ||
+      message.includes('client will operate in offline mode')
+    ) {
+      // Benign network latency / offline notice - keep in console as info without triggering runtime error
+      console.info('[Firestore]', ...args);
+      return;
+    }
+    originalConsoleError.apply(console, args);
+  };
+}
+
+// Silence non-fatal Firestore network transition warnings
 try {
-  setLogLevel('error');
+  setLogLevel('silent');
 } catch {}
 
 // Firebase configuration loaded from provisioned project
@@ -45,13 +63,13 @@ if (typeof window !== 'undefined') {
 
 // The single, consistent Firestore database instance for the entire application.
 // Enabled with IndexedDB Persistent Local Cache for 100% offline access and automatic sync.
-// experimentalAutoDetectLongPolling allows fast WebSockets while automatically falling back to long polling if needed.
+// experimentalForceLongPolling avoids WebSocket connection handshake timeouts and ensures immediate connectivity.
 let firestoreInstance: Firestore;
 try {
   firestoreInstance = initializeFirestore(
     app,
     {
-      experimentalAutoDetectLongPolling: true,
+      experimentalForceLongPolling: true,
       localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager(),
       }),
@@ -63,7 +81,7 @@ try {
     firestoreInstance = initializeFirestore(
       app,
       {
-        experimentalAutoDetectLongPolling: true,
+        experimentalForceLongPolling: true,
       },
       FIRESTORE_DATABASE_ID
     );
