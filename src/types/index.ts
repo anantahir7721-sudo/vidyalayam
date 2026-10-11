@@ -493,6 +493,9 @@ export interface NativeAndroidBridge {
   requestNotificationPermission: () => void;
   openNotificationSettings: () => void;
   showNativeNotification: (title: string, body: string, type: string) => void;
+  scheduleAllRoutineAlarms?: () => void;
+  isBatteryOptimizationIgnored?: () => boolean;
+  requestDisableBatteryOptimization?: () => void;
 }
 
 export type NotificationTargetType = 'all' | 'school' | 'admin' | 'student';

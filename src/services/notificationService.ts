@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { AppNotification, AppNotificationCategory } from '../types';
-import { sendNotification } from '../utils/notificationUtils';
+import { sendNotification, isNativeAndroid, scheduleNativeRoutineAlarms } from '../utils/notificationUtils';
 import { apiUrl } from '../utils/apiConfig';
 
 // Helper: deeply strip undefined values so Firestore never throws 'Unsupported field value: undefined'
@@ -330,6 +330,16 @@ export async function markAllNotificationsAsRead(
  */
 export function runScheduledNotificationCheck(): void {
   try {
+    // If native Android APK:
+    // Scheduled background routine notifications (06:00 AM news, 02:00 PM janva jevu/suvichar, 06:00 PM circular)
+    // are executed on time directly by the Android OS AlarmManager (NotificationAlarmReceiver)
+    // even when the application is completely closed or screen is off.
+    // Therefore, do NOT pop duplicate routine notifications when the user opens the app!
+    if (isNativeAndroid()) {
+      scheduleNativeRoutineAlarms();
+      return;
+    }
+
     const prefsStr = localStorage.getItem('vidyalayam_notification_prefs');
     const prefs = prefsStr ? JSON.parse(prefsStr) : { dailyBulletin: true, examAlerts: true };
 

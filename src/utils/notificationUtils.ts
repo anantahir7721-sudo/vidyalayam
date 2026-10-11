@@ -77,8 +77,46 @@ export function openNotificationSettings(): void {
     }
   }
 
-  if (typeof window !== 'undefined') {
-    console.info('[Notifications] વેબ બ્રાઉઝર પર સેટિંગ્સ માટે: બ્રાઉઝર સેટિંગ્સ > સાઇટ સેટિંગ્સ > નોટિફિકેશન ચકાસો.');
+}
+
+/**
+ * Check if the app is exempt from Android Battery Optimization (Doze mode)
+ */
+export function isBatteryOptimizationIgnored(): boolean {
+  if (isNativeAndroid()) {
+    try {
+      return Boolean(window.AndroidBridge?.isBatteryOptimizationIgnored?.());
+    } catch (e) {
+      return true;
+    }
+  }
+  return true;
+}
+
+/**
+ * Request disabling Battery Optimization so alarms fire on time while app is closed
+ */
+export function requestDisableBatteryOptimization(): void {
+  if (isNativeAndroid()) {
+    try {
+      window.AndroidBridge?.requestDisableBatteryOptimization?.();
+      return;
+    } catch (e) {
+      console.warn('[Notifications] requestDisableBatteryOptimization failed:', e);
+    }
+  }
+}
+
+/**
+ * Trigger native scheduling of routine background alarms (06:00 AM, 02:00 PM, 06:00 PM)
+ */
+export function scheduleNativeRoutineAlarms(): void {
+  if (isNativeAndroid()) {
+    try {
+      window.AndroidBridge?.scheduleAllRoutineAlarms?.();
+    } catch (e) {
+      console.warn('[Notifications] scheduleAllRoutineAlarms failed:', e);
+    }
   }
 }
 

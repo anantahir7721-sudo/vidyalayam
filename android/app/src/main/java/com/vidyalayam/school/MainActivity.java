@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.PowerManager;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintManager;
@@ -115,12 +116,20 @@ public class MainActivity extends BridgeActivity {
 
         // Register Android Native Bridge for seamless printing, PDF handling and native notifications
         registerAndroidBridge();
+
+        // Schedule exact background routine notifications (06:00 AM, 02:00 PM, 06:00 PM)
+        try {
+            NotificationAlarmReceiver.scheduleAllRoutineAlarms(this);
+        } catch (Exception ignored) {}
     }
 
     @Override
     public void onResume() {
         super.onResume();
         registerAndroidBridge();
+        try {
+            NotificationAlarmReceiver.scheduleAllRoutineAlarms(this);
+        } catch (Exception ignored) {}
     }
 
     private void registerAndroidBridge() {
@@ -353,6 +362,59 @@ public class MainActivity extends BridgeActivity {
                     } catch (SecurityException secErr) {
                         secErr.printStackTrace();
                         Toast.makeText(MainActivity.this, "સૂચના મોકલવા માટે પરવાનગી આપો", Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void scheduleAllRoutineAlarms() {
+            try {
+                NotificationAlarmReceiver.scheduleAllRoutineAlarms(MainActivity.this);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public boolean isBatteryOptimizationIgnored() {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                    return pm != null && pm.isIgnoringBatteryOptimizations(getPackageName());
+                }
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return true;
+            }
+        }
+
+        @JavascriptInterface
+        public void requestDisableBatteryOptimization() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                            if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                                try {
+                                    Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                                    intent.setData(Uri.parse("package:" + getPackageName()));
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    startActivity(intent);
+                                } catch (Exception ex) {
+                                    Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    startActivity(intent);
+                                }
+                            } else {
+                                Toast.makeText(MainActivity.this, "બેટરી ઑપ્ટિમાઇઝેશન પહેલેથી જ બંધ છે (સૂચનાઓ સમયસર આવશે)", Toast.LENGTH_SHORT).show();
+                            }
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

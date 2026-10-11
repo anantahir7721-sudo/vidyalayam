@@ -29,24 +29,55 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
   onClose,
   notifications,
   schoolId,
-  title = 'સૂચના કેન્દ્ર (Notifications)',
+  title = 'પરીક્ષા & પરિણામ સૂચનાઓ (Exam & Result Alerts)',
   onNavigateTab,
 }) => {
-  const [filter, setFilter] = useState<'all' | 'unread' | 'exams' | 'daily'>('all');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'exams' | 'results'>('all');
 
   if (!isOpen) return null;
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // In-app notifications strictly enforce Exam and Result notifications only
+  const examResultNotifications = notifications.filter((n) => {
+    const cat = (n.category || '').toLowerCase();
+    const t = (n.title || '').toLowerCase();
+    const b = (n.body || '').toLowerCase();
+    return (
+      cat.includes('exam') ||
+      cat.includes('result') ||
+      cat === 'exam_result' ||
+      cat === 'exam_scheduled' ||
+      cat === 'exam_reminder_5min' ||
+      t.includes('પરીક્ષા') ||
+      t.includes('પરિણામ') ||
+      t.includes('માર્ક્સ') ||
+      t.includes('ગુણ') ||
+      t.includes('result') ||
+      t.includes('exam') ||
+      b.includes('પરીક્ષા') ||
+      b.includes('પરિણામ') ||
+      b.includes('માર્ક્સ') ||
+      b.includes('ગુણ') ||
+      b.includes('result')
+    );
+  });
 
-  const filtered = notifications.filter((n) => {
+  const unreadCount = examResultNotifications.filter((n) => !n.read).length;
+  const examCount = examResultNotifications.filter(
+    (n) => !((n.category || '').includes('result') || (n.title || '').includes('પરિણામ'))
+  ).length;
+  const resultCount = examResultNotifications.filter(
+    (n) => (n.category || '').includes('result') || (n.title || '').includes('પરિણામ') || (n.category === 'exam_result')
+  ).length;
+
+  const filtered = examResultNotifications.filter((n) => {
     if (filter === 'unread') return !n.read;
-    if (filter === 'exams') return n.category.includes('exam');
-    if (filter === 'daily') return n.category.includes('daily');
+    if (filter === 'exams') return !((n.category || '').includes('result') || (n.title || '').includes('પરિણામ'));
+    if (filter === 'results') return (n.category || '').includes('result') || (n.title || '').includes('પરિણામ') || (n.category === 'exam_result');
     return true;
   });
 
   const handleMarkAllRead = async () => {
-    await markAllNotificationsAsRead(schoolId, notifications);
+    await markAllNotificationsAsRead(schoolId, examResultNotifications);
   };
 
   const handleNotificationClick = async (notif: AppNotification) => {
@@ -70,13 +101,11 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     return `${diffDays} દિવસ પહેલાં`;
   };
 
-  const getCategoryBadge = (category: string) => {
-    if (category.includes('news')) return { label: 'દૈનિક સમાચાર', color: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' };
-    if (category.includes('knowledge')) return { label: 'જાણવા જેવું', color: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300' };
-    if (category.includes('exam')) return { label: 'પરીક્ષા', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' };
-    if (category.includes('admission')) return { label: 'પ્રવેશ', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' };
-    if (category.includes('approval') || category.includes('reset')) return { label: 'વહીવટી', color: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' };
-    return { label: 'સામાન્ય', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' };
+  const getCategoryBadge = (category: string, itemTitle: string = '') => {
+    if (category.includes('result') || itemTitle.includes('પરિણામ')) {
+      return { label: 'પરીક્ષા પરિણામ (Result)', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' };
+    }
+    return { label: 'પરીક્ષા સૂચના (Exam)', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' };
   };
 
   return (
@@ -86,8 +115,8 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-white/10 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-sm shrink-0">
-              <Bell className="w-5 h-5" />
+            <div className="relative w-10 h-10 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-sm shrink-0">
+              <Award className="w-5 h-5" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white dark:border-slate-900">
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -98,13 +127,13 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span>{title}</span>
                 {unreadCount > 0 && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300">
                     {unreadCount} નવી
                   </span>
                 )}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                પરીક્ષા, પરિણામ, સમાચાર અને શાળાના મહત્વના સંદેશા
+                શાળા દ્વારા મોકલેલ પરીક્ષા અને પરિણામની સત્તાવાર સૂચનાઓ
               </p>
             </div>
           </div>
@@ -125,18 +154,18 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
               onClick={() => setFilter('all')}
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
                 filter === 'all'
-                  ? 'bg-amber-600 text-white shadow-xs'
+                  ? 'bg-purple-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
               }`}
             >
-              તમામ ({notifications.length})
+              તમામ ({examResultNotifications.length})
             </button>
             <button
               type="button"
               onClick={() => setFilter('unread')}
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
                 filter === 'unread'
-                  ? 'bg-amber-600 text-white shadow-xs'
+                  ? 'bg-purple-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
               }`}
             >
@@ -144,25 +173,25 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             </button>
             <button
               type="button"
-              onClick={() => setFilter('exams')}
+              onClick={() => setFilter('results')}
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                filter === 'exams'
-                  ? 'bg-amber-600 text-white shadow-xs'
+                filter === 'results'
+                  ? 'bg-purple-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
               }`}
             >
-              પરીક્ષા
+              પરિણામ ({resultCount})
             </button>
             <button
               type="button"
-              onClick={() => setFilter('daily')}
+              onClick={() => setFilter('exams')}
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                filter === 'daily'
-                  ? 'bg-amber-600 text-white shadow-xs'
+                filter === 'exams'
+                  ? 'bg-purple-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
               }`}
             >
-              દૈનિક
+              પરીક્ષા ({examCount})
             </button>
           </div>
 
@@ -170,7 +199,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             <button
               type="button"
               onClick={handleMarkAllRead}
-              className="text-amber-600 dark:text-amber-400 hover:underline font-bold text-[11px] cursor-pointer"
+              className="text-purple-600 dark:text-purple-400 hover:underline font-bold text-[11px] cursor-pointer"
             >
               બધી વંચાઈ ગઈ
             </button>
@@ -185,15 +214,15 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                 <Bell className="w-6 h-6" />
               </div>
               <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                હાલમાં કોઈ નવી સૂચના નથી
+                હાલમાં કોઈ નવી પરીક્ષા કે પરિણામની સૂચના નથી
               </div>
               <div className="text-xs text-slate-400 max-w-xs mx-auto">
-                જ્યારે શાળા અથવા શિક્ષકો દ્વારા નવી સૂચના, પરીક્ષા કે પરિણામ મુકાશે ત્યારે અહીં દેખાશે.
+                જ્યારે શાળા અથવા શિક્ષકો દ્વારા પરીક્ષા ટાઈમટેબલ, ઓનલાઇન પરીક્ષા કે પરિણામ મુકાશે ત્યારે અહીં દેખાશે.
               </div>
             </div>
           ) : (
             filtered.map((item) => {
-              const badge = getCategoryBadge(item.category);
+              const badge = getCategoryBadge(item.category, item.title);
               return (
                 <div
                   key={item.id}

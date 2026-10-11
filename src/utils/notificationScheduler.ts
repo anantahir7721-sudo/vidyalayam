@@ -9,6 +9,7 @@
  */
 
 import { runScheduledNotificationCheck } from '../services/notificationService';
+import { isNativeAndroid, scheduleNativeRoutineAlarms } from './notificationUtils';
 
 let schedulerIntervalId: ReturnType<typeof setInterval> | null = null;
 let isSchedulerInitialized = false;
@@ -18,6 +19,10 @@ let isSchedulerInitialized = false;
  */
 export function triggerScheduledCheck(): void {
   try {
+    if (isNativeAndroid()) {
+      scheduleNativeRoutineAlarms();
+      return;
+    }
     runScheduledNotificationCheck();
   } catch (error) {
     console.warn('[NotificationScheduler] Failed to run scheduled check:', error);
@@ -34,6 +39,10 @@ export function initNotificationScheduler(): void {
   if (isSchedulerInitialized) return;
 
   isSchedulerInitialized = true;
+
+  if (isNativeAndroid()) {
+    scheduleNativeRoutineAlarms();
+  }
 
   // Run initial check once page is loaded
   if (document.readyState === 'complete' || document.readyState === 'interactive') {

@@ -20,6 +20,9 @@ import {
   openNotificationSettings,
   sendNotification,
   isNativeAndroid,
+  isBatteryOptimizationIgnored,
+  requestDisableBatteryOptimization,
+  scheduleNativeRoutineAlarms,
 } from '../utils/notificationUtils';
 import { apiUrl } from '../utils/apiConfig';
 
@@ -37,6 +40,8 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   const [permission, setPermission] = useState<'granted' | 'denied' | 'default'>('default');
   const [testSent, setTestSent] = useState(false);
   const [isNative, setIsNative] = useState(false);
+  const [batteryOptIgnored, setBatteryOptIgnored] = useState(true);
+  const [alarmSynced, setAlarmSynced] = useState(false);
 
   // Preference toggles (saved to localStorage)
   const [prefs, setPrefs] = useState(() => {
@@ -54,7 +59,11 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
   useEffect(() => {
     if (isOpen) {
-      setIsNative(isNativeAndroid());
+      const native = isNativeAndroid();
+      setIsNative(native);
+      if (native) {
+        setBatteryOptIgnored(isBatteryOptimizationIgnored());
+      }
       checkNotificationPermission().then((status) => {
         setPermission(status);
       });
@@ -249,6 +258,62 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
               </button>
             </div>
           </div>
+
+          {/* Android Background Alarm & Battery Optimization Section */}
+          {isNative && (
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-orange-500/10 border border-amber-500/25 space-y-3">
+              <div className="flex items-start gap-2.5 sm:gap-3">
+                <Smartphone className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                      સમયસર સૂચનાઓ & બેટરી ઑપ્ટિમાઇઝેશન (Background Alarms)
+                    </span>
+                    {batteryOptIgnored ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                        સક્રિય (Unrestricted)
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
+                        ઑપ્ટિમાઇઝેશન ચાલુ છે
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                    એપ બંધ હોય ત્યારે પણ બપોરે ૨:૦૦ વાગ્યે સામાન્ય જ્ઞાન/જાણવા જેવું અને સવારે ૬:૦૦ વાગ્યે સમાચાર સમયસર આવે તે માટે Vidyalayam માટે બેટરી ઑપ્ટિમાઇઝેશન બંધ (Unrestricted) રાખો.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                {!batteryOptIgnored && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      requestDisableBatteryOptimization();
+                      setTimeout(() => setBatteryOptIgnored(isBatteryOptimizationIgnored()), 2000);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    બેટરી ઑપ્ટિમાઇઝેશન બંધ કરો
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    scheduleNativeRoutineAlarms();
+                    setAlarmSynced(true);
+                    setTimeout(() => setAlarmSynced(false), 3000);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{alarmSynced ? 'એલાર્મ સેટ થઈ ગયા!' : 'બપોરે ૨:૦૦ વાગ્યાના એલાર્મ સિંક કરો'}</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Useful Quick Action Notification Triggers */}
           <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-2.5 sm:space-y-3">

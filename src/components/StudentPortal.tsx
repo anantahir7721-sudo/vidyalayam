@@ -143,13 +143,39 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
     }
   }, [school?.dailyNewsEnabled, school?.dailyJanvaJevuEnabled, school?.dailySuvicharEnabled, activeTab]);
 
-  // Real-time subscription to notifications tailored strictly for this student
+  // Helper: In-app notifications are strictly restricted to Exam and Result notifications
+  const isExamOrResultNotification = (n: AppNotification) => {
+    const cat = (n.category || '').toLowerCase();
+    const t = (n.title || '').toLowerCase();
+    const b = (n.body || '').toLowerCase();
+    return (
+      cat.includes('exam') ||
+      cat.includes('result') ||
+      cat === 'exam_result' ||
+      cat === 'exam_scheduled' ||
+      cat === 'exam_reminder_5min' ||
+      t.includes('પરીક્ષા') ||
+      t.includes('પરિણામ') ||
+      t.includes('માર્ક્સ') ||
+      t.includes('ગુણ') ||
+      t.includes('result') ||
+      t.includes('exam') ||
+      b.includes('પરીક્ષા') ||
+      b.includes('પરિણામ') ||
+      b.includes('માર્ક્સ') ||
+      b.includes('ગુણ') ||
+      b.includes('result')
+    );
+  };
+
+  // Real-time subscription to notifications tailored strictly for this student (Exam & Result only)
   useEffect(() => {
     const schoolId = session.schoolId || session.school?.id;
     if (!schoolId || !student?.id) return;
 
     const unsub = subscribeToStudentNotifications(schoolId, student.id, (list) => {
-      setNotifications(list);
+      const examAndResultList = list.filter(isExamOrResultNotification);
+      setNotifications(examAndResultList);
     });
 
     return () => unsub();
@@ -385,9 +411,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
               type="button"
               onClick={() => setIsNotifModalOpen(true)}
               className="relative p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 transition-all cursor-pointer shrink-0"
-              title="મારી સૂચનાઓ (My Notifications)"
+              title="પરીક્ષા & પરિણામ સૂચનાઓ (Exam & Result Alerts)"
             >
-              <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               {unreadNotifCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse">
                   {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
@@ -458,25 +484,25 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
         </div>
       </div>
 
-      {/* Prominent In-App Unread Notification Card (Displayed immediately when student opens portal) */}
+      {/* Prominent In-App Unread Exam / Result Notification Card (Displayed immediately when student opens portal) */}
       {unreadNotifCount > 0 && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-3 pb-1 animate-in fade-in slide-in-from-top-2">
-          <div className="p-4 rounded-3xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-orange-500/15 border border-amber-500/30 dark:border-amber-500/20 shadow-md flex items-center justify-between gap-4 flex-wrap">
+          <div className="p-4 rounded-3xl bg-gradient-to-r from-purple-500/15 via-purple-500/10 to-indigo-500/15 border border-purple-500/30 dark:border-purple-500/20 shadow-md flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
-                <Bell className="w-5 h-5 animate-bounce" />
+              <div className="w-11 h-11 rounded-2xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-600/20">
+                <Award className="w-5 h-5 animate-bounce" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    શાળા તરફથી નવી સૂચના ઉપલબ્ધ છે!
+                    પરીક્ષા / પરિણામની નવી સૂચના ઉપલબ્ધ છે!
                   </span>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white shadow-xs">
                     {unreadNotifCount} નવી
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-300 truncate max-w-xl mt-0.5">
-                  {notifications.find((n) => !n.read)?.title || 'નવી સૂચના'}
+                  {notifications.find((n) => !n.read)?.title || 'પરીક્ષા અથવા પરિણામ એલર્ટ'}
                 </p>
               </div>
             </div>
@@ -484,9 +510,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
             <button
               type="button"
               onClick={() => setIsNotifModalOpen(true)}
-              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer ml-auto"
+              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer ml-auto"
             >
-              <span>સૂચના વાંચો</span>
+              <span>સૂચના જુઓ</span>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -1284,7 +1310,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
         onClose={() => setIsNotifModalOpen(false)}
         notifications={notifications}
         schoolId={session.schoolId || session.school?.id}
-        title="મારી શાળા સૂચનાઓ"
+        title="પરીક્ષા & પરિણામ સૂચનાઓ"
         onNavigateTab={(tab) => {
           if (
             [
