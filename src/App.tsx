@@ -25,6 +25,7 @@ import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
 import { FirstLaunchPermissionModal } from './components/FirstLaunchPermissionModal';
 import { runScheduledNotificationCheck } from './services/notificationService';
 import { checkForGitHubUpdate, applyAppUpdate, GitHubUpdateInfo } from './services/appUpdateService';
+import { AppUpdateModal } from './components/AppUpdateModal';
 import { School, Student, MarkRecord, Staff, SchoolStatus, StudentSession } from './types';
 import { checkIsAdmin } from './services/adminService';
 import {
@@ -248,16 +249,50 @@ export default function App() {
     return () => clearInterval(schedInterval);
   }, []);
 
-  // Check for updates pushed to GitHub
+  // Real-time Check for updates pushed to GitHub
   const [appUpdate, setAppUpdate] = useState<GitHubUpdateInfo | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [dismissUpdateBanner, setDismissUpdateBanner] = useState(false);
 
   useEffect(() => {
-    checkForGitHubUpdate().then((info) => {
-      if (info && info.updateAvailable) {
-        setAppUpdate(info);
+    let isMounted = true;
+
+    const checkUpdate = async () => {
+      try {
+        const info = await checkForGitHubUpdate();
+        if (isMounted && info && info.updateAvailable) {
+          setAppUpdate(info);
+          setShowUpdateModal(true); // Automatically show prominent popup!
+        }
+      } catch (e) {
+        // ignore
       }
-    });
+    };
+
+    // 1. Initial check on mount
+    checkUpdate();
+
+    // 2. Poll every 30 seconds for live GitHub pushes
+    const interval = setInterval(checkUpdate, 30000);
+
+    // 3. Check immediately when window gains focus or user returns to tab
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        checkUpdate();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    window.addEventListener('check-app-update', checkUpdate);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('check-app-update', checkUpdate);
+    };
   }, []);
 
   // Persist tabHistory and activeTab across browser and app reloads
@@ -494,27 +529,31 @@ export default function App() {
     setAuthStatus('admin');
   };
 
-  // Common App Update Banner Component
+  // Common App Update Banner & Modal Components
   const renderUpdateBanner = () => {
     if (!appUpdate?.updateAvailable || dismissUpdateBanner) return null;
     return (
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between shadow-md shrink-0 z-50">
-        <div className="flex items-center gap-2">
-          <ArrowUpCircle className="w-4 h-4 shrink-0" />
-          <span>🚀 નવી એપ અપડેટ GitHub પર ઉપલબ્ધ છે! ({appUpdate.latestCommitMessage || 'નવી સુવિધાઓ'})</span>
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-bold flex items-center justify-between shadow-md shrink-0 z-50">
+        <div 
+          onClick={() => setShowUpdateModal(true)}
+          className="flex items-center gap-2 cursor-pointer hover:opacity-90 min-w-0 flex-1 truncate"
+        >
+          <ArrowUpCircle className="w-4 h-4 shrink-0 text-amber-300 animate-bounce" />
+          <span className="truncate">🚀 નવી એપ અપડેટ GitHub પર ઉપલબ્ધ છે! ({appUpdate.latestCommitMessage || 'નવી સુવિધાઓ'})</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 ml-2">
           <button
             type="button"
-            onClick={() => applyAppUpdate(appUpdate.latestCommitSha)}
-            className="px-3 py-1 bg-white text-emerald-800 rounded-lg text-[11px] font-black hover:bg-slate-100 transition-all cursor-pointer shadow-xs"
+            onClick={() => setShowUpdateModal(true)}
+            className="px-2.5 py-1 bg-white text-emerald-800 rounded-lg text-[11px] font-black hover:bg-slate-100 transition-all cursor-pointer shadow-xs shrink-0"
           >
-            અપડેટ કરો
+            જુઓ / અપડેટ
           </button>
           <button
             type="button"
             onClick={() => setDismissUpdateBanner(true)}
-            className="p-1 hover:bg-white/20 rounded-md cursor-pointer"
+            className="p-1 hover:bg-white/20 rounded-md cursor-pointer shrink-0"
+            title="છુપાવો"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -523,11 +562,22 @@ export default function App() {
     );
   };
 
+  const renderUpdateComponents = () => (
+    <>
+      {renderUpdateBanner()}
+      <AppUpdateModal
+        updateInfo={appUpdate}
+        isOpen={showUpdateModal}
+        onClose={() => setShowUpdateModal(false)}
+      />
+    </>
+  );
+
   // 0. Active Student Session: Render dedicated Student Portal
   if (studentSession) {
     return (
       <>
-        {renderUpdateBanner()}
+        {renderUpdateComponents()}
         <StudentPortal
           session={studentSession}
           onLogout={() => {
@@ -549,7 +599,7 @@ export default function App() {
   if (authStatus === 'unauthenticated' || !user) {
     return (
       <div className="min-h-screen app-container flex flex-col">
-        {renderUpdateBanner()}
+        {renderUpdateComponents()}
         <Navbar
           school={null}
           onLogout={() => {}}
@@ -583,7 +633,7 @@ export default function App() {
   if (authStatus === 'admin' || isAdmin) {
     return (
       <>
-        {renderUpdateBanner()}
+        {renderUpdateComponents()}
         <AdminDashboard
           adminEmail={user.email}
           onLogout={handleLogout}
@@ -601,6 +651,7 @@ export default function App() {
     if (status !== 'approved') {
       return (
         <div className="min-h-screen bg-[#F5F7FA] dark:bg-slate-900 text-slate-900 dark:text-white flex flex-col transition-colors">
+          {renderUpdateComponents()}
           <Navbar
             school={school}
             onLogout={handleLogout}
@@ -631,7 +682,7 @@ export default function App() {
     // Status is 'approved': Render the full General School Management Application!
     return (
       <div className="min-h-screen app-container flex flex-col">
-        {renderUpdateBanner()}
+        {renderUpdateComponents()}
         <Navbar
           school={school}
           onLogout={handleLogout}

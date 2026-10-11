@@ -1,6 +1,8 @@
 {
   "version": "1.0.4",
   "build": 104,
+  "repo": "anantahir7721-sudo/vidyalayam",
+  "commitSha": "752ced9cc8fd2e453a5cf91159000e6c03bdf328",
   "releaseDate": "2026-10-10",
-  "releaseNotes": "રીયલ-ટાઇમ ૧-ક્લિક વિદ્યાર્થી નોટિફિકેશન, WhatsApp ક્લાસ પરિણામ સારાંશ અને એડમિન સિક્યુરિટી સૂચનાઓ."
+  "releaseNotes": "રીયલ-ટાઇમ ૧-ક્લિક વિદ્યાર્થી નોટિફિકેશન, WhatsApp ક્લાસ પરિણામ સારાંશ, PDF સેવિંગ અને GitHub ઓટો-અપડેટ સિસ્ટમ."
 }

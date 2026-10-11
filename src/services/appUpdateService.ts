@@ -15,13 +15,22 @@ export interface GitHubUpdateInfo {
   authorName?: string;
   repo: string;
   htmlUrl?: string;
+  apkDownloadUrl?: string;
+  releaseUrl?: string;
 }
 
-const DEFAULT_REPO = 'anantahir7721/vidyalayam';
+export const DEFAULT_REPO = 'anantahir7721-sudo/vidyalayam';
+export const APP_BASELINE_SHA = '752ced9cc8fd2e453a5cf91159000e6c03bdf328';
+export const APP_BASELINE_VERSION = '1.0.4';
 
 export function getTargetGitHubRepo(): string {
   try {
-    return localStorage.getItem('vidyalayam_github_repo') || DEFAULT_REPO;
+    const stored = localStorage.getItem('vidyalayam_github_repo');
+    if (!stored || stored === 'anantahir7721/vidyalayam') {
+      localStorage.setItem('vidyalayam_github_repo', DEFAULT_REPO);
+      return DEFAULT_REPO;
+    }
+    return stored;
   } catch {
     return DEFAULT_REPO;
   }
@@ -35,68 +44,18 @@ export function setTargetGitHubRepo(repo: string): void {
 
 /**
  * Check GitHub repository for the latest pushed commit.
- * Uses GitHub Public REST API with fallback to server endpoint.
+ * Uses server endpoint with in-memory caching & rate limit immunity, with fallback to public GitHub API.
  */
 export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateInfo> {
   const repo = getTargetGitHubRepo();
-  const cachedLastSha = localStorage.getItem(`vidyalayam_last_known_sha_${repo}`) || '';
-  const currentAppSha = localStorage.getItem('vidyalayam_installed_app_sha') || '';
+  const currentAppSha = localStorage.getItem('vidyalayam_installed_app_sha') || APP_BASELINE_SHA;
 
   try {
-    // 1. Try version.json check: First remote GitHub version.json, then local /version.json
-    try {
-      const storedBuild = localStorage.getItem('vidyalayam_app_build') || '100';
-      const storedVersion = localStorage.getItem('vidyalayam_app_version') || '1.0.0';
-
-      // Attempt to fetch latest version.json pushed to GitHub repository
-      let remoteVData: any = null;
-      const remoteUrls = [
-        `https://raw.githubusercontent.com/${repo}/main/public/version.json?_t=${Date.now()}`,
-        `https://raw.githubusercontent.com/${repo}/master/public/version.json?_t=${Date.now()}`,
-        `https://raw.githubusercontent.com/${repo}/main/version.json?_t=${Date.now()}`,
-      ];
-
-      for (const rUrl of remoteUrls) {
-        try {
-          const rRes = await fetch(rUrl, { signal: AbortSignal.timeout(3000) });
-          if (rRes.ok) {
-            remoteVData = await rRes.json();
-            break;
-          }
-        } catch {
-          // try next
-        }
-      }
-
-      // If remote wasn't reachable, check local version.json
-      const vData = remoteVData || (await fetch(`/version.json?_t=${Date.now()}`, {
-        signal: AbortSignal.timeout(3000),
-      }).then(r => r.ok ? r.json() : null).catch(() => null));
-
-      if (vData && (vData.build || vData.version)) {
-        const vBuildNum = Number(vData.build || 0);
-        const storedBuildNum = Number(storedBuild);
-
-        if (!localStorage.getItem('vidyalayam_app_build')) {
-          localStorage.setItem('vidyalayam_app_build', String(vBuildNum || 104));
-          localStorage.setItem('vidyalayam_app_version', vData.version || '1.0.4');
-        } else if (vBuildNum > storedBuildNum || (vData.version && vData.version !== storedVersion && force)) {
-          return {
-            updateAvailable: true,
-            currentVersion: `v${storedVersion}`,
-            latestVersion: `v${vData.version || '1.0.4'}`,
-            latestCommitMessage: vData.releaseNotes || 'GitHub પર નવી સુવિધાઓ અને અપડેટ ઉપલબ્ધ છે',
-            repo,
-          };
-        }
-      }
-    } catch (e) {
-      // Continue to commit check
-    }
-
-    // 2. Try server proxy or direct GitHub API
     let commitData: any = null;
+    let apkDownloadUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
+    let releaseUrl = `https://github.com/${repo}/releases/latest`;
 
+    // 1. Try server endpoint first (has 15s in-memory cache and bypasses GitHub client rate limits)
     try {
       const serverRes = await fetch(apiUrl(`/api/app-update-check?repo=${encodeURIComponent(repo)}`), {
         signal: AbortSignal.timeout(6000),
@@ -105,12 +64,15 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
         const json = await serverRes.json();
         if (json.latestCommit) {
           commitData = json.latestCommit;
+          if (json.apkDownloadUrl) apkDownloadUrl = json.apkDownloadUrl;
+          if (json.releaseUrl) releaseUrl = json.releaseUrl;
         }
       }
     } catch (e) {
       // Fallback directly to public GitHub API
     }
 
+    // 2. Direct GitHub REST API fallback if server route was unavailable
     if (!commitData) {
       const ghRes = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, {
         headers: {
@@ -133,20 +95,10 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
       }
     }
 
+    // 3. Compare latest remote commit SHA with current installed commit SHA
     if (commitData && commitData.sha) {
       const remoteSha = commitData.sha;
       const cleanSha = remoteSha.slice(0, 7);
-
-      // On very first check if installed app sha is not set, set it to the current remote sha
-      if (!currentAppSha) {
-        localStorage.setItem('vidyalayam_installed_app_sha', remoteSha);
-        localStorage.setItem(`vidyalayam_last_known_sha_${repo}`, remoteSha);
-        return {
-          updateAvailable: false,
-          currentVersion: cleanSha,
-          repo,
-        };
-      }
 
       const isNewer = currentAppSha !== remoteSha;
 
@@ -164,6 +116,8 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
         authorName: commitData.author,
         repo,
         htmlUrl: commitData.htmlUrl || `https://github.com/${repo}/commit/${remoteSha}`,
+        apkDownloadUrl,
+        releaseUrl,
       };
     }
   } catch (err) {
@@ -172,23 +126,49 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
 
   return {
     updateAvailable: false,
-    currentVersion: currentAppSha ? currentAppSha.slice(0, 7) : '1.0.0',
+    currentVersion: currentAppSha ? currentAppSha.slice(0, 7) : APP_BASELINE_VERSION,
     repo,
   };
 }
 
 /**
- * Apply the update by reloading and resetting the service worker or cache
+ * Apply the update by unregistering service workers, clearing storage cache and reloading cleanly
  */
-export function applyAppUpdate(newSha?: string): void {
+export async function applyAppUpdate(newSha?: string): Promise<void> {
   try {
     if (newSha) {
       localStorage.setItem('vidyalayam_installed_app_sha', newSha);
     }
     // Clear storage cache keys
     sessionStorage.clear();
-    // Force reload bypassing cache
-    window.location.reload();
+
+    // Clear CacheStorage (Service Worker caches)
+    if ('caches' in window) {
+      try {
+        const cacheKeys = await window.caches.keys();
+        await Promise.all(cacheKeys.map((k) => window.caches.delete(k)));
+      } catch (err) {
+        console.warn('Cache clear error:', err);
+      }
+    }
+
+    // Unregister service workers to force latest assets
+    if ('serviceWorker' in navigator) {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+      } catch (swErr) {
+        console.warn('SW unregister error:', swErr);
+      }
+    }
+
+    // Force hard reload bypassing browser cache
+    const cacheBuster = `_update=${Date.now()}`;
+    const url = new URL(window.location.href);
+    url.searchParams.set('_v', String(Date.now()));
+    window.location.href = url.toString();
   } catch (e) {
     window.location.reload();
   }

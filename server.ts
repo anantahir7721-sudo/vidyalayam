@@ -2584,10 +2584,23 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
     }
   });
 
+  // In-memory cache for GitHub update check to prevent rate limiting (15s cache)
+  let cachedGitHubUpdate: { repo: string; timestamp: number; data: any } | null = null;
+
   // GET /api/app-update-check: Checks GitHub repository for the latest commit or release
   app.get('/api/app-update-check', async (req: Request, res: Response) => {
     try {
-      const repo = String(req.query.repo || 'anantahir7721/vidyalayam').trim();
+      let repo = String(req.query.repo || 'anantahir7721-sudo/vidyalayam').trim();
+      if (repo === 'anantahir7721/vidyalayam' || !repo) {
+        repo = 'anantahir7721-sudo/vidyalayam';
+      }
+
+      // Check cache (15 seconds)
+      const now = Date.now();
+      if (cachedGitHubUpdate && cachedGitHubUpdate.repo === repo && (now - cachedGitHubUpdate.timestamp) < 15000) {
+        return res.json(cachedGitHubUpdate.data);
+      }
+
       const ghRes = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, {
         headers: {
           'User-Agent': 'Vidyalayam-App-Update-Checker',
@@ -2597,14 +2610,18 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
       });
 
       if (!ghRes.ok) {
+        if (cachedGitHubUpdate && cachedGitHubUpdate.repo === repo) {
+          return res.json(cachedGitHubUpdate.data);
+        }
         return res.status(ghRes.status).json({ error: `GitHub repo returned status ${ghRes.status}` });
       }
 
       const commits = await ghRes.json();
       if (Array.isArray(commits) && commits.length > 0) {
         const top = commits[0];
-        return res.json({
+        const responseData = {
           success: true,
+          repo,
           latestCommit: {
             sha: top.sha,
             message: top.commit?.message || '',
@@ -2612,11 +2629,24 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
             author: top.commit?.author?.name || 'GitHub Developer',
             htmlUrl: top.html_url,
           },
-        });
+          apkDownloadUrl: `https://github.com/${repo}/releases/download/latest/app-debug.apk`,
+          releaseUrl: `https://github.com/${repo}/releases/latest`,
+        };
+
+        cachedGitHubUpdate = {
+          repo,
+          timestamp: now,
+          data: responseData,
+        };
+
+        return res.json(responseData);
       }
 
       return res.json({ success: false, message: 'No commits found' });
     } catch (e: any) {
+      if (cachedGitHubUpdate) {
+        return res.json(cachedGitHubUpdate.data);
+      }
       return res.status(500).json({ error: e.message || 'Failed to check GitHub update' });
     }
   });

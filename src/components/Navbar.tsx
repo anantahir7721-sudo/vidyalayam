@@ -360,6 +360,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                             </button>
                           ))}
                         </div>
+                        <div className="pt-1.5 border-t border-[#E2E8F0] dark:border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMoreMenuOpen(false);
+                              window.dispatchEvent(new CustomEvent('check-app-update'));
+                            }}
+                            className="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all cursor-pointer"
+                          >
+                            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span>અપડેટ તપાસો (Check Updates)</span>
+                          </button>
+                        </div>
                       </div>,
                       document.body
                     )}
@@ -650,6 +663,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span>શાળા પાસવર્ડ બદલો (Change Password)</span>
                   </button>
                 )}
+
+                <button
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    window.dispatchEvent(new CustomEvent('check-app-update'));
+                  }}
+                  className="w-full py-3 px-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 text-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] shadow-xs"
+                >
+                  <Sparkles className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                  <span>🚀 નવી એપ અપડેટ તપાસો (Check for Updates)</span>
+                </button>
 
                 <button
                   onClick={() => {
