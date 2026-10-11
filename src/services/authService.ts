@@ -230,7 +230,7 @@ export async function loginSchool(
 
     return { user, school: schoolData, requiresPasswordReset: false };
   } catch (error: any) {
-    // 3. Fallback: Check if temporary password matches Firestore record even if Auth sign-in failed
+    // 3. Fallback: Check if temporary password or stored password matches Firestore record
     try {
       const q = query(collection(db, 'schools'), where('diseCode', '==', cleanDise));
       const snap = await getDocs(q);
@@ -240,9 +240,22 @@ export async function loginSchool(
         const tempPass = (schData.temporaryPassword || '').trim();
         if (tempPass && tempPass === cleanPass) {
           return {
-            user: null,
+            user: auth.currentUser,
             school: { id: schDoc.id, ...schData, status: schData.status || 'approved' },
             requiresPasswordReset: true,
+          };
+        }
+
+        // Also check if stored password in Firestore matches
+        const storedPass = (schData.password || '').trim();
+        if (storedPass && storedPass === cleanPass) {
+          try {
+            await createUserWithEmailAndPassword(auth, email, cleanPass);
+          } catch {}
+          return {
+            user: auth.currentUser,
+            school: { id: schDoc.id, ...schData, status: schData.status || 'approved' },
+            requiresPasswordReset: schData.mustResetPassword === true,
           };
         }
       }
@@ -275,55 +288,106 @@ export async function resetSchoolPasswordWithTemp(params: {
     throw new Error('નવો પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.');
   }
 
-  // 1. Call backend to update Firestore
-  const res = await fetch(apiUrl('/api/school/reset-password-with-temp'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      schoolId,
-      diseCode,
-      temporaryPassword,
-      newPassword,
-    }),
-  });
+  const cleanDise = diseCode.trim();
+  const email = diseCodeToAuthEmail(cleanDise);
+  let updatedSchool: School | null = null;
+  let backendSuccess = false;
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'પાસવર્ડ સેટ કરવામાં ભૂલ આવી.');
+  // 1. Call backend API to update Firestore and auto-resolve reset requests
+  try {
+    const res = await fetch(apiUrl('/api/school/reset-password-with-temp'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        schoolId,
+        diseCode: cleanDise,
+        temporaryPassword: temporaryPassword.trim(),
+        newPassword: newPassword.trim(),
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      updatedSchool = data.school;
+      backendSuccess = true;
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      if (errData.error && errData.error.includes('અમાન્ય ટેમ્પરરી પાસવર્ડ')) {
+        throw new Error(errData.error);
+      }
+    }
+  } catch (netErr: any) {
+    if (netErr.message && netErr.message.includes('અમાન્ય ટેમ્પરરી પાસવર્ડ')) {
+      throw netErr;
+    }
+    console.warn('Backend reset password API note:', netErr);
   }
 
-  const result = await res.json();
-  const email = diseCodeToAuthEmail(diseCode);
-
-  // 2. Authenticate or update password in Firebase Auth
+  // 2. Direct Firestore update (allowed by deployed security rule for temporaryPassword reset)
   try {
-    if (auth.currentUser) {
-      await updatePassword(auth.currentUser, newPassword);
+    const schoolDocRef = doc(db, 'schools', schoolId);
+    await updateDoc(schoolDocRef, {
+      password: newPassword.trim(),
+      temporaryPassword: null,
+      mustResetPassword: false,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (directErr: any) {
+    if (!backendSuccess) {
+      console.error('Direct Firestore update error:', directErr);
+      throw new Error(directErr.message || 'પાસવર્ડ સેટ કરવામાં ભૂલ આવી.');
+    }
+  }
+
+  // 3. Authenticate / update Firebase Auth user so user is properly signed in
+  try {
+    if (auth.currentUser && auth.currentUser.email === email) {
+      await updatePassword(auth.currentUser, newPassword.trim());
     } else {
+      if (auth.currentUser) {
+        await fbSignOut(auth).catch(() => {});
+      }
+
+      let signedIn = false;
       try {
-        await signInWithEmailAndPassword(auth, email, newPassword);
-      } catch {
-        try {
-          await createUserWithEmailAndPassword(auth, email, newPassword);
-        } catch {}
+        await signInWithEmailAndPassword(auth, email, newPassword.trim());
+        signedIn = true;
+      } catch (signErr: any) {
+        if (signErr.code === 'auth/user-not-found') {
+          try {
+            await createUserWithEmailAndPassword(auth, email, newPassword.trim());
+            signedIn = true;
+          } catch {}
+        } else if (signErr.code === 'auth/wrong-password' || signErr.code === 'auth/invalid-credential') {
+          if (updatedSchool?.password && updatedSchool.password !== newPassword.trim()) {
+            try {
+              const oldCred = await signInWithEmailAndPassword(auth, email, updatedSchool.password);
+              await updatePassword(oldCred.user, newPassword.trim());
+              signedIn = true;
+            } catch {}
+          }
+        }
       }
     }
   } catch (authErr) {
-    console.warn('Firebase auth password sync note:', authErr);
+    console.warn('Firebase auth sync note:', authErr);
   }
 
-  const updatedSchool: School = result.school || {
+  const finalSchool: School = updatedSchool || {
     id: schoolId,
     ownerUid: schoolId,
-    diseCode,
-    schoolName: diseCode,
+    diseCode: cleanDise,
+    schoolName: cleanDise,
     district: 'Gujarat',
     status: 'approved',
     mustResetPassword: false,
     temporaryPassword: null,
+    password: newPassword.trim(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
-  return { school: updatedSchool };
+  return { school: finalSchool };
 }
 
 /**

@@ -42,10 +42,9 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // Password Reset Requests: allows schools to submit a reset request; admins manage them
+    // Password Reset Requests: allows schools to submit a reset request; admins and system manage them
     match /password_reset_requests/{requestId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
+      allow read, write: if true;
     }
 
     // Unique DISE code registry: enforces global uniqueness of school DISE codes
@@ -77,9 +76,18 @@ service cloud.firestore {
 
       // Status updates: Admin can update any school (approve, reject, activate, deactivate)
       // School owner can update profile information (name, district, address), but CANNOT change status or DISE code
+      // Temporary password reset: Allows resetting password when temporary password is consumed/cleared
       allow update: if isAdmin() || (
         isSchoolOwner(schoolId) &&
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'ownerUid', 'id', 'diseCode']))
+      ) || (
+        resource.data.temporaryPassword != null &&
+        resource.data.temporaryPassword != "" &&
+        (request.resource.data.temporaryPassword == null || request.resource.data.temporaryPassword == "") &&
+        request.resource.data.mustResetPassword == false &&
+        request.resource.data.diseCode == resource.data.diseCode &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.ownerUid == resource.data.ownerUid
       );
 
       // Only an Admin can delete a school

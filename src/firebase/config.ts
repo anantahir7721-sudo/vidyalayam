@@ -6,8 +6,14 @@ import {
   Firestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  setLogLevel,
 } from 'firebase/firestore';
 import firebaseConfigData from '../../firebase-applet-config.json';
+
+// Silence non-fatal Firestore network transition warnings (e.g. 10s backend unreachable notice)
+try {
+  setLogLevel('error');
+} catch {}
 
 // Firebase configuration loaded from provisioned project
 export const firebaseConfig = {
@@ -39,13 +45,13 @@ if (typeof window !== 'undefined') {
 
 // The single, consistent Firestore database instance for the entire application.
 // Enabled with IndexedDB Persistent Local Cache for 100% offline access and automatic sync.
-// experimentalForceLongPolling eliminates connection timeouts in preview iframes and restricted networks.
+// experimentalAutoDetectLongPolling allows fast WebSockets while automatically falling back to long polling if needed.
 let firestoreInstance: Firestore;
 try {
   firestoreInstance = initializeFirestore(
     app,
     {
-      experimentalForceLongPolling: true,
+      experimentalAutoDetectLongPolling: true,
       localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager(),
       }),
@@ -57,7 +63,7 @@ try {
     firestoreInstance = initializeFirestore(
       app,
       {
-        experimentalForceLongPolling: true,
+        experimentalAutoDetectLongPolling: true,
       },
       FIRESTORE_DATABASE_ID
     );

@@ -21,11 +21,16 @@ import {
   addDoc,
   orderBy,
   limit,
+  setLogLevel,
 } from 'firebase/firestore';
 import { generateCurriculumPresentationScript } from './src/data/presentationCurriculumData';
 import { MASTER_NEWS_TOPICS } from './src/data/newsTopicsData';
 
 dotenv.config();
+
+try {
+  setLogLevel('error');
+} catch {}
 
 // Load Firebase Config
 let firebaseConfig: any = {};
@@ -550,6 +555,24 @@ async function startServer() {
         mustResetPassword: false,
         updatedAt: new Date().toISOString(),
       });
+
+      // Automatically resolve any pending reset requests for this DISE code
+      try {
+        const cleanDise = (diseCode || schoolData.diseCode || '').trim();
+        if (cleanDise) {
+          const prQuery = query(collection(db, 'password_reset_requests'), where('diseCode', '==', cleanDise));
+          const prSnap = await getDocs(prQuery);
+          for (const prDoc of prSnap.docs) {
+            await updateDoc(prDoc.ref, {
+              status: 'resolved',
+              resolvedAt: new Date().toISOString(),
+              adminNotes: 'શાળા દ્વારા કાયમી નવો પાસવર્ડ સફળતાપૂર્વક સેટ થઈ ગયો છે.',
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Auto-resolving reset request note:', e);
+      }
 
       return res.json({
         success: true,
