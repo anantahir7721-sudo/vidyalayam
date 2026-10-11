@@ -262,7 +262,11 @@ export default function App() {
         const info = await checkForGitHubUpdate();
         if (isMounted && info && info.updateAvailable) {
           setAppUpdate(info);
-          setShowUpdateModal(true); // Automatically show prominent popup!
+          // Only show update modal if user is authenticated (never during login or on auth screen)
+          const isUserLoggedIn = authStatus === 'school' || authStatus === 'admin' || !!studentSession;
+          if (isUserLoggedIn) {
+            setShowUpdateModal(true);
+          }
         }
       } catch (e) {
         // ignore
@@ -532,6 +536,9 @@ export default function App() {
   // Common App Update Banner & Modal Components
   const renderUpdateBanner = () => {
     if (!appUpdate?.updateAvailable || dismissUpdateBanner) return null;
+    // Never show banner on login/unauthenticated screen
+    if (authStatus === 'unauthenticated' || (!user && !studentSession)) return null;
+
     return (
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-bold flex items-center justify-between shadow-md shrink-0 z-50">
         <div 
@@ -539,7 +546,7 @@ export default function App() {
           className="flex items-center gap-2 cursor-pointer hover:opacity-90 min-w-0 flex-1 truncate"
         >
           <ArrowUpCircle className="w-4 h-4 shrink-0 text-amber-300 animate-bounce" />
-          <span className="truncate">🚀 નવી એપ અપડેટ GitHub પર ઉપલબ્ધ છે! ({appUpdate.latestCommitMessage || 'નવી સુવિધાઓ'})</span>
+          <span className="truncate">🚀 વિદ્યાલયમ એપની નવી અપડેટ ઉપલબ્ધ છે! નવી સુવિધાઓ મેળવવા માટે અપડેટ કરો.</span>
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <button
@@ -562,16 +569,22 @@ export default function App() {
     );
   };
 
-  const renderUpdateComponents = () => (
-    <>
-      {renderUpdateBanner()}
-      <AppUpdateModal
-        updateInfo={appUpdate}
-        isOpen={showUpdateModal}
-        onClose={() => setShowUpdateModal(false)}
-      />
-    </>
-  );
+  const renderUpdateComponents = () => {
+    // If user is logging in or unauthenticated, NEVER show the update screen or modal
+    if (authStatus === 'unauthenticated' || (!user && !studentSession)) {
+      return null;
+    }
+    return (
+      <>
+        {renderUpdateBanner()}
+        <AppUpdateModal
+          updateInfo={appUpdate}
+          isOpen={showUpdateModal}
+          onClose={() => setShowUpdateModal(false)}
+        />
+      </>
+    );
+  };
 
   // 0. Active Student Session: Render dedicated Student Portal
   if (studentSession) {

@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { 
   ArrowUpCircle, 
   Download, 
-  ExternalLink, 
-  GitCommit, 
   RefreshCw, 
   Sparkles, 
   X, 
@@ -11,7 +9,7 @@ import {
   ShieldCheck,
   Smartphone
 } from 'lucide-react';
-import { GitHubUpdateInfo, applyAppUpdate } from '../services/appUpdateService';
+import { GitHubUpdateInfo, applyAppUpdate, dismissUpdateInSession } from '../services/appUpdateService';
 import { isAndroidNativeApp } from '../utils/printAndPdfUtils';
 
 interface AppUpdateModalProps {
@@ -68,11 +66,14 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
           <div className="relative z-10 flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-emerald-100 text-xs font-bold border border-white/20 shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-              <span>GitHub Live Update</span>
+              <span>વિદ્યાલયમ નવી આવૃત્તિ</span>
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                dismissUpdateInSession(updateInfo.latestCommitSha);
+                onClose();
+              }}
               className="p-1.5 rounded-full bg-white/10 hover:bg-white/25 text-white/90 hover:text-white transition-all cursor-pointer"
               title="પછીથી"
             >
@@ -89,66 +90,52 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
               <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
                 <span>🚀 નવી એપ અપડેટ ઉપલબ્ધ છે!</span>
               </h2>
-              <p className="text-xs text-emerald-100/90 mt-0.5 line-clamp-2">
-                GitHub પરથી નવો કોડ સફળતાપૂર્વક પબ્લિશ થયેલ છે. હમણાં જ અપડેટ મેળવો.
+              <p className="text-xs text-emerald-100/90 mt-0.5 leading-relaxed">
+                વિદ્યાલયમ એપ્લિકેશનનું નવું અને સુધારેલું વર્ઝન ઉપલબ્ધ છે. નવી સુવિધાઓ મેળવવા માટે હમણાં જ અપડેટ કરો.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Modal Body: Information & Commit Details */}
-        <div className="p-4 sm:p-5 space-y-4 max-h-[60vh] overflow-y-auto">
-          {/* Version Comparison Bar */}
-          <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 text-xs">
-            <div>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block">
-                હાલની આવૃત્તિ:
-              </span>
-              <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 mt-0.5">
-                <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
-                <span className="truncate">{updateInfo.currentVersion || '1.0.4'}</span>
-              </span>
-            </div>
-            <div>
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold block">
-                નવી આવૃત્તિ (GitHub):
-              </span>
-              <span className="font-black text-emerald-700 dark:text-emerald-300 flex items-center gap-1 mt-0.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
-                <span className="truncate">{updateInfo.latestVersion || updateInfo.latestCommitSha?.slice(0, 7) || 'Latest'}</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Commit Message & Changes Card */}
-          <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-500/20 space-y-2">
-            <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300 font-bold">
-              <span className="flex items-center gap-1.5">
-                <GitCommit className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>ફેરફારોની વિગત (Commit Notes)</span>
-              </span>
-              {updateInfo.authorName && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-200/60 dark:bg-emerald-800/40 text-emerald-900 dark:text-emerald-200 font-semibold truncate max-w-[130px]">
-                  @{updateInfo.authorName}
-                </span>
-              )}
+        {/* Modal Body: Clean User-Facing Information (No GitHub or Git details) */}
+        <div className="p-4 sm:p-5 space-y-3.5 max-h-[60vh] overflow-y-auto">
+          {/* Update Features Highlights Card */}
+          <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-500/20 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-900 dark:text-emerald-300">
+              <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>આ અપડેટમાં સામેલ સુધારાઓ:</span>
             </div>
 
-            <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0c1219]/90 border border-slate-200/80 dark:border-white/5 text-xs text-slate-800 dark:text-slate-200 font-mono whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto">
-              {updateInfo.latestCommitMessage || 'નવી સુવિધાઓ, સુરક્ષા સુધારા અને કાર્યક્ષમતા વધારો.'}
-            </div>
+            <div className="space-y-2 text-xs">
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/80 dark:bg-[#0c1219]/80 border border-slate-200/70 dark:border-white/5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">નવી સુવિધાઓ અને ઝડપી કામગીરી</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block leading-normal">
+                    રિપોર્ટિંગ, માર્કસ એન્ટ્રી અને વિદ્યાર્થી પોર્ટલમાં વધુ ઝડપી અનુભવ.
+                  </span>
+                </div>
+              </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1">
-              <span>સમય: {formattedDate}</span>
-              <a
-                href={commitUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 hover:underline cursor-pointer"
-              >
-                <span>GitHub પર જુઓ</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/80 dark:bg-[#0c1219]/80 border border-slate-200/70 dark:border-white/5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">PDF ડાઉનલોડ સિસ્ટમ અપડેટ</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block leading-normal">
+                    બધા રિપોર્ટ્સ અને પરિણામો સીધા Downloads/Vidyalayam ફોલ્ડરમાં સુરક્ષિત સેવ થાય છે.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/80 dark:bg-[#0c1219]/80 border border-slate-200/70 dark:border-white/5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">સુરક્ષા અને સ્થિરતા વધારો</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block leading-normal">
+                    ઓફલાઇન કામગીરી અને ઓટોમેટિક ડેટા સિંકમાં અદ્યતન સુધારાઓ.
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 

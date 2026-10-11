@@ -20,7 +20,7 @@ export interface GitHubUpdateInfo {
 }
 
 export const DEFAULT_REPO = 'anantahir7721-sudo/vidyalayam';
-export const APP_BASELINE_SHA = '752ced9cc8fd2e453a5cf91159000e6c03bdf328';
+export const APP_BASELINE_SHA = '4e918a29cb8b96f88ceb1940877c8d13d86d9d08';
 export const APP_BASELINE_VERSION = '1.0.4';
 
 export function getTargetGitHubRepo(): string {
@@ -42,13 +42,22 @@ export function setTargetGitHubRepo(repo: string): void {
   } catch {}
 }
 
+export function dismissUpdateInSession(sha?: string): void {
+  try {
+    if (sha) {
+      sessionStorage.setItem(`vidyalayam_dismissed_update_${sha}`, 'true');
+    }
+    sessionStorage.setItem('vidyalayam_update_modal_dismissed', 'true');
+  } catch {}
+}
+
 /**
  * Check GitHub repository for the latest pushed commit.
  * Uses server endpoint with in-memory caching & rate limit immunity, with fallback to public GitHub API.
  */
 export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateInfo> {
   const repo = getTargetGitHubRepo();
-  const currentAppSha = localStorage.getItem('vidyalayam_installed_app_sha') || APP_BASELINE_SHA;
+  let currentAppSha = localStorage.getItem('vidyalayam_installed_app_sha');
 
   try {
     let commitData: any = null;
@@ -88,26 +97,46 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
             sha: commits[0].sha,
             message: commits[0].commit?.message || '',
             date: commits[0].commit?.committer?.date || '',
-            author: commits[0].commit?.author?.name || 'GitHub',
+            author: commits[0].commit?.author?.name || 'Vidyalayam Developer',
             htmlUrl: commits[0].html_url,
           };
         }
       }
     }
 
-    // 3. Compare latest remote commit SHA with current installed commit SHA
+    // 3. Process commit and verify if there is an ACTUAL new update
     if (commitData && commitData.sha) {
       const remoteSha = commitData.sha;
       const cleanSha = remoteSha.slice(0, 7);
 
-      const isNewer = currentAppSha !== remoteSha;
+      // If app was just installed / fresh launch with no recorded SHA,
+      // register the current remote SHA or baseline so user does not get an immediate false update popup
+      if (!currentAppSha) {
+        currentAppSha = remoteSha;
+        localStorage.setItem('vidyalayam_installed_app_sha', remoteSha);
+        return {
+          updateAvailable: false,
+          currentVersion: cleanSha,
+          latestVersion: cleanSha,
+          latestCommitSha: remoteSha,
+          repo,
+          apkDownloadUrl,
+          releaseUrl,
+        };
+      }
+
+      // Check if update was dismissed in current session
+      const isDismissed = sessionStorage.getItem(`vidyalayam_dismissed_update_${remoteSha}`) === 'true' ||
+                          sessionStorage.getItem('vidyalayam_update_modal_dismissed') === 'true';
+
+      const isNewer = currentAppSha !== remoteSha && remoteSha !== APP_BASELINE_SHA;
 
       if (isNewer) {
         localStorage.setItem(`vidyalayam_last_known_sha_${repo}`, remoteSha);
       }
 
       return {
-        updateAvailable: isNewer,
+        updateAvailable: isNewer && !isDismissed,
         currentVersion: currentAppSha.slice(0, 7),
         latestVersion: cleanSha,
         latestCommitSha: remoteSha,
