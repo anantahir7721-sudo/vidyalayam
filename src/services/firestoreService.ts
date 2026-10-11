@@ -1027,11 +1027,21 @@ export async function saveParentMessageBroadcast(
   schoolId: string,
   record: Omit<ParentBroadcastRecord, 'id'>
 ): Promise<string> {
-  const col = collection(db, 'schools', schoolId, 'parent_broadcasts');
-  const docRef = await addDoc(col, {
-    ...record,
-    createdAt: new Date().toISOString(),
-  });
+  const cleanSchoolId = (schoolId || '').trim();
+  if (!cleanSchoolId) return '';
+  const col = collection(db, 'schools', cleanSchoolId, 'parent_broadcasts');
+  const cleanRecord: Record<string, any> = {
+    schoolId: cleanSchoolId,
+    broadcastType: record.broadcastType || 'general_notice',
+    title: record.title || '',
+    examType: record.examType || '',
+    standard: record.standard || '',
+    totalRecipients: Number(record.totalRecipients || 0),
+    sentCount: Number(record.sentCount || 0),
+    previewMessage: record.previewMessage || '',
+    createdAt: record.createdAt || new Date().toISOString(),
+  };
+  const docRef = await addDoc(col, cleanRecord);
   return docRef.id;
 }
 

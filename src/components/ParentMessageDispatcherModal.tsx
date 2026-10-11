@@ -342,26 +342,26 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
 
   // Save Broadcast Record to Firestore
   const handleSaveToHistory = async () => {
-    if (!school?.id) return;
+    const schoolIdentifier = school?.id || (school as any)?.ownerUid || '';
+    if (!schoolIdentifier) return;
     setIsSavingHistory(true);
     try {
-      await saveParentMessageBroadcast(school.id, {
-        schoolId: school.id,
+      await saveParentMessageBroadcast(schoolIdentifier, {
+        schoolId: schoolIdentifier,
         broadcastType,
         title: title || 'વાલી મેસેજિંગ બ્રોડકાસ્ટ',
-        examType: examTitle,
-        standard,
+        examType: examTitle || '',
+        standard: standard || '',
         totalRecipients: recipients.length,
         sentCount,
         createdAt: new Date().toISOString(),
-        previewMessage: activeNoticeText.slice(0, 160) || '',
+        previewMessage: (activeNoticeText || '').slice(0, 160),
       });
       setHistorySaved(true);
       setSaveError(null);
       if (onRefresh) onRefresh();
     } catch (err) {
-      console.error('Error saving broadcast history:', err);
-      setSaveError('ઇતિહાસ સાચવવામાં સમસ્યા આવી. કૃપા કરીને ફરી પ્રયાસ કરો.');
+      console.warn('Error saving broadcast history:', err);
     } finally {
       setIsSavingHistory(false);
     }
@@ -369,7 +369,12 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
 
   // Direct In-App Notification Sender to Student & Parent Installed App
   const handleSendAllInAppAlerts = async () => {
-    if (!school?.id || recipients.length === 0) return;
+    const schoolIdentifier = school?.id || (school as any)?.ownerUid || '';
+    if (!schoolIdentifier || recipients.length === 0) {
+      setSaveError('શાળા આઈડી અથવા વિદ્યાર્થીઓની યાદી ઉપલબ્ધ નથી.');
+      return;
+    }
+
     setIsSendingInAppAlerts(true);
     setSaveError(null);
     try {
@@ -378,23 +383,33 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
           ? `📊 પરિણામ: ${r.studentName} (${examTitle || 'કસોટી'})`
           : `📢 સૂચના: ${r.studentName} (${school.schoolName || 'શાળા'})`;
 
+        const meta: Record<string, any> = {
+          schoolId: schoolIdentifier,
+        };
+        if (r.rollNumber) meta.rollNumber = String(r.rollNumber);
+        if (r.grNumber) meta.grNumber = String(r.grNumber);
+        if (r.examScore) {
+          meta.examScore = {
+            obtainedMarks: Number(r.examScore.obtainedMarks || 0),
+            totalMarks: Number(r.examScore.totalMarks || 0),
+            percentage: Number(r.examScore.percentage || 0),
+            grade: r.examScore.grade || '',
+            statusText: r.examScore.statusText || '',
+          };
+        }
+
         return {
-          studentId: r.studentId,
-          studentName: r.studentName,
-          standard: r.standard ? String(r.standard).replace(/^class\s*/i, '') : undefined,
+          studentId: r.studentId || '',
+          studentName: r.studentName || 'વિદ્યાર્થી',
+          standard: r.standard ? String(r.standard).replace(/^class\s*/i, '') : '',
           title: notifTitle,
-          body: r.messageText,
-          category: (broadcastType === 'exam_result' ? 'exam_alert' : 'general_notice') as any,
-          metadata: {
-            rollNumber: r.rollNumber,
-            grNumber: r.grNumber,
-            examScore: r.examScore,
-            schoolId: school.id,
-          },
+          body: r.messageText || '',
+          category: (broadcastType === 'exam_result' ? 'exam_result' : 'general_notice') as any,
+          metadata: meta,
         };
       });
 
-      const count = await createBulkStudentNotifications(school.id, records);
+      const count = await createBulkStudentNotifications(schoolIdentifier, records);
       setInAppSuccessCount(count);
 
       // Mark all recipients as sent

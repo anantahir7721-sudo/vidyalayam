@@ -211,7 +211,10 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
           body: `પ્રિય ${st.studentName}, ધોરણ ${st.standard} માટે ${examPayload.subject || 'વિષય'} પરીક્ષા (${examPayload.title}) તા. ${examPayload.scheduledDate || 'આજે'} ના રોજ ${examPayload.scheduledStartTime || ''} વાગ્યે નિર્ધારિત થયેલ છે.`,
           category: 'exam_scheduled' as const,
         }));
-        createBulkStudentNotifications(school.id, notifItems).catch(() => {});
+        const schoolIdentifier = school?.id || (school as any)?.ownerUid || '';
+        if (schoolIdentifier) {
+          createBulkStudentNotifications(schoolIdentifier, notifItems).catch(() => {});
+        }
       }
     } catch (e) {}
 

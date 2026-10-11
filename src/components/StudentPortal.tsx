@@ -458,6 +458,41 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
         </div>
       </div>
 
+      {/* Prominent In-App Unread Notification Card (Displayed immediately when student opens portal) */}
+      {unreadNotifCount > 0 && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-3 pb-1 animate-in fade-in slide-in-from-top-2">
+          <div className="p-4 rounded-3xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-orange-500/15 border border-amber-500/30 dark:border-amber-500/20 shadow-md flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
+                <Bell className="w-5 h-5 animate-bounce" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                    શાળા તરફથી નવી સૂચના ઉપલબ્ધ છે!
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white shadow-xs">
+                    {unreadNotifCount} નવી
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 truncate max-w-xl mt-0.5">
+                  {notifications.find((n) => !n.read)?.title || 'નવી સૂચના'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsNotifModalOpen(true)}
+              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer ml-auto"
+            >
+              <span>સૂચના વાંચો</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Prominent Live / Upcoming Exam Highlight Banner */}
       {(() => {
         const priorityExam = upcomingExams.find((ex) => !isExamPastLateCutoff(ex));

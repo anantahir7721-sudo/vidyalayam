@@ -64,11 +64,13 @@ if (typeof window !== 'undefined') {
 // The single, consistent Firestore database instance for the entire application.
 // Enabled with IndexedDB Persistent Local Cache for 100% offline access and automatic sync.
 // experimentalForceLongPolling avoids WebSocket connection handshake timeouts and ensures immediate connectivity.
+// ignoreUndefinedProperties: true prevents 'Unsupported field value: undefined' errors when sending notifications or saving objects with optional fields.
 let firestoreInstance: Firestore;
 try {
   firestoreInstance = initializeFirestore(
     app,
     {
+      ignoreUndefinedProperties: true,
       experimentalForceLongPolling: true,
       localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager(),
@@ -81,6 +83,7 @@ try {
     firestoreInstance = initializeFirestore(
       app,
       {
+        ignoreUndefinedProperties: true,
         experimentalForceLongPolling: true,
       },
       FIRESTORE_DATABASE_ID

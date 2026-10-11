@@ -124,27 +124,42 @@ ${cleanNotice.trim()}
       return;
     }
 
+    const schoolIdentifier = school?.id || (school as any)?.ownerUid || '';
+    if (!schoolIdentifier) {
+      setNoticeError('શાળા આઈડી મળ્યું નથી. કૃપા કરીને પેજ રિફ્રેશ કરો.');
+      return;
+    }
+
     setIsSendingInApp(true);
     setNoticeError(null);
     try {
       const records = selected.map((st) => {
         const personalizedMsg = replaceSmartVariables(noticeText, st, school);
         return {
-          studentId: st.id,
-          studentName: st.studentName,
-          standard: String(st.standard).replace(/^class\s*/i, ''),
+          studentId: st.id || '',
+          studentName: st.studentName || 'વિદ્યાર્થી',
+          standard: st.standard ? String(st.standard).replace(/^class\s*/i, '') : '',
           title: `📢 ${noticeSubject}`,
-          body: personalizedMsg,
+          body: personalizedMsg || '',
           category: 'general_notice' as const,
+          metadata: {
+            rollNumber: st.rollNumber ? String(st.rollNumber) : '',
+            grNumber: st.grNumber ? String(st.grNumber) : '',
+            schoolId: schoolIdentifier,
+          },
         };
       });
 
-      const count = await createBulkStudentNotifications(school.id, records);
+      const count = await createBulkStudentNotifications(schoolIdentifier, records);
       setInAppSuccessCount(count);
-      setTimeout(() => setInAppSuccessCount(null), 4000);
+      setTimeout(() => setInAppSuccessCount(null), 5000);
     } catch (err: any) {
       console.error('Error sending in-app notifications:', err);
-      setNoticeError('ઇન-એપ સૂચના મોકલવામાં સમસ્યા આવી.');
+      setNoticeError(
+        err?.message?.includes('network') || err?.message?.includes('offline')
+          ? 'ઇન્ટરનેટ કનેક્શન તપાસો. ઑફલાઇન મોડમાં નોટિફિકેશન કતારમાં સેવ થશે.'
+          : 'ઇન-એપ સૂચના મોકલવામાં સમસ્યા આવી. કૃપા કરીને ફરી પ્રયાસ કરો.'
+      );
     } finally {
       setIsSendingInApp(false);
     }

@@ -17,6 +17,20 @@ import { AppNotification, AppNotificationCategory } from '../types';
 import { sendNotification } from '../utils/notificationUtils';
 import { apiUrl } from '../utils/apiConfig';
 
+// Helper: deeply strip undefined values so Firestore never throws 'Unsupported field value: undefined'
+function cleanPayload<T extends Record<string, any>>(obj: T): T {
+  const result: any = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined) continue;
+    if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+      result[k] = cleanPayload(v);
+    } else {
+      result[k] = v;
+    }
+  }
+  return result;
+}
+
 /**
  * Dispatch an individual in-app and push notification.
  * Saves to Firestore under school subcollection or global system collection.
@@ -28,13 +42,13 @@ export async function createAppNotification(
   const createdAt = new Date().toISOString();
   const docId = notif.id || `notif_${timestamp}_${Math.random().toString(36).slice(2, 7)}`;
 
-  const notificationData: AppNotification = {
+  const notificationData = cleanPayload({
     ...notif,
     id: docId,
     timestamp,
     createdAt,
     read: false,
-  };
+  });
 
   try {
     if (notif.targetType === 'admin' || !notif.schoolId) {
@@ -43,7 +57,8 @@ export async function createAppNotification(
       await setDoc(docRef, notificationData);
     } else {
       // School-specific or student-specific notification
-      const docRef = doc(db, 'schools', notif.schoolId, 'notifications', docId);
+      const cleanSchoolId = (notif.schoolId || '').trim();
+      const docRef = doc(db, 'schools', cleanSchoolId, 'notifications', docId);
       await setDoc(docRef, notificationData);
     }
   } catch (err) {
@@ -53,9 +68,9 @@ export async function createAppNotification(
   // Also trigger local device push notification if appropriate
   try {
     let pushType: 'general' | 'exam' | 'daily' | 'attendance' | 'alert' = 'general';
-    if (notif.category.includes('exam')) pushType = 'exam';
-    else if (notif.category.includes('daily')) pushType = 'daily';
-    else if (notif.category.includes('approval') || notif.category.includes('reset')) pushType = 'alert';
+    if (notif.category?.includes('exam')) pushType = 'exam';
+    else if (notif.category?.includes('daily')) pushType = 'daily';
+    else if (notif.category?.includes('approval') || notif.category?.includes('reset')) pushType = 'alert';
 
     sendNotification(notif.title, notif.body, pushType);
   } catch (e) {
@@ -81,66 +96,81 @@ export async function createBulkStudentNotifications(
     metadata?: Record<string, any>;
   }>
 ): Promise<number> {
-  if (!items.length) return 0;
+  const cleanSchoolId = (schoolId || '').trim();
+  if (!cleanSchoolId || !items.length) {
+    console.warn('[NotificationService] Missing schoolId or empty items');
+    return 0;
+  }
 
   const now = Date.now();
   const createdAt = new Date().toISOString();
   let totalSaved = 0;
 
-  // Chunk items into slices of 200 to stay safely below Firestore's 500-op limit
-  const CHUNK_SIZE = 200;
+  // Chunk items into slices of 100 to stay safely below Firestore's limits
+  const CHUNK_SIZE = 100;
   for (let i = 0; i < items.length; i += CHUNK_SIZE) {
     const chunk = items.slice(i, i + CHUNK_SIZE);
-    const batch = writeBatch(db);
-
-    for (const item of chunk) {
-      const docId = `sn_${now}_${(item.studentId || 'st').slice(0, 6)}_${Math.random().toString(36).slice(2, 6)}`;
-      const docRef = doc(db, 'schools', schoolId, 'notifications', docId);
-
-      const record: AppNotification = {
-        id: docId,
-        title: item.title,
-        body: item.body,
-        targetType: 'student',
-        targetId: item.studentId,
-        studentName: item.studentName,
-        schoolId,
-        standard: item.standard,
-        category: item.category,
-        createdAt,
-        timestamp: now,
-        read: false,
-        metadata: item.metadata,
-      };
-
-      batch.set(docRef, record);
-    }
-
     try {
+      const batch = writeBatch(db);
+
+      for (const item of chunk) {
+        const safeStudentId = (item.studentId || 'st').trim();
+        const docId = `sn_${now}_${safeStudentId.slice(0, 8)}_${Math.random().toString(36).slice(2, 7)}`;
+        const docRef = doc(db, 'schools', cleanSchoolId, 'notifications', docId);
+
+        const record: Record<string, any> = {
+          id: docId,
+          title: item.title || 'સૂચના',
+          body: item.body || '',
+          targetType: 'student',
+          targetId: safeStudentId,
+          studentName: item.studentName || 'વિદ્યાર્થી',
+          schoolId: cleanSchoolId,
+          standard: item.standard ? String(item.standard).replace(/^class\s*/i, '') : '',
+          category: item.category || 'general_notice',
+          createdAt,
+          timestamp: now,
+          read: false,
+        };
+
+        if (item.metadata && typeof item.metadata === 'object') {
+          record.metadata = cleanPayload(item.metadata);
+        }
+
+        batch.set(docRef, cleanPayload(record));
+      }
+
       await batch.commit();
       totalSaved += chunk.length;
     } catch (batchErr) {
-      console.warn('[NotificationService] Batch commit error, trying individual writes:', batchErr);
+      console.warn('[NotificationService] Batch commit error, falling back to individual writes:', batchErr);
       // Fallback: commit individually if batch was blocked or partially timed out
       for (const item of chunk) {
         try {
-          const docId = `sn_${now}_${(item.studentId || 'st').slice(0, 6)}_${Math.random().toString(36).slice(2, 6)}`;
-          const docRef = doc(db, 'schools', schoolId, 'notifications', docId);
-          await setDoc(docRef, {
+          const safeStudentId = (item.studentId || 'st').trim();
+          const docId = `sn_${now}_${safeStudentId.slice(0, 8)}_${Math.random().toString(36).slice(2, 7)}`;
+          const docRef = doc(db, 'schools', cleanSchoolId, 'notifications', docId);
+
+          const record: Record<string, any> = {
             id: docId,
-            title: item.title,
-            body: item.body,
+            title: item.title || 'સૂચના',
+            body: item.body || '',
             targetType: 'student',
-            targetId: item.studentId,
-            studentName: item.studentName,
-            schoolId,
-            standard: item.standard,
-            category: item.category,
+            targetId: safeStudentId,
+            studentName: item.studentName || 'વિદ્યાર્થી',
+            schoolId: cleanSchoolId,
+            standard: item.standard ? String(item.standard).replace(/^class\s*/i, '') : '',
+            category: item.category || 'general_notice',
             createdAt,
             timestamp: now,
             read: false,
-            metadata: item.metadata,
-          });
+          };
+
+          if (item.metadata && typeof item.metadata === 'object') {
+            record.metadata = cleanPayload(item.metadata);
+          }
+
+          await setDoc(docRef, cleanPayload(record));
           totalSaved++;
         } catch (singleErr) {
           console.warn('[NotificationService] Single doc fallback error:', singleErr);
@@ -155,7 +185,7 @@ export async function createBulkStudentNotifications(
       sendNotification(
         items[0].title,
         `${totalSaved || items.length} વિદ્યાર્થીઓને કસ્ટમ સૂચના સફળતાપૂર્વક મોકલવામાં આવી.`,
-        items[0].category.includes('exam') ? 'exam' : 'general'
+        items[0].category?.includes('exam') ? 'exam' : 'general'
       );
     } catch (e) {}
   }
@@ -171,35 +201,31 @@ export function subscribeToStudentNotifications(
   studentId: string,
   callback: (notifications: AppNotification[]) => void
 ): () => void {
-  if (!schoolId || !studentId) {
+  const cleanSchoolId = (schoolId || '').trim();
+  const cleanStudentId = (studentId || '').trim();
+  if (!cleanSchoolId || !cleanStudentId) {
     callback([]);
     return () => {};
   }
 
-  const notifsCol = collection(db, 'schools', schoolId, 'notifications');
+  const notifsCol = collection(db, 'schools', cleanSchoolId, 'notifications');
+  // Simple equality query avoiding composite index requirements
   const q = query(
     notifsCol,
-    where('targetId', '==', studentId),
-    orderBy('timestamp', 'desc'),
-    limit(40)
+    where('targetId', '==', cleanStudentId),
+    limit(50)
   );
 
   return onSnapshot(
     q,
     (snapshot) => {
-      const list = snapshot.docs.map((d) => d.data() as AppNotification);
+      const list = snapshot.docs
+        .map((d) => d.data() as AppNotification)
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
       callback(list);
     },
     (err) => {
       console.warn('[NotificationService] Student notif listen error:', err);
-      // Fallback: try querying without orderby if index missing
-      const fallbackQuery = query(notifsCol, where('targetId', '==', studentId), limit(40));
-      onSnapshot(fallbackQuery, (snap) => {
-        const list = snap.docs
-          .map((d) => d.data() as AppNotification)
-          .sort((a, b) => b.timestamp - a.timestamp);
-        callback(list);
-      });
     }
   );
 }
