@@ -29,55 +29,42 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
   onClose,
   notifications,
   schoolId,
-  title = 'પરીક્ષા & પરિણામ સૂચનાઓ (Exam & Result Alerts)',
+  title = 'શાળા સૂચનાઓ (School Notifications)',
   onNavigateTab,
 }) => {
-  const [filter, setFilter] = useState<'all' | 'unread' | 'exams' | 'results'>('all');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'results' | 'exams' | 'notices'>('all');
 
   if (!isOpen) return null;
 
-  // In-app notifications strictly enforce Exam and Result notifications only
-  const examResultNotifications = notifications.filter((n) => {
+  const isResult = (n: AppNotification) => {
     const cat = (n.category || '').toLowerCase();
     const t = (n.title || '').toLowerCase();
-    const b = (n.body || '').toLowerCase();
-    return (
-      cat.includes('exam') ||
-      cat.includes('result') ||
-      cat === 'exam_result' ||
-      cat === 'exam_scheduled' ||
-      cat === 'exam_reminder_5min' ||
-      t.includes('પરીક્ષા') ||
-      t.includes('પરિણામ') ||
-      t.includes('માર્ક્સ') ||
-      t.includes('ગુણ') ||
-      t.includes('result') ||
-      t.includes('exam') ||
-      b.includes('પરીક્ષા') ||
-      b.includes('પરિણામ') ||
-      b.includes('માર્ક્સ') ||
-      b.includes('ગુણ') ||
-      b.includes('result')
-    );
-  });
+    return cat.includes('result') || t.includes('પરિણામ');
+  };
 
-  const unreadCount = examResultNotifications.filter((n) => !n.read).length;
-  const examCount = examResultNotifications.filter(
-    (n) => !((n.category || '').includes('result') || (n.title || '').includes('પરિણામ'))
-  ).length;
-  const resultCount = examResultNotifications.filter(
-    (n) => (n.category || '').includes('result') || (n.title || '').includes('પરિણામ') || (n.category === 'exam_result')
-  ).length;
+  const isExam = (n: AppNotification) => {
+    const cat = (n.category || '').toLowerCase();
+    const t = (n.title || '').toLowerCase();
+    return !isResult(n) && (cat.includes('exam') || t.includes('પરીક્ષા'));
+  };
 
-  const filtered = examResultNotifications.filter((n) => {
+  const isNotice = (n: AppNotification) => !isResult(n) && !isExam(n);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const resultCount = notifications.filter(isResult).length;
+  const examCount = notifications.filter(isExam).length;
+  const noticeCount = notifications.filter(isNotice).length;
+
+  const filtered = notifications.filter((n) => {
     if (filter === 'unread') return !n.read;
-    if (filter === 'exams') return !((n.category || '').includes('result') || (n.title || '').includes('પરિણામ'));
-    if (filter === 'results') return (n.category || '').includes('result') || (n.title || '').includes('પરિણામ') || (n.category === 'exam_result');
+    if (filter === 'results') return isResult(n);
+    if (filter === 'exams') return isExam(n);
+    if (filter === 'notices') return isNotice(n);
     return true;
   });
 
   const handleMarkAllRead = async () => {
-    await markAllNotificationsAsRead(schoolId, examResultNotifications);
+    await markAllNotificationsAsRead(schoolId, notifications);
   };
 
   const handleNotificationClick = async (notif: AppNotification) => {
@@ -105,7 +92,10 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     if (category.includes('result') || itemTitle.includes('પરિણામ')) {
       return { label: 'પરીક્ષા પરિણામ (Result)', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' };
     }
-    return { label: 'પરીક્ષા સૂચના (Exam)', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' };
+    if (category.includes('exam') || itemTitle.includes('પરીક્ષા')) {
+      return { label: 'પરીક્ષા (Exam)', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' };
+    }
+    return { label: 'શાળા સૂચના (Notice)', color: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' };
   };
 
   return (
@@ -158,7 +148,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
               }`}
             >
-              તમામ ({examResultNotifications.length})
+              તમામ ({notifications.length})
             </button>
             <button
               type="button"
@@ -193,6 +183,19 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             >
               પરીક્ષા ({examCount})
             </button>
+            {noticeCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setFilter('notices')}
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  filter === 'notices'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
+                }`}
+              >
+                સૂચના ({noticeCount})
+              </button>
+            )}
           </div>
 
           {unreadCount > 0 && (

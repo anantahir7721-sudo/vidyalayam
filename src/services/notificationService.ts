@@ -199,7 +199,8 @@ export async function createBulkStudentNotifications(
 export function subscribeToStudentNotifications(
   schoolId: string,
   studentId: string,
-  callback: (notifications: AppNotification[]) => void
+  callback: (notifications: AppNotification[]) => void,
+  studentExtra?: { grNumber?: string; standard?: string; diseCode?: string }
 ): () => void {
   const cleanSchoolId = (schoolId || '').trim();
   const cleanStudentId = (studentId || '').trim();
@@ -209,12 +210,26 @@ export function subscribeToStudentNotifications(
   }
 
   const notifsCol = collection(db, 'schools', cleanSchoolId, 'notifications');
-  // Simple equality query avoiding composite index requirements
-  const q = query(
-    notifsCol,
-    where('targetId', '==', cleanStudentId),
-    limit(50)
+  
+  // Build targets this student can match: by studentId, grNumber, diseCode, or 'all'
+  const targetIds = Array.from(
+    new Set(
+      [
+        cleanStudentId,
+        studentExtra?.grNumber?.trim(),
+        studentExtra?.diseCode?.trim(),
+        'all',
+      ].filter((x): x is string => Boolean(x && x.length > 0))
+    )
   );
+
+  const q =
+    targetIds.length > 1
+      ? query(notifsCol, where('targetId', 'in', targetIds.slice(0, 10)), limit(50))
+      : query(notifsCol, where('targetId', '==', cleanStudentId), limit(50));
+
+  let isInitialLoad = true;
+  const notifiedIds = new Set<string>();
 
   return onSnapshot(
     q,
@@ -222,7 +237,36 @@ export function subscribeToStudentNotifications(
       const list = snapshot.docs
         .map((d) => d.data() as AppNotification)
         .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
       callback(list);
+
+      // Mobile System / Push Notification dispatch:
+      // If a new unread notification arrives in real-time, trigger device push notification!
+      if (!isInitialLoad) {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const notif = change.doc.data() as AppNotification;
+            if (!notif.read && !notifiedIds.has(notif.id)) {
+              notifiedIds.add(notif.id);
+              const pushType = (notif.category || '').includes('exam') ? 'exam' : 'general';
+              sendNotification(notif.title, notif.body, pushType as any);
+            }
+          }
+        });
+      }
+
+      // On initial load, if there's any unread notification from the last 12 hours that hasn't been surfaced, trigger notification:
+      if (isInitialLoad) {
+        const freshUnread = list.find(
+          (n) => !n.read && Date.now() - (n.timestamp || 0) < 12 * 60 * 60 * 1000
+        );
+        if (freshUnread && !notifiedIds.has(freshUnread.id)) {
+          notifiedIds.add(freshUnread.id);
+          const pushType = (freshUnread.category || '').includes('exam') ? 'exam' : 'general';
+          sendNotification(freshUnread.title, freshUnread.body, pushType as any);
+        }
+        isInitialLoad = false;
+      }
     },
     (err) => {
       console.warn('[NotificationService] Student notif listen error:', err);

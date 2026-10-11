@@ -791,7 +791,7 @@ async function clientSideStudentLogin(
     sessionToken: token,
   };
 
-  sessionStorage.setItem('vidyalayam_student_session', JSON.stringify(sessionPayload));
+  saveStudentSession(sessionPayload);
   return sessionPayload;
 }
 
@@ -834,7 +834,7 @@ export async function studentLogin(params: {
     if (contentType.includes('application/json')) {
       const data = await res.json();
       if (res.ok && data.session) {
-        sessionStorage.setItem('vidyalayam_student_session', JSON.stringify(data.session));
+        saveStudentSession(data.session);
         return data.session;
       }
       // If server returned a business validation error (e.g. wrong DOB or DISE not found), keep that error
@@ -868,9 +868,23 @@ export async function studentLogin(params: {
   throw new Error('વિદ્યાર્થી લૉગિન નિષ્ફળ થયું.');
 }
 
+/**
+ * Persist student session to localStorage so that closing the app does not log the student out.
+ */
+export function saveStudentSession(session: StudentSession) {
+  try {
+    localStorage.setItem('vidyalayam_student_session', JSON.stringify(session));
+    sessionStorage.setItem('vidyalayam_student_session', JSON.stringify(session));
+  } catch (e) {
+    console.warn('Could not save student session:', e);
+  }
+}
+
 export function getStoredStudentSession(): StudentSession | null {
   try {
-    const stored = sessionStorage.getItem('vidyalayam_student_session');
+    const stored =
+      localStorage.getItem('vidyalayam_student_session') ||
+      sessionStorage.getItem('vidyalayam_student_session');
     if (stored) {
       return JSON.parse(stored);
     }
@@ -879,7 +893,10 @@ export function getStoredStudentSession(): StudentSession | null {
 }
 
 export function clearStudentSession() {
-  sessionStorage.removeItem('vidyalayam_student_session');
+  try {
+    localStorage.removeItem('vidyalayam_student_session');
+    sessionStorage.removeItem('vidyalayam_student_session');
+  } catch (e) {}
 }
 
 export async function fetchStudentExams(token: string) {

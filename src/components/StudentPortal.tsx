@@ -143,43 +143,45 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
     }
   }, [school?.dailyNewsEnabled, school?.dailyJanvaJevuEnabled, school?.dailySuvicharEnabled, activeTab]);
 
-  // Helper: In-app notifications are strictly restricted to Exam and Result notifications
-  const isExamOrResultNotification = (n: AppNotification) => {
+  // Filter out automated routine daily feeds (daily news/knowledge/evening thoughts)
+  // while keeping all real school alerts: Exam schedules, Exam results, and Vali Sanchar (વાલી સંચાર / શાળા સૂચના)
+  const isValidStudentNotification = (n: AppNotification) => {
     const cat = (n.category || '').toLowerCase();
-    const t = (n.title || '').toLowerCase();
-    const b = (n.body || '').toLowerCase();
-    return (
-      cat.includes('exam') ||
-      cat.includes('result') ||
-      cat === 'exam_result' ||
-      cat === 'exam_scheduled' ||
-      cat === 'exam_reminder_5min' ||
-      t.includes('પરીક્ષા') ||
-      t.includes('પરિણામ') ||
-      t.includes('માર્ક્સ') ||
-      t.includes('ગુણ') ||
-      t.includes('result') ||
-      t.includes('exam') ||
-      b.includes('પરીક્ષા') ||
-      b.includes('પરિણામ') ||
-      b.includes('માર્ક્સ') ||
-      b.includes('ગુણ') ||
-      b.includes('result')
-    );
+    // Exclude routine daily feeds so they don't flood student in-app notifications
+    if (cat === 'daily_news' || cat === 'daily_knowledge' || cat === 'daily_evening') {
+      return false;
+    }
+    return true;
   };
 
-  // Real-time subscription to notifications tailored strictly for this student (Exam & Result only)
+  // Real-time subscription to notifications tailored strictly for this student
   useEffect(() => {
     const schoolId = session.schoolId || session.school?.id;
     if (!schoolId || !student?.id) return;
 
-    const unsub = subscribeToStudentNotifications(schoolId, student.id, (list) => {
-      const examAndResultList = list.filter(isExamOrResultNotification);
-      setNotifications(examAndResultList);
-    });
+    const unsub = subscribeToStudentNotifications(
+      schoolId,
+      student.id,
+      (list) => {
+        const filteredList = list.filter(isValidStudentNotification);
+        setNotifications(filteredList);
+      },
+      {
+        grNumber: student.grNumber,
+        standard: student.standard,
+        diseCode: student.diseCode,
+      }
+    );
 
     return () => unsub();
-  }, [session.schoolId, session.school?.id, student?.id]);
+  }, [
+    session.schoolId,
+    session.school?.id,
+    student?.id,
+    student?.grNumber,
+    student?.standard,
+    student?.diseCode,
+  ]);
 
   // Active 5-minute countdown monitor for student's upcoming exams
   useEffect(() => {
@@ -484,7 +486,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
         </div>
       </div>
 
-      {/* Prominent In-App Unread Exam / Result Notification Card (Displayed immediately when student opens portal) */}
+      {/* Prominent In-App Unread School / Exam / Result Notification Card */}
       {unreadNotifCount > 0 && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-3 pb-1 animate-in fade-in slide-in-from-top-2">
           <div className="p-4 rounded-3xl bg-gradient-to-r from-purple-500/15 via-purple-500/10 to-indigo-500/15 border border-purple-500/30 dark:border-purple-500/20 shadow-md flex items-center justify-between gap-4 flex-wrap">
@@ -495,14 +497,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    પરીક્ષા / પરિણામની નવી સૂચના ઉપલબ્ધ છે!
+                    {(() => {
+                      const firstUnread = notifications.find((n) => !n.read);
+                      const cat = (firstUnread?.category || '').toLowerCase();
+                      const t = (firstUnread?.title || '').toLowerCase();
+                      if (cat.includes('result') || t.includes('પરિણામ')) return 'નવું પરીક્ષા પરિણામ ઉપલબ્ધ છે! 📊';
+                      if (cat.includes('exam') || t.includes('પરીક્ષા')) return 'પરીક્ષા અંગેની નવી સૂચના ઉપલબ્ધ છે! ⏳';
+                      return 'શાળા તરફથી નવી સૂચના ઉપલબ્ધ છે! 📢';
+                    })()}
                   </span>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white shadow-xs">
                     {unreadNotifCount} નવી
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-300 truncate max-w-xl mt-0.5">
-                  {notifications.find((n) => !n.read)?.title || 'પરીક્ષા અથવા પરિણામ એલર્ટ'}
+                  {notifications.find((n) => !n.read)?.title || 'શાળા એલર્ટ'}
                 </p>
               </div>
             </div>

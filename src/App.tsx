@@ -44,6 +44,7 @@ import {
 import { subscribeToStaff } from './services/staffService';
 import {
   getStoredStudentSession,
+  saveStudentSession,
   clearStudentSession,
 } from './services/onlineExamService';
 import { Loader2, WifiOff, CheckCircle2, ArrowUpCircle, X } from 'lucide-react';
@@ -623,7 +624,10 @@ export default function App() {
           <AuthScreen
             onSchoolAuthSuccess={handleSchoolAuthSuccess}
             onAdminAuthSuccess={handleAdminAuthSuccess}
-            onStudentAuthSuccess={(sess) => setStudentSession(sess)}
+            onStudentAuthSuccess={(sess) => {
+              saveStudentSession(sess);
+              setStudentSession(sess);
+            }}
           />
         </main>
         <footer className="bg-white/95 dark:bg-[#0e141b]/90 border-t border-slate-200 dark:border-white/10 py-4 text-center text-xs text-slate-600 dark:text-slate-400 space-y-1 transition-colors">
