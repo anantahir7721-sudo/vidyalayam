@@ -237,8 +237,8 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-1 sm:p-4 bg-black/75 backdrop-blur-md">
       <div className="relative w-full max-w-5xl h-[98dvh] sm:h-[92dvh] max-h-[98dvh] sm:max-h-[92dvh] bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-[#e4ded6] animate-fadeIn">
-        {/* Header: Compact, responsive */}
-        <div className="shrink-0 px-3 py-2.5 sm:px-4 sm:py-3 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/90 flex flex-col gap-2">
+        {/* Header: Compact, responsive pinned bar */}
+        <div className="shrink-0 px-3 py-2.5 sm:px-4 sm:py-3 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/90">
           {/* Top Row: Title, Exam Info & Close Button */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
@@ -270,9 +270,12 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
               <X className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
             </button>
           </div>
+        </div>
 
+        {/* Unified Scroll Container: Entire modal body scrolls smoothly with zero trapped areas */}
+        <div className="flex-1 overflow-y-auto min-h-0 flex flex-col bg-white dark:bg-[#121921]">
           {/* Action Toolbar: Smooth scroll, buttons never cut off */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-0.5 scrollbar-none flex-nowrap text-xs">
+          <div className="shrink-0 px-3 py-2 bg-slate-50/90 dark:bg-slate-900/80 border-b border-slate-200 dark:border-white/10 flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none flex-nowrap text-xs">
             <button
               type="button"
               onClick={() => {
@@ -323,7 +326,6 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
               <span>Excel Export</span>
             </button>
           </div>
-        </div>
 
         {/* Overview Stat Section: Compact strip on mobile with toggle; Full 6-cards on desktop */}
         <div className="shrink-0 bg-slate-100/90 dark:bg-slate-900/60 border-b border-slate-200 dark:border-white/10">
@@ -411,8 +413,8 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
           </div>
         </div>
 
-        {/* Tab Switcher & Search Bar: Compact bar pinned above results */}
-        <div className="shrink-0 p-2 sm:p-3 border-b border-slate-200 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+        {/* Tab Switcher & Search Bar: Sticky pinned bar while scrolling */}
+        <div className="sticky top-0 z-20 shrink-0 p-2 sm:p-3 border-b border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#121921]/95 backdrop-blur-md flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-xs">
           <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 p-0.5 border border-slate-300 dark:border-white/10 w-full sm:w-auto shrink-0">
             <button
               type="button"
@@ -465,8 +467,8 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
           )}
         </div>
 
-        {/* Content Area: Single Large Unified Scroll Area giving 100% height to results */}
-        <div className="flex-1 overflow-y-auto min-h-0 p-2 sm:p-4">
+        {/* Content Area: Fluid content part of unified scroll container */}
+        <div className="p-2 sm:p-4 flex-1">
           {loading ? (
             <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-xs">ડેટા લોડ થઈ રહ્યો છે...</div>
           ) : activeTab === 'students' ? (
@@ -724,6 +726,7 @@ export const OnlineExamAnalyticsModal: React.FC<OnlineExamAnalyticsModalProps> =
           )}
         </div>
       </div>
+    </div>
 
       {/* Send Exam Result to Parents Modal */}
       {sendResultModalOpen && (

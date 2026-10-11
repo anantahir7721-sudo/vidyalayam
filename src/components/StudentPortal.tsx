@@ -1214,7 +1214,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                       </div>
                     </div>
 
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end gap-1">
                       {ex.attempt?.score !== undefined ? (
                         <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
                           {ex.attempt.score} / {ex.attempt.totalMarks} ({ex.attempt.percentage}%)
@@ -1225,6 +1225,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
                       <span className="text-[10px] text-slate-400 dark:text-slate-500">
                         {ex.attempt?.submittedAt ? new Date(ex.attempt.submittedAt).toLocaleTimeString('gu-IN') : ''}
                       </span>
+                      {ex.resultVisibility === 'immediate' && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveExamId(ex.id)}
+                          className="mt-1 px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                        >
+                          <span>📋 પ્રશ્નવાર પરિણામ જુઓ</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -468,8 +468,10 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
             </button>
           </div>
 
-          {/* Exam Category Switcher (Offline vs Online Exam) */}
-          <div className="shrink-0 px-6 py-3 bg-slate-100/70 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Unified Fluid Scroll Container */}
+          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col bg-white dark:bg-slate-900">
+            {/* Exam Category Switcher (Offline vs Online Exam) */}
+            <div className="shrink-0 px-4 sm:px-6 py-3 bg-slate-100/70 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full sm:w-auto shadow-xs">
               <button
                 type="button"
@@ -668,8 +670,8 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
             </div>
           </div>
 
-          {/* Student Table List */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2">
+          {/* Student Table List: Part of unified fluid scroll container */}
+          <div className="p-4 sm:p-6 space-y-2 flex-1">
             {eligibleStudents.length === 0 ? (
               <div className="py-16 text-center text-slate-500 text-xs">
                 પસંદ કરેલ ધોરણ અથવા ફિલ્ટરમાં કોઈ વિદ્યાર્થી મળ્યા નથી.
@@ -832,8 +834,9 @@ export const SendExamResultModal: React.FC<SendExamResultModalProps> = ({
               </div>
             )}
           </div>
+        </div>
 
-          {/* Selection Error Banner */}
+        {/* Selection Error Banner */}
           {selectionError && (
             <div className="shrink-0 px-6 py-2.5 bg-rose-50 dark:bg-rose-500/15 border-t border-rose-200 dark:border-rose-500/30 flex items-center justify-between text-xs text-rose-800 dark:text-rose-300">
               <div className="flex items-center gap-2">

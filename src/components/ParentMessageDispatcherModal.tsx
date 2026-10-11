@@ -399,15 +399,22 @@ export const ParentMessageDispatcherModal: React.FC<ParentMessageDispatcherModal
 
       // Mark all recipients as sent
       handleMarkAllAsSent();
-      // Auto save to history
-      await handleSaveToHistory();
+
+      // Auto save to history silently without blocking success
+      handleSaveToHistory().catch((historyErr) => {
+        console.warn('Silent broadcast history save error:', historyErr);
+      });
 
       setTimeout(() => {
         setInAppSuccessCount(null);
-      }, 5000);
+      }, 7000);
     } catch (err: any) {
       console.error('Error dispatching in-app alerts:', err);
-      setSaveError('ઇન-એપ સૂચના મોકલવામાં સમસ્યા આવી. કૃપા કરીને ફરી પ્રયાસ કરો.');
+      setSaveError(
+        err?.message?.includes('network') || err?.message?.includes('offline')
+          ? 'ઇન્ટરનેટ કનેક્શન તપાસો. ઑફલાઇન મોડમાં નોટિફિકેશન કતારમાં સાચવવામાં આવી છે.'
+          : 'ઇન-એપ સૂચના મોકલવામાં સમસ્યા આવી. કૃપા કરીને ફરી પ્રયાસ કરો.'
+      );
     } finally {
       setIsSendingInAppAlerts(false);
     }

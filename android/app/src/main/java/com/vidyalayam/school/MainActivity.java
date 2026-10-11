@@ -424,46 +424,54 @@ public class MainActivity extends BridgeActivity {
 
                         byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
 
-                        // 1. Save to app cache for reliable FileProvider viewing and immediate opening
-                        File cacheDir = getCacheDir();
-                        File cacheFile = new File(cacheDir, filename);
-                        FileOutputStream fos = new FileOutputStream(cacheFile);
-                        fos.write(bytes);
-                        fos.flush();
-                        fos.close();
+                        // Destination: Downloads/Vidyalayam folder (downloads/vidyalayam)
+                        final String SUBFOLDER = "Vidyalayam";
+                        final String RELATIVE_DOWNLOAD_PATH = Environment.DIRECTORY_DOWNLOADS + "/" + SUBFOLDER;
 
-                        // 2. Also save to app external files directory (guaranteed accessible on all Android versions)
+                        Uri mediaStoreUri = null;
+                        File savedDirectFile = null;
+                        boolean savedSuccessfully = false;
+
+                        // 1. Direct filesystem save to public Downloads/Vidyalayam folder
                         try {
-                            File extDownloads = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
-                            if (extDownloads != null) {
-                                if (!extDownloads.exists()) extDownloads.mkdirs();
-                                File extFile = new File(extDownloads, filename);
-                                FileOutputStream efos = new FileOutputStream(extFile);
-                                efos.write(bytes);
-                                efos.flush();
-                                efos.close();
+                            File publicDownloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                            File vidyalayamFolder = new File(publicDownloadsDir, SUBFOLDER);
+                            if (!vidyalayamFolder.exists()) {
+                                vidyalayamFolder.mkdirs();
                             }
-                        } catch (Exception extErr) {
-                            extErr.printStackTrace();
+                            if (vidyalayamFolder.exists()) {
+                                File targetFile = new File(vidyalayamFolder, filename);
+                                FileOutputStream fos = new FileOutputStream(targetFile);
+                                fos.write(bytes);
+                                fos.flush();
+                                fos.close();
+                                savedDirectFile = targetFile;
+                                savedSuccessfully = true;
+
+                                // Broadcast to MediaScanner so Android Gallery / Files / Downloads index it immediately
+                                MediaScannerConnection.scanFile(
+                                    MainActivity.this,
+                                    new String[]{targetFile.getAbsolutePath()},
+                                    new String[]{actualMime},
+                                    null
+                                );
+                            }
+                        } catch (Exception directErr) {
+                            directErr.printStackTrace();
                         }
 
-                        // 3. Save directly to public Downloads folder
-                        File savedPublicFile = null;
-                        boolean savedToDownloads = false;
-
+                        // 2. Also register in MediaStore Downloads/Vidyalayam for Android 10+ (Q+) scoped storage
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                             try {
                                 ContentValues values = new ContentValues();
                                 values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
                                 values.put(MediaStore.MediaColumns.MIME_TYPE, actualMime);
-                                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                                values.put(MediaStore.MediaColumns.RELATIVE_PATH, RELATIVE_DOWNLOAD_PATH);
                                 values.put(MediaStore.MediaColumns.IS_PENDING, 1);
 
                                 Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
                                 if (uri == null) {
-                                    // Retry with safe timestamp name if OEM media provider choked on unicode name
-                                    String safeAscii = "Vidyalayam_" + System.currentTimeMillis() + ".pdf";
-                                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, safeAscii);
+                                    values.put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/" + SUBFOLDER);
                                     uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
                                 }
 
@@ -473,7 +481,8 @@ public class MainActivity extends BridgeActivity {
                                         os.write(bytes);
                                         os.flush();
                                         os.close();
-                                        savedToDownloads = true;
+                                        savedSuccessfully = true;
+                                        mediaStoreUri = uri;
                                     }
                                     values.clear();
                                     values.put(MediaStore.MediaColumns.IS_PENDING, 0);
@@ -484,105 +493,104 @@ public class MainActivity extends BridgeActivity {
                             }
                         }
 
-                        // Direct filesystem fallback for Downloads (Android 9 and below or legacy storage)
-                        if (!savedToDownloads) {
+                        // 3. Fallback to App External Files directory Downloads/Vidyalayam if public Downloads was blocked
+                        if (!savedSuccessfully) {
                             try {
-                                File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                                if (!downloadsDir.exists()) {
-                                    downloadsDir.mkdirs();
+                                File extFilesDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                                if (extFilesDir != null) {
+                                    File vidyalayamFolder = new File(extFilesDir, SUBFOLDER);
+                                    if (!vidyalayamFolder.exists()) vidyalayamFolder.mkdirs();
+                                    File extFile = new File(vidyalayamFolder, filename);
+                                    FileOutputStream efos = new FileOutputStream(extFile);
+                                    efos.write(bytes);
+                                    efos.flush();
+                                    efos.close();
+                                    savedDirectFile = extFile;
+                                    savedSuccessfully = true;
                                 }
-                                savedPublicFile = new File(downloadsDir, filename);
-                                FileOutputStream dfos = new FileOutputStream(savedPublicFile);
-                                dfos.write(bytes);
-                                dfos.flush();
-                                dfos.close();
-                                savedToDownloads = true;
-                            } catch (Exception legacyErr) {
-                                legacyErr.printStackTrace();
+                            } catch (Exception extErr) {
+                                extErr.printStackTrace();
                             }
                         }
 
-                        // Scan file with MediaScanner so it immediately registers in phone's Downloads app
-                        try {
-                            if (savedPublicFile != null && savedPublicFile.exists()) {
-                                MediaScannerConnection.scanFile(
+                        // Determine the best Content Uri to open and notify (Points to Downloads/Vidyalayam)
+                        Uri launchUri = null;
+                        if (savedDirectFile != null && savedDirectFile.exists()) {
+                            try {
+                                launchUri = FileProvider.getUriForFile(
                                     MainActivity.this,
-                                    new String[]{savedPublicFile.getAbsolutePath()},
-                                    new String[]{actualMime},
-                                    null
+                                    getPackageName() + ".fileprovider",
+                                    savedDirectFile
                                 );
+                            } catch (Exception fpErr) {
+                                fpErr.printStackTrace();
                             }
-                        } catch (Exception scanErr) {
-                            scanErr.printStackTrace();
+                        }
+                        if (launchUri == null && mediaStoreUri != null) {
+                            launchUri = mediaStoreUri;
                         }
 
-                        // 4. User feedback Toast
+                        // 4. User feedback Toast confirming exact folder location
                         Toast.makeText(
                             MainActivity.this,
-                            "✅ PDF સફળતાપૂર્વક ડાઉનલોડ થઈ ગઈ: " + filename + " (Downloads ફોલ્ડર)",
+                            "✅ PDF સફળતાપૂર્વક ડાઉનલોડ થઈ ગઈ: Downloads/Vidyalayam/" + filename,
                             Toast.LENGTH_LONG
                         ).show();
 
                         // 5. System Notification with Tap to Open
-                        try {
-                            Uri contentUri = FileProvider.getUriForFile(
-                                MainActivity.this,
-                                getPackageName() + ".fileprovider",
-                                cacheFile
-                            );
-                            Intent viewIntent = new Intent(Intent.ACTION_VIEW);
-                            viewIntent.setDataAndType(contentUri, actualMime);
-                            viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        if (launchUri != null) {
+                            try {
+                                Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+                                viewIntent.setDataAndType(launchUri, actualMime);
+                                viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-                            int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
+                                int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                    pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
+                                }
+
+                                PendingIntent pendingIntent = PendingIntent.getActivity(
+                                    MainActivity.this,
+                                    (int) System.currentTimeMillis(),
+                                    Intent.createChooser(viewIntent, "PDF ઓપન કરો (Downloads/Vidyalayam)"),
+                                    pendingFlags
+                                );
+
+                                int iconRes = getApplicationInfo().icon;
+                                if (iconRes == 0) iconRes = android.R.drawable.stat_sys_download_done;
+
+                                NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this, NOTIFICATION_CHANNEL_ID)
+                                    .setSmallIcon(iconRes)
+                                    .setContentTitle("📄 PDF ડાઉનલોડ પૂર્ણ (Downloads/Vidyalayam)")
+                                    .setContentText(filename + " (ઓપન કરવા અડકો)")
+                                    .setStyle(new NotificationCompat.BigTextStyle().bigText("ફાઈલ Downloads/Vidyalayam ફોલ્ડરમાં સેવ થઈ ગઈ છે: " + filename + "\nઓપન કરવા માટે અહીં ક્લિક કરો."))
+                                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                                    .setAutoCancel(true)
+                                    .setColor(Color.parseColor("#9d512d"))
+                                    .setContentIntent(pendingIntent);
+
+                                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(MainActivity.this);
+                                notificationManager.notify((int) (System.currentTimeMillis() % 100000), builder.build());
+                            } catch (Exception notifErr) {
+                                notifErr.printStackTrace();
                             }
-
-                            PendingIntent pendingIntent = PendingIntent.getActivity(
-                                MainActivity.this,
-                                (int) System.currentTimeMillis(),
-                                Intent.createChooser(viewIntent, "PDF ઓપન કરો"),
-                                pendingFlags
-                            );
-
-                            int iconRes = getApplicationInfo().icon;
-                            if (iconRes == 0) iconRes = android.R.drawable.stat_sys_download_done;
-
-                            NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this, NOTIFICATION_CHANNEL_ID)
-                                .setSmallIcon(iconRes)
-                                .setContentTitle("📄 PDF ડાઉનલોડ પૂર્ણ")
-                                .setContentText(filename + " (ઓપન કરવા અડકો)")
-                                .setStyle(new NotificationCompat.BigTextStyle().bigText("ફાઈલ ડાઉનલોડ થઈ ગઈ છે: " + filename + "\nઓપન કરવા માટે અહીં ક્લિક કરો."))
-                                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                .setAutoCancel(true)
-                                .setColor(Color.parseColor("#9d512d"))
-                                .setContentIntent(pendingIntent);
-
-                            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(MainActivity.this);
-                            notificationManager.notify((int) (System.currentTimeMillis() % 100000), builder.build());
-                        } catch (Exception notifErr) {
-                            notifErr.printStackTrace();
                         }
 
                         // 6. IMMEDIATELY launch Open Chooser so the user can instantly open and view their downloaded PDF
-                        try {
-                            Uri openUri = FileProvider.getUriForFile(
-                                MainActivity.this,
-                                getPackageName() + ".fileprovider",
-                                cacheFile
-                            );
-                            Intent openIntent = new Intent(Intent.ACTION_VIEW);
-                            openIntent.setDataAndType(openUri, actualMime);
-                            openIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            openIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        if (launchUri != null) {
+                            try {
+                                Intent openIntent = new Intent(Intent.ACTION_VIEW);
+                                openIntent.setDataAndType(launchUri, actualMime);
+                                openIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                openIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-                            Intent openChooser = Intent.createChooser(openIntent, "PDF ઓપન કરો (" + filename + ")");
-                            openChooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(openChooser);
-                        } catch (Exception openErr) {
-                            openErr.printStackTrace();
+                                Intent openChooser = Intent.createChooser(openIntent, "PDF ઓપન કરો (Downloads/Vidyalayam)");
+                                openChooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(openChooser);
+                            } catch (Exception openErr) {
+                                openErr.printStackTrace();
+                            }
                         }
 
                     } catch (Exception e) {
@@ -599,27 +607,48 @@ public class MainActivity extends BridgeActivity {
                 @Override
                 public void run() {
                     try {
-                        final String filename = (rawFilename != null && !rawFilename.trim().isEmpty())
-                            ? rawFilename.trim()
+                        String cleanName = (rawFilename != null && !rawFilename.trim().isEmpty())
+                            ? rawFilename.trim().replaceAll("[\\\\/:*?\"<>|]", "_")
                             : "Vidyalayam_Document_" + System.currentTimeMillis() + ".pdf";
+                        if (!cleanName.toLowerCase().endsWith(".pdf")) {
+                            cleanName += ".pdf";
+                        }
+                        final String filename = cleanName;
                         final String actualMime = (mimeType != null && !mimeType.trim().isEmpty())
                             ? mimeType
                             : "application/pdf";
 
                         byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
 
-                        // Save to cache dir for FileProvider
-                        File cacheDir = getCacheDir();
-                        File outputFile = new File(cacheDir, filename);
-                        FileOutputStream fos = new FileOutputStream(outputFile);
+                        // Save to Downloads/Vidyalayam folder
+                        File publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                        File vidyalayamFolder = new File(publicDownloads, "Vidyalayam");
+                        if (!vidyalayamFolder.exists()) {
+                            vidyalayamFolder.mkdirs();
+                        }
+                        File targetFile = new File(vidyalayamFolder, filename);
+                        if (!vidyalayamFolder.canWrite()) {
+                            File extFiles = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                            File extVidyalayam = new File(extFiles, "Vidyalayam");
+                            if (!extVidyalayam.exists()) extVidyalayam.mkdirs();
+                            targetFile = new File(extVidyalayam, filename);
+                        }
+                        FileOutputStream fos = new FileOutputStream(targetFile);
                         fos.write(bytes);
                         fos.flush();
                         fos.close();
 
+                        MediaScannerConnection.scanFile(
+                            MainActivity.this,
+                            new String[]{targetFile.getAbsolutePath()},
+                            new String[]{actualMime},
+                            null
+                        );
+
                         Uri contentUri = FileProvider.getUriForFile(
                             MainActivity.this,
                             getPackageName() + ".fileprovider",
-                            outputFile
+                            targetFile
                         );
 
                         Intent shareIntent = new Intent(Intent.ACTION_SEND);

@@ -318,15 +318,20 @@ export function generateOmrSheetHtml(options: GenerateOmrHtmlOptions): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base href="${typeof window !== 'undefined' ? window.location.origin : ''}/">
   <title>${exam.title} - OMR ઉત્તરવહી (${isChecked ? 'Checked' : 'Unchecked'})</title>
   
-  <!-- Vidyalayam Native Gujarati Font (Anek Gujarati) -->
-  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <!-- Vidyalayam Native Gujarati Font (Anek Gujarati) & Preconnect -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@300;400;500;600;700;800&family=Noto+Sans+Gujarati:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/fonts/fonts.css" />
 
   <style>
+    /* Direct Webfont Imports for Bulletproof PDF & Offline Print Fidelity */
+    @import url('https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@300;400;500;600;700;800&family=Noto+Sans+Gujarati:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+    @import url('/fonts/fonts.css');
+
     /* CSS Reset & Print Page Discipline: Strictly 1 Student Page per A4 */
     @page {
       size: A4 portrait;
@@ -336,15 +341,19 @@ export function generateOmrSheetHtml(options: GenerateOmrHtmlOptions): string {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: 'Anek Gujarati', 'Noto Sans Gujarati', 'Gujarati Sangam MN', 'Shruti', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     }
-    body {
+    html, body {
       background-color: #f1f5f9;
       color: #0f172a;
-      font-family: 'Anek Gujarati', 'Noto Sans Gujarati', 'Gujarati Sangam MN', 'Shruti', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Anek Gujarati', 'Noto Sans Gujarati', 'Gujarati Sangam MN', 'Shruti', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
       font-size: 11px;
       line-height: 1.25;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+    }
+    table, tr, td, th, div, span, p, strong, b, h1, h2, h3, h4, h5, h6, select, input, button {
+      font-family: 'Anek Gujarati', 'Noto Sans Gujarati', 'Gujarati Sangam MN', 'Shruti', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     }
 
     /* OMR Page Container (Strictly 1 A4 Page) */

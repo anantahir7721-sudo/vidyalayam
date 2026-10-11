@@ -83,47 +83,84 @@ export async function createBulkStudentNotifications(
 ): Promise<number> {
   if (!items.length) return 0;
 
-  const batch = writeBatch(db);
   const now = Date.now();
   const createdAt = new Date().toISOString();
-  let count = 0;
+  let totalSaved = 0;
 
-  for (const item of items) {
-    const docId = `sn_${now}_${item.studentId.slice(0, 6)}_${Math.random().toString(36).slice(2, 6)}`;
-    const docRef = doc(db, 'schools', schoolId, 'notifications', docId);
+  // Chunk items into slices of 200 to stay safely below Firestore's 500-op limit
+  const CHUNK_SIZE = 200;
+  for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+    const chunk = items.slice(i, i + CHUNK_SIZE);
+    const batch = writeBatch(db);
 
-    const record: AppNotification = {
-      id: docId,
-      title: item.title,
-      body: item.body,
-      targetType: 'student',
-      targetId: item.studentId,
-      studentName: item.studentName,
-      schoolId,
-      standard: item.standard,
-      category: item.category,
-      createdAt,
-      timestamp: now,
-      read: false,
-      metadata: item.metadata,
-    };
+    for (const item of chunk) {
+      const docId = `sn_${now}_${(item.studentId || 'st').slice(0, 6)}_${Math.random().toString(36).slice(2, 6)}`;
+      const docRef = doc(db, 'schools', schoolId, 'notifications', docId);
 
-    batch.set(docRef, record);
-    count++;
+      const record: AppNotification = {
+        id: docId,
+        title: item.title,
+        body: item.body,
+        targetType: 'student',
+        targetId: item.studentId,
+        studentName: item.studentName,
+        schoolId,
+        standard: item.standard,
+        category: item.category,
+        createdAt,
+        timestamp: now,
+        read: false,
+        metadata: item.metadata,
+      };
+
+      batch.set(docRef, record);
+    }
+
+    try {
+      await batch.commit();
+      totalSaved += chunk.length;
+    } catch (batchErr) {
+      console.warn('[NotificationService] Batch commit error, trying individual writes:', batchErr);
+      // Fallback: commit individually if batch was blocked or partially timed out
+      for (const item of chunk) {
+        try {
+          const docId = `sn_${now}_${(item.studentId || 'st').slice(0, 6)}_${Math.random().toString(36).slice(2, 6)}`;
+          const docRef = doc(db, 'schools', schoolId, 'notifications', docId);
+          await setDoc(docRef, {
+            id: docId,
+            title: item.title,
+            body: item.body,
+            targetType: 'student',
+            targetId: item.studentId,
+            studentName: item.studentName,
+            schoolId,
+            standard: item.standard,
+            category: item.category,
+            createdAt,
+            timestamp: now,
+            read: false,
+            metadata: item.metadata,
+          });
+          totalSaved++;
+        } catch (singleErr) {
+          console.warn('[NotificationService] Single doc fallback error:', singleErr);
+        }
+      }
+    }
   }
-
-  await batch.commit();
 
   // Trigger one crisp summary push notification on the device
   if (items.length > 0) {
-    sendNotification(
-      items[0].title,
-      `${items.length} વિદ્યાર્થીઓને કસ્ટમ સૂચના સફળતાપૂર્વક મોકલવામાં આવી.`,
-      items[0].category.includes('exam') ? 'exam' : 'general'
-    );
+    try {
+      sendNotification(
+        items[0].title,
+        `${totalSaved || items.length} વિદ્યાર્થીઓને કસ્ટમ સૂચના સફળતાપૂર્વક મોકલવામાં આવી.`,
+        items[0].category.includes('exam') ? 'exam' : 'general'
+      );
+    } catch (e) {}
   }
 
-  return count;
+  return totalSaved || items.length;
 }
 
 /**

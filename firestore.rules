@@ -139,8 +139,12 @@ service cloud.firestore {
 
       // Subcollection: Notifications (Personalized student alerts, exam notices, school alerts)
       match /notifications/{notificationId} {
-        allow read: if true;
-        allow write, delete: if isSchoolOwner(schoolId) || isAdmin() || true;
+        allow read, write, delete: if true;
+      }
+
+      // Subcollection: Parent Broadcasts history
+      match /parent_broadcasts/{broadcastId} {
+        allow read, write, delete: if true;
       }
 
       // All other school-specific subcollections

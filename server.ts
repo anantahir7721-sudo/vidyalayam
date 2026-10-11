@@ -2204,6 +2204,51 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
       if (!existingAttempts.empty) {
         attempt = { id: existingAttempts.docs[0].id, ...existingAttempts.docs[0].data() };
         if (attempt.status === 'submitted' || attempt.status === 'timed_out') {
+          if (examData.resultVisibility === 'immediate') {
+            const questionsCol = collection(db, 'schools', school.id, 'online_exams', examId, 'questions');
+            const qSnap = await getDocs(query(questionsCol, orderBy('questionNumber', 'asc')));
+            const questionReviewList = qSnap.docs.map((qd) => {
+              const q = qd.data();
+              const sAns = (attempt.answers?.[qd.id] || '').toUpperCase().trim();
+              const cAns = (q.correctAnswer || '').toUpperCase().trim();
+              const isAnswered = Boolean(sAns);
+              return {
+                id: qd.id,
+                questionNumber: q.questionNumber,
+                questionText: q.questionText,
+                optionA: q.optionA,
+                optionB: q.optionB,
+                optionC: q.optionC,
+                optionD: q.optionD,
+                marks: q.marks || 1,
+                studentAnswer: sAns || null,
+                correctAnswer: cAns,
+                isCorrect: isAnswered && sAns === cAns,
+                isWrong: isAnswered && sAns !== cAns,
+                isUnanswered: !isAnswered,
+                explanation: q.explanation || '',
+                imageUrl: q.imageUrl || '',
+              };
+            });
+
+            return res.json({
+              exam: examData,
+              attempt,
+              isAlreadySubmitted: true,
+              showResult: true,
+              result: {
+                score: attempt.score,
+                totalMarks: attempt.totalMarks,
+                percentage: attempt.percentage,
+                correctCount: attempt.correctCount ?? questionReviewList.filter((x) => x.isCorrect).length,
+                incorrectCount: attempt.incorrectCount ?? questionReviewList.filter((x) => x.isWrong).length,
+                unansweredCount: attempt.unansweredCount ?? questionReviewList.filter((x) => x.isUnanswered).length,
+                questions: questionReviewList,
+              },
+              serverTime: now,
+            });
+          }
+
           return res.status(403).json({
             error: 'તમે આ પરીક્ષા પહેલેથી જ આપી દીધી છે. પુનઃપ્રયાસ કરવાની મંજૂરી નથી.',
             attempt,
@@ -2383,24 +2428,50 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
       let unansweredCount = 0;
       let obtainedMarks = 0;
       let totalMarks = 0;
+      const questionReviewList: any[] = [];
 
       qSnap.docs.forEach((qDoc) => {
         const q = qDoc.data();
         const qMarks = q.marks || 1;
         totalMarks += qMarks;
 
-        const studentAns = (answersToEvaluate[qDoc.id] || '').toUpperCase();
-        const correctAns = (q.correctAnswer || '').toUpperCase();
+        const studentAns = (answersToEvaluate[qDoc.id] || '').toUpperCase().trim();
+        const correctAns = (q.correctAnswer || '').toUpperCase().trim();
+        const isAnswered = Boolean(studentAns);
+        const isCorrect = isAnswered && studentAns === correctAns;
+        const isWrong = isAnswered && studentAns !== correctAns;
+        const isUnanswered = !isAnswered;
 
-        if (!studentAns) {
+        if (isUnanswered) {
           unansweredCount += 1;
-        } else if (studentAns === correctAns) {
+        } else if (isCorrect) {
           correctCount += 1;
           obtainedMarks += qMarks;
         } else {
           incorrectCount += 1;
         }
+
+        questionReviewList.push({
+          id: qDoc.id,
+          questionNumber: q.questionNumber,
+          questionText: q.questionText,
+          optionA: q.optionA,
+          optionB: q.optionB,
+          optionC: q.optionC,
+          optionD: q.optionD,
+          marks: qMarks,
+          studentAnswer: studentAns || null,
+          correctAnswer: correctAns,
+          isCorrect,
+          isWrong,
+          isUnanswered,
+          explanation: q.explanation || '',
+          imageUrl: q.imageUrl || '',
+        });
       });
+
+      // Sort questions in canonical order
+      questionReviewList.sort((a, b) => (a.questionNumber || 0) - (b.questionNumber || 0));
 
       const percentage = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 1000) / 10 : 0;
       const now = Date.now();
@@ -2434,6 +2505,7 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
               correctCount,
               incorrectCount,
               unansweredCount,
+              questions: questionReviewList,
             }
           : null,
       });

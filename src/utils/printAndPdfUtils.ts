@@ -105,9 +105,19 @@ export function printHtmlDocument(html: string, jobTitle: string = 'Vidyalayam_D
         }, 30000);
       };
 
-      // Allow fonts and styles in the written HTML to load
+      // Ensure Gujarati app fonts are fully loaded before showing print dialog / saving PDF
       if (iframe.contentWindow) {
-        setTimeout(triggerPrint, 400);
+        if (doc.fonts && typeof doc.fonts.ready?.then === 'function') {
+          doc.fonts.ready
+            .then(() => {
+              setTimeout(triggerPrint, 350);
+            })
+            .catch(() => {
+              setTimeout(triggerPrint, 600);
+            });
+        } else {
+          setTimeout(triggerPrint, 600);
+        }
       }
       return;
     }
@@ -123,11 +133,17 @@ export function printHtmlDocument(html: string, jobTitle: string = 'Vidyalayam_D
       printWindow.document.write(html);
       printWindow.document.close();
       printWindow.focus();
-      setTimeout(() => {
-        try {
-          printWindow.print();
-        } catch (e) {}
-      }, 400);
+      if (printWindow.document.fonts && typeof printWindow.document.fonts.ready?.then === 'function') {
+        printWindow.document.fonts.ready
+          .then(() => setTimeout(() => { try { printWindow.print(); } catch (e) {} }, 350))
+          .catch(() => setTimeout(() => { try { printWindow.print(); } catch (e) {} }, 600));
+      } else {
+        setTimeout(() => {
+          try {
+            printWindow.print();
+          } catch (e) {}
+        }, 600);
+      }
     }
   } catch (popErr) {
     console.error('[printHtmlDocument] All print methods failed:', popErr);
@@ -144,7 +160,10 @@ export async function downloadPdfFile(
   source: Blob | string,
   filename: string
 ): Promise<{ success: boolean; method: string }> {
-  const cleanFilename = filename.trim().replace(/[\\/:*?"<>|]/g, '_') || 'Vidyalayam_Document.pdf';
+  let cleanFilename = filename.trim().replace(/[\\/:*?"<>|]/g, '_') || 'Vidyalayam_Document.pdf';
+  if (!cleanFilename.toLowerCase().endsWith('.pdf')) {
+    cleanFilename += '.pdf';
+  }
 
   // 1. Android APK Native Path
   if (isAndroidNativeApp()) {

@@ -1043,6 +1043,50 @@ export async function startStudentExam(token: string, examId: string) {
   if (!existingAttempts.empty) {
     attempt = { id: existingAttempts.docs[0].id, ...existingAttempts.docs[0].data() };
     if (attempt.status === 'submitted' || attempt.status === 'timed_out') {
+      if (examData.resultVisibility === 'immediate') {
+        const questionsCol = collection(db, 'schools', schoolId, 'online_exams', examId, 'questions');
+        const qSnap = await getDocs(query(questionsCol, orderBy('questionNumber', 'asc')));
+        const questionReviewList = qSnap.docs.map((qd) => {
+          const q = qd.data();
+          const sAns = (attempt.answers?.[qd.id] || '').toUpperCase().trim();
+          const cAns = (q.correctAnswer || '').toUpperCase().trim();
+          const isAnswered = Boolean(sAns);
+          return {
+            id: qd.id,
+            questionNumber: q.questionNumber,
+            questionText: q.questionText,
+            optionA: q.optionA,
+            optionB: q.optionB,
+            optionC: q.optionC,
+            optionD: q.optionD,
+            marks: q.marks || 1,
+            studentAnswer: sAns || null,
+            correctAnswer: cAns,
+            isCorrect: isAnswered && sAns === cAns,
+            isWrong: isAnswered && sAns !== cAns,
+            isUnanswered: !isAnswered,
+            explanation: q.explanation || '',
+            imageUrl: q.imageUrl || '',
+          };
+        });
+
+        return {
+          exam: examData,
+          attempt,
+          isAlreadySubmitted: true,
+          showResult: true,
+          result: {
+            score: attempt.score,
+            totalMarks: attempt.totalMarks,
+            percentage: attempt.percentage,
+            correctCount: attempt.correctCount ?? questionReviewList.filter((x) => x.isCorrect).length,
+            incorrectCount: attempt.incorrectCount ?? questionReviewList.filter((x) => x.isWrong).length,
+            unansweredCount: attempt.unansweredCount ?? questionReviewList.filter((x) => x.isUnanswered).length,
+            questions: questionReviewList,
+          },
+          serverTime: now,
+        };
+      }
       throw new Error('તમે આ પરીક્ષા પહેલેથી જ આપી દીધી છે. પુનઃપ્રયાસ કરવાની મંજૂરી નથી.');
     }
   } else {
@@ -1193,21 +1237,60 @@ export async function submitStudentExam(
   const examId = attemptData.examId;
 
   // Grade exam client-side from questions
+  const examRef = doc(db, 'schools', schoolId, 'online_exams', examId);
+  const examSnap = await getDoc(examRef);
+  const examData = examSnap.data() as any;
+
   const questionsCol = collection(db, 'schools', schoolId, 'online_exams', examId, 'questions');
   const qSnap = await getDocs(questionsCol);
 
   let score = 0;
   let totalMarks = 0;
+  let correctCount = 0;
+  let incorrectCount = 0;
+  let unansweredCount = 0;
+  const questionReviewList: any[] = [];
+
   qSnap.docs.forEach((qd) => {
     const q = qd.data() as any;
     const qM = q.marks || 1;
     totalMarks += qM;
-    const studentAns = (answers[qd.id] || '').toUpperCase();
-    const correctAns = (q.correctAnswer || '').toUpperCase();
-    if (correctAns && studentAns === correctAns) {
+    const studentAns = (answers[qd.id] || '').toUpperCase().trim();
+    const correctAns = (q.correctAnswer || '').toUpperCase().trim();
+    const isAnswered = Boolean(studentAns);
+    const isCorrect = isAnswered && studentAns === correctAns;
+    const isWrong = isAnswered && studentAns !== correctAns;
+    const isUnanswered = !isAnswered;
+
+    if (isUnanswered) {
+      unansweredCount++;
+    } else if (isCorrect) {
+      correctCount++;
       score += qM;
+    } else {
+      incorrectCount++;
     }
+
+    questionReviewList.push({
+      id: qd.id,
+      questionNumber: q.questionNumber,
+      questionText: q.questionText,
+      optionA: q.optionA,
+      optionB: q.optionB,
+      optionC: q.optionC,
+      optionD: q.optionD,
+      marks: qM,
+      studentAnswer: studentAns || null,
+      correctAnswer: correctAns,
+      isCorrect,
+      isWrong,
+      isUnanswered,
+      explanation: q.explanation || '',
+      imageUrl: q.imageUrl || '',
+    });
   });
+
+  questionReviewList.sort((a, b) => (a.questionNumber || 0) - (b.questionNumber || 0));
 
   const percentage = totalMarks > 0 ? Math.round((score / totalMarks) * 1000) / 10 : 0;
   const now = Date.now();
@@ -1217,12 +1300,29 @@ export async function submitStudentExam(
     score,
     totalMarks,
     percentage,
+    correctCount,
+    incorrectCount,
+    unansweredCount,
     status: 'submitted',
     submittedAt: now,
   });
 
+  const showResult = examData?.resultVisibility === 'immediate';
+
   return {
     success: true,
+    showResult,
+    result: showResult
+      ? {
+          score,
+          totalMarks,
+          percentage,
+          correctCount,
+          incorrectCount,
+          unansweredCount,
+          questions: questionReviewList,
+        }
+      : null,
     score,
     totalMarks,
     percentage,
