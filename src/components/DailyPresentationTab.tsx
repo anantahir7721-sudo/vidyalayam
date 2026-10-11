@@ -240,6 +240,7 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
           topicIntroduction: presentation.topicIntroduction,
           paragraph1,
           paragraph2,
+          paragraph3,
           closingSpeech: presentation.closingSpeech,
         },
         {
@@ -276,6 +277,7 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
           topicIntroduction: presentation.topicIntroduction,
           paragraph1,
           paragraph2,
+          paragraph3,
           closingSpeech: presentation.closingSpeech,
         },
         {
@@ -333,9 +335,10 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
           <p style="margin:0; font-size: 15px; font-weight: bold;">"${opening}"</p>
         </div>
         <div class="card">
-          <div class="card-title">૨. સરળ વિષય સમજૂતી (૧-૨ ફકરામાં):</div>
-          <div class="para">${paragraph1}</div>
-          <div class="para">${paragraph2}</div>
+          <div class="card-title">૨. વિષયની સંપૂર્ણ અને સરળ રજૂઆત (~૫ મિનિટ વક્તવ્ય):</div>
+          ${paragraph1 ? `<div class="para" style="font-weight: 600;"><strong>૧. પાયાની વિભાવના & સિદ્ધાંત:</strong><br />${paragraph1}</div>` : ''}
+          ${paragraph2 ? `<div class="para" style="font-weight: 500;"><strong>૨. વિગતવાર વિશ્લેષણ & સમજૂતી:</strong><br />${paragraph2}</div>` : ''}
+          ${paragraph3 ? `<div class="para" style="color: #334155;"><strong>૩. ઉપસંહાર & વાસ્તવિક જોડાણ:</strong><br />${paragraph3}</div>` : ''}
         </div>
         <div class="card" style="background: #f0fdf4;">
           <div class="card-title">૩. સમાપન:</div>

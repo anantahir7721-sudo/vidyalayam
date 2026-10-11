@@ -163,21 +163,21 @@ export async function shareDailyNewsAsPdf(
       }
 
       <!-- 10 News Items: ONLY Headlines and Context (Summary), NO Category/Region Tags -->
-      <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; justify-content: space-between;">
+      <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; justify-content: space-evenly; margin: 2px 0;">
         ${bulletin.items
           .slice(0, 10)
           .map((item, idx) => {
             return `
-            <div style="padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box;">
-              <div style="display: flex; align-items: flex-start; gap: 8px;">
-                <span style="font-size: 11px; font-weight: 800; background: #9d512d; color: #ffffff; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 4px; flex-shrink: 0; display: inline-block; vertical-align: top; margin-top: 1px; font-family: ${GUJARATI_FONT_FAMILY};">
+            <div style="padding: 4px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; display: flex; align-items: center; min-height: 48px;">
+              <div style="display: flex; align-items: center; gap: 9px; width: 100%;">
+                <span style="font-size: 11px; font-weight: 800; background: #9d512d; color: #ffffff; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 5px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-family: ${GUJARATI_FONT_FAMILY};">
                   ${toGujaratiDigits(idx + 1)}
                 </span>
-                <div style="flex: 1; min-width: 0;">
-                  <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.35; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
+                  <div style="font-size: 11.5px; font-weight: 700; color: #0f172a; line-height: 1.28; margin: 0 0 1px 0; font-family: ${GUJARATI_FONT_FAMILY};">
                     ${item.headline}
                   </div>
-                  <div style="font-size: 10.5px; color: #475569; line-height: 1.38; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
+                  <div style="font-size: 10px; color: #475569; line-height: 1.3; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
                     ${item.summary}
                   </div>
                 </div>
@@ -323,17 +323,19 @@ export async function shareDailyJanvaJevuAsPdf(
         const idx = startIdx + i;
         const singleWordAnswer = cleanOneWord(q.answer);
         return `
-        <div style="padding: 5px 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; justify-content: center;">
-          <div style="display: flex; align-items: flex-start; gap: 6px;">
-            <span style="font-size: 10px; font-weight: 800; background: #1e293b; color: #ffffff; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 3px; flex-shrink: 0; display: inline-block; vertical-align: top; margin-top: 1px; font-family: ${GUJARATI_FONT_FAMILY};">
+        <div style="padding: 4px 7px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; flex: 1; display: flex; align-items: center; min-height: 38px;">
+          <div style="display: flex; align-items: center; gap: 7px; width: 100%;">
+            <span style="font-size: 10px; font-weight: 800; background: #1e293b; color: #ffffff; width: 19px; height: 19px; line-height: 19px; text-align: center; border-radius: 4px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-family: ${GUJARATI_FONT_FAMILY};">
               ${toGujaratiDigits(idx + 1)}
             </span>
-            <div style="flex: 1; min-width: 0;">
-              <div style="font-size: 10.5px; font-weight: 700; color: #0f172a; line-height: 1.3; margin: 0 0 3px 0; font-family: ${GUJARATI_FONT_FAMILY};">
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
+              <div style="font-size: 10px; font-weight: 700; color: #0f172a; line-height: 1.25; margin: 0 0 1px 0; font-family: ${GUJARATI_FONT_FAMILY};">
                 ${q.question}
               </div>
-              <div style="display: inline-block; font-size: 10px; font-weight: 800; background: #dcfce7; color: #166534; padding: 2px 7px; border-radius: 4px; border: 1px solid #86efac; line-height: 1.25; vertical-align: middle; font-family: ${GUJARATI_FONT_FAMILY};">
-                જવાબ: ${singleWordAnswer}
+              <div>
+                <span style="display: inline-block; font-size: 9.5px; font-weight: 800; background: #dcfce7; color: #166534; padding: 1px 6px; border-radius: 3px; border: 1px solid #86efac; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
+                  જવાબ: ${singleWordAnswer}
+                </span>
               </div>
             </div>
           </div>
@@ -375,11 +377,11 @@ export async function shareDailyJanvaJevuAsPdf(
       </div>
 
       <!-- 20 Questions: Clean 2-Column Side-by-Side Layout (1-10 on Left, 11-20 on Right) -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; align-items: stretch; margin-bottom: 4px;">
-        <div style="display: flex; flex-direction: column; gap: 5px; height: 100%; justify-content: space-between;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px; flex: 1; align-items: stretch; margin: 2px 0;">
+        <div style="display: flex; flex-direction: column; gap: 4px; height: 100%; justify-content: space-evenly;">
           ${renderColumnItems(col1, 0)}
         </div>
-        <div style="display: flex; flex-direction: column; gap: 5px; height: 100%; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 4px; height: 100%; justify-content: space-evenly;">
           ${renderColumnItems(col2, 10)}
         </div>
       </div>
@@ -595,12 +597,12 @@ export async function shareDailySuvicharAsPdf(
       <div style="display: flex; flex-direction: column; gap: ${cardGap}; flex: 1; justify-content: space-between; margin-bottom: 8px;">
         
         <!-- Detailed Explanation (વિસ્તૃત સમજૂતી) -->
-        <div style="background: #f8fbff; border: 1.5px solid #bfdbfe; border-left: 5px solid #2563eb; border-radius: 8px; padding: ${cardPadding}; flex: 1; display: flex; flex-direction: column; justify-content: flex-start;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #dbeafe; padding-bottom: 4px;">
+        <div style="background: #f8fbff; border: 1.5px solid #bfdbfe; border-left: 5px solid #2563eb; border-radius: 8px; padding: ${cardPadding}; flex: 1; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #dbeafe; padding-bottom: 3px;">
             <div style="font-size: ${headingFontSize}; font-weight: 900; color: #1d4ed8; font-family: ${GUJARATI_FONT_FAMILY}; display: flex; align-items: center; gap: 6px;">
               <span>📖 વિસ્તૃત સમજૂતી (Speech Explanation):</span>
             </div>
-            <span style="font-size: 11px; font-weight: 800; background: #dbeafe; color: #1e40af; padding: 1.5px 8px; border-radius: 4px;">
+            <span style="font-size: 10.5px; font-weight: 800; background: #dbeafe; color: #1e40af; padding: 1px 7px; border-radius: 4px;">
               વક્તવ્ય સમય: ~૧.૫ મિનિટ
             </span>
           </div>
@@ -610,12 +612,12 @@ export async function shareDailySuvicharAsPdf(
         </div>
 
         <!-- Real-Life Example & Inspiring Story (વ્યવહારિક ઉદાહરણ અને પ્રેરણા પ્રસંગ) -->
-        <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-left: 5px solid #059669; border-radius: 8px; padding: ${cardPadding}; flex: 1; display: flex; flex-direction: column; justify-content: flex-start;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #dcfce7; padding-bottom: 4px;">
+        <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-left: 5px solid #059669; border-radius: 8px; padding: ${cardPadding}; flex: 1; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #dcfce7; padding-bottom: 3px;">
             <div style="font-size: ${headingFontSize}; font-weight: 900; color: #047857; font-family: ${GUJARATI_FONT_FAMILY}; display: flex; align-items: center; gap: 6px;">
               <span>🌟 વ્યવહારિક ઉદાહરણ અને પ્રેરણા પ્રસંગ (Real-Life Example & Story):</span>
             </div>
-            <span style="font-size: 11px; font-weight: 800; background: #dcfce7; color: #065f46; padding: 1.5px 8px; border-radius: 4px;">
+            <span style="font-size: 10.5px; font-weight: 800; background: #dcfce7; color: #065f46; padding: 1px 7px; border-radius: 4px;">
               વક્તવ્ય સમય: ~૧ થી ૧.૫ મિનિટ
             </span>
           </div>
@@ -980,30 +982,58 @@ export async function sharePresentationAsPdf(
         </div>
       </div>
 
-      <!-- Part 2: Main Explanation in Rich Flowing Paragraphs -->
-      <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-top: 8px; flex: 1; display: flex; flex-direction: column; justify-content: center;">
-        <div style="font-size: 12.5px; font-weight: 800; color: #047857; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">
-          ૨. મુખ્ય વિષયની સરળ અને સંપૂર્ણ સમજૂતી (~૫ મિનિટ વક્તવ્ય)
+      <!-- Part 2: Main Explanation in Rich Flowing Paragraphs (~5 min speech) -->
+      <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-top: 8px; flex: 1; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
+        <div style="font-size: 12.5px; font-weight: 800; color: #047857; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 3px; display: flex; justify-content: space-between; align-items: center;">
+          <span>૨. મુખ્ય વિષયની સંપૂર્ણ અને સરળ રજૂઆત (~૫ મિનિટ વક્તવ્ય)</span>
+          <span style="font-size: 10px; font-weight: 800; background: #dcfce7; color: #166534; padding: 1.5px 7px; border-radius: 4px;">સમય: ~૫ મિનિટ</span>
         </div>
-        ${p1 ? `<p style="font-size: 14px; line-height: 1.6; color: #1e293b; margin: 0 0 8px 0; text-align: justify;">${p1}</p>` : ''}
-        ${p2 ? `<p style="font-size: 14px; line-height: 1.6; color: #1e293b; margin: 0 0 8px 0; text-align: justify; font-weight: 500;">${p2}</p>` : ''}
-        ${p3 ? `<p style="font-size: 13.5px; line-height: 1.55; color: #334155; margin: 0; text-align: justify;">${p3}</p>` : ''}
+        ${
+          p1
+            ? `
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3.5px solid #059669; border-radius: 6px; padding: 6px 10px; margin-bottom: 5px;">
+            <div style="font-size: 10px; font-weight: 800; color: #047857; margin-bottom: 1px;">૧. પાયાની વિભાવના & સિદ્ધાંત:</div>
+            <p style="font-size: 11px; line-height: 1.42; color: #1e293b; margin: 0; text-align: justify; font-family: ${GUJARATI_FONT_FAMILY};">${p1}</p>
+          </div>
+        `
+            : ''
+        }
+        ${
+          p2
+            ? `
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3.5px solid #2563eb; border-radius: 6px; padding: 6px 10px; margin-bottom: 5px;">
+            <div style="font-size: 10px; font-weight: 800; color: #1d4ed8; margin-bottom: 1px;">૨. વિગતવાર વિશ્લેષણ & સમજૂતી:</div>
+            <p style="font-size: 11px; line-height: 1.42; color: #1e293b; margin: 0; text-align: justify; font-family: ${GUJARATI_FONT_FAMILY};">${p2}</p>
+          </div>
+        `
+            : ''
+        }
+        ${
+          p3
+            ? `
+          <div style="background: #fffbeb; border: 1px solid #fef3c7; border-left: 3.5px solid #d97706; border-radius: 6px; padding: 6px 10px;">
+            <div style="font-size: 10px; font-weight: 800; color: #b45309; margin-bottom: 1px;">૩. ઉપસંહાર & વાસ્તવિક જોડાણ:</div>
+            <p style="font-size: 10.5px; line-height: 1.4; color: #334155; margin: 0; text-align: justify; font-family: ${GUJARATI_FONT_FAMILY};">${p3}</p>
+          </div>
+        `
+            : ''
+        }
       </div>
 
       <!-- Part 3: Conclusion -->
-      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 14px; margin-top: 8px;">
-        <div style="font-size: 12px; font-weight: 800; color: #15803d; text-transform: uppercase; margin-bottom: 4px;">
-          ૩. પ્રેરણાદાયી સમાપન (Conclusion)
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 8px 14px; margin-top: 8px; box-sizing: border-box;">
+        <div style="font-size: 11px; font-weight: 800; color: #15803d; text-transform: uppercase; margin-bottom: 2px;">
+          ૩. પ્રેરણાદાયી સમાપન & આભાર દર્શન (Closing Salutation)
         </div>
-        <div style="font-size: 14px; font-weight: 700; color: #166534; line-height: 1.5;">
-          "${presentation.closingSpeech || 'મારી આ રજૂઆત શાંતિપૂર્વક સાંભળવા બદલ આપ સૌનો હૃદયપૂર્વક આભાર. અસ્તુ, જય હિન્દ!'}"
+        <div style="font-size: 13px; font-weight: 700; color: #166534; line-height: 1.4; font-family: ${GUJARATI_FONT_FAMILY};">
+          "${presentation.closingSpeech || 'આમ, આ ટોપિક આપણને ખૂબ ઉપયોગી છે. મારી આ રજૂઆત શાંતિપૂર્વક સાંભળવા બદલ આપ સૌનો હૃદયપૂર્વક આભાર. અસ્તુ, જય હિન્દ!'}"
         </div>
       </div>
 
       <!-- Footer -->
-      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #e2e8f0; padding-top: 6px; margin-top: 8px; font-size: 11px; color: #64748b;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #e2e8f0; padding-top: 5px; margin-top: 8px; font-size: 10px; color: #64748b; font-family: ${GUJARATI_FONT_FAMILY};">
         <span>વિદ્યાલયમ શૈક્ષણિક પોર્ટલ • GSEB અભ્યાસક્રમ પ્રસ્તુતિ</span>
-        <span>A4 વક્તવ્ય સ્લિપ</span>
+        <span>A4 વક્તવ્ય સ્લિપ (~૫ મિનિટ સંપૂર્ણ પ્રસ્તુતિ)</span>
       </div>
 
     </div>
@@ -1012,12 +1042,7 @@ export async function sharePresentationAsPdf(
   document.body.appendChild(container);
 
   try {
-    const canvas = await html2canvas(container, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
+    const canvas = await html2canvas(container, HTML2CANVAS_PDF_OPTIONS);
 
     if (document.body.contains(container)) {
       document.body.removeChild(container);
