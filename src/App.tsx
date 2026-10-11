@@ -24,7 +24,12 @@ import { StudentPortal } from './components/StudentPortal';
 import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
 import { FirstLaunchPermissionModal } from './components/FirstLaunchPermissionModal';
 import { runScheduledNotificationCheck } from './services/notificationService';
-import { checkForGitHubUpdate, applyAppUpdate, GitHubUpdateInfo } from './services/appUpdateService';
+import {
+  checkForGitHubUpdate,
+  applyAppUpdate,
+  GitHubUpdateInfo,
+  dismissUpdateBannerPermanently,
+} from './services/appUpdateService';
 import { AppUpdateModal } from './components/AppUpdateModal';
 import { School, Student, MarkRecord, Staff, SchoolStatus, StudentSession } from './types';
 import { checkIsAdmin } from './services/adminService';
@@ -273,39 +278,21 @@ export default function App() {
         const info = await checkForGitHubUpdate();
         if (isMounted && info && info.updateAvailable) {
           setAppUpdate(info);
-          // Only show update modal if user is authenticated (never during login or on auth screen)
-          const isUserLoggedIn = authStatus === 'school' || authStatus === 'admin' || !!studentSession;
-          if (isUserLoggedIn) {
-            setShowUpdateModal(true);
-          }
         }
       } catch (e) {
         // ignore
       }
     };
 
-    // 1. Initial check on mount
-    checkUpdate();
+    // 1. Initial check smoothly 2 seconds after launch
+    const timer = setTimeout(checkUpdate, 2000);
 
-    // 2. Poll every 30 seconds for live GitHub pushes
-    const interval = setInterval(checkUpdate, 30000);
-
-    // 3. Check immediately when window gains focus or user returns to tab
-    const handleFocus = () => {
-      if (document.visibilityState === 'visible') {
-        checkUpdate();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
+    // 2. Allow explicit manual checks (e.g. from Settings or Profile)
     window.addEventListener('check-app-update', checkUpdate);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
+      clearTimeout(timer);
       window.removeEventListener('check-app-update', checkUpdate);
     };
   }, []);
@@ -550,30 +537,43 @@ export default function App() {
     // Never show banner on login/unauthenticated screen
     if (authStatus === 'unauthenticated' || (!user && !studentSession)) return null;
 
+    const sha = appUpdate.latestCommitSha || '';
+    if (sha && localStorage.getItem(`vidyalayam_dismissed_banner_${sha}`) === 'true') {
+      return null;
+    }
+
+    const handleDismiss = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setDismissUpdateBanner(true);
+      if (sha) {
+        dismissUpdateBannerPermanently(sha);
+      }
+    };
+
     return (
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-bold flex items-center justify-between shadow-md shrink-0 z-50">
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-bold flex items-center justify-between shadow-md shrink-0 z-30 border-b border-emerald-700/30 animate-in slide-in-from-top-1 duration-200">
         <div 
           onClick={() => setShowUpdateModal(true)}
           className="flex items-center gap-2 cursor-pointer hover:opacity-90 min-w-0 flex-1 truncate"
         >
           <ArrowUpCircle className="w-4 h-4 shrink-0 text-amber-300 animate-bounce" />
-          <span className="truncate">🚀 વિદ્યાલયમ એપની નવી અપડેટ ઉપલબ્ધ છે! નવી સુવિધાઓ મેળવવા માટે અપડેટ કરો.</span>
+          <span className="truncate">🚀 વિદ્યાલયમ એપની નવી અપડેટ ({appUpdate.latestVersion || 'નવી'}) ઉપલબ્ધ છે!</span>
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <button
             type="button"
             onClick={() => setShowUpdateModal(true)}
-            className="px-2.5 py-1 bg-white text-emerald-800 rounded-lg text-[11px] font-black hover:bg-slate-100 transition-all cursor-pointer shadow-xs shrink-0"
+            className="px-2.5 py-1 bg-white text-emerald-800 rounded-lg text-[11px] font-black hover:bg-slate-100 transition-all cursor-pointer shadow-xs shrink-0 active:scale-95"
           >
             જુઓ / અપડેટ
           </button>
           <button
             type="button"
-            onClick={() => setDismissUpdateBanner(true)}
-            className="p-1 hover:bg-white/20 rounded-md cursor-pointer shrink-0"
+            onClick={handleDismiss}
+            className="p-1 hover:bg-white/20 rounded-md cursor-pointer shrink-0 active:scale-95"
             title="છુપાવો"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -601,13 +601,18 @@ export default function App() {
   if (studentSession) {
     return (
       <>
-        {renderUpdateComponents()}
         <StudentPortal
           session={studentSession}
           onLogout={() => {
             clearStudentSession();
             setStudentSession(null);
           }}
+          updateBannerNode={renderUpdateBanner()}
+        />
+        <AppUpdateModal
+          updateInfo={appUpdate}
+          isOpen={showUpdateModal}
+          onClose={() => setShowUpdateModal(false)}
         />
         <FirstLaunchPermissionModal schoolName={studentSession.schoolName} />
       </>
@@ -623,13 +628,13 @@ export default function App() {
   if (authStatus === 'unauthenticated' || !user) {
     return (
       <div className="min-h-screen app-container flex flex-col">
-        {renderUpdateComponents()}
         <Navbar
           school={null}
           onLogout={() => {}}
           activeTab="overview"
           setActiveTab={() => {}}
         />
+        {renderUpdateComponents()}
         <main className="flex-1 flex flex-col justify-center">
           <AuthScreen
             onSchoolAuthSuccess={handleSchoolAuthSuccess}
@@ -660,10 +665,15 @@ export default function App() {
   if (authStatus === 'admin' || isAdmin) {
     return (
       <>
-        {renderUpdateComponents()}
         <AdminDashboard
           adminEmail={user.email}
           onLogout={handleLogout}
+          updateBannerNode={renderUpdateBanner()}
+        />
+        <AppUpdateModal
+          updateInfo={appUpdate}
+          isOpen={showUpdateModal}
+          onClose={() => setShowUpdateModal(false)}
         />
         <FirstLaunchPermissionModal />
       </>
@@ -678,13 +688,13 @@ export default function App() {
     if (status !== 'approved') {
       return (
         <div className="min-h-screen bg-[#F5F7FA] dark:bg-slate-900 text-slate-900 dark:text-white flex flex-col transition-colors">
-          {renderUpdateComponents()}
           <Navbar
             school={school}
             onLogout={handleLogout}
             activeTab="overview"
             setActiveTab={() => {}}
           />
+          {renderUpdateComponents()}
           <main className="flex-1 flex flex-col justify-center">
             <SchoolStatusScreen
               school={school}
@@ -709,7 +719,6 @@ export default function App() {
     // Status is 'approved': Render the full General School Management Application!
     return (
       <div className="min-h-screen app-container flex flex-col">
-        {renderUpdateComponents()}
         <Navbar
           school={school}
           onLogout={handleLogout}
@@ -718,6 +727,7 @@ export default function App() {
           canGoBack={activeTab !== 'overview'}
           onBack={navigateBack}
         />
+        {renderUpdateComponents()}
 
         {/* Seamless Network Status Notification */}
         {!isOnline && (

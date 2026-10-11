@@ -59,6 +59,7 @@ import { VidyalayamLogo } from './VidyalayamLogo';
 interface StudentPortalProps {
   session: StudentSession;
   onLogout: () => void;
+  updateBannerNode?: React.ReactNode;
 }
 
 type StudentTab =
@@ -76,7 +77,7 @@ type StudentTab =
   | 'profile'
   | 'history';
 
-export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout }) => {
+export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout, updateBannerNode }) => {
   const [activeTab, setActiveTab] = useState<StudentTab>('upcoming_exams');
   const [exams, setExams] = useState<any[]>([]);
   const [marks, setMarks] = useState<MarkRecord[]>([]);
@@ -444,6 +445,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
           </div>
         </div>
       </header>
+
+      {updateBannerNode}
 
       {/* Hero Glass Student Card with Photo Support */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-2">

@@ -60,6 +60,7 @@ import { VidyalayamLogo } from './VidyalayamLogo';
 interface AdminDashboardProps {
   adminEmail?: string | null;
   onLogout: () => void;
+  updateBannerNode?: React.ReactNode;
 }
 
 interface ConfirmActionModalState {
@@ -72,6 +73,7 @@ interface ConfirmActionModalState {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   adminEmail,
   onLogout,
+  updateBannerNode,
 }) => {
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
@@ -415,6 +417,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       </header>
+
+      {updateBannerNode}
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
