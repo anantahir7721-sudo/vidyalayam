@@ -558,7 +558,12 @@ export const StudentExamScreen: React.FC<StudentExamScreenProps> = ({
   return (
     <div className="min-h-screen bg-[#f8f6f2] dark:bg-[#090c10] text-slate-800 dark:text-[#e4ded6] flex flex-col font-['Anek_Gujarati'] select-none transition-colors">
       {/* Top Authoritative Exam Bar with School Branding & Timer */}
-      <header className="app-header sticky top-0 z-30 bg-white/95 dark:bg-[#121921]/95 border-b border-slate-200 dark:border-white/10 backdrop-blur-md shadow-sm dark:shadow-md">
+      <header
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top, 0px), var(--system-status-bar-height, 0px))',
+        }}
+        className="app-header sticky top-0 z-30 bg-white/95 dark:bg-[#121921]/95 border-b border-slate-200 dark:border-white/10 backdrop-blur-md shadow-sm dark:shadow-md"
+      >
         {/* Upper School Branding Strip */}
         <div className="border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-black/20 px-3 sm:px-4 py-1.5">
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-2 text-xs">

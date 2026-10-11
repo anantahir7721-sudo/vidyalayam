@@ -27,12 +27,14 @@ import {
   Monitor,
   RotateCcw,
   Bell,
+  Settings,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
 import { VidyalayamLogo } from './VidyalayamLogo';
 import { useDeviceType } from '../utils/useDeviceType';
+import { GitHubUpdateInfo } from '../services/appUpdateService';
 
 export type ActiveTabType =
   | 'overview'
@@ -50,7 +52,8 @@ export type ActiveTabType =
   | 'reports'
   | 'profile'
   | 'subjects'
-  | 'security';
+  | 'security'
+  | 'settings';
 
 interface NavbarProps {
   school: School | null;
@@ -59,6 +62,7 @@ interface NavbarProps {
   setActiveTab: (tab: ActiveTabType) => void;
   canGoBack?: boolean;
   onBack?: () => void;
+  updateInfo?: GitHubUpdateInfo | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -68,6 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   canGoBack = false,
   onBack,
+  updateInfo,
 }) => {
   const device = useDeviceType();
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -169,6 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'reports', label: 'શાળા અહેવાલો / Excel', icon: <BarChart3 className="w-3.5 h-3.5" /> },
     { id: 'profile', label: 'શાળા પ્રોફાઇલ', icon: <Building className="w-3.5 h-3.5" /> },
     { id: 'subjects', label: 'વિષય વ્યવસ્થાપન', icon: <BookOpen className="w-3.5 h-3.5" /> },
+    { id: 'settings', label: '⚙️ સેટિંગ્સ (Settings)', icon: <Settings className="w-3.5 h-3.5 text-[#C45A2D] dark:text-[#f59c73]" /> },
   ];
 
   const allTabs = [...mainTabs, ...moreTabs];
@@ -182,7 +188,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="app-header bg-white/85 dark:bg-[#121921]/95 border-b border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-[#e4ded6] sticky top-0 z-40 shadow-xs dark:shadow-xl backdrop-blur-xl transition-colors duration-200">
+      <header
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top, 0px), var(--system-status-bar-height, 0px))',
+        }}
+        className="app-header bg-white/85 dark:bg-[#121921]/95 border-b border-[#E2E8F0] dark:border-white/10 text-slate-900 dark:text-[#e4ded6] sticky top-0 z-40 shadow-xs dark:shadow-xl backdrop-blur-xl transition-colors duration-200"
+      >
       {/* Top institutional strip: Visible on tablet & desktop (hidden on mobile to prevent status bar collision) */}
       <div className="top-strip hidden md:flex bg-[#F8FAFC]/90 dark:bg-[#090c10]/95 px-3 sm:px-4 py-1.5 border-b border-[#E2E8F0] dark:border-white/10 text-xs justify-between items-center text-slate-600 dark:text-[#a99f91] transition-colors duration-200">
         <div className="flex items-center gap-1.5 sm:gap-2">
@@ -236,13 +247,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400" />
           </button>
-          <ThemeToggle compact className="ml-1" />
+          <button
+            type="button"
+            onClick={() => handleSelectTab('settings')}
+            className={`p-1 sm:p-1.5 rounded-xl border transition-all cursor-pointer shadow-xs ml-1 flex items-center justify-center ${
+              activeTab === 'settings'
+                ? 'bg-[#C45A2D] text-white border-[#C45A2D]'
+                : 'bg-white/90 dark:bg-[#202d38] text-slate-700 dark:text-[#e4ded6] border-[#E2E8F0] dark:border-white/15 hover:text-[#C45A2D]'
+            }`}
+            title="સેટિંગ્સ (Settings - થીમ, ડિસ્પ્લે & અપડેટ્સ)"
+          >
+            <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </button>
         </div>
       </div>
 
       {/* Main navigation bar */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Brand & School info */}
+        {/* Brand & School info: Heading is ALWAYS Vidyalayam as requested */}
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <button
             onClick={() => handleSelectTab('overview')}
@@ -252,11 +274,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             <VidyalayamLogo size={38} glow />
           </button>
           <div className="min-w-0">
-            <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 dark:text-[#e4ded6] truncate" title={school?.schoolName || 'Vidyalayam'}>
-              {school?.schoolName || 'Vidyalayam'}
+            <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 dark:text-[#e4ded6] truncate" title="Vidyalayam">
+              Vidyalayam
             </h1>
             <p className="text-[10px] sm:text-[11px] text-[#C45A2D] dark:text-[#f59c73] font-semibold tracking-wide truncate">
-              {school ? (school.diseCode ? `DISE: ${school.diseCode} • વિદ્યાલયમ` : 'વિદ્યાલયમ') : 'Created by NR Chad'}
+              {school ? (school.schoolName ? `${school.schoolName}${school.diseCode ? ` • DISE: ${school.diseCode}` : ''}` : 'વિદ્યાલયમ') : 'વિદ્યાલયમ • Created by NR Chad'}
             </p>
           </div>
         </div>
@@ -360,19 +382,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                             </button>
                           ))}
                         </div>
-                        <div className="pt-1.5 border-t border-[#E2E8F0] dark:border-white/10">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMoreMenuOpen(false);
-                              window.dispatchEvent(new CustomEvent('check-app-update'));
-                            }}
-                            className="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all cursor-pointer"
-                          >
-                            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                            <span>અપડેટ તપાસો (Check Updates)</span>
-                          </button>
-                        </div>
+                        {updateInfo?.updateAvailable && (
+                          <div className="pt-1.5 border-t border-[#E2E8F0] dark:border-white/10">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMoreMenuOpen(false);
+                                window.dispatchEvent(new CustomEvent('check-app-update'));
+                              }}
+                              className="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all cursor-pointer animate-pulse"
+                            >
+                              <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <span>🚀 નવી અપડેટ ઉપલબ્ધ છે!</span>
+                            </button>
+                          </div>
+                        )}
                       </div>,
                       document.body
                     )}
@@ -431,8 +455,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="text-[11px] sm:text-xs">વિદ્યાર્થીઓ</span>
               </button>
 
-              {/* Theme Toggle directly accessible in the mobile header! */}
-              <ThemeToggle compact />
+              {/* Settings button directly in mobile header */}
+              <button
+                type="button"
+                onClick={() => handleSelectTab('settings')}
+                className={`p-1.5 sm:p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center shrink-0 ${
+                  activeTab === 'settings'
+                    ? 'bg-[#FBE9DF] text-[#C45A2D] border-[#C45A2D]/30 dark:bg-[#9d512d] dark:text-white dark:border-transparent shadow-xs'
+                    : 'bg-white/90 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-[#e4ded6] border border-[#E2E8F0] dark:border-white/15'
+                }`}
+                title="સેટિંગ્સ (Settings - થીમ, ડિવાઇસ & અપડેટ્સ)"
+              >
+                <Settings className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
+              </button>
 
               {/* Mobile Drawer Menu Button */}
               <button
@@ -642,6 +677,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    handleSelectTab('settings');
+                  }}
+                  className={`w-full py-3 px-4 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] shadow-xs ${
+                    activeTab === 'settings'
+                      ? 'bg-[#FBE9DF] text-[#C45A2D] border-[#C45A2D]/30 dark:bg-[#9d512d] dark:text-white'
+                      : 'bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-white border-[#E2E8F0] dark:border-white/10'
+                  }`}
+                >
+                  <Settings className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73] shrink-0" />
+                  <span>⚙️ સેટિંગ્સ & થીમ (Settings)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
                     setMobileDrawerOpen(false);
                     setNotificationSettingsOpen(true);
                   }}
@@ -664,16 +714,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 )}
 
-                <button
-                  onClick={() => {
-                    setMobileDrawerOpen(false);
-                    window.dispatchEvent(new CustomEvent('check-app-update'));
-                  }}
-                  className="w-full py-3 px-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 text-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] shadow-xs"
-                >
-                  <Sparkles className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
-                  <span>🚀 નવી એપ અપડેટ તપાસો (Check for Updates)</span>
-                </button>
+                {updateInfo?.updateAvailable && (
+                  <button
+                    onClick={() => {
+                      setMobileDrawerOpen(false);
+                      window.dispatchEvent(new CustomEvent('check-app-update'));
+                    }}
+                    className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] shadow-md animate-pulse"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                    <span>🚀 નવી એપ અપડેટ ઉપલબ્ધ છે!</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {

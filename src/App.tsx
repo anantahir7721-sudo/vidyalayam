@@ -23,6 +23,7 @@ import { SchoolNoticeBoardTab } from './components/SchoolNoticeBoardTab';
 import { StudentPortal } from './components/StudentPortal';
 import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
 import { FirstLaunchPermissionModal } from './components/FirstLaunchPermissionModal';
+import { SettingsTab } from './components/SettingsTab';
 import { runScheduledNotificationCheck } from './services/notificationService';
 import {
   checkForGitHubUpdate,
@@ -726,6 +727,7 @@ export default function App() {
           setActiveTab={(tab) => navigateToTab(tab)}
           canGoBack={activeTab !== 'overview'}
           onBack={navigateBack}
+          updateInfo={appUpdate}
         />
         {renderUpdateComponents()}
 
@@ -903,6 +905,15 @@ export default function App() {
               onBack={navigateBack}
             />
           )}
+
+          {activeTab === 'settings' && (
+            <SettingsTab
+              school={school}
+              updateInfo={appUpdate}
+              onNavigateToProfile={() => navigateToTab('profile')}
+              onBack={navigateBack}
+            />
+          )}
         </main>
 
         <footer className="bg-white/90 dark:bg-[#0e141b]/90 border-t border-slate-200 dark:border-white/10 pt-5 pb-24 lg:pb-6 text-center text-xs text-slate-600 dark:text-slate-400 space-y-1">
@@ -929,6 +940,7 @@ export default function App() {
         onLogout={handleLogout}
         activeTab="overview"
         setActiveTab={() => {}}
+        updateInfo={appUpdate}
       />
       <main className="flex-1 flex flex-col justify-center">
         <SchoolStatusScreen

@@ -2,31 +2,50 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { syncNativeStatusBarTheme } from '../utils/statusBarHelper';
 
 export type Theme = 'dark' | 'light';
+export type ThemeMode = 'light' | 'dark' | 'auto';
 
 interface ThemeContextType {
   theme: Theme;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
 }
 
+const resolveSystemTheme = (): Theme => {
+  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+};
+
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: 'light',
+  themeMode: 'auto',
+  setThemeMode: () => {},
   toggleTheme: () => {},
   setTheme: () => {},
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
     try {
-      const saved = localStorage.getItem('ekam_theme');
-      if (saved === 'light' || saved === 'dark') {
-        return saved;
+      const savedMode = localStorage.getItem('ekam_theme_mode');
+      if (savedMode === 'light' || savedMode === 'dark' || savedMode === 'auto') {
+        return savedMode as ThemeMode;
       }
-      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
+      const legacySaved = localStorage.getItem('ekam_theme');
+      if (legacySaved === 'light' || legacySaved === 'dark') {
+        return legacySaved as ThemeMode;
       }
     } catch (e) {}
-    return 'light';
+    return 'auto';
+  });
+
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (themeMode === 'dark') return 'dark';
+    if (themeMode === 'light') return 'light';
+    return resolveSystemTheme();
   });
 
   const applyTheme = (targetTheme: Theme) => {
@@ -70,21 +89,25 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {}
   };
 
+  // Re-evaluate theme whenever themeMode changes
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+    const effective = themeMode === 'auto' ? resolveSystemTheme() : themeMode;
+    setThemeState(effective);
+    applyTheme(effective);
+  }, [themeMode]);
 
-  // Listen for device system theme changes if user hasn't explicitly set a preference
+  // Real-time listener for system theme changes when themeMode is 'auto'
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
     const handleSystemChange = (e: MediaQueryListEvent) => {
       try {
-        const saved = localStorage.getItem('ekam_theme');
-        if (!saved) {
-          const next = e.matches ? 'dark' : 'light';
-          setThemeState(next);
-          applyTheme(next);
+        const currentMode = localStorage.getItem('ekam_theme_mode') || themeMode;
+        if (currentMode === 'auto') {
+          const nextTheme: Theme = e.matches ? 'dark' : 'light';
+          setThemeState(nextTheme);
+          applyTheme(nextTheme);
         }
       } catch (err) {}
     };
@@ -93,25 +116,33 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       mediaQuery.addEventListener('change', handleSystemChange);
       return () => mediaQuery.removeEventListener('change', handleSystemChange);
     }
-  }, []);
+  }, [themeMode]);
+
+  const setThemeMode = (newMode: ThemeMode) => {
+    setThemeModeState(newMode);
+    try {
+      localStorage.setItem('ekam_theme_mode', newMode);
+    } catch (e) {}
+    const effective = newMode === 'auto' ? resolveSystemTheme() : newMode;
+    setThemeState(effective);
+    applyTheme(effective);
+  };
 
   const toggleTheme = () => {
-    setThemeState((prev) => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      applyTheme(next);
-      return next;
-    });
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    setThemeMode(next);
   };
 
   const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    applyTheme(newTheme);
+    setThemeMode(newTheme);
   };
 
   return (
     <ThemeContext.Provider
       value={{
         theme,
+        themeMode,
+        setThemeMode,
         toggleTheme,
         setTheme,
       }}

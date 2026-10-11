@@ -28,6 +28,7 @@ import {
   Newspaper,
   Lightbulb,
   Bell,
+  Settings,
 } from 'lucide-react';
 import { StudentSession, OnlineExam, MarkRecord, AppNotification } from '../types';
 import {
@@ -51,6 +52,7 @@ import { DailySuvicharTab } from './DailySuvicharTab';
 import { DailyPresentationTab } from './DailyPresentationTab';
 import { SchoolNoticeBoardTab } from './SchoolNoticeBoardTab';
 import { ThemeToggle } from './ThemeToggle';
+import { SettingsTab } from './SettingsTab';
 import { subscribeToSchoolProfile } from '../services/authService';
 import { calculateClassResults } from '../utils/resultFormulaUtils';
 import { getStudentDiseCode } from '../utils/idCardPdf';
@@ -75,7 +77,8 @@ type StudentTab =
   | 'result'
   | 'idcard'
   | 'profile'
-  | 'history';
+  | 'history'
+  | 'settings';
 
 export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout, updateBannerNode }) => {
   const [activeTab, setActiveTab] = useState<StudentTab>('upcoming_exams');
@@ -395,15 +398,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
             )}
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">
-                  {school.schoolName}
-                </span>
+                <h1 className="text-sm font-black text-slate-900 dark:text-white tracking-wide">
+                  Vidyalayam
+                </h1>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 font-mono">
                   DISE: {school.diseCode}
                 </span>
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                વિદ્યાર્થી પોર્ટલ (Student Portal)
+                {school.schoolName} • વિદ્યાર્થી પોર્ટલ
               </div>
             </div>
           </div>
@@ -417,7 +420,19 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
               </div>
             </div>
 
-            <ThemeToggle compact className="shrink-0" />
+            {/* Settings button */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('settings')}
+              className={`p-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
+                activeTab === 'settings'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/10'
+              }`}
+              title="સેટિંગ્સ (Settings - થીમ & પસંદગીઓ)"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
 
             {/* Notification Bell */}
             <button
@@ -676,6 +691,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
               { id: 'idcard', label: '🪪 ID Card' },
               { id: 'profile', label: '👤 પ્રોફાઇલ (Profile)' },
               { id: 'history', label: '📜 પરીક્ષા ઇતિહાસ (History)', count: historyExams.length },
+              { id: 'settings', label: '⚙️ સેટિંગ્સ (Settings)' },
             ];
 
             return portalTabs.map((tab) => {
@@ -1265,6 +1281,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
             district={school.district}
             taluka={(school as any).taluka}
             isSchoolView={false}
+          />
+        ) : activeTab === 'settings' ? (
+          <SettingsTab
+            onBack={() => setActiveTab('upcoming_exams')}
           />
         ) : (
           /* Exam History View */

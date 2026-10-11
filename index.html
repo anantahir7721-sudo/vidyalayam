@@ -67,6 +67,20 @@
         }, true);
       })();
     </script>
+    <script>
+      (function() {
+        try {
+          var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (typeof window !== 'undefined' && window.innerWidth < 768);
+          var isNative = !!window.AndroidBridge || (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+          if (isNative || isMobile) {
+            var isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            var defaultBar = isIos ? '44px' : '36px';
+            document.documentElement.style.setProperty('--system-status-bar-height', defaultBar);
+            document.documentElement.style.setProperty('--safe-area-top', defaultBar);
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta name="description" content="Vidyalayam — General School Management System & એકમ કસોટી ગુણપત્રક • by NRChad" />
     <meta property="og:title" content="Vidyalayam" />
     <meta property="og:description" content="Vidyalayam — General School Management System & એકમ કસોટી ગુણપત્રક • by NRChad" />
