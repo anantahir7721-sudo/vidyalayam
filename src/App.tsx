@@ -186,6 +186,16 @@ export default function App() {
     getStoredStudentSession()
   );
 
+  // Ensure student session is reliably restored on Android app relaunch even if bridge binds post-render
+  useEffect(() => {
+    if (!studentSession) {
+      const sess = getStoredStudentSession();
+      if (sess) {
+        setStudentSession(sess);
+      }
+    }
+  }, [studentSession]);
+
   // Active School Data
   const [students, setStudents] = useState<Student[]>([]);
   const [marks, setMarks] = useState<MarkRecord[]>([]);

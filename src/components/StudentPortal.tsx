@@ -143,15 +143,25 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout 
     }
   }, [school?.dailyNewsEnabled, school?.dailyJanvaJevuEnabled, school?.dailySuvicharEnabled, activeTab]);
 
-  // Filter out automated routine daily feeds (daily news/knowledge/evening thoughts)
-  // while keeping all real school alerts: Exam schedules, Exam results, and Vali Sanchar (વાલી સંચાર / શાળા સૂચના)
+  // Strictly filter student in-app notifications to Exam and Result notifications only
+  // (As per requirement: "app ma notification na joie ema khali result ni and exam ni notification j apvi")
   const isValidStudentNotification = (n: AppNotification) => {
     const cat = (n.category || '').toLowerCase();
-    // Exclude routine daily feeds so they don't flood student in-app notifications
-    if (cat === 'daily_news' || cat === 'daily_knowledge' || cat === 'daily_evening') {
-      return false;
-    }
-    return true;
+    const t = (n.title || '').toLowerCase();
+    const b = (n.body || '').toLowerCase();
+    return (
+      cat.includes('exam') ||
+      cat.includes('result') ||
+      t.includes('exam') ||
+      t.includes('result') ||
+      t.includes('પરીક્ષા') ||
+      t.includes('પરિણામ') ||
+      t.includes('ગુણ') ||
+      t.includes('marks') ||
+      b.includes('પરીક્ષા') ||
+      b.includes('પરિણામ') ||
+      b.includes('marks')
+    );
   };
 
   // Real-time subscription to notifications tailored strictly for this student

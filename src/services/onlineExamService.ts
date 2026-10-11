@@ -869,12 +869,29 @@ export async function studentLogin(params: {
 }
 
 /**
- * Persist student session to localStorage so that closing the app does not log the student out.
+ * Persist student session so that closing or restarting the app NEVER logs the student out.
+ * Uses localStorage, sessionStorage, persistent Cookies, and Native Android SharedPreferences.
  */
 export function saveStudentSession(session: StudentSession) {
   try {
-    localStorage.setItem('vidyalayam_student_session', JSON.stringify(session));
-    sessionStorage.setItem('vidyalayam_student_session', JSON.stringify(session));
+    const json = JSON.stringify(session);
+    localStorage.setItem('vidyalayam_student_session', json);
+    sessionStorage.setItem('vidyalayam_student_session', json);
+
+    // Persist to Native Android SharedPreferences (immune to WebView process termination)
+    if (typeof window !== 'undefined' && (window as any).AndroidBridge?.saveStudentSession) {
+      try {
+        (window as any).AndroidBridge.saveStudentSession(json);
+      } catch (e) {}
+    }
+
+    // Also persist via cookie as safety net
+    try {
+      if (typeof document !== 'undefined') {
+        const encoded = encodeURIComponent(json);
+        document.cookie = `vidyalayam_student_session=${encoded}; max-age=31536000; path=/; SameSite=Lax`;
+      }
+    } catch (e) {}
   } catch (e) {
     console.warn('Could not save student session:', e);
   }
@@ -882,13 +899,45 @@ export function saveStudentSession(session: StudentSession) {
 
 export function getStoredStudentSession(): StudentSession | null {
   try {
-    const stored =
+    // 1. Check localStorage & sessionStorage
+    let stored =
       localStorage.getItem('vidyalayam_student_session') ||
       sessionStorage.getItem('vidyalayam_student_session');
-    if (stored) {
-      return JSON.parse(stored);
+
+    // 2. Check Native Android Bridge SharedPreferences
+    if (!stored && typeof window !== 'undefined' && (window as any).AndroidBridge?.getStudentSession) {
+      try {
+        const nativeStored = (window as any).AndroidBridge.getStudentSession();
+        if (nativeStored && nativeStored.trim().length > 0) {
+          stored = nativeStored;
+        }
+      } catch (e) {}
     }
-  } catch (e) {}
+
+    // 3. Check Cookies fallback
+    if (!stored && typeof document !== 'undefined') {
+      try {
+        const match = document.cookie.match(/(?:^|;\s*)vidyalayam_student_session=([^;]+)/);
+        if (match && match[1]) {
+          stored = decodeURIComponent(match[1]);
+        }
+      } catch (e) {}
+    }
+
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && (parsed.studentId || parsed.student?.id)) {
+        // Re-sync back to localStorage & sessionStorage
+        try {
+          localStorage.setItem('vidyalayam_student_session', stored);
+          sessionStorage.setItem('vidyalayam_student_session', stored);
+        } catch (e) {}
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('Error reading stored student session:', e);
+  }
   return null;
 }
 
@@ -896,6 +945,18 @@ export function clearStudentSession() {
   try {
     localStorage.removeItem('vidyalayam_student_session');
     sessionStorage.removeItem('vidyalayam_student_session');
+
+    if (typeof window !== 'undefined' && (window as any).AndroidBridge?.clearStudentSession) {
+      try {
+        (window as any).AndroidBridge.clearStudentSession();
+      } catch (e) {}
+    }
+
+    if (typeof document !== 'undefined') {
+      try {
+        document.cookie = 'vidyalayam_student_session=; max-age=0; path=/; SameSite=Lax';
+      } catch (e) {}
+    }
   } catch (e) {}
 }
 

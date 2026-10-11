@@ -65,17 +65,7 @@ export async function createAppNotification(
     console.warn('[NotificationService] Firestore save error:', err);
   }
 
-  // Also trigger local device push notification if appropriate
-  try {
-    let pushType: 'general' | 'exam' | 'daily' | 'attendance' | 'alert' = 'general';
-    if (notif.category?.includes('exam')) pushType = 'exam';
-    else if (notif.category?.includes('daily')) pushType = 'daily';
-    else if (notif.category?.includes('approval') || notif.category?.includes('reset')) pushType = 'alert';
 
-    sendNotification(notif.title, notif.body, pushType);
-  } catch (e) {
-    console.warn('[NotificationService] Push dispatch failed:', e);
-  }
 
   return docId;
 }
@@ -179,16 +169,7 @@ export async function createBulkStudentNotifications(
     }
   }
 
-  // Trigger one crisp summary push notification on the device
-  if (items.length > 0) {
-    try {
-      sendNotification(
-        items[0].title,
-        `${totalSaved || items.length} વિદ્યાર્થીઓને કસ્ટમ સૂચના સફળતાપૂર્વક મોકલવામાં આવી.`,
-        items[0].category?.includes('exam') ? 'exam' : 'general'
-      );
-    } catch (e) {}
-  }
+
 
   return totalSaved || items.length;
 }
@@ -240,33 +221,38 @@ export function subscribeToStudentNotifications(
 
       callback(list);
 
-      // Mobile System / Push Notification dispatch:
-      // If a new unread notification arrives in real-time, trigger device push notification!
-      if (!isInitialLoad) {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
-            const notif = change.doc.data() as AppNotification;
-            if (!notif.read && !notifiedIds.has(notif.id)) {
-              notifiedIds.add(notif.id);
-              const pushType = (notif.category || '').includes('exam') ? 'exam' : 'general';
-              sendNotification(notif.title, notif.body, pushType as any);
-            }
-          }
-        });
+      // On initial load: Register existing notifications as seen so opening the app NEVER pops an annoying push alert!
+      if (isInitialLoad) {
+        list.forEach((n) => notifiedIds.add(n.id));
+        isInitialLoad = false;
+        return;
       }
 
-      // On initial load, if there's any unread notification from the last 12 hours that hasn't been surfaced, trigger notification:
-      if (isInitialLoad) {
-        const freshUnread = list.find(
-          (n) => !n.read && Date.now() - (n.timestamp || 0) < 12 * 60 * 60 * 1000
-        );
-        if (freshUnread && !notifiedIds.has(freshUnread.id)) {
-          notifiedIds.add(freshUnread.id);
-          const pushType = (freshUnread.category || '').includes('exam') ? 'exam' : 'general';
-          sendNotification(freshUnread.title, freshUnread.body, pushType as any);
+      // In-session real-time arrival:
+      // Strictly restrict student push notifications to Exam & Result alerts as per user request
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const notif = change.doc.data() as AppNotification;
+          if (!notif.read && !notifiedIds.has(notif.id)) {
+            notifiedIds.add(notif.id);
+            const cat = (notif.category || '').toLowerCase();
+            const t = (notif.title || '').toLowerCase();
+            const isExamOrResult =
+              cat.includes('exam') ||
+              cat.includes('result') ||
+              t.includes('exam') ||
+              t.includes('result') ||
+              t.includes('પરીક્ષા') ||
+              t.includes('પરિણામ') ||
+              t.includes('ગુણ') ||
+              t.includes('marks');
+
+            if (isExamOrResult) {
+              sendNotification(notif.title, notif.body, 'exam');
+            }
+          }
         }
-        isInitialLoad = false;
-      }
+      });
     },
     (err) => {
       console.warn('[NotificationService] Student notif listen error:', err);

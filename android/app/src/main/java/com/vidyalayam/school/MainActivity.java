@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.MediaScannerConnection;
@@ -23,6 +24,7 @@ import android.provider.Settings;
 import android.util.Base64;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -135,7 +137,11 @@ public class MainActivity extends BridgeActivity {
     private void registerAndroidBridge() {
         try {
             if (bridge != null && bridge.getWebView() != null) {
-                bridge.getWebView().addJavascriptInterface(new AndroidBridgeInterface(), "AndroidBridge");
+                WebView wv = bridge.getWebView();
+                wv.addJavascriptInterface(new AndroidBridgeInterface(), "AndroidBridge");
+                WebSettings settings = wv.getSettings();
+                settings.setDomStorageEnabled(true);
+                settings.setDatabaseEnabled(true);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -420,6 +426,41 @@ public class MainActivity extends BridgeActivity {
                     }
                 }
             });
+        }
+
+        // ================= STUDENT SESSION PERSISTENCE ================= //
+
+        @JavascriptInterface
+        public void saveStudentSession(String sessionJson) {
+            try {
+                if (sessionJson != null) {
+                    SharedPreferences prefs = getSharedPreferences("vidyalayam_student_prefs", Context.MODE_PRIVATE);
+                    prefs.edit().putString("saved_student_session", sessionJson).apply();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public String getStudentSession() {
+            try {
+                SharedPreferences prefs = getSharedPreferences("vidyalayam_student_prefs", Context.MODE_PRIVATE);
+                return prefs.getString("saved_student_session", null);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @JavascriptInterface
+        public void clearStudentSession() {
+            try {
+                SharedPreferences prefs = getSharedPreferences("vidyalayam_student_prefs", Context.MODE_PRIVATE);
+                prefs.edit().remove("saved_student_session").apply();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         // ================= PRINT & PDF METHODS ================= //

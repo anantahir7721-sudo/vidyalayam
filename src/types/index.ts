@@ -496,6 +496,9 @@ export interface NativeAndroidBridge {
   scheduleAllRoutineAlarms?: () => void;
   isBatteryOptimizationIgnored?: () => boolean;
   requestDisableBatteryOptimization?: () => void;
+  saveStudentSession?: (sessionJson: string) => void;
+  getStudentSession?: () => string | null;
+  clearStudentSession?: () => void;
 }
 
 export type NotificationTargetType = 'all' | 'school' | 'admin' | 'student';
