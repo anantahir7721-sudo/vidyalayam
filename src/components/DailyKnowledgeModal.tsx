@@ -107,21 +107,6 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Presentation On/Off Switch in Header */}
-            <button
-              type="button"
-              onClick={togglePresentation}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
-                isPresentationEnabled
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
-                  : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-white/10'
-              }`}
-              title="પ્રેઝન્ટેશન ટેબ ચાલુ અથવા બંધ કરો"
-            >
-              <Presentation className="w-3.5 h-3.5" />
-              <span>પ્રેઝન્ટેશન: {isPresentationEnabled ? 'ચાલુ (ON)' : 'બંધ (OFF)'}</span>
-            </button>
-
             <button
               type="button"
               onClick={onClose}
@@ -134,96 +119,104 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
         </div>
 
         {/* Tab Navigation in Modal */}
-        <div className="px-3 sm:px-5 pt-2.5 bg-slate-100/60 dark:bg-[#0c1218] border-b border-[#E2E8F0] dark:border-white/10 flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab('news')}
-            className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'news'
-                ? 'border-[#C45A2D] text-[#C45A2D] dark:border-[#9d512d] dark:text-[#f59c73]'
-                : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
-            }`}
-          >
-            <Newspaper className="w-4 h-4" />
-            <span>આજના સમાચાર (News)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('prashnotari')}
-            className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'prashnotari'
-                ? 'border-sky-600 text-sky-700 dark:border-sky-500 dark:text-sky-400'
-                : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
-            }`}
-          >
-            <HelpCircle className="w-4 h-4" />
-            <span>પ્રશ્નોત્તરી (Q&A)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('janva_jevu')}
-            className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'janva_jevu'
-                ? 'border-amber-600 text-amber-700 dark:border-amber-500 dark:text-amber-400'
-                : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
-            }`}
-          >
-            <Lightbulb className="w-4 h-4" />
-            <span>જાણવા જેવું (12 Facts)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('abhivyakti')}
-            className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'abhivyakti'
-                ? 'border-purple-600 text-purple-700 dark:border-purple-500 dark:text-purple-400'
-                : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
-            }`}
-          >
-            <Drama className="w-4 h-4" />
-            <span>અભિવ્યક્તિ (Ideas)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('suvichar')}
-            className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'suvichar'
-                ? 'border-[#C45A2D] text-[#C45A2D] dark:border-[#9d512d] dark:text-[#f59c73]'
-                : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
-            }`}
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>સુવિચાર (Values)</span>
-          </button>
-
-          {/* Presentation Tab (Shown when enabled, or with indicator if disabled) */}
-          {isPresentationEnabled ? (
+        <div className="px-3 sm:px-5 pt-2.5 bg-slate-100/60 dark:bg-[#0c1218] border-b border-[#E2E8F0] dark:border-white/10 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               type="button"
-              onClick={() => setActiveTab('presentation')}
+              onClick={() => setActiveTab('news')}
               className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'presentation'
-                  ? 'border-emerald-600 text-emerald-700 dark:border-emerald-500 dark:text-emerald-400'
+                activeTab === 'news'
+                  ? 'border-[#C45A2D] text-[#C45A2D] dark:border-[#9d512d] dark:text-[#f59c73]'
                   : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
               }`}
             >
-              <Presentation className="w-4 h-4" />
-              <span>🎤 પ્રેઝન્ટેશન (AI Presentation)</span>
+              <Newspaper className="w-4 h-4" />
+              <span>આજના સમાચાર (News)</span>
             </button>
-          ) : (
+
             <button
               type="button"
-              onClick={togglePresentation}
-              className="px-2.5 py-1 text-[11px] font-semibold text-slate-400 hover:text-emerald-600 dark:text-slate-500 dark:hover:text-emerald-400 flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap opacity-60 hover:opacity-100"
-              title="પ્રેઝન્ટેશન ટેબ ચાલુ કરો"
+              onClick={() => setActiveTab('prashnotari')}
+              className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'prashnotari'
+                  ? 'border-sky-600 text-sky-700 dark:border-sky-500 dark:text-sky-400'
+                  : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
+              }`}
             >
-              <span>+ પ્રેઝન્ટેશન ચાલુ કરો</span>
+              <HelpCircle className="w-4 h-4" />
+              <span>પ્રશ્નોત્તરી (Q&A)</span>
             </button>
-          )}
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('janva_jevu')}
+              className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'janva_jevu'
+                  ? 'border-amber-600 text-amber-700 dark:border-amber-500 dark:text-amber-400'
+                  : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
+              }`}
+            >
+              <Lightbulb className="w-4 h-4" />
+              <span>જાણવા જેવું (12 Facts)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('abhivyakti')}
+              className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'abhivyakti'
+                  ? 'border-purple-600 text-purple-700 dark:border-purple-500 dark:text-purple-400'
+                  : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
+              }`}
+            >
+              <Drama className="w-4 h-4" />
+              <span>અભિવ્યક્તિ (Ideas)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('suvichar')}
+              className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'suvichar'
+                  ? 'border-[#C45A2D] text-[#C45A2D] dark:border-[#9d512d] dark:text-[#f59c73]'
+                  : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>સુવિચાર (Values)</span>
+            </button>
+
+            {/* Presentation Tab */}
+            {isPresentationEnabled && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('presentation')}
+                className={`px-3 sm:px-4 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'presentation'
+                    ? 'border-emerald-600 text-emerald-700 dark:border-emerald-500 dark:text-emerald-400'
+                    : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
+                }`}
+              >
+                <Presentation className="w-4 h-4" />
+                <span>🎤 પ્રેઝન્ટેશન (AI Presentation)</span>
+              </button>
+            )}
+          </div>
+
+          {/* Presentation ON/OFF Switch alongside other buttons */}
+          <button
+            type="button"
+            onClick={togglePresentation}
+            className={`px-2.5 py-1 mb-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shrink-0 whitespace-nowrap ${
+              isPresentationEnabled
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-xs'
+                : 'bg-white dark:bg-white/10 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-white/15'
+            }`}
+            title="પ્રેઝન્ટેશન મોડ ચાલુ અથવા બંધ કરો"
+          >
+            <Presentation className="w-3.5 h-3.5" />
+            <span>પ્રેઝન્ટેશન: {isPresentationEnabled ? 'ચાલુ (ON)' : 'બંધ (OFF)'}</span>
+          </button>
         </div>
 
         {/* Scrollable Content Body */}

@@ -17,6 +17,7 @@ import {
 import { DailyInterestingFactsBulletin, DailyInterestingFact } from '../types';
 import { getDailyInterestingFactsBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
 import { shareDailyInterestingFactsAsPdf } from '../utils/dailyPdfShareUtils';
+import { printHtmlDocument, getPrintableDailyJanvaJevuHtml } from '../utils/printAndPdfUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
 
 interface DailyJanvaJevuTabProps {
@@ -113,7 +114,14 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!bulletin) return;
+    const html = getPrintableDailyJanvaJevuHtml(
+      bulletin,
+      schoolName || 'શાળા શૈક્ષણિક પોર્ટલ',
+      diseCode,
+      district
+    );
+    printHtmlDocument(html, `આજનું_જાણવા_જેવું_${bulletin.dateKey}`);
   };
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);

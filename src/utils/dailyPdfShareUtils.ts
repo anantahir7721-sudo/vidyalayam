@@ -168,18 +168,16 @@ export async function shareDailyNewsAsPdf(
           .slice(0, 10)
           .map((item, idx) => {
             return `
-            <div style="padding: 5px 10px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; display: flex; align-items: center; min-height: 48px;">
-              <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                <span style="font-size: 11.5px; font-weight: 800; background: #9d512d; color: #ffffff; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 6px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-family: ${GUJARATI_FONT_FAMILY};">
-                  ${toGujaratiDigits(idx + 1)}
-                </span>
-                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
-                  <div style="font-size: 11.5px; font-weight: 700; color: #0f172a; line-height: 1.34; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
-                    ${item.headline}
-                  </div>
-                  <div style="font-size: 10px; color: #475569; line-height: 1.32; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
-                    ${item.summary}
-                  </div>
+            <div style="padding: 5px 10px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; display: flex; align-items: flex-start; gap: 10px; min-height: 48px;">
+              <span style="font-size: 11px; font-weight: 800; background: #9d512d; color: #ffffff; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 6px; flex-shrink: 0; display: inline-block; vertical-align: top; margin-top: 1px; font-family: ${GUJARATI_FONT_FAMILY};">
+                ${toGujaratiDigits(idx + 1)}
+              </span>
+              <div style="flex: 1; min-width: 0; padding-top: 1px;">
+                <div style="font-size: 11.5px; font-weight: 700; color: #0f172a; line-height: 1.4; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
+                  ${item.headline}
+                </div>
+                <div style="font-size: 10px; color: #475569; line-height: 1.38; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
+                  ${item.summary}
                 </div>
               </div>
             </div>
@@ -273,8 +271,8 @@ export async function shareDailyJanvaJevuAsPdf(
     ? options.schoolName.trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_')
     : '';
   const fileName = cleanSchool
-    ? `${cleanSchool}_આજનું_જાણવા_જેવું_${bulletin.dateKey}.pdf`
-    : `આજનું_જાણવા_જેવું_${bulletin.dateKey}.pdf`;
+    ? `${cleanSchool}_દૈનિક_પ્રશ્નોત્તરી_${bulletin.dateKey}.pdf`
+    : `દૈનિક_પ્રશ્નોત્તરી_${bulletin.dateKey}.pdf`;
 
   // Helper to extract strictly 1 clean single word from answer
   const cleanOneWord = (ans: string): string => {
@@ -323,20 +321,18 @@ export async function shareDailyJanvaJevuAsPdf(
         const idx = startIdx + i;
         const singleWordAnswer = cleanOneWord(q.answer);
         return `
-        <div style="padding: 4.5px 8px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 7px; box-sizing: border-box; display: flex; align-items: center; min-height: 39px;">
-          <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
-            <span style="font-size: 10.5px; font-weight: 800; background: #1e293b; color: #ffffff; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 4px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-family: ${GUJARATI_FONT_FAMILY};">
-              ${toGujaratiDigits(idx + 1)}
-            </span>
-            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
-              <div style="font-size: 10px; font-weight: 700; color: #0f172a; line-height: 1.25; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
-                ${q.question}
-              </div>
-              <div>
-                <span style="display: inline-flex; align-items: center; font-size: 9.5px; font-weight: 800; background: #dcfce7; color: #166534; padding: 1px 7px; border-radius: 3px; border: 1px solid #86efac; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
-                  જવાબ: ${singleWordAnswer}
-                </span>
-              </div>
+        <div style="padding: 5px 8px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 7px; box-sizing: border-box; display: flex; align-items: flex-start; gap: 8px; min-height: 39px;">
+          <span style="font-size: 10px; font-weight: 800; background: #1e293b; color: #ffffff; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 5px; flex-shrink: 0; display: inline-block; vertical-align: top; margin-top: 1px; font-family: ${GUJARATI_FONT_FAMILY};">
+            ${toGujaratiDigits(idx + 1)}
+          </span>
+          <div style="flex: 1; min-width: 0; padding-top: 1px;">
+            <div style="font-size: 10.5px; font-weight: 700; color: #0f172a; line-height: 1.36; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
+              ${q.question}
+            </div>
+            <div>
+              <span style="display: inline-block; font-size: 9.5px; font-weight: 800; background: #dcfce7; color: #166534; padding: 1px 7px; border-radius: 3px; border: 1px solid #86efac; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY};">
+                જવાબ: ${singleWordAnswer}
+              </span>
             </div>
           </div>
         </div>
@@ -886,6 +882,10 @@ export async function downloadDailyJanvaJevuAsPdf(
 ): Promise<ShareResult> {
   return shareDailyJanvaJevuAsPdf(bulletin, { ...options, mode: 'download' });
 }
+
+// Explicit Prashnotari Aliases for Crystal-Clear Code Understanding
+export const shareDailyPrashnotariAsPdf = shareDailyJanvaJevuAsPdf;
+export const downloadDailyPrashnotariAsPdf = downloadDailyJanvaJevuAsPdf;
 
 export async function downloadDailySuvicharAsPdf(
   bulletin: DailySuvicharBulletin,

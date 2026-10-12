@@ -13,10 +13,18 @@ import {
   Award,
   Loader2,
   Quote,
+  Download,
 } from 'lucide-react';
 import { DailyPrashnotariBulletin, PrashnotariQuestion } from '../types';
 import { getDailyPrashnotariBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
-import { shareDailyJanvaJevuAsPdf } from '../utils/dailyPdfShareUtils';
+import {
+  shareDailyPrashnotariAsPdf,
+  downloadDailyPrashnotariAsPdf,
+} from '../utils/dailyPdfShareUtils';
+import {
+  printHtmlDocument,
+  getPrintableDailyPrashnotariHtml,
+} from '../utils/printAndPdfUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
 
 interface DailyPrashnotariTabProps {
@@ -128,8 +136,41 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
     });
   };
 
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  // Native and Web Print using styled printable document
   const handlePrint = () => {
-    window.print();
+    if (!bulletin) return;
+    const html = getPrintableDailyPrashnotariHtml(
+      bulletin,
+      schoolName || 'શાળા શૈક્ષણિક પોર્ટલ',
+      diseCode,
+      district
+    );
+    printHtmlDocument(html, `દૈનિક_પ્રશ્નોત્તરી_${bulletin.dateKey}`);
+  };
+
+  // Direct PDF Download to Device (Downloads Folder)
+  const handleDownloadPdf = async () => {
+    if (!bulletin || isDownloadingPdf) return;
+
+    setIsDownloadingPdf(true);
+    setShareFeedback('પ્રશ્નોત્તરી PDF ડાઉનલોડ થઈ રહી છે...');
+
+    try {
+      await downloadDailyPrashnotariAsPdf(bulletin, {
+        schoolName: schoolName || 'શાળા શૈક્ષણિક પોર્ટલ',
+        diseCode,
+        district,
+      });
+      setShareFeedback('✅ પ્રશ્નોત્તરી PDF સફળતાપૂર્વક Downloads માં સેવ થઈ ગઈ!');
+    } catch (err) {
+      console.error('PDF download error:', err);
+      setShareFeedback('PDF ડાઉનલોડ કરવામાં સમસ્યા આવી. કૃપા કરીને પુનઃ પ્રયાસ કરો.');
+    } finally {
+      setIsDownloadingPdf(false);
+      setTimeout(() => setShareFeedback(null), 4000);
+    }
   };
 
   const handleSharePdfWhatsApp = async () => {
@@ -139,7 +180,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
     setShareFeedback('પ્રશ્નોત્તરી PDF તૈયાર થઈ રહી છે...');
 
     try {
-      const res = await shareDailyJanvaJevuAsPdf(bulletin, {
+      const res = await shareDailyPrashnotariAsPdf(bulletin, {
         schoolName: schoolName || 'શાળા શૈક્ષણિક પોર્ટલ',
         diseCode,
         district,
@@ -277,6 +318,48 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
               </button>
             </div>
 
+            {/* Direct PDF Download Button */}
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 active:scale-[0.98] text-white flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-sky-900/30 disabled:opacity-50"
+              title="પ્રશ્નોત્તરીની 1-Page PDF ફાઈલ ડિવાઇસના Downloads ફોલ્ડરમાં સાચવો"
+            >
+              {isDownloadingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>ડાઉનલોડ થઈ રહી છે...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 text-white" />
+                  <span>PDF ડાઉનલોડ</span>
+                </>
+              )}
+            </button>
+
+            {/* WhatsApp Share PDF Button */}
+            <button
+              type="button"
+              onClick={handleSharePdfWhatsApp}
+              disabled={isGeneratingPdf}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#25D366] hover:bg-[#20ba59] active:scale-[0.98] text-white flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-emerald-900/40 disabled:opacity-50"
+              title="પ્રશ્નોત્તરીની 1-Page PDF વોટ્સએપ ગ્રૂપમાં શેર કરો"
+            >
+              {isGeneratingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>PDF બની રહી છે...</span>
+                </>
+              ) : (
+                <>
+                  <WhatsAppIcon className="w-4 h-4 text-white" />
+                  <span>WhatsApp PDF શેર</span>
+                </>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={handleCopyBulletin}
@@ -294,6 +377,7 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
               type="button"
               onClick={handlePrint}
               className="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#C45A2D] hover:bg-[#b04f25] text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+              title="પ્રશ્નોત્તરી પ્રિન્ટ કાઢો અથવા PDF સેવ કરો"
             >
               <Printer className="w-4 h-4" />
               <span>પ્રિન્ટ</span>

@@ -48,6 +48,7 @@ public class MainActivity extends BridgeActivity {
     public static final String NOTIFICATION_CHANNEL_ID = "vidyalayam_notifications_channel";
     public static final String NOTIFICATION_CHANNEL_NAME = "વિદ્યાલયમ સૂચનાઓ (Vidyalayam Notifications)";
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 101;
+    private WebView mPrintWebView = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -490,12 +491,12 @@ public class MainActivity extends BridgeActivity {
                 @Override
                 public void run() {
                     try {
-                        final WebView printWebView = new WebView(MainActivity.this);
-                        printWebView.getSettings().setJavaScriptEnabled(true);
-                        printWebView.getSettings().setDomStorageEnabled(true);
-                        printWebView.getSettings().setDefaultTextEncodingName("UTF-8");
+                        mPrintWebView = new WebView(MainActivity.this);
+                        mPrintWebView.getSettings().setJavaScriptEnabled(true);
+                        mPrintWebView.getSettings().setDomStorageEnabled(true);
+                        mPrintWebView.getSettings().setDefaultTextEncodingName("UTF-8");
 
-                        printWebView.setWebViewClient(new WebViewClient() {
+                        mPrintWebView.setWebViewClient(new WebViewClient() {
                             @Override
                             public void onPageFinished(WebView view, String url) {
                                 try {
@@ -519,9 +520,33 @@ public class MainActivity extends BridgeActivity {
                             }
                         });
 
-                        printWebView.loadDataWithBaseURL("https://localhost", html, "text/html; charset=utf-8", "UTF-8", null);
+                        mPrintWebView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
                     } catch (Exception e) {
                         e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void print() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+                        WebView activeView = (bridge != null && bridge.getWebView() != null) ? bridge.getWebView() : null;
+                        if (printManager != null && activeView != null) {
+                            String title = "Vidyalayam_Print_" + System.currentTimeMillis();
+                            PrintDocumentAdapter printAdapter = activeView.createPrintDocumentAdapter(title);
+                            PrintAttributes attributes = new PrintAttributes.Builder()
+                                .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                                .build();
+                            printManager.print(title, printAdapter, attributes);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Toast.makeText(MainActivity.this, "પ્રિન્ટ શરૂ કરવામાં ક્ષતિ આવી", Toast.LENGTH_SHORT).show();
                     }
                 }
             });

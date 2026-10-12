@@ -22,6 +22,7 @@ import {
 import { DailyNewsBulletin, NewsItem, NewsCategory } from '../types';
 import { getDailyNewsBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
 import { shareDailyNewsAsPdf, downloadDailyNewsAsPdf } from '../utils/dailyPdfShareUtils';
+import { printHtmlDocument, getPrintableDailyNewsHtml } from '../utils/printAndPdfUtils';
 import { sendNotification } from '../utils/notificationUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
 
@@ -130,7 +131,14 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!bulletin) return;
+    const html = getPrintableDailyNewsHtml(
+      bulletin,
+      schoolName || 'શાળા શૈક્ષણિક પોર્ટલ',
+      diseCode,
+      district
+    );
+    printHtmlDocument(html, `આજના_સમાચાર_${bulletin.dateKey}`);
   };
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);

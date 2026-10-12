@@ -79,6 +79,24 @@
             document.documentElement.style.setProperty('--safe-area-top', defaultBar);
           }
         } catch (e) {}
+
+        // Global native print support
+        try {
+          var origPrint = window.print;
+          window.print = function() {
+            if (window.AndroidBridge && typeof window.AndroidBridge.print === 'function') {
+              try {
+                window.AndroidBridge.print();
+                return;
+              } catch (err) {}
+            }
+            if (origPrint) {
+              try {
+                origPrint.call(window);
+              } catch (err) {}
+            }
+          };
+        } catch (e) {}
       })();
     </script>
     <meta name="description" content="Vidyalayam — General School Management System & એકમ કસોટી ગુણપત્રક • by NRChad" />

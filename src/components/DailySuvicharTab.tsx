@@ -13,10 +13,12 @@ import {
   ListChecks,
   Loader2,
   Download,
+  Printer,
 } from 'lucide-react';
 import { DailySuvicharBulletin } from '../types';
 import { getDailySuvicharBulletin } from '../services/dailyKnowledgeService';
 import { shareDailySuvicharAsPdf, downloadDailySuvicharAsPdf } from '../utils/dailyPdfShareUtils';
+import { printHtmlDocument, getPrintableDailySuvicharHtml } from '../utils/printAndPdfUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
 
 interface DailySuvicharTabProps {
@@ -137,6 +139,17 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
     }
   };
 
+  const handlePrint = () => {
+    if (!bulletin) return;
+    const html = getPrintableDailySuvicharHtml(
+      bulletin,
+      schoolName || 'શાળા શૈક્ષણિક પોર્ટલ',
+      diseCode,
+      district
+    );
+    printHtmlDocument(html, `સુવિચાર_${bulletin.editionDate}`);
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center p-12 space-y-3 min-h-[300px]">
@@ -248,6 +261,16 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
                   <span>કોપી વક્તવ્ય</span>
                 </>
               )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="px-3.5 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 cursor-pointer border border-white/20"
+              title="સુવિચાર અને વક્તવ્ય સ્ક્રિપ્ટ પ્રિન્ટ કાઢો અથવા PDF સેવ કરો"
+            >
+              <Printer className="w-4 h-4" />
+              <span>પ્રિન્ટ</span>
             </button>
 
             {isSchoolView && (
