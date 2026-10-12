@@ -127,14 +127,15 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
 
       // Check if update was dismissed in session or permanently
       const isDismissed =
-        sessionStorage.getItem(`vidyalayam_dismissed_update_${remoteSha}`) === 'true' ||
-        sessionStorage.getItem('vidyalayam_update_modal_dismissed') === 'true' ||
-        localStorage.getItem(`vidyalayam_dismissed_update_${remoteSha}`) === 'true' ||
-        localStorage.getItem(`vidyalayam_dismissed_banner_${remoteSha}`) === 'true';
+        !force &&
+        (sessionStorage.getItem(`vidyalayam_dismissed_update_${remoteSha}`) === 'true' ||
+          sessionStorage.getItem('vidyalayam_update_modal_dismissed') === 'true' ||
+          localStorage.getItem(`vidyalayam_dismissed_update_${remoteSha}`) === 'true' ||
+          localStorage.getItem(`vidyalayam_dismissed_banner_${remoteSha}`) === 'true');
 
-      // Only mark an update available if remote commit is genuinely newer than current baseline & installed SHA
+      // Mark an update available if remote commit is genuinely newer than baseline / current app
       const isNewer =
-        remoteSha !== APP_BASELINE_SHA &&
+        (remoteSha !== APP_BASELINE_SHA || force) &&
         currentAppSha !== remoteSha &&
         Boolean(remoteSha);
 
@@ -144,7 +145,7 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
 
       return {
         updateAvailable: isNewer && !isDismissed,
-        currentVersion: currentAppSha.slice(0, 7),
+        currentVersion: currentAppSha ? currentAppSha.slice(0, 7) : APP_BASELINE_VERSION,
         latestVersion: cleanSha,
         latestCommitSha: remoteSha,
         latestCommitMessage: commitData.message,
@@ -164,6 +165,71 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
     currentVersion: currentAppSha ? currentAppSha.slice(0, 7) : APP_BASELINE_VERSION,
     repo,
   };
+}
+
+/**
+ * Downloads the APK directly inside the application with streaming progress.
+ * Completely eliminates redirection to external Chrome browsers or tabs.
+ */
+export async function downloadApkInApp(
+  apkUrl: string,
+  onProgress?: (percent: number, loadedBytes: number, totalBytes: number) => void
+): Promise<{ success: boolean; blob?: Blob; error?: string }> {
+  try {
+    const streamUrl = apiUrl(`/api/download-apk?url=${encodeURIComponent(apkUrl)}`);
+    let response: Response;
+
+    try {
+      response = await fetch(streamUrl, {
+        headers: { Accept: 'application/vnd.android.package-archive, */*' },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    } catch {
+      // Fallback directly to direct APK download link
+      response = await fetch(apkUrl, {
+        headers: { Accept: 'application/vnd.android.package-archive, */*' },
+      });
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch APK (${response.status})`);
+    }
+
+    const contentLengthHeader = response.headers.get('content-length');
+    const totalBytes = contentLengthHeader ? parseInt(contentLengthHeader, 10) : 0;
+
+    if (!response.body) {
+      const blob = await response.blob();
+      onProgress?.(100, blob.size, blob.size);
+      return { success: true, blob };
+    }
+
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let loadedBytes = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        loadedBytes += value.length;
+        if (totalBytes > 0) {
+          const percent = Math.min(100, Math.round((loadedBytes / totalBytes) * 100));
+          onProgress?.(percent, loadedBytes, totalBytes);
+        } else {
+          onProgress?.(-1, loadedBytes, 0);
+        }
+      }
+    }
+
+    const blob = new Blob(chunks as any[], { type: 'application/vnd.android.package-archive' });
+    onProgress?.(100, loadedBytes, totalBytes || loadedBytes);
+    return { success: true, blob };
+  } catch (err: any) {
+    console.error('[AppUpdateService] APK in-app download error:', err);
+    return { success: false, error: err.message || 'Download error' };
+  }
 }
 
 /**

@@ -26,6 +26,7 @@ import {
   Smartphone,
   Monitor,
   RotateCcw,
+  RefreshCw,
   Bell,
   Settings,
 } from 'lucide-react';
@@ -382,21 +383,32 @@ export const Navbar: React.FC<NavbarProps> = ({
                             </button>
                           ))}
                         </div>
-                        {updateInfo?.updateAvailable && (
-                          <div className="pt-1.5 border-t border-[#E2E8F0] dark:border-white/10">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setMoreMenuOpen(false);
-                                window.dispatchEvent(new CustomEvent('check-app-update'));
-                              }}
-                              className="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all cursor-pointer animate-pulse"
-                            >
-                              <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                              <span>🚀 નવી અપડેટ ઉપલબ્ધ છે!</span>
-                            </button>
-                          </div>
-                        )}
+                        <div className="pt-1.5 border-t border-[#E2E8F0] dark:border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMoreMenuOpen(false);
+                              window.dispatchEvent(new CustomEvent('check-app-update', { detail: { manual: true } }));
+                            }}
+                            className={`w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer ${
+                              updateInfo?.updateAvailable
+                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs animate-pulse'
+                                : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              {updateInfo?.updateAvailable ? (
+                                <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                              ) : (
+                                <RefreshCw className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              )}
+                              <span>{updateInfo?.updateAvailable ? '🚀 નવી અપડેટ ઉપલબ્ધ છે!' : 'અપડેટ તપાસો (Check Update)'}</span>
+                            </div>
+                            {updateInfo?.updateAvailable && (
+                              <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping shrink-0" />
+                            )}
+                          </button>
+                        </div>
                       </div>,
                       document.body
                     )}
@@ -714,18 +726,25 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 )}
 
-                {updateInfo?.updateAvailable && (
-                  <button
-                    onClick={() => {
-                      setMobileDrawerOpen(false);
-                      window.dispatchEvent(new CustomEvent('check-app-update'));
-                    }}
-                    className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] shadow-md animate-pulse"
-                  >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    window.dispatchEvent(new CustomEvent('check-app-update', { detail: { manual: true } }));
+                  }}
+                  className={`w-full py-3 px-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px] shadow-xs ${
+                    updateInfo?.updateAvailable
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md animate-pulse'
+                      : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 border border-emerald-400/30'
+                  }`}
+                >
+                  {updateInfo?.updateAvailable ? (
                     <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
-                    <span>🚀 નવી એપ અપડેટ ઉપલબ્ધ છે!</span>
-                  </button>
-                )}
+                  ) : (
+                    <RefreshCw className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  )}
+                  <span>{updateInfo?.updateAvailable ? '🚀 નવી એપ અપડેટ ઉપલબ્ધ છે (ક્લિક કરો)' : '🔄 અપડેટ તપાસો (Check for Updates)'}</span>
+                </button>
 
                 <button
                   onClick={() => {

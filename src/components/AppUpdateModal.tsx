@@ -9,8 +9,8 @@ import {
   ShieldCheck,
   Smartphone
 } from 'lucide-react';
-import { GitHubUpdateInfo, applyAppUpdate, dismissUpdateInSession } from '../services/appUpdateService';
-import { isAndroidNativeApp } from '../utils/printAndPdfUtils';
+import { GitHubUpdateInfo, applyAppUpdate, dismissUpdateInSession, downloadApkInApp } from '../services/appUpdateService';
+import { isAndroidNativeApp, blobToBase64 } from '../utils/printAndPdfUtils';
 
 interface AppUpdateModalProps {
   updateInfo: GitHubUpdateInfo | null;
@@ -24,6 +24,11 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
   onClose,
 }) => {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [downloadingApk, setDownloadingApk] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [downloadBytes, setDownloadBytes] = useState<{ loaded: number; total: number }>({ loaded: 0, total: 0 });
+  const [downloadStatusMsg, setDownloadStatusMsg] = useState<string>('');
+  const [apkDownloadedBlobUrl, setApkDownloadedBlobUrl] = useState<string | null>(null);
 
   if (!isOpen || !updateInfo || !updateInfo.updateAvailable) {
     return null;
@@ -38,8 +43,77 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
     await applyAppUpdate(updateInfo.latestCommitSha);
   };
 
-  const handleApkDownload = () => {
-    window.open(apkDownloadUrl, '_system');
+  const handleApkDownload = async () => {
+    setDownloadingApk(true);
+    setDownloadProgress(0);
+    setDownloadStatusMsg('APK ડાઉનલોડ શરૂ થઈ રહ્યું છે...');
+
+    // 1. If running inside Native Android APK with AndroidBridge:
+    if (isAndroidNativeApp() && typeof (window as any).AndroidBridge?.downloadAndInstallApk === 'function') {
+      try {
+        setDownloadStatusMsg('બેકગ્રાઉન્ડમાં નવી APK ડાઉનલોડ થઈ રહી છે... પૂર્ણ થતાં આપોઆપ ઇન્સ્ટોલર ઓપન થશે.');
+        setDownloadProgress(45);
+        (window as any).AndroidBridge.downloadAndInstallApk(apkDownloadUrl, 'Vidyalayam-Latest.apk');
+        setTimeout(() => {
+          setDownloadProgress(100);
+          setDownloadStatusMsg('✅ APK ડાઉનલોડ પૂર્ણ! સિસ્ટમ ઇન્સ્ટોલર ખૂલી રહ્યું છે...');
+          setDownloadingApk(false);
+        }, 3500);
+        return;
+      } catch (err) {
+        console.warn('Native downloadAndInstallApk fallback to in-app stream:', err);
+      }
+    }
+
+    // 2. In-App Direct Stream Download (No Chrome redirect, zero tab hopping)
+    try {
+      setDownloadStatusMsg('ઍપમાં સીધી APK ડાઉનલોડ થઈ રહી છે...');
+      const res = await downloadApkInApp(apkDownloadUrl, (percent, loaded, total) => {
+        if (percent >= 0) {
+          setDownloadProgress(percent);
+        }
+        setDownloadBytes({ loaded, total });
+        const loadedMb = (loaded / (1024 * 1024)).toFixed(1);
+        const totalMb = total > 0 ? (total / (1024 * 1024)).toFixed(1) : '?';
+        setDownloadStatusMsg(`ડાઉનલોડ થઈ રહ્યું છે: ${loadedMb} MB / ${totalMb} MB (${percent >= 0 ? percent : '...'}%)`);
+      });
+
+      if (res.success && res.blob) {
+        setDownloadProgress(100);
+        setDownloadStatusMsg('✅ APK ડાઉનલોડ સફળ! ઇન્સ્ટોલેશન શરૂ કરી રહ્યા છીએ...');
+
+        // If AndroidBridge has base64 installer
+        if (isAndroidNativeApp() && typeof (window as any).AndroidBridge?.installApkFromBase64 === 'function') {
+          try {
+            const b64 = await blobToBase64(res.blob);
+            (window as any).AndroidBridge.installApkFromBase64(b64, 'Vidyalayam-Latest.apk');
+            setDownloadingApk(false);
+            return;
+          } catch (b64Err) {
+            console.warn('installApkFromBase64 failed:', b64Err);
+          }
+        }
+
+        // Automatic in-app browser trigger
+        const blobUrl = URL.createObjectURL(res.blob);
+        setApkDownloadedBlobUrl(blobUrl);
+
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = 'Vidyalayam-Latest.apk';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        setDownloadStatusMsg('✅ APK તમારા ફોનમાં સેવ થઈ ગઈ છે! ઇન્સ્ટોલ કરવા માટે નીચે ઓપન કરો.');
+      } else {
+        setDownloadStatusMsg('ડાઉનલોડમાં ક્ષતિ આવી છે. કૃપા કરીને ફરી પ્રયાસ કરો.');
+      }
+    } catch (e: any) {
+      setDownloadStatusMsg(`ડાઉનલોડ ક્ષતિ: ${e.message || 'અજ્ઞાત ક્ષતિ'}`);
+    } finally {
+      setDownloadingApk(false);
+    }
   };
 
   // Format date nicely
@@ -139,14 +213,59 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
             </div>
           </div>
 
+          {/* In-App Live APK Download Progress Indicator */}
+          {(downloadingApk || downloadStatusMsg) && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2.5 animate-fadeIn">
+              <div className="flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200">
+                <span className="flex items-center gap-2">
+                  <Download className={`w-4 h-4 text-amber-600 dark:text-amber-400 ${downloadingApk ? 'animate-bounce' : ''}`} />
+                  <span>ઇન-એપ ડાઉનલોડ અને ઇન્સ્ટોલર</span>
+                </span>
+                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold">
+                  {downloadProgress > 0 ? `${downloadProgress}%` : ''}
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.max(downloadProgress, 8)}%` }}
+                />
+              </div>
+
+              <div className="text-[11.5px] font-medium text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>{downloadStatusMsg}</span>
+                {downloadBytes.total > 0 && (
+                  <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-mono">
+                    {(downloadBytes.loaded / 1048576).toFixed(1)} / {(downloadBytes.total / 1048576).toFixed(1)} MB
+                  </span>
+                )}
+              </div>
+
+              {apkDownloadedBlobUrl && (
+                <div className="pt-1">
+                  <a
+                    href={apkDownloadedBlobUrl}
+                    download="Vidyalayam-Latest.apk"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>APK ફાઇલ ઓપન કરો</span>
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Android APK Specific Notice */}
-          {isAndroid && (
+          {isAndroid && !downloadingApk && !downloadStatusMsg && (
             <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
               <Smartphone className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
                 <strong className="block font-bold">એન્ડ્રોઇડ એપ યુઝર્સ માટે:</strong>
                 <span className="text-[11px] text-amber-700/90 dark:text-amber-300/80 leading-snug block">
-                  જો તમે ઇન્સ્ટોલ કરેલ APK વાપરી રહ્યા છો, તો નીચેથી નવી APK ડાઉનલોડ કરીને ઇન્સ્ટોલ કરી શકો છો. કોઈ પેકેજ કોન્ફ્લિક્ટ વગર સીધું અપડેટ થશે.
+                  નીચે આપેલ બટનથી નવી APK સીધી ઍપમાં ડાઉનલોડ થશે અને કોઈ મુશ્કેલી વગર આપોઆપ ઇન્સ્ટોલેશન શરૂ થશે.
                 </span>
               </div>
             </div>
@@ -173,17 +292,22 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
             <button
               type="button"
               onClick={handleApkDownload}
-              className="order-1 sm:order-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-amber-600/30 transition-all cursor-pointer"
+              disabled={downloadingApk}
+              className="order-1 sm:order-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-amber-600/30 transition-all cursor-pointer disabled:opacity-60"
             >
-              <Download className="w-4 h-4" />
-              <span>નવી APK ડાઉનલોડ કરો</span>
+              <Download className={`w-4 h-4 ${downloadingApk ? 'animate-bounce' : ''}`} />
+              <span>
+                {downloadingApk
+                  ? `ડાઉનલોડ થઈ રહ્યું છે... ${downloadProgress > 0 ? `${downloadProgress}%` : ''}`
+                  : 'નવી APK ડાઉનલોડ કરો'}
+              </span>
             </button>
           )}
 
           <button
             type="button"
             onClick={handleWebUpdate}
-            disabled={isUpdating}
+            disabled={isUpdating || downloadingApk}
             className="order-1 sm:order-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer disabled:opacity-60"
           >
             <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />

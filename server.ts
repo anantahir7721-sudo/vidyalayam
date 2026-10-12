@@ -161,6 +161,146 @@ async function startServer() {
   });
 
   // =========================================================================
+  // API: GitHub Update Checker & APK Proxy (Bypasses CORS & Rate Limits)
+  // =========================================================================
+  const appUpdateCache = new Map<string, { data: any; timestamp: number }>();
+
+  app.get('/api/app-update-check', async (req: Request, res: Response) => {
+    try {
+      const repo = String(req.query.repo || 'anantahir7721-sudo/vidyalayam').trim();
+      const now = Date.now();
+      const cached = appUpdateCache.get(repo);
+      if (cached && now - cached.timestamp < 30000) {
+        return res.json(cached.data);
+      }
+
+      let latestCommit: any = null;
+      let apkDownloadUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
+      let releaseUrl = `https://github.com/${repo}/releases/latest`;
+      let tagName = 'latest';
+
+      // 1. Fetch latest commit
+      try {
+        const ghRes = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, {
+          headers: {
+            Accept: 'application/vnd.github.v3+json',
+            'User-Agent': 'Vidyalayam-App-Server',
+          },
+          signal: AbortSignal.timeout(7000),
+        });
+        if (ghRes.ok) {
+          const commits = await ghRes.json();
+          if (Array.isArray(commits) && commits.length > 0) {
+            latestCommit = {
+              sha: commits[0].sha,
+              message: commits[0].commit?.message || '',
+              date: commits[0].commit?.committer?.date || '',
+              author: commits[0].commit?.author?.name || 'Vidyalayam Developer',
+              htmlUrl: commits[0].html_url,
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Commit fetch warning:', err);
+      }
+
+      // 2. Fetch latest release info to verify APK asset
+      try {
+        const relRes = await fetch(`https://api.github.com/repos/${repo}/releases/tags/latest`, {
+          headers: {
+            Accept: 'application/vnd.github.v3+json',
+            'User-Agent': 'Vidyalayam-App-Server',
+          },
+          signal: AbortSignal.timeout(7000),
+        });
+        if (relRes.ok) {
+          const relData = await relRes.json();
+          if (relData) {
+            if (relData.tag_name) tagName = relData.tag_name;
+            if (relData.html_url) releaseUrl = relData.html_url;
+            if (Array.isArray(relData.assets)) {
+              const apkAsset = relData.assets.find((a: any) =>
+                a.name && (a.name.endsWith('.apk') || a.name === 'app-debug.apk')
+              );
+              if (apkAsset && apkAsset.browser_download_url) {
+                apkDownloadUrl = apkAsset.browser_download_url;
+              }
+            }
+          }
+        }
+      } catch (relErr) {
+        console.warn('Release fetch warning:', relErr);
+      }
+
+      const responsePayload = {
+        success: true,
+        repo,
+        latestCommit,
+        latestRelease: {
+          tagName,
+          apkDownloadUrl,
+          releaseUrl,
+        },
+        apkDownloadUrl,
+        releaseUrl,
+        timestamp: now,
+      };
+
+      appUpdateCache.set(repo, { data: responsePayload, timestamp: now });
+      return res.json(responsePayload);
+    } catch (err: any) {
+      console.error('App update check error:', err);
+      return res.status(500).json({
+        success: false,
+        error: err.message || 'Update check failed',
+      });
+    }
+  });
+
+  // Direct APK streaming proxy to allow in-app APK downloads with progress & avoid CORS
+  app.get('/api/download-apk', async (req: Request, res: Response) => {
+    try {
+      const repo = String(req.query.repo || 'anantahir7721-sudo/vidyalayam').trim();
+      const directUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
+
+      const ghResponse = await fetch(directUrl, {
+        redirect: 'follow',
+        headers: {
+          'User-Agent': 'Vidyalayam-InApp-Downloader',
+        },
+      });
+
+      if (!ghResponse.ok) {
+        return res.redirect(directUrl);
+      }
+
+      const contentLength = ghResponse.headers.get('content-length');
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Disposition', 'attachment; filename="Vidyalayam-Latest.apk"');
+      if (contentLength) {
+        res.setHeader('Content-Length', contentLength);
+      }
+
+      if (ghResponse.body) {
+        // Stream the APK chunks to client
+        const reader = ghResponse.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(Buffer.from(value));
+        }
+        res.end();
+      } else {
+        const ab = await ghResponse.arrayBuffer();
+        res.send(Buffer.from(ab));
+      }
+    } catch (err: any) {
+      console.error('APK download error:', err);
+      res.redirect('https://github.com/anantahir7721-sudo/vidyalayam/releases/download/latest/app-debug.apk');
+    }
+  });
+
+  // =========================================================================
   // API: Student Login (by Student's DISE Code stored in school student data)
   // =========================================================================
   app.post('/api/student/login', async (req: Request, res: Response) => {

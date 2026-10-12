@@ -52,7 +52,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const handleManualCheckUpdate = async () => {
     setCheckingUpdate(true);
     haptic.medium();
-    window.dispatchEvent(new CustomEvent('check-app-update'));
+    window.dispatchEvent(new CustomEvent('check-app-update', { detail: { manual: true } }));
     setTimeout(() => {
       setCheckingUpdate(false);
     }, 1500);
@@ -276,14 +276,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               </button>
 
               {updateInfo.apkDownloadUrl && (
-                <a
-                  href={updateInfo.apkDownloadUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-2 bg-black/30 hover:bg-black/40 text-white rounded-xl text-xs font-bold transition-all"
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('check-app-update', { detail: { manual: true } }));
+                  }}
+                  className="px-3 py-2 bg-black/30 hover:bg-black/40 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
-                  APK ડાઉનલોડ
-                </a>
+                  APK ઇન-ઍપ ડાઉનલોડ
+                </button>
               )}
             </div>
           </div>

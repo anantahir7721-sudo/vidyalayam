@@ -125,6 +125,8 @@ public class MainActivity extends BridgeActivity {
         } catch (Exception ignored) {}
     }
 
+    private Uri pendingInstallApkUri = null;
+
     @Override
     public void onResume() {
         super.onResume();
@@ -132,6 +134,23 @@ public class MainActivity extends BridgeActivity {
         try {
             NotificationAlarmReceiver.scheduleAllRoutineAlarms(this);
         } catch (Exception ignored) {}
+
+        // Resume pending APK installation if permission was just granted
+        if (pendingInstallApkUri != null) {
+            try {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || getPackageManager().canRequestPackageInstalls()) {
+                    Uri toInstall = pendingInstallApkUri;
+                    pendingInstallApkUri = null;
+                    Intent installIntent = new Intent(Intent.ACTION_VIEW);
+                    installIntent.setDataAndType(toInstall, "application/vnd.android.package-archive");
+                    installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(installIntent);
+                }
+            } catch (Exception resumeErr) {
+                resumeErr.printStackTrace();
+            }
+        }
     }
 
     private void registerAndroidBridge() {
@@ -778,6 +797,156 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public void saveBase64Pdf(final String base64Data, final String rawFilename, final String mimeType) {
             downloadBase64Pdf(base64Data, rawFilename, mimeType);
+        }
+
+        // ================= IN-APP APK DOWNLOAD & AUTO-INSTALL ================= //
+
+        @JavascriptInterface
+        public void downloadAndInstallApk(final String apkUrl, final String rawFilename) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this, "📥 નવી વિદ્યાલયમ APK ડાઉનલોડ થઈ રહી છે...", Toast.LENGTH_SHORT).show();
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                String cleanName = (rawFilename != null && !rawFilename.trim().isEmpty())
+                                    ? rawFilename.trim().replaceAll("[\\\\/:*?\"<>|]", "_")
+                                    : "Vidyalayam-Latest.apk";
+                                if (!cleanName.toLowerCase().endsWith(".apk")) {
+                                    cleanName += ".apk";
+                                }
+
+                                String targetUrlStr = apkUrl != null && !apkUrl.trim().isEmpty()
+                                    ? apkUrl.trim()
+                                    : "https://github.com/anantahir7721-sudo/vidyalayam/releases/download/latest/app-debug.apk";
+
+                                java.net.URL url = new java.net.URL(targetUrlStr);
+                                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                                conn.setInstanceFollowRedirects(true);
+                                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) VidyalayamApp");
+                                conn.connect();
+
+                                int status = conn.getResponseCode();
+                                if (status == java.net.HttpURLConnection.HTTP_MOVED_TEMP ||
+                                    status == java.net.HttpURLConnection.HTTP_MOVED_PERM ||
+                                    status == 307 || status == 308) {
+                                    String newUrl = conn.getHeaderField("Location");
+                                    if (newUrl != null) {
+                                        conn.disconnect();
+                                        url = new java.net.URL(newUrl);
+                                        conn = (java.net.HttpURLConnection) url.openConnection();
+                                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) VidyalayamApp");
+                                        conn.connect();
+                                    }
+                                }
+
+                                File extFiles = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                                if (extFiles == null) extFiles = getCacheDir();
+                                final File apkFile = new File(extFiles, cleanName);
+                                if (apkFile.exists()) {
+                                    apkFile.delete();
+                                }
+
+                                java.io.InputStream in = conn.getInputStream();
+                                FileOutputStream out = new FileOutputStream(apkFile);
+                                byte[] buffer = new byte[8192];
+                                int bytesRead;
+                                while ((bytesRead = in.read(buffer)) != -1) {
+                                    out.write(buffer, 0, bytesRead);
+                                }
+                                out.flush();
+                                out.close();
+                                in.close();
+                                conn.disconnect();
+
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        launchApkInstall(apkFile);
+                                    }
+                                });
+                            } catch (final Exception e) {
+                                e.printStackTrace();
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(MainActivity.this, "APK ડાઉનલોડમાં ક્ષતિ: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                    }
+                                });
+                            }
+                        }
+                    }).start();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void installApkFromBase64(final String base64Data, final String rawFilename) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        String cleanName = (rawFilename != null && !rawFilename.trim().isEmpty())
+                            ? rawFilename.trim().replaceAll("[\\\\/:*?\"<>|]", "_")
+                            : "Vidyalayam-Latest.apk";
+                        if (!cleanName.toLowerCase().endsWith(".apk")) cleanName += ".apk";
+
+                        byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
+                        File extFiles = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                        if (extFiles == null) extFiles = getCacheDir();
+                        File apkFile = new File(extFiles, cleanName);
+                        FileOutputStream fos = new FileOutputStream(apkFile);
+                        fos.write(bytes);
+                        fos.flush();
+                        fos.close();
+
+                        launchApkInstall(apkFile);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Toast.makeText(MainActivity.this, "ઇન્સ્ટોલ કરવામાં ક્ષતિ: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+        }
+    }
+
+    private void launchApkInstall(File apkFile) {
+        try {
+            if (apkFile == null || !apkFile.exists()) {
+                Toast.makeText(this, "ઇન્સ્ટોલેશન ફાઇલ મળી નથી", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Uri apkUri = FileProvider.getUriForFile(
+                this,
+                getPackageName() + ".fileprovider",
+                apkFile
+            );
+
+            Intent installIntent = new Intent(Intent.ACTION_VIEW);
+            installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+            installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!getPackageManager().canRequestPackageInstalls()) {
+                    pendingInstallApkUri = apkUri;
+                    Toast.makeText(this, "કૃપા કરીને વિદ્યાલયમ માટે 'Allow from this source' ચાલુ કરો જેથી એપ આપોઆપ અપડેટ થઈ શકે", Toast.LENGTH_LONG).show();
+                    Intent settingsIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
+                    settingsIntent.setData(Uri.parse("package:" + getPackageName()));
+                    settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(settingsIntent);
+                    return;
+                }
+            }
+
+            startActivity(installIntent);
+            Toast.makeText(this, "🚀 વિદ્યાલયમ ઇન્સ્ટોલર ખૂલી રહ્યું છે...", Toast.LENGTH_SHORT).show();
+        } catch (Exception err) {
+            err.printStackTrace();
+            Toast.makeText(this, "ઇન્સ્ટોલ કરવામાં ક્ષતિ: " + err.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 }

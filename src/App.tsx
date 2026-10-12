@@ -270,31 +270,55 @@ export default function App() {
   const [appUpdate, setAppUpdate] = useState<GitHubUpdateInfo | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [dismissUpdateBanner, setDismissUpdateBanner] = useState(false);
+  const [updateToastMessage, setUpdateToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    const checkUpdate = async () => {
+    const checkUpdate = async (event?: Event) => {
+      const isManual = Boolean((event as CustomEvent)?.detail?.manual);
+      if (isManual) {
+        setUpdateToastMessage('🔄 નવી એપ અપડેટ તપાસી રહ્યા છીએ...');
+      }
+
       try {
-        const info = await checkForGitHubUpdate();
-        if (isMounted && info && info.updateAvailable) {
+        const info = await checkForGitHubUpdate(isManual);
+        if (!isMounted) return;
+
+        if (info) {
           setAppUpdate(info);
+          if (info.updateAvailable) {
+            setShowUpdateModal(true);
+            if (isManual) {
+              setUpdateToastMessage(null);
+            }
+          } else if (isManual) {
+            setUpdateToastMessage(`✅ આપની વિદ્યાલયમ એપ અદ્યતન (Up-to-Date) છે. કોઈ નવી અપડેટ નથી. (વર્ઝન ${info.currentVersion})`);
+            setTimeout(() => {
+              if (isMounted) setUpdateToastMessage(null);
+            }, 3500);
+          }
         }
       } catch (e) {
-        // ignore
+        if (isManual && isMounted) {
+          setUpdateToastMessage('⚠️ અપડેટ તપાસવામાં ક્ષતિ આવી છે. કૃપા કરીને થોડી વાર પછી પ્રયાસ કરો.');
+          setTimeout(() => {
+            if (isMounted) setUpdateToastMessage(null);
+          }, 3500);
+        }
       }
     };
 
     // 1. Initial check smoothly 2 seconds after launch
-    const timer = setTimeout(checkUpdate, 2000);
+    const timer = setTimeout(() => checkUpdate(), 2000);
 
-    // 2. Allow explicit manual checks (e.g. from Settings or Profile)
-    window.addEventListener('check-app-update', checkUpdate);
+    // 2. Allow explicit manual checks (from Navbar, Settings, or Profile)
+    window.addEventListener('check-app-update', checkUpdate as EventListener);
 
     return () => {
       isMounted = false;
       clearTimeout(timer);
-      window.removeEventListener('check-app-update', checkUpdate);
+      window.removeEventListener('check-app-update', checkUpdate as EventListener);
     };
   }, []);
 
@@ -581,6 +605,23 @@ export default function App() {
     );
   };
 
+  const renderToast = () => {
+    if (!updateToastMessage) return null;
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[10000] px-4 py-2.5 rounded-2xl bg-slate-900/95 dark:bg-slate-800/95 text-white border border-emerald-500/40 shadow-2xl backdrop-blur-md text-xs font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200 max-w-[92vw]">
+        <span>{updateToastMessage}</span>
+        <button
+          type="button"
+          onClick={() => setUpdateToastMessage(null)}
+          className="p-1 hover:bg-white/20 rounded-full cursor-pointer shrink-0"
+          title="બંધ કરો"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  };
+
   const renderUpdateComponents = () => {
     // If user is logging in or unauthenticated, NEVER show the update screen or modal
     if (authStatus === 'unauthenticated' || (!user && !studentSession)) {
@@ -588,6 +629,7 @@ export default function App() {
     }
     return (
       <>
+        {renderToast()}
         {renderUpdateBanner()}
         <AppUpdateModal
           updateInfo={appUpdate}
@@ -602,6 +644,7 @@ export default function App() {
   if (studentSession) {
     return (
       <>
+        {renderToast()}
         <StudentPortal
           session={studentSession}
           onLogout={() => {
