@@ -29,6 +29,7 @@ import { haptic } from '../utils/haptics';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import { apiUrl, apiFetch, isNativeApp } from '../utils/apiConfig';
 import { directGenerateAbhivyakti } from '../services/directGeminiService';
+import { printHtmlDocument } from '../utils/printAndPdfUtils';
 
 interface DailyAbhivyaktiTabProps {
   schoolName?: string;
@@ -185,6 +186,63 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
       `✨ વિદ્યાલયમ શૈક્ષણિક પોર્ટલ`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  };
+
+  const handlePrintScript = (idea: DailyAbhivyaktiIdea) => {
+    haptic.light();
+    const timeRows = (idea.timeBreakdown || [])
+      .map(
+        (t) => `
+        <tr>
+          <td style="padding:6px 10px; border:1px solid #cbd5e1; font-weight:700; color:#7c3aed; width:90px; text-align:center;">${t.timeRange}</td>
+          <td style="padding:6px 10px; border:1px solid #cbd5e1; color:#1e293b;">${t.activity}</td>
+        </tr>`
+      )
+      .join('');
+
+    const html = `
+      <div style="font-family:'Anek Gujarati', sans-serif; padding:20px; color:#0f172a; max-width:800px; margin:0 auto; line-height:1.5;">
+        <div style="text-align:center; border-bottom:2px solid #7c3aed; padding-bottom:10px; margin-bottom:15px;">
+          <h1 style="font-size:22px; font-weight:800; margin:0 0 4px 0; color:#1e293b;">${schoolName || 'શાળા શૈક્ષણિક પોર્ટલ'}</h1>
+          <div style="font-size:12px; color:#64748b; font-weight:600;">શાળા પ્રાર્થના સભા અભિવ્યક્તિ — પ્રસ્તુતિ સ્ક્રિપ્ટ (૫ મિનિટ)</div>
+        </div>
+        <div style="background:#f5f3ff; border:1px solid #ddd6fe; border-left:4px solid #7c3aed; border-radius:8px; padding:10px 14px; margin-bottom:15px;">
+          <h2 style="font-size:18px; font-weight:800; color:#6d28d9; margin:0 0 4px 0;">${idea.title}</h2>
+          <div style="font-size:12px; color:#5b21b6; font-weight:600;">વિભાગ: ${idea.categoryLabel} • સમયાવધિ: ${idea.duration || '૫ મિનિટ'} • શ્રોતાઓ: ${idea.targetAudience || 'શાળા પ્રાર્થના સભા'}</div>
+        </div>
+        ${
+          timeRows
+            ? `
+        <div style="margin-bottom:15px;">
+          <h3 style="font-size:13px; font-weight:800; color:#b45309; margin:0 0 6px 0;">⏱️ ૫ મિનિટનું સ્ટેજ વિભાજન:</h3>
+          <table style="width:100%; border-collapse:collapse; font-size:11.5px; background:#f8fafc;">
+            ${timeRows}
+          </table>
+        </div>`
+            : ''
+        }
+        <div style="margin-bottom:15px;">
+          <h3 style="font-size:13px; font-weight:800; color:#0369a1; margin:0 0 6px 0;">🗣️ સ્ટેજ પર બોલવાની શબ્દશઃ સ્ક્રિપ્ટ:</h3>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; font-size:12.5px; line-height:1.6; white-space:pre-line;">
+            ${idea.fullScript}
+          </div>
+        </div>
+        ${
+          idea.deliveryTips
+            ? `
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 14px; font-size:12px; color:#166534; margin-bottom:15px;">
+          <strong>💡 સ્ટેજ રજૂઆત ટીપ્સ & હાવભાવ:</strong> ${idea.deliveryTips}
+        </div>`
+            : ''
+        }
+        <div style="border-top:1px dashed #cbd5e1; padding-top:8px; margin-top:15px; font-size:10px; color:#94a3b8; display:flex; justify-content:space-between;">
+          <span>વિદ્યાલયમ શૈક્ષણિક પોર્ટલ</span>
+          <span>તારીખ: ${bulletin?.editionDate || ''}</span>
+        </div>
+      </div>
+    `;
+
+    printHtmlDocument(html, `અભિવ્યક્તિ_${idea.title}`);
   };
 
   // AI Generation Function
@@ -803,6 +861,16 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
                 >
                   <WhatsAppIcon className="w-4 h-4 text-white" />
                   <span>WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handlePrintScript(activeIdeaModal)}
+                  className="px-4 py-2 rounded-xl bg-[#C45A2D] hover:bg-[#b04f25] text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                  title="સ્ક્રિપ્ટ પ્રિન્ટ કાઢો અથવા PDF સેવ કરો"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>પ્રિન્ટ</span>
                 </button>
               </div>
             </div>

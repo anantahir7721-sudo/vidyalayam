@@ -178,6 +178,8 @@ async function startServer() {
       let apkDownloadUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
       let releaseUrl = `https://github.com/${repo}/releases/latest`;
       let tagName = 'latest';
+      let releaseName = 'Vidyalayam v1.0.50 (Latest)';
+      let versionName = 'v1.0.50';
 
       // 1. Fetch latest commit
       try {
@@ -204,7 +206,7 @@ async function startServer() {
         console.warn('Commit fetch warning:', err);
       }
 
-      // 2. Fetch latest release info to verify APK asset
+      // 2. Fetch latest release info to verify APK asset and dynamic version
       try {
         const relRes = await fetch(`https://api.github.com/repos/${repo}/releases/tags/latest`, {
           headers: {
@@ -216,8 +218,15 @@ async function startServer() {
         if (relRes.ok) {
           const relData = await relRes.json();
           if (relData) {
+            if (relData.name) releaseName = relData.name;
             if (relData.tag_name) tagName = relData.tag_name;
             if (relData.html_url) releaseUrl = relData.html_url;
+
+            const vm = (relData.name || '').match(/v?(\d+\.\d+\.?\d*)/i);
+            if (vm) {
+              versionName = vm[0].startsWith('v') ? vm[0] : 'v' + vm[0];
+            }
+
             if (Array.isArray(relData.assets)) {
               const apkAsset = relData.assets.find((a: any) =>
                 a.name && (a.name.endsWith('.apk') || a.name === 'app-debug.apk')
@@ -236,8 +245,14 @@ async function startServer() {
         success: true,
         repo,
         latestCommit,
+        versionName,
+        releaseName,
+        latestVersion: versionName,
+        currentVersion: versionName,
         latestRelease: {
           tagName,
+          releaseName,
+          versionName,
           apkDownloadUrl,
           releaseUrl,
         },
@@ -2905,6 +2920,110 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
     return clean;
   }
 
+  // Helper: Enriches news items with real background context & educational clarity
+  // Ensures readers clearly understand WHAT happened, WHY it happened (સંદર્ભ), instead of bare raw headlines
+  async function enrichNewsItemsWithContext(rawItems: any[]): Promise<any[]> {
+    if (!rawItems || rawItems.length === 0) return rawItems;
+
+    // 1. Try AI-powered contextualization using Gemini if API key is present
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      try {
+        const ai = new GoogleGenAI({
+          apiKey,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build',
+            },
+          },
+        });
+
+        const prompt = `તમે શાળાઓ માટેના અનુભવી ગુજરાતી શૈક્ષણિક પત્રકાર છો.
+નીચે આપેલા ૧૦ સમાચાર બુલેટિનના મુદ્દાઓ માટે દરેક મુદ્દામાં સ્પષ્ટ સંદર્ભ (Context) અને કારણ (Why it happened) ઉમેરીને સમૃદ્ધ કરો.
+
+વાંચનારને સ્પષ્ટ ખબર પડવી જોઈએ કે:
+૧. વાસ્તવમાં શું બન્યું? (What happened?)
+૨. તે શા માટે બન્યું? પૃષ્ઠભૂમિ, સરકારી યોજના કે કારણ શું છે? (દા.ત. જો હૃદયની સર્જરી માટે આવકનો દાખલો માંગ્યો હોય તો સ્પષ્ટ સમજાવો કે સરકારની મા અમૃતમ/PMJAY યોજના હેઠળ નિઃશુલ્ક સારવાર મેળવવા માટે ચોક્કસ આવક મર્યાદાનું પ્રમાણપત્ર નિયમ મુજબ અનિવાર્ય હોવાથી આ દાખલો કઢાવવો પડ્યો હતો).
+૩. સીધી સીધી માત્ર હેડલાઇન ફરીથી છાપી નાખવી નહીં. દરેક મુદ્દામાં ૨ થી ૩ સ્પષ્ટ અને સરળ ગુજરાતી વાક્યોમાં પૂરો સંદર્ભ આપો.
+
+ઇનપુટ સમાચાર મુદ્દાઓ:
+${JSON.stringify(rawItems.map(it => ({ id: it.id, headline: it.headline, summary: it.summary, category: it.category })), null, 2)}
+
+Return strictly a JSON array with same length where each object has:
+- "id": string (match input id)
+- "headline": string (clear, well-formed Gujarati headline)
+- "summary": string (clear 2-3 sentence Gujarati explanation with full why/context, no dangling sentence)
+- "impact": string (1 educational sentence for students)
+`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+          },
+        });
+
+        if (response.text) {
+          const parsed = JSON.parse(response.text);
+          if (Array.isArray(parsed) && parsed.length === rawItems.length) {
+            return rawItems.map((orig, idx) => {
+              const enriched = parsed[idx];
+              return {
+                ...orig,
+                headline: enriched.headline || orig.headline,
+                summary: enriched.summary || orig.summary,
+                impact: enriched.impact || orig.impact,
+              };
+            });
+          }
+        }
+      } catch (aiErr) {
+        console.warn('[NewsContext] Gemini enhancement warning, falling back to rule-based context:', aiErr);
+      }
+    }
+
+    // 2. Deterministic Rule-Based Context Enhancer
+    return rawItems.map((it) => {
+      const headline = it.headline || '';
+      let summary = it.summary || '';
+      const impact = it.impact || '';
+
+      // Clean off trailing source tag if present in summary to inspect core content
+      const cleanSummaryText = summary.replace(/\s*\(સ્ત્રોત:.*?\)\s*$/, '').trim();
+      const isTooBrief = cleanSummaryText.length < 50 || cleanSummaryText === headline;
+
+      let contextAddition = '';
+      if (/હૃદય|સર્જરી|ઓપરેશન|હોસ્પિટલ|દાખલો|આવકનો દાખલો|આરોગ્ય/i.test(headline + ' ' + summary)) {
+        contextAddition = 'પ્રધાનમંત્રી જન આરોગ્ય યોજના (PMJAY/મા કાર્ડ) અને સરકારી સહાય અંતર્ગત ગરીબ અને જરૂરિયાતમંદ પરિવારોને નિઃશુલ્ક સારવાર અને જટિલ શસ્ત્રક્રિયા સહાય મેળવવા માટે નિર્ધારિત આવક મર્યાદાનું પ્રમાણપત્ર રજૂ કરવું નિયમ અનુસાર અનિવાર્ય હોવાથી આ પ્રક્રિયા હાથ ધરાઈ છે.';
+      } else if (/GSEB|બોર્ડ|પરીક્ષા|શાળા|શિક્ષણ|વિદ્યાર્થી/i.test(headline + ' ' + summary)) {
+        contextAddition = 'શિક્ષણ વિભાગ દ્વારા વિદ્યાર્થીઓને પૂરતી સુવિધા, અભ્યાસક્રમનું સમયસર પુનરાવર્તન અને પરીક્ષા પરિણામોમાં પારદર્શિતા જળવાય તે સુનિશ્ચિત કરવા માટે આ નિર્ણય જાહેર કરાયો છે.';
+      } else if (/ભરતી|નોકરી|GPSC|રોજગાર/i.test(headline + ' ' + summary)) {
+        contextAddition = 'સરકારી તંત્રમાં વહીવટી કાર્યક્ષમતા વધારવા અને લાયકાત ધરાવતા શિક્ષિત યુવાનોને પારદર્શક પદ્ધતિથી કારકિર્દીની ઉત્તમ તકો પૂરી પાડવા આ ભરતી પ્રક્રિયાનું આયોજન કરાયું છે.';
+      } else if (/કચ્છ|ધોળાવીરા|ખાવડા|ગાંધીધામ|ભુજ/i.test(headline + ' ' + summary)) {
+        contextAddition = 'કચ્છ સરહદી જિલ્લામાં ગ્રીન એનર્જી, વૈશ્વિક પર્યટન અને ઔદ્યોગિક ઇન્ફ્રાસ્ટ્રક્ચરનો વ્યાપ વધારી સ્થાનિક યુવાનોને રોજગારી અને આર્થિક સમૃદ્ધિ આપવાનો આ મુખ્ય ઉદ્દેશ છે.';
+      } else if (/ઇસરો|ISRO|અવકાશ|રોકેટ|વિજ્ઞાન/i.test(headline + ' ' + summary)) {
+        contextAddition = 'આ સંશોધન દ્વારા ભારત અવકાશ વિજ્ઞાન અને સ્પેસ ટેકનોલોજીમાં સ્વનિર્ભર બનશે તેમજ ભાવિ પેઢીના વિજ્ઞાન રસિક વિદ્યાર્થીઓ માટે નવા દરવાજા ખુલશે.';
+      }
+
+      if (contextAddition && !summary.includes(contextAddition)) {
+        if (isTooBrief) {
+          summary = `${headline} — ${contextAddition}`;
+        } else {
+          summary = `${cleanSummaryText} ${contextAddition}`;
+        }
+      }
+
+      return {
+        ...it,
+        headline,
+        summary: ensureCompleteSentence(summary, 280),
+        impact: impact || 'વિદ્યાર્થીઓ માટે વર્તમાન પ્રવાહ અને સામાન્ય જ્ઞાનની પાયાની જાણકારી.',
+      };
+    });
+  }
+
   // Helper: Fetch real-time live articles directly from Divya Bhaskar (દિવ્ય ભાસ્કર)
   async function fetchLiveDivyaBhaskarNews(): Promise<Array<{ headline: string; summary: string; source: string; tag?: string; pubDate?: string }>> {
     const urls = [
@@ -3272,7 +3391,10 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
         }
       }
 
-      if (items.length >= 8) {
+      // Enrich all news items with educational context & why/how background
+      const enrichedItems = await enrichNewsItemsWithContext(items);
+
+      if (enrichedItems.length >= 8) {
         const bulletin = {
           id: dateKey,
           editionDate: formatServerGujaratiDate(editionDate),
@@ -3280,7 +3402,7 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
           cycleTime: 'સવારે ૫:૦૦ વાગ્યાની તાજી આવૃત્તિ (દિવ્ય ભાસ્કર & લાઈવ)',
           nextCycleTime: 'આવતીકાલે સવારે ૫:૦૦ વાગ્યે',
           nextUpdateTimeTimestamp: nextUpdate.getTime(),
-          items,
+          items: enrichedItems,
           morningPrayerShloka: 'સર્વેભવન્તુ સુખિનઃ સર્વે સન્તુ નિરામયાઃ । સર્વે ભદ્રાણિ પશ્યન્તુ મા કશ્ચિદ્ દુઃખભાગ્ભવેત્ ॥',
           isLiveNews: true,
           updatedAt: new Date().toISOString(),
@@ -3370,7 +3492,13 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
 
       const todayStr = new Date().toLocaleDateString('gu-IN');
       const prompt = `You are the chief Gujarati educational news editor for secondary and higher secondary schools (Classes 9 to 12).
-Generate exactly 10 short, punchy, inspiring educational news points in pure, natural Gujarati for date: ${todayStr}.
+Generate exactly 10 comprehensive, educational, inspiring news items in pure, natural Gujarati for date: ${todayStr}.
+
+CRITICAL INSTRUCTIONS FOR CONTEXT & CLARITY:
+- For EVERY news item, write a clear, informative summary (૨ થી ૩ સ્પષ્ટ વાક્યો) providing full context (સંદર્ભ) and explaining WHY and WHAT happened.
+- The reader must clearly understand the background reason, government scheme/policy, or purpose behind the news (દા.ત. જો કોઈ સહાય, દાખલો, યોજના કે સર્જરી હોય તો શા માટે દાખલો કઢાવવો પડ્યો કે શું નિયમ છે તે સ્પષ્ટ લખો જેથી વાંચનારને પૂરી સમજ પડે).
+- DO NOT just write bare headlines as summaries. Every summary must explain: શું બન્યું, શા માટે બન્યું, અને તેનો શૈક્ષણિક/સામાજિક હેતુ શું છે.
+
 Categories to include:
 1. કચ્છ વિશેષ (2 items): Kutch ports, Dholavira, Khavda renewable energy, handicrafts, wildlife.
 2. ગુજરાત સમાચાર (2 items): GIFT city, schools, industries, environment, agriculture.
@@ -3385,7 +3513,7 @@ Format: Return strictly a valid JSON array of 10 objects:
     "category": "kutch" | "gujarat" | "india" | "world" | "science_education" | "sports",
     "categoryLabel": string (in Gujarati),
     "headline": string (short punchy Gujarati headline),
-    "summary": string (short 1-2 lines explanation in Gujarati)
+    "summary": string (clear 2-3 sentence Gujarati explanation with full why/context)
   }
 ]`;
 

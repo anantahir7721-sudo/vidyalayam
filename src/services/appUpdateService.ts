@@ -21,7 +21,18 @@ export interface GitHubUpdateInfo {
 
 export const DEFAULT_REPO = 'anantahir7721-sudo/vidyalayam';
 export const APP_BASELINE_SHA = '73f7acde8925825ad4da87f7991ae1a102f88f28';
-export const APP_BASELINE_VERSION = '1.0.45';
+export const APP_BASELINE_VERSION = '1.0.50';
+
+export function getAppVersion(): string {
+  try {
+    const ghVer = localStorage.getItem('vidyalayam_github_version');
+    if (ghVer && ghVer.trim()) {
+      const v = ghVer.trim();
+      return v.startsWith('v') ? v : `v${v}`;
+    }
+  } catch {}
+  return `v${APP_BASELINE_VERSION}`;
+}
 
 export function getTargetGitHubRepo(): string {
   try {
@@ -81,6 +92,10 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
       });
       if (serverRes.ok) {
         const json = await serverRes.json();
+        if (json.versionName || json.latestVersion) {
+          const v = json.versionName || json.latestVersion;
+          localStorage.setItem('vidyalayam_github_version', v);
+        }
         if (json.latestCommit) {
           commitData = json.latestCommit;
           if (json.apkDownloadUrl) apkDownloadUrl = json.apkDownloadUrl;
@@ -143,10 +158,11 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
         localStorage.setItem(`vidyalayam_last_known_sha_${repo}`, remoteSha);
       }
 
+      const liveVer = getAppVersion();
       return {
         updateAvailable: isNewer && !isDismissed,
-        currentVersion: currentAppSha ? currentAppSha.slice(0, 7) : APP_BASELINE_VERSION,
-        latestVersion: cleanSha,
+        currentVersion: liveVer,
+        latestVersion: isNewer ? cleanSha : liveVer,
         latestCommitSha: remoteSha,
         latestCommitMessage: commitData.message,
         latestCommitDate: commitData.date,
@@ -160,9 +176,11 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
     console.warn('[AppUpdateService] Check failed:', err);
   }
 
+  const liveVer = getAppVersion();
   return {
     updateAvailable: false,
-    currentVersion: currentAppSha ? currentAppSha.slice(0, 7) : APP_BASELINE_VERSION,
+    currentVersion: liveVer,
+    latestVersion: liveVer,
     repo,
   };
 }

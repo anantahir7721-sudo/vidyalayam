@@ -520,7 +520,8 @@ public class MainActivity extends BridgeActivity {
                             }
                         });
 
-                        mPrintWebView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
+                        mPrintWebView.layout(0, 0, 794, 1120);
+                        mPrintWebView.loadDataWithBaseURL("https://localhost", html, "text/html", "UTF-8", null);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

@@ -266,25 +266,6 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleSharePdfWhatsApp}
-              disabled={isGeneratingPdf}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#25D366] hover:bg-[#20ba59] active:scale-[0.98] text-white flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-emerald-900/40"
-              title="પ્રશ્નોત્તરીની PDF વોટ્સએપ ગ્રૂપમાં શેર કરો"
-            >
-              {isGeneratingPdf ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>PDF બની રહી છે...</span>
-                </>
-              ) : (
-                <>
-                  <WhatsAppIcon className="w-4 h-4 text-white" />
-                  <span>WhatsApp PDF શેર</span>
-                </>
-              )}
-            </button>
 
             {/* Study Mode vs Test Mode */}
             <div className="flex items-center bg-black/40 border border-white/20 rounded-xl p-1 text-xs">

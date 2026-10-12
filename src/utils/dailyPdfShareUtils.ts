@@ -46,6 +46,15 @@ const HTML2CANVAS_PDF_OPTIONS = {
   height: 1120,
   windowWidth: 794,
   windowHeight: 1120,
+  onclone: (clonedDoc: Document) => {
+    const el = clonedDoc.getElementById('vidyalayam_pdf_render_container');
+    if (el) {
+      el.style.position = 'absolute';
+      el.style.top = '0px';
+      el.style.left = '0px';
+      el.style.margin = '0px';
+    }
+  },
 };
 
 /**
@@ -105,6 +114,7 @@ export async function shareDailyNewsAsPdf(
 
   // Standard A4 dimensions at 96 DPI: 794px width x 1120px height
   const container = document.createElement('div');
+  container.id = 'vidyalayam_pdf_render_container';
   container.style.position = 'fixed';
   container.style.left = '0';
   container.style.top = '0';
@@ -118,12 +128,14 @@ export async function shareDailyNewsAsPdf(
   container.style.color = '#0f172a';
   container.style.fontFamily = GUJARATI_FONT_FAMILY;
   container.style.letterSpacing = '0px';
-  container.style.lineHeight = '1.35';
+  container.style.lineHeight = '1.3';
   container.style.padding = '18px 22px';
   container.style.boxSizing = 'border-box';
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
   container.style.justifyContent = 'space-between';
+  container.style.textRendering = 'geometricPrecision';
+  (container.style as any).webkitFontSmoothing = 'antialiased';
 
   container.innerHTML = `
     <div style="border: 2px solid #9d512d; border-radius: 10px; padding: 14px 18px; background: #ffffff; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
@@ -168,15 +180,15 @@ export async function shareDailyNewsAsPdf(
           .slice(0, 10)
           .map((item, idx) => {
             return `
-            <div style="padding: 5px 10px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; display: flex; align-items: flex-start; gap: 10px; min-height: 48px;">
-              <span style="font-size: 11px; font-weight: 800; background: #9d512d; color: #ffffff; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 6px; flex-shrink: 0; display: inline-block; vertical-align: top; margin-top: 1px; font-family: ${GUJARATI_FONT_FAMILY};">
+            <div style="padding: 5px 10px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; min-height: 48px;">
+              <span style="font-size: 11px; font-weight: 800; background: #9d512d; color: #ffffff; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; flex-shrink: 0; line-height: 1; font-family: ${GUJARATI_FONT_FAMILY};">
                 ${toGujaratiDigits(idx + 1)}
               </span>
-              <div style="flex: 1; min-width: 0; padding-top: 1px;">
-                <div style="font-size: 11.5px; font-weight: 700; color: #0f172a; line-height: 1.4; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 11.5px; font-weight: 700; color: #0f172a; line-height: 1.32; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
                   ${item.headline}
                 </div>
-                <div style="font-size: 10px; color: #475569; line-height: 1.38; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
+                <div style="font-size: 10px; color: #475569; line-height: 1.32; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
                   ${item.summary}
                 </div>
               </div>
@@ -291,6 +303,7 @@ export async function shareDailyJanvaJevuAsPdf(
 
   // Standard A4 dimensions at 96 DPI: 794px width x 1120px height
   const container = document.createElement('div');
+  container.id = 'vidyalayam_pdf_render_container';
   container.style.position = 'fixed';
   container.style.left = '0';
   container.style.top = '0';
@@ -304,12 +317,14 @@ export async function shareDailyJanvaJevuAsPdf(
   container.style.color = '#0f172a';
   container.style.fontFamily = GUJARATI_FONT_FAMILY;
   container.style.letterSpacing = '0px';
-  container.style.lineHeight = '1.35';
+  container.style.lineHeight = '1.3';
   container.style.padding = '18px 22px';
   container.style.boxSizing = 'border-box';
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
   container.style.justifyContent = 'space-between';
+  container.style.textRendering = 'geometricPrecision';
+  (container.style as any).webkitFontSmoothing = 'antialiased';
 
   const suvicharText =
     bulletin.suvichar ||
@@ -321,12 +336,12 @@ export async function shareDailyJanvaJevuAsPdf(
         const idx = startIdx + i;
         const singleWordAnswer = cleanOneWord(q.answer);
         return `
-        <div style="padding: 5px 8px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 7px; box-sizing: border-box; display: flex; align-items: flex-start; gap: 8px; min-height: 39px;">
-          <span style="font-size: 10px; font-weight: 800; background: #1e293b; color: #ffffff; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 5px; flex-shrink: 0; display: inline-block; vertical-align: top; margin-top: 1px; font-family: ${GUJARATI_FONT_FAMILY};">
+        <div style="padding: 5px 8px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 7px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; min-height: 39px;">
+          <span style="font-size: 10px; font-weight: 800; background: #1e293b; color: #ffffff; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 5px; flex-shrink: 0; line-height: 1; font-family: ${GUJARATI_FONT_FAMILY};">
             ${toGujaratiDigits(idx + 1)}
           </span>
-          <div style="flex: 1; min-width: 0; padding-top: 1px;">
-            <div style="font-size: 10.5px; font-weight: 700; color: #0f172a; line-height: 1.36; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 10.5px; font-weight: 700; color: #0f172a; line-height: 1.32; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
               ${q.question}
             </div>
             <div>
@@ -749,6 +764,7 @@ export async function shareDailyInterestingFactsAsPdf(
   await waitForFontsToRender();
 
   const container = document.createElement('div');
+  container.id = 'vidyalayam_pdf_render_container';
   container.style.position = 'fixed';
   container.style.left = '0';
   container.style.top = '0';
@@ -766,6 +782,8 @@ export async function shareDailyInterestingFactsAsPdf(
   container.style.flexDirection = 'column';
   container.style.justifyContent = 'space-between';
   container.style.overflow = 'hidden';
+  container.style.textRendering = 'geometricPrecision';
+  (container.style as any).webkitFontSmoothing = 'antialiased';
 
   const factsHtml = bulletin.facts
     .slice(0, 12)
@@ -773,7 +791,7 @@ export async function shareDailyInterestingFactsAsPdf(
       <div style="background:#f8fafc; border:1px solid #e2e8f0; border-left:4px solid #f59e0b; border-radius:8px; padding:6px 9px; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
           <div style="display:flex; align-items:center; gap:6px;">
-            <span style="background:#fef3c7; color:#92400e; font-size:8pt; font-weight:800; border-radius:4px; width:18px; height:18px; line-height:18px; text-align:center; display:inline-block; vertical-align:middle; font-family:${GUJARATI_FONT_FAMILY};">
+            <span style="background:#fef3c7; color:#92400e; font-size:8pt; font-weight:800; border-radius:4px; width:18px; height:18px; display:flex; align-items:center; justify-content:center; text-align:center; line-height:1; font-family:${GUJARATI_FONT_FAMILY};">
               ${toGujaratiDigits(fact.factNumber)}
             </span>
             <span style="font-size:8.5pt; font-weight:800; color:#0f172a; line-height:1.25; font-family:${GUJARATI_FONT_FAMILY};">${fact.title}</span>

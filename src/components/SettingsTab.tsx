@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useTheme, ThemeMode } from '../context/ThemeContext';
 import { School } from '../types';
-import { GitHubUpdateInfo, applyAppUpdate } from '../services/appUpdateService';
+import { GitHubUpdateInfo, applyAppUpdate, getAppVersion } from '../services/appUpdateService';
 import { VidyalayamLogo } from './VidyalayamLogo';
 import { haptic } from '../utils/haptics';
 import { useDeviceType } from '../utils/useDeviceType';
@@ -297,12 +297,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   વિદ્યાલયમ એપ અપ-ટુ-ડેટ છે
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  આપ લેટેસ્ટ વર્ઝન (v1.0.45) નો ઉપયોગ કરી રહ્યા છો.
+                  આપ લેટેસ્ટ વર્ઝન ({updateInfo?.currentVersion || getAppVersion()}) નો ઉપયોગ કરી રહ્યા છો.
                 </div>
               </div>
             </div>
             <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-              v1.0.45
+              {updateInfo?.currentVersion || getAppVersion()}
             </span>
           </div>
         )}

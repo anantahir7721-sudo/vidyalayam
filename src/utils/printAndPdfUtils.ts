@@ -60,7 +60,7 @@ export async function blobToBase64(blob: Blob): Promise<string> {
 export function printHtmlDocument(html: string, jobTitle: string = 'Vidyalayam_Document'): void {
   const cleanTitle = jobTitle.trim().replace(/[\\/:*?"<>|]/g, '_') || 'Vidyalayam_Document';
 
-  // 1. Android APK Native Path
+  // 1. Android APK Native Path (Native PrintManager sheet)
   if (isAndroidNativeApp()) {
     try {
       window.AndroidBridge!.printHtml(html, cleanTitle);
@@ -70,70 +70,75 @@ export function printHtmlDocument(html: string, jobTitle: string = 'Vidyalayam_D
     }
   }
 
-  // 2. Modern In-Page Iframe Printing (Zero Pop-Up Blocking in Web/Desktop/Mobile Chrome)
+  // 2. High-Reliability In-Page Print Architecture:
+  // Mounts a dedicated print portal with @media print CSS rules and calls window.print().
+  // This is NEVER suppressed by browser popup blockers or zero-pixel iframe security policies.
   try {
-    const existingFrame = document.getElementById('vidyalayam_print_iframe');
-    if (existingFrame && document.body.contains(existingFrame)) {
-      document.body.removeChild(existingFrame);
+    let printContainer = document.getElementById('vidyalayam_print_portal');
+    if (!printContainer) {
+      printContainer = document.createElement('div');
+      printContainer.id = 'vidyalayam_print_portal';
+      document.body.appendChild(printContainer);
     }
 
-    const iframe = document.createElement('iframe');
-    iframe.id = 'vidyalayam_print_iframe';
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.style.opacity = '0';
-    iframe.style.pointerEvents = 'none';
-
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow?.document || iframe.contentDocument;
-    if (doc) {
-      doc.open();
-      doc.write(html);
-      doc.close();
-
-      const triggerPrint = () => {
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-        } catch (e) {
-          console.warn('[printHtmlDocument] Iframe print call error:', e);
+    let printStyle = document.getElementById('vidyalayam_print_stylesheet') as HTMLStyleElement | null;
+    if (!printStyle) {
+      printStyle = document.createElement('style');
+      printStyle.id = 'vidyalayam_print_stylesheet';
+      printStyle.textContent = `
+        @media screen {
+          #vidyalayam_print_portal {
+            display: none !important;
+            visibility: hidden !important;
+          }
         }
-        // Retain iframe for 30s so print spooler finishes reading it
-        setTimeout(() => {
-          try {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          } catch (e) {}
-        }, 30000);
-      };
-
-      // Ensure Gujarati app fonts are fully loaded before showing print dialog / saving PDF
-      if (iframe.contentWindow) {
-        if (doc.fonts && typeof doc.fonts.ready?.then === 'function') {
-          doc.fonts.ready
-            .then(() => {
-              setTimeout(triggerPrint, 350);
-            })
-            .catch(() => {
-              setTimeout(triggerPrint, 600);
-            });
-        } else {
-          setTimeout(triggerPrint, 600);
+        @media print {
+          body > *:not(#vidyalayam_print_portal) {
+            display: none !important;
+            visibility: hidden !important;
+          }
+          #vidyalayam_print_portal, #vidyalayam_print_portal * {
+            display: block !important;
+            visibility: visible !important;
+          }
+          #vidyalayam_print_portal {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            z-index: 9999999 !important;
+          }
+          @page {
+            size: A4 portrait;
+            margin: 8mm;
+          }
         }
+      `;
+      document.head.appendChild(printStyle);
+    }
+
+    printContainer.innerHTML = html;
+
+    const cleanup = () => {
+      if (printContainer && document.body.contains(printContainer)) {
+        printContainer.innerHTML = '';
       }
-      return;
-    }
-  } catch (iframeErr) {
-    console.warn('[printHtmlDocument] Iframe method failed, falling back to popup:', iframeErr);
+    };
+
+    window.addEventListener('afterprint', cleanup, { once: true });
+    setTimeout(cleanup, 25000);
+
+    // Call window.print() directly inside user interaction turn
+    window.print();
+    return;
+  } catch (directPrintErr) {
+    console.warn('[printHtmlDocument] Direct print error, falling back to popup/iframe:', directPrintErr);
   }
 
-  // 3. Fallback: Window Popup (if iframe blocked by strict sandboxing)
+  // 3. Fallback: Window Popup / Iframe with visible bounds
   try {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -141,17 +146,11 @@ export function printHtmlDocument(html: string, jobTitle: string = 'Vidyalayam_D
       printWindow.document.write(html);
       printWindow.document.close();
       printWindow.focus();
-      if (printWindow.document.fonts && typeof printWindow.document.fonts.ready?.then === 'function') {
-        printWindow.document.fonts.ready
-          .then(() => setTimeout(() => { try { printWindow.print(); } catch (e) {} }, 350))
-          .catch(() => setTimeout(() => { try { printWindow.print(); } catch (e) {} }, 600));
-      } else {
-        setTimeout(() => {
-          try {
-            printWindow.print();
-          } catch (e) {}
-        }, 600);
-      }
+      setTimeout(() => {
+        try {
+          printWindow.print();
+        } catch (e) {}
+      }, 300);
     }
   } catch (popErr) {
     console.error('[printHtmlDocument] All print methods failed:', popErr);
