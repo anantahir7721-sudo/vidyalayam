@@ -881,6 +881,7 @@ export async function updateSchoolProfile(
     dailyJanvaJevuEnabled?: boolean;
     dailyAbhivyaktiEnabled?: boolean;
     dailySuvicharEnabled?: boolean;
+    dailyPresentationEnabled?: boolean;
   }
 ): Promise<void> {
   const schoolRef = doc(db, 'schools', schoolId);

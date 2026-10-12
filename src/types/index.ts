@@ -32,6 +32,7 @@ export interface School {
   dailyJanvaJevuEnabled?: boolean; // Toggle for students to see 1 PM Daily Interesting Facts (12 Facts)
   dailyAbhivyaktiEnabled?: boolean; // Toggle for students to see Daily Abhivyakti (Assembly Ideas & AI)
   dailySuvicharEnabled?: boolean; // Toggle for students to see Daily Suvichar
+  dailyPresentationEnabled?: boolean; // Toggle for Presentation mode
 }
 
 export type NewsCategory = 'kutch' | 'gujarat' | 'india' | 'world' | 'science_education' | 'sports';

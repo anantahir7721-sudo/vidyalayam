@@ -68,6 +68,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const [janvaJevuEnabled, setJanvaJevuEnabled] = React.useState(school.dailyJanvaJevuEnabled !== false);
   const [abhivyaktiEnabled, setAbhivyaktiEnabled] = React.useState(school.dailyAbhivyaktiEnabled !== false);
   const [suvicharEnabled, setSuvicharEnabled] = React.useState(school.dailySuvicharEnabled !== false);
+  const [presentationEnabled, setPresentationEnabled] = React.useState(
+    school.dailyPresentationEnabled !== false && (() => {
+      try {
+        return localStorage.getItem('vidyalayam_presentation_enabled') !== 'false';
+      } catch {
+        return true;
+      }
+    })()
+  );
 
   React.useEffect(() => {
     setNewsEnabled(school.dailyNewsEnabled !== false);
@@ -75,12 +84,22 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     setJanvaJevuEnabled(school.dailyJanvaJevuEnabled !== false);
     setAbhivyaktiEnabled(school.dailyAbhivyaktiEnabled !== false);
     setSuvicharEnabled(school.dailySuvicharEnabled !== false);
+    setPresentationEnabled(
+      school.dailyPresentationEnabled !== false && (() => {
+        try {
+          return localStorage.getItem('vidyalayam_presentation_enabled') !== 'false';
+        } catch {
+          return true;
+        }
+      })()
+    );
   }, [
     school.dailyNewsEnabled,
     school.dailyPrashnotariEnabled,
     school.dailyJanvaJevuEnabled,
     school.dailyAbhivyaktiEnabled,
     school.dailySuvicharEnabled,
+    school.dailyPresentationEnabled,
   ]);
 
   const saveTogglesToStorage = (
@@ -88,7 +107,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     prash: boolean,
     janva: boolean,
     abhi: boolean,
-    suv: boolean
+    suv: boolean,
+    pres: boolean = presentationEnabled
   ) => {
     try {
       localStorage.setItem(
@@ -99,9 +119,11 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           dailyJanvaJevuEnabled: janva,
           dailyAbhivyaktiEnabled: abhi,
           dailySuvicharEnabled: suv,
+          dailyPresentationEnabled: pres,
           updatedAt: Date.now(),
         })
       );
+      localStorage.setItem('vidyalayam_presentation_enabled', String(pres));
     } catch (e) {}
   };
 
@@ -163,7 +185,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   const handleToggleSuvichar = async (nextVal: boolean) => {
     setSuvicharEnabled(nextVal);
-    saveTogglesToStorage(newsEnabled, prashnotariEnabled, janvaJevuEnabled, abhivyaktiEnabled, nextVal);
+    saveTogglesToStorage(newsEnabled, prashnotariEnabled, janvaJevuEnabled, abhivyaktiEnabled, nextVal, presentationEnabled);
     try {
       await updateSchoolProfile(school.id, { dailySuvicharEnabled: nextVal });
       if (onSchoolUpdated) {
@@ -172,6 +194,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     } catch (e) {
       console.error('Failed to toggle suvichar:', e);
       setSuvicharEnabled(!nextVal);
+    }
+  };
+
+  const handleTogglePresentation = async (nextVal: boolean) => {
+    setPresentationEnabled(nextVal);
+    saveTogglesToStorage(newsEnabled, prashnotariEnabled, janvaJevuEnabled, abhivyaktiEnabled, suvicharEnabled, nextVal);
+    try {
+      await updateSchoolProfile(school.id, { dailyPresentationEnabled: nextVal });
+      if (onSchoolUpdated) {
+        onSchoolUpdated({ dailyPresentationEnabled: nextVal });
+      }
+    } catch (e) {
+      console.error('Failed to toggle presentation:', e);
+      setPresentationEnabled(!nextVal);
     }
   };
 
@@ -801,6 +837,32 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   )}
                 </button>
               </div>
+
+              <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-white/5 px-2.5 py-1 rounded-xl border border-stone-200 dark:border-white/10">
+                <span className="text-stone-700 dark:text-stone-300 font-semibold">પ્રેઝન્ટેશન:</span>
+                <button
+                  type="button"
+                  onClick={() => handleTogglePresentation(!presentationEnabled)}
+                  className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                    presentationEnabled
+                      ? 'bg-teal-100 text-teal-900 border-teal-300 dark:bg-teal-500/20 dark:text-teal-300 dark:border-teal-500/40 shadow-xs'
+                      : 'bg-stone-200 text-stone-800 border-stone-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/40'
+                  }`}
+                  title="વિદ્યાર્થી પ્રેઝન્ટેશન & સ્ક્રિપ્ટ મોડ ચાલુ/બંધ કરો"
+                >
+                  {presentationEnabled ? (
+                    <>
+                      <ToggleRight className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
+                      <span>ચાલુ</span>
+                    </>
+                  ) : (
+                    <>
+                      <ToggleLeft className="w-3.5 h-3.5 text-stone-600 dark:text-rose-400" />
+                      <span>બંધ</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1040,7 +1102,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
       {/* Daily Knowledge & News Modal for School Assembly / Preview */}
       <DailyKnowledgeModal
-        school={school}
+        school={{ ...school, dailyPresentationEnabled: presentationEnabled }}
         isOpen={knowledgeModalOpen}
         onClose={() => setKnowledgeModalOpen(false)}
         initialTab={modalInitialTab}

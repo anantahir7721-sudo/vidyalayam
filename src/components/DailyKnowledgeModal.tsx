@@ -34,28 +34,14 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
     'news' | 'prashnotari' | 'janva_jevu' | 'abhivyakti' | 'suvichar' | 'presentation'
   >(initialTab);
 
-  // Presentation ON/OFF state (persisted in localStorage)
-  const [isPresentationEnabled, setIsPresentationEnabled] = useState<boolean>(() => {
+  // Presentation ON/OFF state (driven by school profile toggle & storage)
+  const isPresentationEnabled = school.dailyPresentationEnabled !== false && (() => {
     try {
-      const saved = localStorage.getItem('vidyalayam_presentation_enabled');
-      return saved !== 'false';
+      return localStorage.getItem('vidyalayam_presentation_enabled') !== 'false';
     } catch {
       return true;
     }
-  });
-
-  const togglePresentation = () => {
-    setIsPresentationEnabled((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem('vidyalayam_presentation_enabled', String(next));
-      } catch {}
-      if (!next && activeTab === 'presentation') {
-        setActiveTab('news');
-      }
-      return next;
-    });
-  };
+  })();
 
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -202,21 +188,6 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
               </button>
             )}
           </div>
-
-          {/* Presentation ON/OFF Switch alongside other buttons */}
-          <button
-            type="button"
-            onClick={togglePresentation}
-            className={`px-2.5 py-1 mb-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shrink-0 whitespace-nowrap ${
-              isPresentationEnabled
-                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-xs'
-                : 'bg-white dark:bg-white/10 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-white/15'
-            }`}
-            title="પ્રેઝન્ટેશન મોડ ચાલુ અથવા બંધ કરો"
-          >
-            <Presentation className="w-3.5 h-3.5" />
-            <span>પ્રેઝન્ટેશન: {isPresentationEnabled ? 'ચાલુ (ON)' : 'બંધ (OFF)'}</span>
-          </button>
         </div>
 
         {/* Scrollable Content Body */}
@@ -272,7 +243,6 @@ export const DailyKnowledgeModal: React.FC<DailyKnowledgeModalProps> = ({
               diseCode={school.diseCode}
               district={school.district}
               isSchoolView
-              onToggleEnabled={togglePresentation}
             />
           )}
         </div>
