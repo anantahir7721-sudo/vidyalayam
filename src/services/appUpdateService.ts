@@ -19,7 +19,7 @@ export interface GitHubUpdateInfo {
   releaseUrl?: string;
 }
 
-export const DEFAULT_REPO = 'anantahir7721-sudo/vidyalayam';
+export const DEFAULT_REPO = 'anantahir7721-sudo/Vidyalayam-releases';
 export const APP_BASELINE_SHA = '596e933ad076b70029967187302aab79c2d136aa';
 export const APP_BASELINE_VERSION = '1.0.54';
 
@@ -83,7 +83,7 @@ export function getAppVersion(): string {
 export function getTargetGitHubRepo(): string {
   try {
     const stored = localStorage.getItem('vidyalayam_github_repo');
-    if (!stored || stored === 'anantahir7721/vidyalayam') {
+    if (!stored || stored === 'anantahir7721/vidyalayam' || stored === 'anantahir7721-sudo/vidyalayam') {
       localStorage.setItem('vidyalayam_github_repo', DEFAULT_REPO);
       return DEFAULT_REPO;
     }

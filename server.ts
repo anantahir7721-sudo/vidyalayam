@@ -167,7 +167,10 @@ async function startServer() {
 
   app.get('/api/app-update-check', async (req: Request, res: Response) => {
     try {
-      const repo = String(req.query.repo || 'anantahir7721-sudo/vidyalayam').trim();
+      let repo = String(req.query.repo || 'anantahir7721-sudo/Vidyalayam-releases').trim();
+      if (!repo || repo === 'anantahir7721/vidyalayam' || repo === 'anantahir7721-sudo/vidyalayam') {
+        repo = 'anantahir7721-sudo/Vidyalayam-releases';
+      }
       const now = Date.now();
       const cached = appUpdateCache.get(repo);
       if (cached && now - cached.timestamp < 30000) {
@@ -178,8 +181,8 @@ async function startServer() {
       let apkDownloadUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
       let releaseUrl = `https://github.com/${repo}/releases/latest`;
       let tagName = 'latest';
-      let releaseName = 'Vidyalayam v1.0.53 (Latest)';
-      let versionName = 'v1.0.53';
+      let releaseName = 'Vidyalayam v1.0.54 (Latest)';
+      let versionName = 'v1.0.54';
       let releaseCommitSha = '';
 
       // 1. Fetch latest commit
@@ -286,7 +289,10 @@ async function startServer() {
   // Direct APK streaming proxy to allow in-app APK downloads with progress & avoid CORS
   app.get('/api/download-apk', async (req: Request, res: Response) => {
     try {
-      const repo = String(req.query.repo || 'anantahir7721-sudo/vidyalayam').trim();
+      let repo = String(req.query.repo || 'anantahir7721-sudo/Vidyalayam-releases').trim();
+      if (!repo || repo === 'anantahir7721/vidyalayam' || repo === 'anantahir7721-sudo/vidyalayam') {
+        repo = 'anantahir7721-sudo/Vidyalayam-releases';
+      }
       const directUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
 
       const ghResponse = await fetch(directUrl, {
@@ -322,7 +328,7 @@ async function startServer() {
       }
     } catch (err: any) {
       console.error('APK download error:', err);
-      res.redirect('https://github.com/anantahir7721-sudo/vidyalayam/releases/download/latest/app-debug.apk');
+      res.redirect('https://github.com/anantahir7721-sudo/Vidyalayam-releases/releases/download/latest/app-debug.apk');
     }
   });
 
@@ -2747,73 +2753,6 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
     } catch (err: any) {
       console.error('Error in /api/send-bulk-parent-sms:', err);
       return res.status(500).json({ error: 'SMS મોકલવામાં સમસ્યા થઈ.' });
-    }
-  });
-
-  // In-memory cache for GitHub update check to prevent rate limiting (15s cache)
-  let cachedGitHubUpdate: { repo: string; timestamp: number; data: any } | null = null;
-
-  // GET /api/app-update-check: Checks GitHub repository for the latest commit or release
-  app.get('/api/app-update-check', async (req: Request, res: Response) => {
-    try {
-      let repo = String(req.query.repo || 'anantahir7721-sudo/vidyalayam').trim();
-      if (repo === 'anantahir7721/vidyalayam' || !repo) {
-        repo = 'anantahir7721-sudo/vidyalayam';
-      }
-
-      // Check cache (15 seconds)
-      const now = Date.now();
-      if (cachedGitHubUpdate && cachedGitHubUpdate.repo === repo && (now - cachedGitHubUpdate.timestamp) < 15000) {
-        return res.json(cachedGitHubUpdate.data);
-      }
-
-      const ghRes = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, {
-        headers: {
-          'User-Agent': 'Vidyalayam-App-Update-Checker',
-          Accept: 'application/vnd.github.v3+json',
-        },
-        signal: AbortSignal.timeout(6000),
-      });
-
-      if (!ghRes.ok) {
-        if (cachedGitHubUpdate && cachedGitHubUpdate.repo === repo) {
-          return res.json(cachedGitHubUpdate.data);
-        }
-        return res.status(ghRes.status).json({ error: `GitHub repo returned status ${ghRes.status}` });
-      }
-
-      const commits = await ghRes.json();
-      if (Array.isArray(commits) && commits.length > 0) {
-        const top = commits[0];
-        const responseData = {
-          success: true,
-          repo,
-          latestCommit: {
-            sha: top.sha,
-            message: top.commit?.message || '',
-            date: top.commit?.committer?.date || '',
-            author: top.commit?.author?.name || 'GitHub Developer',
-            htmlUrl: top.html_url,
-          },
-          apkDownloadUrl: `https://github.com/${repo}/releases/download/latest/app-debug.apk`,
-          releaseUrl: `https://github.com/${repo}/releases/latest`,
-        };
-
-        cachedGitHubUpdate = {
-          repo,
-          timestamp: now,
-          data: responseData,
-        };
-
-        return res.json(responseData);
-      }
-
-      return res.json({ success: false, message: 'No commits found' });
-    } catch (e: any) {
-      if (cachedGitHubUpdate) {
-        return res.json(cachedGitHubUpdate.data);
-      }
-      return res.status(500).json({ error: e.message || 'Failed to check GitHub update' });
     }
   });
 

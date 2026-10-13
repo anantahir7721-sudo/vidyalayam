@@ -72,10 +72,12 @@ jobs:
         name: Vidyalayam-APK
         path: android/app/build/outputs/apk/debug/*.apk
 
-    - name: Create or Update GitHub Release (Latest)
+    - name: Create or Update GitHub Release in Public Releases Repo
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       uses: softprops/action-gh-release@v2
       with:
+        repository: anantahir7721-sudo/Vidyalayam-releases
+        token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
         tag_name: latest
         name: "Vidyalayam v1.0.${{ github.run_number }} (Latest)"
         body: |
@@ -90,5 +92,5 @@ jobs:
         files: |
           android/app/build/outputs/apk/debug/*.apk
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
