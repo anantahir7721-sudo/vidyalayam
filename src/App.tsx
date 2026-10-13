@@ -582,7 +582,9 @@ export default function App() {
           className="flex items-center gap-2 cursor-pointer hover:opacity-90 min-w-0 flex-1 truncate"
         >
           <ArrowUpCircle className="w-4 h-4 shrink-0 text-amber-300 animate-bounce" />
-          <span className="truncate">🚀 વિદ્યાલયમ એપની નવી અપડેટ ({appUpdate.latestVersion || 'નવી'}) ઉપલબ્ધ છે!</span>
+          <span className="truncate">
+            🚀 વિદ્યાલયમ એપની નવી અપડેટ ({appUpdate.latestVersion?.startsWith('v') ? appUpdate.latestVersion : `v${appUpdate.latestVersion || 'લેટેસ્ટ'}`}) ઉપલબ્ધ છે!
+          </span>
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <button

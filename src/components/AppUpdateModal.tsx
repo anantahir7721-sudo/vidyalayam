@@ -155,7 +155,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
             </div>
             <div className="min-w-0 flex-1">
               <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
-                <span>🚀 નવી એપ અપડેટ ઉપલબ્ધ છે!</span>
+                <span>🚀 નવી એપ અપડેટ ({updateInfo.latestVersion?.startsWith('v') ? updateInfo.latestVersion : `v${updateInfo.latestVersion || 'લેટેસ્ટ'}`}) ઉપલબ્ધ છે!</span>
               </h2>
               <p className="text-xs text-emerald-100/90 mt-0.5 leading-relaxed">
                 વિદ્યાલયમ એપ્લિકેશનનું નવું અને સુધારેલું વર્ઝન ઉપલબ્ધ છે. નવી સુવિધાઓ મેળવવા માટે હમણાં જ અપડેટ કરો.

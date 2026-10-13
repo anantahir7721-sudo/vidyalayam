@@ -20,8 +20,38 @@ export interface GitHubUpdateInfo {
 }
 
 export const DEFAULT_REPO = 'anantahir7721-sudo/vidyalayam';
-export const APP_BASELINE_SHA = '73f7acde8925825ad4da87f7991ae1a102f88f28';
-export const APP_BASELINE_VERSION = '1.0.53';
+export const APP_BASELINE_SHA = '596e933ad076b70029967187302aab79c2d136aa';
+export const APP_BASELINE_VERSION = '1.0.54';
+
+/**
+ * Parses numeric version parts (e.g. "v1.0.54" -> [1, 0, 54])
+ */
+export function parseVersionParts(verStr: string): number[] {
+  if (!verStr) return [0, 0, 0];
+  const cleaned = verStr.replace(/^v/i, '').trim();
+  const parts = cleaned.split('.').map((p) => {
+    const num = parseInt(p.replace(/[^0-9]/g, ''), 10);
+    return isNaN(num) ? 0 : num;
+  });
+  while (parts.length < 3) parts.push(0);
+  return parts;
+}
+
+/**
+ * Returns true ONLY if remoteVer is strictly greater than currentVer
+ * (e.g. 1.0.55 > 1.0.54 returns true, 1.0.54 > 1.0.54 returns false)
+ */
+export function isVersionGreater(remoteVer: string, currentVer: string): boolean {
+  const r = parseVersionParts(remoteVer);
+  const c = parseVersionParts(currentVer);
+  for (let i = 0; i < Math.max(r.length, c.length); i++) {
+    const rPart = r[i] || 0;
+    const cPart = c[i] || 0;
+    if (rPart > cPart) return true;
+    if (rPart < cPart) return false;
+  }
+  return false;
+}
 
 export function getAppVersion(): string {
   try {
@@ -171,16 +201,16 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
       // The live installed version on this device
       const liveVer = getAppVersion();
 
-      // Compare versions: if live version matches latest release version (e.g. v1.0.53 === v1.0.53),
-      // or if app already installed this SHA or release commit SHA, then there is NO new update available!
-      const isSameVersion = releaseVersionName && liveVer.replace(/^v/i, '') === releaseVersionName.replace(/^v/i, '');
-      const isSameSha = currentAppSha === remoteSha || (releaseCommitSha && currentAppSha === releaseCommitSha);
-
-      const isNewer =
-        !isSameVersion &&
-        !isSameSha &&
-        Boolean(remoteSha) &&
-        (remoteSha !== APP_BASELINE_SHA || force);
+      // Check whether remote release has a strictly higher version than currently installed
+      // (e.g., if live is 1.0.54 and release is 1.0.54, isNewer is FALSE; only if release is 1.0.55+ is it TRUE)
+      let isNewer = false;
+      if (releaseVersionName) {
+        isNewer = isVersionGreater(releaseVersionName, liveVer);
+      } else {
+        // Fallback to commit SHA comparison only if version name was not available
+        const isSameSha = currentAppSha === remoteSha || (releaseCommitSha && currentAppSha === releaseCommitSha);
+        isNewer = !isSameSha && Boolean(remoteSha) && remoteSha !== APP_BASELINE_SHA;
+      }
 
       if (isNewer) {
         localStorage.setItem(`vidyalayam_last_known_sha_${repo}`, remoteSha);
