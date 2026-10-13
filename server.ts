@@ -2962,36 +2962,36 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
         cleanSummaryText = cleanSummaryText.slice(headline.length).replace(/^[:\s—–-]+/, '').trim();
       }
 
-      // Contextual addition specifically crafted for students, parents and schools
-      let contextAddition = '';
-      if (/ગંદુ પાણી|રોગચાળો|ડ્રેનેજ|મચ્છર|પાણી ભરાતા|પાણીની સમસ્યા|પીવાનું પાણી|સ્વચ્છતા/i.test(headline + ' ' + rawSummary)) {
-        contextAddition = 'ચોમાસા અને સ્થાનિક ડ્રેનેજ લાઈનમાં સર્જાયેલી સમસ્યાને કારણે રહેણાંક વિસ્તારો અને શાળાઓ નજીક પાણી ભરાઈ રહેતાં મચ્છરજન્ય રોગચાળો ફેલાવાની ભીતિ સેવાઈ રહી છે. સ્થાનિક વાલીઓ અને નાગરિકોએ પાલિકા તંત્રને સત્વરે સફાઈ અને દવાનો છંટકાવ કરવા લેખિત રજૂઆત કરી છે.';
-      } else if (/હૃદય|સર્જરી|ઓપરેશન|હોસ્પિટલ|દાખલો|આવકનો દાખલો|આરોગ્ય|સારવાર|રસી/i.test(headline + ' ' + rawSummary)) {
-        contextAddition = 'પ્રધાનમંત્રી જન આરોગ્ય યોજના (PMJAY/મા કાર્ડ) અને સરકારી સહાય અંતર્ગત ગરીબ અને જરૂરિયાતમંદ પરિવારોને નિઃશુલ્ક સારવાર અને જટિલ શસ્ત્રક્રિયા સહાય મેળવવા માટે નિર્ધારિત આવક મર્યાદાનું પ્રમાણપત્ર રજૂ કરવું નિયમ અનુસાર અનિવાર્ય હોવાથી આ પ્રક્રિયા હાથ ધરાઈ છે.';
-      } else if (/GSEB|બોર્ડ|પરીક્ષા|શાળા|શિક્ષણ|વિદ્યાર્થી|શિક્ષક|ફી|એડમિશન|ધોરણ|હોલ ટિકિટ|પ્રવેશ/i.test(headline + ' ' + rawSummary)) {
-        contextAddition = 'ગુજરાત માધ્યમિક શિક્ષણ બોર્ડ અને શિક્ષણ વિભાગ દ્વારા શાળાઓમાં પારદર્શિતા વધારવા, વિદ્યાર્થીઓના અભ્યાસનું ભારણ ઘટાડવા અને સમયસર પરીક્ષા આયોજન માટે સત્તાવાર માર્ગદર્શિકા બહાર પાડવામાં આવી છે.';
-      } else if (/સ્કોલરશિપ|શિષ્યવૃત્તિ|NMMS|જ્ઞાનસાધના|મેરિટ|પુરસ્કાર/i.test(headline + ' ' + rawSummary)) {
-        contextAddition = 'હોશિયાર અને આર્થિક રીતે નબળા વિદ્યાર્થીઓ ઉચ્ચ શિક્ષણથી વંચિત ન રહે તે હેતુથી શિષ્યવૃત્તિ યોજના અમલમાં મૂકવામાં આવી છે, જેનો લાભ લેવા નિયત તારીખ પહેલા અરજી કરવાની રહેશે.';
-      } else if (/ભરતી|નોકરી|GPSC|રોજગાર|પરીક્ષા પરિણામ|કારકિર્દી/i.test(headline + ' ' + rawSummary)) {
-        contextAddition = 'રાજ્યના યુવા ઉમેદવારોને સરકારી અને અર્ધસરકારી ક્ષેત્રોમાં પારદર્શક પદ્ધતિથી મેરિટ આધારિત રોજગારીની તકો મળે તે માટે ભરતી પ્રક્રિયાનું આયોજન હાથ ધરાયું છે.';
-      } else if (/કચ્છ|ધોળાવીરા|ખાવડા|ગાંધીધામ|ભુજ|માંડવી|મુન્દ્રા|અંજાર/i.test(headline + ' ' + rawSummary)) {
-        contextAddition = 'કચ્છ સરહદી જિલ્લામાં ગ્રીન એનર્જી પાર્ક, વૈશ્વિક પ્રવાસન અને શૈક્ષણિક માળખાના આધુનિકીકરણ થકી સ્થાનિક વિદ્યાર્થીઓ અને યુવાનો માટે નવી તકોનું સર્જન થઈ રહ્યું છે.';
-      } else if (/ઇસરો|ISRO|અવકાશ|રોકેટ|વિજ્ઞાન|ઉપગ્રહ|નાસા|ટેકનોલોજી/i.test(headline + ' ' + rawSummary)) {
-        contextAddition = 'ભારતીય વૈજ્ઞાનિકોની અથાક મહેનતથી સ્પેસ ટેકનોલોજી અને સંશોધનમાં ભારત અગ્રેસર બની રહ્યું છે, જે શાળાઓના બાળ વૈજ્ઞાનિકો માટે પ્રેરણાદાયક સિદ્ધિ છે.';
-      } else if (/રમત|ક્રિકેટ|ખેલ|મેડલ|સ્પોર્ટ્સ|વિજેતા|ટ્રોફી|ઓલિમ્પિક/i.test(headline + ' ' + rawSummary)) {
-        contextAddition = 'રાજ્ય અને રાષ્ટ્રીય સ્તરે પ્રતિભાશાળી ખેલાડીઓને પ્રોત્સાહિત કરી શાળાઓ અને ખેલ મહાકુંભ થકી યુવા પ્રતિભાઓને વૈશ્વિક મંચ માટે તૈયાર કરવામાં આવી રહી છે.';
-      } else {
-        contextAddition = 'સ્થાનિક વહીવટી તંત્ર અને સંબંધિત વિભાગ દ્વારા શૈક્ષણિક પ્રવૃત્તિઓ અને નાગરિક સુવિધાઓનું સુચારુ સંચાલન થાય તે સુનિશ્ચિત કરવા માટે જરૂરી નિર્ણયો લેવામાં આવ્યા છે.';
-      }
-
-      // If summary is too brief, not a complete explanation, or identical to headline, use rich contextual explanation
+      // If rawSummary has real content (from RSS or article description), use it!
       let finalSummary = '';
-      if (cleanSummaryText.length > 55 && !cleanSummaryText.includes(headline)) {
+      if (cleanSummaryText.length >= 25 && !cleanSummaryText.includes(headline)) {
         finalSummary = cleanSummaryText;
-      } else if (cleanSummaryText.length > 25 && !cleanSummaryText.includes(headline)) {
-        finalSummary = `${cleanSummaryText}. ${contextAddition}`;
       } else {
-        finalSummary = contextAddition;
+        // When source description is absent, synthesize a meaningful summary DIRECTLY based on the headline itself
+        // Never output a generic repetitive boilerplate!
+        if (/નવરાત્રી|ગરબા|ખેલૈયા|રિફંડ|આયોજન/i.test(headline)) {
+          finalSummary = `${headline} સંદર્ભે સ્થાનિક આયોજકો અને વહીવટી તંત્ર દ્વારા વ્યવસ્થાઓની સમીક્ષા કરવામાં આવી છે અને જરૂરી માર્ગદર્શિકા જાહેર કરાઈ છે.`;
+        } else if (/કચ્છ|ઓઇલ|ગેસ|કંપની|ઊર્જા/i.test(headline)) {
+          finalSummary = `કચ્છ જિલ્લામાં ઔદ્યોગિક અને ઊર્જા ક્ષેત્રે નવી કંપનીના આગમન સાથે સ્થાનિક રોજગારી અને માળખાકીય વિકાસને વેગ મળશે.`;
+        } else if (/રોડ|રસ્તો|વાહનો|ટ્રાફિક|અકસ્માત/i.test(headline)) {
+          finalSummary = `${headline} મુદ્દે માર્ગ અને મકાન વિભાગ તેમજ સ્થાનિક પોલીસ દ્વારા સુરક્ષા અને ટ્રાફિક નિયમન માટે જરૂરી પગલાં લેવાયા છે.`;
+        } else if (/પાવાગઢ|મંદિર|દર્શન|યાત્રાધામ|યાત્રાળુ/i.test(headline)) {
+          finalSummary = `${headline} અંગે મંદિર ટ્રસ્ટ અને પોલીસ તંત્ર દ્વારા ભક્તોની સુવિધા અને સુરક્ષા માટે વિશેષ વ્યવસ્થા ગોઠવવામાં આવી છે.`;
+        } else if (/વેપારી|UPI|MDR|બેંક|પેમેન્ટ|ચાર્જ/i.test(headline)) {
+          finalSummary = `${headline} અંગે નાણાકીય નિયમો અને ડિજિટલ પેમેન્ટ સિસ્ટમમાં થયેલા ફેરફારથી વેપારીઓ અને ગ્રાહકોને સીધો ફાયદો થશે.`;
+        } else if (/શાળા|શિક્ષણ|વિદ્યાર્થી|બોર્ડ|પરીક્ષા|દંડ/i.test(headline)) {
+          finalSummary = `${headline} બાબતે શિક્ષણ વિભાગ દ્વારા નિયમોનું ચુસ્ત પાલન કરવા અને વિદ્યાર્થીઓના હિતમાં પારદર્શક વહીવટ કરવા સૂચના અપાઈ છે.`;
+        } else if (/હોસ્ટેલ|ગંદકી|સ્વચ્છતા|યુનિવર્સિટી/i.test(headline)) {
+          finalSummary = `${headline} સંદર્ભે વિદ્યાર્થીઓની પ્રાથમિક સુવિધાઓ અને આરોગ્યની સુરક્ષા માટે સત્વરે પગલાં લેવા આદેશ જારી કરાયો છે.`;
+        } else if (/ઇસરો|ISRO|અવકાશ|રોકેટ|વિજ્ઞાન/i.test(headline)) {
+          finalSummary = `${headline} એ વિજ્ઞાન અને ટેકનોલોજી ક્ષેત્રે ભારતની પ્રગતિ દર્શાવે છે જે યુવા વિદ્યાર્થીઓ માટે પ્રેરણારૂપ છે.`;
+        } else if (/ક્રિકેટ|મેચ|સ્પોર્ટ્સ|રમત/i.test(headline)) {
+          finalSummary = `${headline} અંગે રમતપ્રેમીઓમાં ઉત્સાહ જોવા મળી રહ્યો છે અને યુવા ખેલાડીઓને પ્રોત્સાહન મળી રહ્યું છે.`;
+        } else {
+          // If no specific pattern matches, produce a customized topic statement directly from the headline:
+          const shortHeadline = headline.replace(/[.!?।]+$/, '');
+          finalSummary = `${shortHeadline} બાબતે સંબંધિત સત્તાવાળાઓ દ્વારા સત્તાવાર વિગતો જાહેર કરવામાં આવી છે અને જરૂરી પ્રક્રિયા હાથ ધરાઈ છે.`;
+        }
       }
 
       finalSummary = ensureCompleteSentence(finalSummary, 320);
@@ -3144,15 +3144,21 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
       if (!res.ok) return [];
       const text = await res.text();
       const items: Array<{ headline: string; summary: string; source: string; pubDate?: string }> = [];
-      const itemRegex = /<item>[\s\S]*?<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>[\s\S]*?(?:<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>)?[\s\S]*?(?:<pubDate>(.*?)<\/pubDate>)?[\s\S]*?<\/item>/g;
-      let match;
-      while ((match = itemRegex.exec(text)) !== null && items.length < maxItems) {
+      const itemBlocks = text.match(/<item[\s\S]*?<\/item>/g) || [];
+
+      for (const block of itemBlocks) {
+        if (items.length >= maxItems) break;
+
+        const pubDateMatch = block.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+        const pubDate = pubDateMatch ? pubDateMatch[1].trim() : undefined;
+
         // Enforce strict freshness (under 36 hours: at most 1 day old, NO 2+ days old news)
-        if (match[3] && !isFreshNewsItem(match[3])) {
+        if (pubDate && !isFreshNewsItem(pubDate)) {
           continue;
         }
 
-        let rawTitle = decodeRssHtml(match[1]);
+        const titleMatch = block.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
+        let rawTitle = titleMatch ? decodeRssHtml(titleMatch[1]).trim() : '';
         if (!rawTitle || rawTitle.includes('Google News') || rawTitle.includes(' - Google')) continue;
         rawTitle = cleanNewsHeadline(rawTitle);
 
@@ -3167,12 +3173,13 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
           source = 'દિવ્ય ભાસ્કર (Divya Bhaskar)';
         }
 
-        const rawDesc = match[2] ? decodeRssHtml(match[2]).replace(/<[^>]+>/g, '').trim() : '';
+        const descMatch = block.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/);
+        const rawDesc = descMatch ? decodeRssHtml(descMatch[1]).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : '';
         let cleanDesc = rawDesc;
         if (cleanDesc.startsWith(rawTitle)) {
           cleanDesc = cleanDesc.slice(rawTitle.length).replace(/^[:\s—–-]+/, '').trim();
         }
-        let fullSentenceText = cleanDesc.length > 35 && !cleanDesc.includes('http') ? ensureCompleteSentence(cleanDesc, 300) : '';
+        let fullSentenceText = cleanDesc.length > 25 && !cleanDesc.includes('http') ? ensureCompleteSentence(cleanDesc, 300) : '';
 
         // Filter for school student, parent & school helpfulness
         if (!isSchoolStudentNews(rawTitle, fullSentenceText || rawTitle)) {
@@ -3183,7 +3190,7 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
           headline: rawTitle,
           summary: fullSentenceText,
           source,
-          pubDate: match[3],
+          pubDate,
         });
       }
       return items;
