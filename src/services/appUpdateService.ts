@@ -20,8 +20,8 @@ export interface GitHubUpdateInfo {
 }
 
 export const DEFAULT_REPO = 'anantahir7721-sudo/Vidyalayam-releases';
-export const APP_BASELINE_SHA = '596e933ad076b70029967187302aab79c2d136aa';
-export const APP_BASELINE_VERSION = '1.0.54';
+export const APP_BASELINE_SHA = 'c3e7b248a645114507eaebb4ce66403f468f900a';
+export const APP_BASELINE_VERSION = '1.0.55';
 
 /**
  * Parses numeric version parts (e.g. "v1.0.54" -> [1, 0, 54])
@@ -83,11 +83,15 @@ export function getAppVersion(): string {
 export function getTargetGitHubRepo(): string {
   try {
     const stored = localStorage.getItem('vidyalayam_github_repo');
-    if (!stored || stored === 'anantahir7721/vidyalayam' || stored === 'anantahir7721-sudo/vidyalayam') {
+    if (
+      !stored ||
+      stored.toLowerCase().includes('vidyalayam') &&
+      !stored.toLowerCase().includes('vidyalayam-releases')
+    ) {
       localStorage.setItem('vidyalayam_github_repo', DEFAULT_REPO);
       return DEFAULT_REPO;
     }
-    return stored;
+    return stored || DEFAULT_REPO;
   } catch {
     return DEFAULT_REPO;
   }
@@ -131,38 +135,89 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
     let apkDownloadUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
     let releaseUrl = `https://github.com/${repo}/releases/latest`;
 
-    // 1. Try server endpoint first (has 15s in-memory cache and bypasses GitHub client rate limits)
+    // 1. In Public Release Repo: Directly query GitHub releases/latest first!
+    // This works 100% reliably in APK without depending on any server proxy or CORS issues!
     let releaseCommitSha = '';
     let releaseVersionName = '';
     try {
-      const serverRes = await fetch(apiUrl(`/api/app-update-check?repo=${encodeURIComponent(repo)}`), {
+      const relRes = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+        headers: { Accept: 'application/vnd.github.v3+json' },
         signal: AbortSignal.timeout(6000),
       });
-      if (serverRes.ok) {
-        const json = await serverRes.json();
-        if (json.versionName || json.latestVersion) {
-          releaseVersionName = json.versionName || json.latestVersion;
-        }
-        if (json.releaseCommitSha) {
-          releaseCommitSha = json.releaseCommitSha;
-        }
-        if (json.latestCommit) {
-          commitData = json.latestCommit;
-          if (json.apkDownloadUrl) apkDownloadUrl = json.apkDownloadUrl;
-          if (json.releaseUrl) releaseUrl = json.releaseUrl;
+      if (relRes.ok) {
+        const relData = await relRes.json();
+        if (relData) {
+          if (relData.html_url) releaseUrl = relData.html_url;
+
+          // Parse version name from release name (e.g. "Vidyalayam v1.0.56 (Latest)" -> "v1.0.56")
+          const vm = (relData.name || '').match(/v?(\d+\.\d+\.?\d*)/i);
+          if (vm) {
+            releaseVersionName = vm[0].startsWith('v') ? vm[0] : 'v' + vm[0];
+          }
+
+          // Parse release commit SHA from release body if present
+          if (relData.body) {
+            const commitMatch = relData.body.match(/`([0-9a-f]{40})`/i) || relData.body.match(/Commit\*\*:\s*`?([0-9a-f]{7,40})`?/i);
+            if (commitMatch) {
+              releaseCommitSha = commitMatch[1];
+            }
+          }
+
+          // Locate APK download asset
+          if (Array.isArray(relData.assets)) {
+            const apkAsset = relData.assets.find((a: any) =>
+              a.name && (a.name.endsWith('.apk') || a.name === 'app-debug.apk')
+            );
+            if (apkAsset && apkAsset.browser_download_url) {
+              apkDownloadUrl = apkAsset.browser_download_url;
+            }
+          }
+
+          commitData = {
+            sha: releaseCommitSha || relData.target_commitish || relData.node_id || 'release',
+            message: relData.name || 'New Release',
+            date: relData.published_at || relData.created_at || new Date().toISOString(),
+            author: relData.author?.login || 'Vidyalayam Developer',
+            htmlUrl: relData.html_url,
+          };
         }
       }
     } catch (e) {
-      // Fallback directly to public GitHub API
+      // Fallback to server route or direct commits
     }
 
-    // 2. Direct GitHub REST API fallback if server route was unavailable
+    // 2. Server endpoint fallback
+    if (!commitData || !releaseVersionName) {
+      try {
+        const serverRes = await fetch(apiUrl(`/api/app-update-check?repo=${encodeURIComponent(repo)}`), {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (serverRes.ok) {
+          const json = await serverRes.json();
+          if (json.versionName || json.latestVersion) {
+            releaseVersionName = json.versionName || json.latestVersion;
+          }
+          if (json.releaseCommitSha) {
+            releaseCommitSha = json.releaseCommitSha;
+          }
+          if (json.latestCommit) {
+            commitData = json.latestCommit;
+            if (json.apkDownloadUrl) apkDownloadUrl = json.apkDownloadUrl;
+            if (json.releaseUrl) releaseUrl = json.releaseUrl;
+          }
+        }
+      } catch (e) {
+        // Fallback directly to commits
+      }
+    }
+
+    // 3. Direct GitHub commits API fallback
     if (!commitData) {
       const ghRes = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, {
         headers: {
           Accept: 'application/vnd.github.v3+json',
         },
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(5000),
       });
 
       if (ghRes.ok) {
