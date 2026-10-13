@@ -7,9 +7,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper function: verify caller's UID strictly matches the schoolId
+    // Helper function: verify caller's UID strictly matches the schoolId or school ownerUid
     function isSchoolOwner(schoolId) {
-      return isAuthenticated() && request.auth.uid == schoolId;
+      return isAuthenticated() && (
+        request.auth.uid == schoolId ||
+        (resource != null && resource.data.ownerUid == request.auth.uid) ||
+        (exists(/databases/$(database)/documents/schools/$(schoolId)) &&
+         get(/databases/$(database)/documents/schools/$(schoolId)).data.ownerUid == request.auth.uid)
+      );
     }
 
     // Helper function: verify if caller is an authorized Admin
@@ -76,10 +81,16 @@ service cloud.firestore {
 
       // Status updates: Admin can update any school (approve, reject, activate, deactivate)
       // School owner can update profile information (name, district, address), but CANNOT change status or DISE code
-      // Temporary password reset: Allows resetting password when temporary password is consumed/cleared
+      // Verified password change: Allows updating password fields while preserving status, ownerUid, id, and diseCode
       allow update: if isAdmin() || (
         isSchoolOwner(schoolId) &&
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'ownerUid', 'id', 'diseCode']))
+      ) || (
+        // Allow password change when verified (only password fields touched, identity fields preserved)
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['password', 'temporaryPassword', 'mustResetPassword', 'updatedAt']) &&
+        request.resource.data.diseCode == resource.data.diseCode &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.ownerUid == resource.data.ownerUid
       ) || (
         resource.data.temporaryPassword != null &&
         resource.data.temporaryPassword != "" &&
