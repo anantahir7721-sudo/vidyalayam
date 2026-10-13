@@ -20,8 +20,8 @@ export interface GitHubUpdateInfo {
 }
 
 export const DEFAULT_REPO = 'anantahir7721-sudo/Vidyalayam-releases';
-export const APP_BASELINE_SHA = 'c3e7b248a645114507eaebb4ce66403f468f900a';
-export const APP_BASELINE_VERSION = '1.0.55';
+export const APP_BASELINE_SHA = 'a5e9924835eb1288fb9bb1c3f0ca18ed25d4edbd';
+export const APP_BASELINE_VERSION = '1.0.58';
 
 /**
  * Parses numeric version parts (e.g. "v1.0.54" -> [1, 0, 54])
@@ -64,17 +64,25 @@ export function getAppVersion(): string {
       }
     }
 
-    // 2. If stored in localStorage from installed app
+    // 2. Clear any stale localStorage versions (e.g. older v1.0.52 caches)
     const installedVer = localStorage.getItem('vidyalayam_installed_app_version');
-    if (installedVer && installedVer.trim()) {
-      const v = installedVer.trim();
-      return v.startsWith('v') ? v : `v${v}`;
+    if (installedVer) {
+      if (isVersionGreater(APP_BASELINE_VERSION, installedVer)) {
+        localStorage.removeItem('vidyalayam_installed_app_version');
+      } else {
+        const v = installedVer.trim();
+        return v.startsWith('v') ? v : `v${v}`;
+      }
     }
 
     const ghVer = localStorage.getItem('vidyalayam_github_version');
-    if (ghVer && ghVer.trim()) {
-      const v = ghVer.trim();
-      return v.startsWith('v') ? v : `v${v}`;
+    if (ghVer) {
+      if (isVersionGreater(APP_BASELINE_VERSION, ghVer)) {
+        localStorage.removeItem('vidyalayam_github_version');
+      } else {
+        const v = ghVer.trim();
+        return v.startsWith('v') ? v : `v${v}`;
+      }
     }
   } catch {}
   return `v${APP_BASELINE_VERSION}`;

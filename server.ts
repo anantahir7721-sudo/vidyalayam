@@ -181,8 +181,8 @@ async function startServer() {
       let apkDownloadUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
       let releaseUrl = `https://github.com/${repo}/releases/latest`;
       let tagName = 'latest';
-      let releaseName = 'Vidyalayam v1.0.54 (Latest)';
-      let versionName = 'v1.0.54';
+      let releaseName = 'Vidyalayam v1.0.58 (Latest)';
+      let versionName = 'v1.0.58';
       let releaseCommitSha = '';
 
       // 1. Fetch latest commit
@@ -640,36 +640,90 @@ async function startServer() {
   // =========================================================================
   app.post('/api/school/change-password', async (req: Request, res: Response) => {
     try {
-      const { schoolId, currentPassword, newPassword } = req.body;
-      if (!schoolId || !currentPassword || !newPassword) {
+      const { schoolId, diseCode, currentPassword, newPassword } = req.body;
+      if ((!schoolId && !diseCode) || !currentPassword || !newPassword) {
         return res.status(400).json({ error: 'બધી વિગતો ભરવી ફરજિયાત છે.' });
       }
-      if (newPassword.length < 6) {
+
+      const cleanCurrent = String(currentPassword).trim();
+      const cleanNew = String(newPassword).trim();
+
+      if (cleanNew.length < 6) {
         return res.status(400).json({ error: 'નવો પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.' });
       }
 
-      const schoolRef = doc(db, 'schools', schoolId);
-      const snap = await getDoc(schoolRef);
-      if (!snap.exists()) {
+      let schoolRef: any;
+      let schoolData: any;
+
+      if (schoolId) {
+        schoolRef = doc(db, 'schools', schoolId);
+        const snap = await getDoc(schoolRef);
+        if (snap.exists()) {
+          schoolData = snap.data();
+        }
+      }
+
+      if (!schoolData && diseCode) {
+        const q = query(collection(db, 'schools'), where('diseCode', '==', String(diseCode).trim()));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          schoolRef = snap.docs[0].ref;
+          schoolData = snap.docs[0].data();
+        }
+      }
+
+      if (!schoolData || !schoolRef) {
         return res.status(404).json({ error: 'શાળાનો રેકોર્ડ મળ્યો નથી.' });
       }
 
-      const schoolData = snap.data() as any;
-      // If password field exists in Firestore, verify it matches currentPassword
-      if (schoolData.password && schoolData.password !== currentPassword) {
+      // Verify current password:
+      // Matches stored password, or matches active temporary password, or if stored password is empty
+      const storedPass = (schoolData.password || '').trim();
+      const tempPass = (schoolData.temporaryPassword || '').trim();
+
+      const isCurrentValid =
+        (storedPass && storedPass === cleanCurrent) ||
+        (tempPass && tempPass === cleanCurrent) ||
+        (!storedPass && !tempPass);
+
+      if (!isCurrentValid) {
         return res.status(401).json({ error: 'વર્તમાન પાસવર્ડ ખોટો છે.' });
       }
 
-      await updateDoc(schoolRef, {
-        password: newPassword,
+      const updatedPayload = {
+        password: cleanNew,
         temporaryPassword: null,
         mustResetPassword: false,
         updatedAt: new Date().toISOString(),
-      });
+      };
+
+      await updateDoc(schoolRef, updatedPayload);
+
+      // Auto-resolve any pending password reset requests for this school
+      const schoolDise = schoolData.diseCode || diseCode;
+      if (schoolDise) {
+        try {
+          const prQuery = query(collection(db, 'password_reset_requests'), where('diseCode', '==', String(schoolDise).trim()));
+          const prSnap = await getDocs(prQuery);
+          for (const prDoc of prSnap.docs) {
+            await updateDoc(prDoc.ref, {
+              status: 'resolved',
+              adminNotes: 'શાળા દ્વારા પાસવર્ડ સફળતાપૂર્વક બદલવામાં આવ્યો છે.',
+              resolvedAt: new Date().toISOString(),
+            });
+          }
+        } catch (prErr) {
+          console.warn('Could not auto-resolve password reset request:', prErr);
+        }
+      }
 
       return res.json({
         success: true,
         message: 'શાળાનો પાસવર્ડ સફળતાપૂર્વક બદલાઈ ગયો છે!',
+        school: {
+          ...schoolData,
+          ...updatedPayload,
+        },
       });
     } catch (err: any) {
       console.error('Change password error:', err);

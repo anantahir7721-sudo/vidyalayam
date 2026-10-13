@@ -4,6 +4,8 @@ import {
   signOut as fbSignOut,
   onAuthStateChanged,
   updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   User,
 } from 'firebase/auth';
 import {
@@ -399,7 +401,7 @@ export async function changeSchoolPassword(params: {
   newPassword: string;
   diseCode?: string;
 }): Promise<void> {
-  const { schoolId, currentPassword, newPassword } = params;
+  const { schoolId, currentPassword, newPassword, diseCode } = params;
 
   if (!currentPassword || !newPassword) {
     throw new Error('બધી વિગતો ભરવી ફરજિયાત છે.');
@@ -408,26 +410,61 @@ export async function changeSchoolPassword(params: {
     throw new Error('નવો પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.');
   }
 
-  // Update in Firebase Auth if signed in
-  if (auth.currentUser) {
-    try {
-      await updatePassword(auth.currentUser, newPassword);
-    } catch (fbErr: any) {
-      console.warn('Firebase Auth updatePassword warning:', fbErr);
-    }
-  }
+  const cleanCurrent = currentPassword.trim();
+  const cleanNew = newPassword.trim();
 
-  // Call backend to update Firestore
+  // 1. Call backend API to update Firestore with cross-validation on schoolId & diseCode
   const res = await fetch(apiUrl('/api/school/change-password'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ schoolId, currentPassword, newPassword }),
+    body: JSON.stringify({
+      schoolId,
+      diseCode: diseCode?.trim() || '',
+      currentPassword: cleanCurrent,
+      newPassword: cleanNew,
+    }),
   });
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || 'પાસવર્ડ બદલવામાં અસમર્થ રહ્યા.');
   }
+
+  // 2. Re-authenticate with current credentials and update Firebase Auth user password
+  const authEmail = diseCode ? diseCodeToAuthEmail(diseCode) : auth.currentUser?.email;
+  if (auth.currentUser && authEmail) {
+    try {
+      const cred = EmailAuthProvider.credential(authEmail, cleanCurrent);
+      await reauthenticateWithCredential(auth.currentUser, cred).catch(() => {});
+      await updatePassword(auth.currentUser, cleanNew);
+    } catch (fbErr: any) {
+      console.warn('Firebase Auth updatePassword warning:', fbErr);
+    }
+  } else if (authEmail) {
+    // If auth.currentUser was lost or signed out, sign in with cleanCurrent and update password
+    try {
+      const cred = await signInWithEmailAndPassword(auth, authEmail, cleanCurrent).catch(() => null);
+      if (cred?.user) {
+        await updatePassword(cred.user, cleanNew).catch(() => {});
+      }
+    } catch (signErr) {
+      console.warn('Firebase sign-in for password sync note:', signErr);
+    }
+  }
+
+  // 3. Keep local storage session in sync with the new password
+  try {
+    const storedUserJson = localStorage.getItem('vidyalayam_auth_user');
+    if (storedUserJson) {
+      const storedUser = JSON.parse(storedUserJson);
+      if (storedUser?.school) {
+        storedUser.school.password = cleanNew;
+        storedUser.school.temporaryPassword = null;
+        storedUser.school.mustResetPassword = false;
+        localStorage.setItem('vidyalayam_auth_user', JSON.stringify(storedUser));
+      }
+    }
+  } catch {}
 }
 
 /**
