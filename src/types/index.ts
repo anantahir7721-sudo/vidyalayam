@@ -41,10 +41,12 @@ export interface NewsItem {
   id: string;
   category: NewsCategory;
   categoryLabel: string;
+  location?: string; // વિસ્તાર / શહેર / જિલ્લો (e.g. અમદાવાદ, કચ્છ (ભુજ), ગાંધીનગર)
   headline: string;
   summary: string;
   impact?: string;
   sourceDate?: string;
+  source?: string;
 }
 
 export interface DailyNewsBulletin {
@@ -55,6 +57,7 @@ export interface DailyNewsBulletin {
   nextCycleTime: string;
   nextUpdateTimeTimestamp: number;
   items: NewsItem[];
+  allLiveItems?: NewsItem[];
   morningPrayerShloka?: string;
 }
 

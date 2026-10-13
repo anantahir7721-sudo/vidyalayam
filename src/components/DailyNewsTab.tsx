@@ -18,6 +18,7 @@ import {
   Loader2,
   Bell,
   Download,
+  ChevronDown,
 } from 'lucide-react';
 import { DailyNewsBulletin, NewsItem, NewsCategory } from '../types';
 import { getDailyNewsBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
@@ -107,22 +108,42 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
     return () => clearInterval(interval);
   }, [bulletin]);
 
-  const filteredItems = useMemo(() => {
-    if (!bulletin?.items) return [];
-    if (activeCategory === 'all') return bulletin.items;
-    return bulletin.items.filter((item) => item.category === activeCategory);
+  const [visibleCount, setVisibleCount] = useState<number>(15);
+
+  const allCategoryItems = useMemo(() => {
+    if (!bulletin) return [];
+    const pool = (bulletin.allLiveItems && bulletin.allLiveItems.length > 0)
+      ? bulletin.allLiveItems
+      : bulletin.items;
+    if (activeCategory === 'all') return pool;
+    return pool.filter((item) => item.category === activeCategory);
   }, [bulletin, activeCategory]);
+
+  const displayedItems = useMemo(() => {
+    return allCategoryItems.slice(0, visibleCount);
+  }, [allCategoryItems, visibleCount]);
+
+  const hasMore = allCategoryItems.length > visibleCount;
+
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 5);
+  };
+
+  useEffect(() => {
+    setVisibleCount(15);
+  }, [activeCategory]);
 
   const handleCopyBulletin = () => {
     if (!bulletin) return;
-    const text = `📰 *${schoolName || 'શાળા દૈનિક સમાચાર'} — આજના ૧૦ મુખ્ય સમાચાર* 📰\n📅 *તારીખ:* ${bulletin.editionDate}\n⏰ *સમય:* સવારે ૫:૦૦ વાગ્યાની આવૃત્તિ\n━━━━━━━━━━━━━━━━━━━━\n\n` +
-      bulletin.items
+    const itemsToCopy = displayedItems.length > 0 ? displayedItems : bulletin.items.slice(0, 15);
+    const text = `📰 *${schoolName || 'શાળા દૈનિક સમાચાર'} — આજના ${toGujaratiDigits(itemsToCopy.length)} મુખ્ય સમાચાર* 📰\n📅 *તારીખ:* ${bulletin.editionDate}\n⏰ *સમય:* સવારે ૫:૦૦ વાગ્યાની આવૃત્તિ\n━━━━━━━━━━━━━━━━━━━━\n\n` +
+      itemsToCopy
         .map(
           (item, idx) =>
-            `*${toGujaratiDigits(idx + 1)}. ${item.headline}*\n${item.summary}\n`
+            `*${toGujaratiDigits(idx + 1)}. ${item.location ? `[${item.location}] ` : ''}${item.headline}*\n${item.summary}\n`
         )
         .join('\n') +
-      `\n━━━━━━━━━━━━━━━━━━━━\n✨ સૌજન્ય: વિદ્યાલયમ શૈક્ષણિક પોર્ટલ`;
+      `\n━━━━━━━━━━━━━━━━━━━━\n✨ સૌજન્ય: વિદ્યાલયમ શૈક્ષણિક પોર્ટલ (સંદેશ, દિવ્ય ભાસ્કર, ટીવી૯, બીબીસી)`;
 
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -264,7 +285,7 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#FBE9DF] text-[#C45A2D] border border-[#C45A2D]/30 dark:bg-[#9d512d]/25 dark:text-[#f59c73] dark:border-[#9d512d]/40 flex items-center gap-1.5 shadow-sm">
                 <Flame className="w-3.5 h-3.5" />
-                આજના ૧૦ મુખ્ય સમાચાર
+                આજના ૧૫ મુખ્ય સમાચાર
               </span>
               <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-white/80 dark:bg-white/5 text-slate-700 dark:text-[#e4ded6] border border-[#E2E8F0] dark:border-white/10 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -408,13 +429,13 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
       {/* Category Filter Pills */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {[
-          { id: 'all', label: 'બધા ૧૦ સમાચાર (All)' },
+          { id: 'all', label: 'બધા ૧૫ સમાચાર (All)' },
+          { id: 'science_education', label: '🎓 શિક્ષણ અને શાળા' },
           { id: 'kutch', label: '📍 કચ્છ વિશેષ' },
           { id: 'gujarat', label: '🦁 ગુજરાત' },
           { id: 'india', label: '🇮🇳 ભારત / રાષ્ટ્રીય' },
-          { id: 'world', label: '🌍 વિશ્વ' },
-          { id: 'science_education', label: '🔬 વિજ્ઞાન અને શિક્ષણ' },
           { id: 'sports', label: '🏆 રમતગમત' },
+          { id: 'world', label: '🌍 વિશ્વ' },
         ].map((tab) => {
           const isActive = activeCategory === tab.id;
           return (
@@ -434,16 +455,16 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
         })}
       </div>
 
-      {/* 10 News Items Grid / List: Headline + Short Summary only */}
+      {/* News Items Grid / List: Point, Category, Location, Source, Headline, Contextual Summary */}
       <div className="space-y-3.5">
-        {filteredItems.map((item, idx) => {
+        {displayedItems.map((item, idx) => {
           return (
             <div
               key={item.id}
               className="group rounded-2xl bg-white dark:bg-[#121921] hover:bg-slate-50 dark:hover:bg-[#151f2a] border border-[#E2E8F0] dark:border-white/10 hover:border-[#C45A2D]/40 dark:hover:border-[#9d512d]/40 transition-all p-4 sm:p-5 shadow-sm space-y-2.5 relative"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   {/* Point Number */}
                   <span className="w-7 h-7 rounded-xl bg-[#FBE9DF] border border-[#C45A2D]/30 text-[#C45A2D] dark:bg-[#9d512d]/20 dark:border-[#9d512d]/40 dark:text-[#f59c73] text-xs font-black flex items-center justify-center shrink-0">
                     {toGujaratiDigits(idx + 1)}
@@ -457,6 +478,21 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
                   >
                     {item.categoryLabel}
                   </span>
+
+                  {/* Location Badge (વિસ્તાર / સ્થાન) */}
+                  {item.location && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/10 text-amber-900 dark:text-amber-200 border border-amber-500/30">
+                      <MapPin className="w-3 h-3 text-[#C45A2D] dark:text-[#f59c73] shrink-0" />
+                      <span>{item.location}</span>
+                    </span>
+                  )}
+
+                  {/* Source Badge (સંદેશ, દિવ્ય ભાસ્કર, ગુજરાત સમાચાર, ટીવી૯) */}
+                  {item.source && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
+                      <span>સ્ત્રોત: {item.source}</span>
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -465,14 +501,45 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
                 {item.headline}
               </h3>
 
-              {/* Short 2-3 line summary */}
+              {/* Informative Multi-Sentence Summary (Not just repeating the headline) */}
               <p className="text-xs sm:text-sm text-slate-600 dark:text-[#c9c3b8] leading-relaxed">
                 {item.summary}
               </p>
+
+              {/* Impact / Educational takeaway for students & parents */}
+              {item.impact && (
+                <div className="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center gap-1.5 text-[11px] text-[#C45A2D] dark:text-[#f59c73] font-medium">
+                  <span className="font-bold">વિદ્યાર્થી/વાલી સંદર્ભ:</span>
+                  <span>{item.impact}</span>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {/* Load More News / Pagination Option */}
+      {hasMore ? (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-[#121921] border border-[#E2E8F0] dark:border-white/10 shadow-sm">
+          <div className="text-xs text-slate-600 dark:text-[#a99f91]">
+            <span>
+              દર્શાવેલ: <strong>{toGujaratiDigits(displayedItems.length)}</strong> / કુલ <strong>{toGujaratiDigits(allCategoryItems.length)}</strong> તાજા સમાચાર (છેલ્લા ૨૪-૩૬ કલાકના)
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleLoadMore}
+            className="px-5 py-2.5 rounded-xl text-xs font-bold btn-terracotta text-white flex items-center gap-2 transition-all cursor-pointer shadow-md hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <ChevronDown className="w-4 h-4" />
+            <span>વધુ તાજા સમાચાર જુઓ (Load More)</span>
+          </button>
+        </div>
+      ) : allCategoryItems.length > 15 ? (
+        <div className="p-3 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
+          ✅ આજના બધા તાજા સમાચાર દર્શાવેલા છે. (જૂના ૨+ દિવસના સમાચાર આપમેળે બાકાત રાખવામાં આવ્યા છે)
+        </div>
+      ) : null}
 
       {/* WhatsApp Group Share Banner card */}
       <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-white to-white dark:from-emerald-950/40 dark:via-[#121921] dark:to-[#121921] border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

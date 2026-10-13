@@ -185,10 +185,10 @@ export async function shareDailyNewsAsPdf(
                 ${toGujaratiDigits(idx + 1)}
               </span>
               <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 11.5px; font-weight: 700; color: #0f172a; line-height: 1.32; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
-                  ${item.headline}
+                <div style="font-size: 11px; font-weight: 700; color: #0f172a; line-height: 1.3; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
+                  ${item.location ? `<span style="color: #9d512d; font-weight: 800;">[📍 ${item.location}] </span>` : ''}${item.headline}
                 </div>
-                <div style="font-size: 10px; color: #475569; line-height: 1.32; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
+                <div style="font-size: 9.5px; color: #475569; line-height: 1.3; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
                   ${item.summary}
                 </div>
               </div>

@@ -167,23 +167,24 @@ function stringToHash(str: string): number {
   return Math.abs(hash);
 }
 
-// Generate the 10 Daily News items deterministically for any date
+// Generate the 15 Daily News items deterministically for any date
 export function generateDailyNewsItems(dateKey: string): NewsItem[] {
   const hash = stringToHash(`vidyalayam-news-${dateKey}`);
   const items: NewsItem[] = [];
 
-  // Required categories: Kutch, Gujarat, India, World, Science/Education, Sports
+  // Required categories: Kutch, Education/School, Gujarat, India, World, Sports
   const categoryOrder: Array<{
     category: 'kutch' | 'gujarat' | 'india' | 'world' | 'science_education' | 'sports';
     label: string;
     count: number;
+    defaultLocation: string;
   }> = [
-    { category: 'kutch', label: 'કચ્છ વિશેષ', count: 2 },
-    { category: 'gujarat', label: 'ગુજરાત સમાચાર', count: 2 },
-    { category: 'india', label: 'રાષ્ટ્રીય / ભારત', count: 2 },
-    { category: 'world', label: 'વિશ્વ સમાચાર', count: 2 },
-    { category: 'science_education', label: 'વિજ્ઞાન અને શિક્ષણ', count: 1 },
-    { category: 'sports', label: 'રમતગમત અને યુવા', count: 1 },
+    { category: 'kutch', label: 'કચ્છ વિશેષ', count: 2, defaultLocation: 'કચ્છ (ભુજ)' },
+    { category: 'science_education', label: 'શિક્ષણ અને શાળા', count: 3, defaultLocation: 'ગાંધીનગર (શિક્ષણ વિભાગ)' },
+    { category: 'gujarat', label: 'ગુજરાત સમાચાર', count: 3, defaultLocation: 'સમગ્ર ગુજરાત' },
+    { category: 'india', label: 'રાષ્ટ્રીય / ભારત', count: 3, defaultLocation: 'નવી દિલ્હી (રાષ્ટ્રીય)' },
+    { category: 'world', label: 'વિશ્વ સમાચાર', count: 2, defaultLocation: 'આંતરરાષ્ટ્રીય (વિશ્વ)' },
+    { category: 'sports', label: 'રમતગમત અને યુવા', count: 2, defaultLocation: 'રમતગમત ક્ષેત્ર' },
   ];
 
   let itemIdx = 1;
@@ -198,16 +199,18 @@ export function generateDailyNewsItems(dateKey: string): NewsItem[] {
         id: `news-${dateKey}-${itemIdx}`,
         category: cat.category,
         categoryLabel: cat.label,
+        location: cat.defaultLocation,
         headline: baseItem.headline,
         summary: baseItem.summary,
         impact: baseItem.impact,
+        source: 'વિદ્યાલયમ શૈક્ષણિક સંસ્કરણ',
         sourceDate: dateKey,
       });
       itemIdx++;
     }
   }
 
-  return items.slice(0, 10);
+  return items.slice(0, 15);
 }
 
 /**
@@ -305,7 +308,7 @@ export async function getDailyNewsBulletin(now = new Date(), forceRefresh = fals
 
     if (snap.exists()) {
       const data = snap.data();
-      if (Array.isArray(data.items) && data.items.length >= 8) {
+      if (Array.isArray(data.items) && data.items.length >= 10) {
         return {
           id: dateKey,
           editionDate: data.editionDate || editionDate,
@@ -314,6 +317,7 @@ export async function getDailyNewsBulletin(now = new Date(), forceRefresh = fals
           nextCycleTime: 'આવતીકાલે સવારે ૫:૦૦ વાગ્યે',
           nextUpdateTimeTimestamp: nextUpdateTime.getTime(),
           items: data.items,
+          allLiveItems: data.allLiveItems || data.items,
           morningPrayerShloka: data.morningPrayerShloka,
         };
       }
@@ -322,7 +326,7 @@ export async function getDailyNewsBulletin(now = new Date(), forceRefresh = fals
     console.warn('Could not read from firestore daily_news, using algorithm:', err);
   }
 
-  // 3. Fallback: Generate deterministically from master topics
+  // 3. Fallback: Generate deterministically from master topics (15 items)
   const items = generateDailyNewsItems(dateKey);
   const bulletin: DailyNewsBulletin = {
     id: dateKey,
@@ -332,6 +336,7 @@ export async function getDailyNewsBulletin(now = new Date(), forceRefresh = fals
     nextCycleTime: 'આવતીકાલે સવારે ૫:૦૦ વાગ્યે',
     nextUpdateTimeTimestamp: nextUpdateTime.getTime(),
     items,
+    allLiveItems: items,
     morningPrayerShloka: 'સર્વેભવન્તુ સુખિનઃ સર્વે સન્તુ નિરામયાઃ । સર્વે ભદ્રાણિ પશ્યન્તુ મા કશ્ચિદ્ દુઃખભાગ્ભવેત્ ॥',
   };
 

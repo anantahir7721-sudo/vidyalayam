@@ -877,7 +877,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               className="px-3.5 py-2 rounded-xl bg-[#9d512d] hover:bg-[#b55f37] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
             >
               <Newspaper className="w-3.5 h-3.5" />
-              <span>આજના ૧૦ સમાચાર</span>
+              <span>આજના ૧૫ સમાચાર</span>
             </button>
 
             <button

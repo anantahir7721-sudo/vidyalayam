@@ -435,7 +435,7 @@ export function getPrintableDailyNewsHtml(
       </div>
 
       <div class="strip">
-        <div>📰 આજના મુખ્ય ૧૦ સમાચાર</div>
+        <div>📰 આજના મુખ્ય ${toGujaratiDigits(Math.min(bulletin.items.length, 15))} સમાચાર</div>
         <div class="date">${bulletin.editionDate} • સવારે ૫:૦૦ વાગ્યાની આવૃત્તિ</div>
       </div>
 
@@ -447,11 +447,13 @@ export function getPrintableDailyNewsHtml(
       ` : ''}
 
       <div class="items-container">
-        ${bulletin.items.slice(0, 10).map((item, idx) => `
+        ${bulletin.items.slice(0, 15).map((item, idx) => `
           <div class="item-card">
             <div class="badge">${toGujaratiDigits(idx + 1)}</div>
             <div style="flex: 1; min-width: 0;">
-              <div class="item-title">${item.headline}</div>
+              <div class="item-title">
+                ${item.location ? `<span style="color: #9d512d; font-weight: 800;">[📍 ${item.location}] </span>` : ''}${item.headline}
+              </div>
               <div class="item-desc">${item.summary}</div>
             </div>
           </div>
