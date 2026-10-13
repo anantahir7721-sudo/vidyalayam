@@ -39,6 +39,7 @@ import { VidyalayamLogo } from './VidyalayamLogo';
 import { UniversalStudentSearch } from './UniversalStudentSearch';
 import { DailyKnowledgeModal } from './DailyKnowledgeModal';
 import { updateSchoolProfile } from '../services/firestoreService';
+import { getAppVersion } from '../services/appUpdateService';
 
 interface DashboardOverviewProps {
   school: School;
@@ -493,8 +494,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <div className="glass-card px-3.5 py-2 rounded-2xl flex items-center gap-2.5 border border-stone-200 dark:border-white/10 hidden sm:flex">
               <VidyalayamLogo size={28} />
               <div>
-                <span className="text-[10px] uppercase text-stone-500 dark:text-[#a99f91] block font-semibold">સિસ્ટમ</span>
-                <span className="text-xs font-bold text-[#9d512d] dark:text-[#f59c73]">Vidyalayam v2.5</span>
+                <span className="text-[10px] uppercase text-stone-500 dark:text-[#a99f91] block font-semibold">સિસ્ટમ આવૃત્તિ</span>
+                <span className="text-xs font-bold text-[#9d512d] dark:text-[#f59c73]">Vidyalayam {getAppVersion()}</span>
               </div>
             </div>
           </div>

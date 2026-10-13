@@ -21,10 +21,26 @@ export interface GitHubUpdateInfo {
 
 export const DEFAULT_REPO = 'anantahir7721-sudo/vidyalayam';
 export const APP_BASELINE_SHA = '73f7acde8925825ad4da87f7991ae1a102f88f28';
-export const APP_BASELINE_VERSION = '1.0.50';
+export const APP_BASELINE_VERSION = '1.0.53';
 
 export function getAppVersion(): string {
   try {
+    // 1. If running inside native Android app, get the real installed version directly from Android PackageInfo
+    if (typeof (window as any).AndroidBridge?.getAppVersionName === 'function') {
+      const nativeVer = (window as any).AndroidBridge.getAppVersionName();
+      if (nativeVer && typeof nativeVer === 'string' && nativeVer.trim()) {
+        const nv = nativeVer.trim();
+        return nv.startsWith('v') ? nv : `v${nv}`;
+      }
+    }
+
+    // 2. If stored in localStorage from installed app
+    const installedVer = localStorage.getItem('vidyalayam_installed_app_version');
+    if (installedVer && installedVer.trim()) {
+      const v = installedVer.trim();
+      return v.startsWith('v') ? v : `v${v}`;
+    }
+
     const ghVer = localStorage.getItem('vidyalayam_github_version');
     if (ghVer && ghVer.trim()) {
       const v = ghVer.trim();
@@ -86,6 +102,8 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
     let releaseUrl = `https://github.com/${repo}/releases/latest`;
 
     // 1. Try server endpoint first (has 15s in-memory cache and bypasses GitHub client rate limits)
+    let releaseCommitSha = '';
+    let releaseVersionName = '';
     try {
       const serverRes = await fetch(apiUrl(`/api/app-update-check?repo=${encodeURIComponent(repo)}`), {
         signal: AbortSignal.timeout(6000),
@@ -93,8 +111,10 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
       if (serverRes.ok) {
         const json = await serverRes.json();
         if (json.versionName || json.latestVersion) {
-          const v = json.versionName || json.latestVersion;
-          localStorage.setItem('vidyalayam_github_version', v);
+          releaseVersionName = json.versionName || json.latestVersion;
+        }
+        if (json.releaseCommitSha) {
+          releaseCommitSha = json.releaseCommitSha;
         }
         if (json.latestCommit) {
           commitData = json.latestCommit;
@@ -148,21 +168,28 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
           localStorage.getItem(`vidyalayam_dismissed_update_${remoteSha}`) === 'true' ||
           localStorage.getItem(`vidyalayam_dismissed_banner_${remoteSha}`) === 'true');
 
-      // Mark an update available if remote commit is genuinely newer than baseline / current app
+      // The live installed version on this device
+      const liveVer = getAppVersion();
+
+      // Compare versions: if live version matches latest release version (e.g. v1.0.53 === v1.0.53),
+      // or if app already installed this SHA or release commit SHA, then there is NO new update available!
+      const isSameVersion = releaseVersionName && liveVer.replace(/^v/i, '') === releaseVersionName.replace(/^v/i, '');
+      const isSameSha = currentAppSha === remoteSha || (releaseCommitSha && currentAppSha === releaseCommitSha);
+
       const isNewer =
-        (remoteSha !== APP_BASELINE_SHA || force) &&
-        currentAppSha !== remoteSha &&
-        Boolean(remoteSha);
+        !isSameVersion &&
+        !isSameSha &&
+        Boolean(remoteSha) &&
+        (remoteSha !== APP_BASELINE_SHA || force);
 
       if (isNewer) {
         localStorage.setItem(`vidyalayam_last_known_sha_${repo}`, remoteSha);
       }
 
-      const liveVer = getAppVersion();
       return {
         updateAvailable: isNewer && !isDismissed,
         currentVersion: liveVer,
-        latestVersion: isNewer ? cleanSha : liveVer,
+        latestVersion: releaseVersionName || cleanSha,
         latestCommitSha: remoteSha,
         latestCommitMessage: commitData.message,
         latestCommitDate: commitData.date,

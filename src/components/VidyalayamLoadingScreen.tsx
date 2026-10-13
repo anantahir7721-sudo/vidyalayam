@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { getRandomShloka } from '../data/shlokas';
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
+import { getAppVersion } from '../services/appUpdateService';
 
 /**
  * Sophisticated Vidyalayam Splash & Loading Screen
@@ -81,7 +82,7 @@ export const VidyalayamLoadingScreen: React.FC = () => {
                 : 'bg-black/20 text-white border-white/30'
             }`}
           >
-            v2.5
+            {getAppVersion()}
           </span>
         </div>
       </div>

@@ -178,8 +178,9 @@ async function startServer() {
       let apkDownloadUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
       let releaseUrl = `https://github.com/${repo}/releases/latest`;
       let tagName = 'latest';
-      let releaseName = 'Vidyalayam v1.0.50 (Latest)';
-      let versionName = 'v1.0.50';
+      let releaseName = 'Vidyalayam v1.0.53 (Latest)';
+      let versionName = 'v1.0.53';
+      let releaseCommitSha = '';
 
       // 1. Fetch latest commit
       try {
@@ -227,6 +228,14 @@ async function startServer() {
               versionName = vm[0].startsWith('v') ? vm[0] : 'v' + vm[0];
             }
 
+            // Extract the release commit SHA from release body (e.g., - **Commit**: `...`)
+            if (relData.body) {
+              const commitMatch = relData.body.match(/`([0-9a-f]{40})`/i) || relData.body.match(/Commit\*\*:\s*`?([0-9a-f]{7,40})`?/i);
+              if (commitMatch) {
+                releaseCommitSha = commitMatch[1];
+              }
+            }
+
             if (Array.isArray(relData.assets)) {
               const apkAsset = relData.assets.find((a: any) =>
                 a.name && (a.name.endsWith('.apk') || a.name === 'app-debug.apk')
@@ -245,6 +254,7 @@ async function startServer() {
         success: true,
         repo,
         latestCommit,
+        releaseCommitSha: releaseCommitSha || latestCommit?.sha || '',
         versionName,
         releaseName,
         latestVersion: versionName,
@@ -253,6 +263,7 @@ async function startServer() {
           tagName,
           releaseName,
           versionName,
+          releaseCommitSha: releaseCommitSha || latestCommit?.sha || '',
           apkDownloadUrl,
           releaseUrl,
         },

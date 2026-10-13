@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import { 
   ArrowUpCircle, 
   Download, 
-  RefreshCw, 
   Sparkles, 
   X, 
   CheckCircle2, 
   ShieldCheck,
   Smartphone
 } from 'lucide-react';
-import { GitHubUpdateInfo, applyAppUpdate, dismissUpdateInSession, downloadApkInApp } from '../services/appUpdateService';
+import { GitHubUpdateInfo, dismissUpdateInSession, downloadApkInApp } from '../services/appUpdateService';
 import { isAndroidNativeApp, blobToBase64 } from '../utils/printAndPdfUtils';
 
 interface AppUpdateModalProps {
@@ -23,7 +22,6 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const [isUpdating, setIsUpdating] = useState(false);
   const [downloadingApk, setDownloadingApk] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [downloadBytes, setDownloadBytes] = useState<{ loaded: number; total: number }>({ loaded: 0, total: 0 });
@@ -37,11 +35,6 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
   const isAndroid = isAndroidNativeApp() || /Android/i.test(navigator.userAgent);
   const apkDownloadUrl = updateInfo.apkDownloadUrl || `https://github.com/${updateInfo.repo}/releases/download/latest/app-debug.apk`;
   const commitUrl = updateInfo.htmlUrl || `https://github.com/${updateInfo.repo}/commit/${updateInfo.latestCommitSha}`;
-
-  const handleWebUpdate = async () => {
-    setIsUpdating(true);
-    await applyAppUpdate(updateInfo.latestCommitSha);
-  };
 
   const handleApkDownload = async () => {
     setDownloadingApk(true);
@@ -288,30 +281,18 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
             પછીથી (Remind Later)
           </button>
 
-          {isAndroid && (
-            <button
-              type="button"
-              onClick={handleApkDownload}
-              disabled={downloadingApk}
-              className="order-1 sm:order-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-amber-600/30 transition-all cursor-pointer disabled:opacity-60"
-            >
-              <Download className={`w-4 h-4 ${downloadingApk ? 'animate-bounce' : ''}`} />
-              <span>
-                {downloadingApk
-                  ? `ડાઉનલોડ થઈ રહ્યું છે... ${downloadProgress > 0 ? `${downloadProgress}%` : ''}`
-                  : 'નવી APK ડાઉનલોડ કરો'}
-              </span>
-            </button>
-          )}
-
           <button
             type="button"
-            onClick={handleWebUpdate}
-            disabled={isUpdating || downloadingApk}
-            className="order-1 sm:order-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer disabled:opacity-60"
+            onClick={handleApkDownload}
+            disabled={downloadingApk}
+            className="order-1 sm:order-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer disabled:opacity-60 active:scale-95"
           >
-            <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />
-            <span>{isUpdating ? 'અપડેટ થઈ રહ્યું છે...' : 'હમણાં જ અપડેટ કરો'}</span>
+            <Download className={`w-4 h-4 ${downloadingApk ? 'animate-bounce' : ''}`} />
+            <span>
+              {downloadingApk
+                ? `ડાઉનલોડ થઈ રહ્યું છે... ${downloadProgress > 0 ? `${downloadProgress}%` : ''}`
+                : 'અપડેટ કરો'}
+            </span>
           </button>
         </div>
       </div>

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useTheme, ThemeMode } from '../context/ThemeContext';
 import { School } from '../types';
-import { GitHubUpdateInfo, applyAppUpdate, getAppVersion } from '../services/appUpdateService';
+import { GitHubUpdateInfo, getAppVersion } from '../services/appUpdateService';
 import { VidyalayamLogo } from './VidyalayamLogo';
 import { haptic } from '../utils/haptics';
 import { useDeviceType } from '../utils/useDeviceType';
@@ -42,7 +42,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const { theme, themeMode, setThemeMode } = useTheme();
   const device = useDeviceType();
   const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleSelectMode = (mode: ThemeMode) => {
     haptic.light();
@@ -56,13 +55,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     setTimeout(() => {
       setCheckingUpdate(false);
     }, 1500);
-  };
-
-  const handleApplyUpdate = async () => {
-    if (!updateInfo) return;
-    setIsUpdating(true);
-    haptic.success();
-    await applyAppUpdate(updateInfo.latestCommitSha);
   };
 
   const systemIsDark =
@@ -267,25 +259,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <div className="flex items-center gap-2 pt-1">
               <button
                 type="button"
-                onClick={handleApplyUpdate}
-                disabled={isUpdating}
-                className="px-4 py-2 bg-white text-emerald-800 rounded-xl text-xs font-black hover:bg-slate-100 transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-1.5"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('check-app-update', { detail: { manual: true } }));
+                }}
+                className="px-5 py-2.5 bg-white text-emerald-800 rounded-xl text-xs font-black hover:bg-slate-100 transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span>{isUpdating ? 'અપડેટ થઈ રહ્યું છે...' : 'હમણાં જ અપડેટ કરો'}</span>
+                <span>અપડેટ કરો</span>
               </button>
-
-              {updateInfo.apkDownloadUrl && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('check-app-update', { detail: { manual: true } }));
-                  }}
-                  className="px-3 py-2 bg-black/30 hover:bg-black/40 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
-                >
-                  APK ઇન-ઍપ ડાઉનલોડ
-                </button>
-              )}
             </div>
           </div>
         ) : (

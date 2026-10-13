@@ -213,6 +213,32 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
+        public String getAppVersionName() {
+            try {
+                android.content.pm.PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+                if (pInfo != null && pInfo.versionName != null && !pInfo.versionName.isEmpty()) {
+                    return pInfo.versionName.startsWith("v") ? pInfo.versionName : "v" + pInfo.versionName;
+                }
+            } catch (Exception ignored) {}
+            return "v1.0.53";
+        }
+
+        @JavascriptInterface
+        public int getAppVersionCode() {
+            try {
+                android.content.pm.PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+                if (pInfo != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        return (int) pInfo.getLongVersionCode();
+                    } else {
+                        return pInfo.versionCode;
+                    }
+                }
+            } catch (Exception ignored) {}
+            return 53;
+        }
+
+        @JavascriptInterface
         public int getStatusBarHeight() {
             return getStatusBarHeightDp();
         }
