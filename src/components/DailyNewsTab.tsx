@@ -19,6 +19,8 @@ import {
   Bell,
   Download,
   ChevronDown,
+  Volume2,
+  Square,
 } from 'lucide-react';
 import { DailyNewsBulletin, NewsItem, NewsCategory } from '../types';
 import { getDailyNewsBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
@@ -26,6 +28,7 @@ import { shareDailyNewsAsPdf, downloadDailyNewsAsPdf } from '../utils/dailyPdfSh
 import { printHtmlDocument, getPrintableDailyNewsHtml } from '../utils/printAndPdfUtils';
 import { sendNotification } from '../utils/notificationUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import { ttsService, formatNewsBulletinSpeech } from '../services/ttsService';
 
 interface DailyNewsTabProps {
   schoolName?: string;
@@ -48,6 +51,48 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [ttsPlaying, setTtsPlaying] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const [playingItemId, setPlayingItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = ttsService.subscribe((s) => {
+      setTtsPlaying(s.isPlaying && s.activeId === `news_${bulletin?.id}`);
+      setTtsLoading(s.isLoading && s.activeId === `news_${bulletin?.id}`);
+      if (s.isPlaying && s.activeId?.startsWith('news_item_')) {
+        setPlayingItemId(s.activeId.replace('news_item_', ''));
+      } else {
+        setPlayingItemId(null);
+      }
+    });
+    return () => unsub();
+  }, [bulletin?.id]);
+
+  const handleToggleListenNews = () => {
+    if (!bulletin) return;
+    const newsId = `news_${bulletin.id}`;
+    if (ttsPlaying) {
+      ttsService.stop();
+    } else {
+      const speechText = formatNewsBulletinSpeech(bulletin);
+      ttsService.play(
+        newsId,
+        speechText,
+        `આજના દૈનિક સમાચાર (${bulletin.editionDate})`
+      );
+    }
+  };
+
+  const handlePlaySingleNews = (item: NewsItem) => {
+    const itemId = `news_item_${item.id}`;
+    if (playingItemId === item.id) {
+      ttsService.stop();
+      return;
+    }
+    const text = `${item.headline}. ${item.summary || ''} ${item.impact ? 'વિદ્યાર્થી/વાલી સંદર્ભ: ' + item.impact : ''}`;
+    ttsService.play(itemId, text, item.headline);
+  };
 
   const handleRefreshNews = async () => {
     setIsRefreshing(true);
@@ -333,6 +378,35 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
               )}
             </button>
 
+            {/* Edge TTS Audio Button */}
+            <button
+              type="button"
+              onClick={handleToggleListenNews}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-[0.98] ${
+                ttsPlaying
+                  ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black'
+              }`}
+              title="માઈક્રોસોફ્ટ એજ ન્યુરલ ગુજરાતી અવાજમાં આજના સમાચાર સાંભળો"
+            >
+              {ttsLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>તૈયાર થઈ રહ્યું છે...</span>
+                </>
+              ) : ttsPlaying ? (
+                <>
+                  <Square className="w-4 h-4 fill-current" />
+                  <span>સમાચાર રોકો</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-4 h-4" />
+                  <span>🔊 સમાચાર સાંભળો</span>
+                </>
+              )}
+            </button>
+
             {/* WhatsApp Share PDF Button */}
             <button
               type="button"
@@ -493,6 +567,23 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
                       <span>સ્ત્રોત: {item.source}</span>
                     </span>
                   )}
+                </div>
+
+                {/* Listen to this single news item */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handlePlaySingleNews(item)}
+                    className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                      playingItemId === item.id
+                        ? 'bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse'
+                        : 'bg-slate-100 dark:bg-white/5 hover:bg-amber-500/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-amber-500/40 hover:text-amber-500'
+                    }`}
+                    title="આ સમાચાર સાંભળો"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline text-[10px]">{playingItemId === item.id ? 'રોકો' : 'સાંભળો'}</span>
+                  </button>
                 </div>
               </div>
 

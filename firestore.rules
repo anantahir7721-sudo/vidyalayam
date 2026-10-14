@@ -7,13 +7,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper function: verify caller's UID strictly matches the schoolId or school ownerUid
+    // Helper function: verify caller's UID strictly matches the schoolId or school ownerUid, or verified school email
     function isSchoolOwner(schoolId) {
       return isAuthenticated() && (
         request.auth.uid == schoolId ||
         (resource != null && resource.data.ownerUid == request.auth.uid) ||
-        (exists(/databases/$(database)/documents/schools/$(schoolId)) &&
-         get(/databases/$(database)/documents/schools/$(schoolId)).data.ownerUid == request.auth.uid)
+        (exists(/databases/$(database)/documents/schools/$(schoolId)) && (
+          get(/databases/$(database)/documents/schools/$(schoolId)).data.ownerUid == request.auth.uid ||
+          request.auth.token.email == 'school_' + get(/databases/$(database)/documents/schools/$(schoolId)).data.diseCode + '@gujarat-schools.internal' ||
+          request.auth.token.email == 'school_' + schoolId + '@gujarat-schools.internal'
+        ))
       );
     }
 

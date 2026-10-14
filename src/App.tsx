@@ -23,6 +23,7 @@ import { SchoolNoticeBoardTab } from './components/SchoolNoticeBoardTab';
 import { StudentPortal } from './components/StudentPortal';
 import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
 import { FirstLaunchPermissionModal } from './components/FirstLaunchPermissionModal';
+import { TTSFloatingBar } from './components/TTSFloatingBar';
 import { SettingsTab } from './components/SettingsTab';
 import { runScheduledNotificationCheck } from './services/notificationService';
 import {
@@ -53,6 +54,7 @@ import {
   saveStudentSession,
   clearStudentSession,
 } from './services/onlineExamService';
+import { isAndroidNativeApp } from './utils/printAndPdfUtils';
 import { Loader2, WifiOff, CheckCircle2, ArrowUpCircle, X } from 'lucide-react';
 
 interface SafeAreaInsets {
@@ -288,7 +290,10 @@ export default function App() {
         if (info) {
           setAppUpdate(info);
           if (info.updateAvailable) {
-            setShowUpdateModal(true);
+            const isNative = isAndroidNativeApp();
+            if (isNative || isManual) {
+              setShowUpdateModal(true);
+            }
             if (isManual) {
               setUpdateToastMessage(null);
             }
@@ -661,6 +666,7 @@ export default function App() {
           onClose={() => setShowUpdateModal(false)}
         />
         <FirstLaunchPermissionModal schoolName={studentSession.schoolName} />
+        <TTSFloatingBar />
       </>
     );
   }
@@ -703,6 +709,7 @@ export default function App() {
           </div>
         </footer>
         <FirstLaunchPermissionModal />
+        <TTSFloatingBar />
       </div>
     );
   }
@@ -722,6 +729,7 @@ export default function App() {
           onClose={() => setShowUpdateModal(false)}
         />
         <FirstLaunchPermissionModal />
+        <TTSFloatingBar />
       </>
     );
   }
@@ -973,6 +981,7 @@ export default function App() {
           </div>
         </footer>
         <FirstLaunchPermissionModal schoolName={school.schoolName} />
+        <TTSFloatingBar />
       </div>
     );
   }
@@ -1012,6 +1021,7 @@ export default function App() {
           Created by NR Chad
         </div>
       </footer>
+      <TTSFloatingBar />
     </div>
   );
 }

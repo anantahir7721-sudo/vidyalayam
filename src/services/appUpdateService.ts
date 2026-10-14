@@ -20,8 +20,22 @@ export interface GitHubUpdateInfo {
 }
 
 export const DEFAULT_REPO = 'anantahir7721-sudo/Vidyalayam-releases';
-export const APP_BASELINE_SHA = 'a5e9924835eb1288fb9bb1c3f0ca18ed25d4edbd';
-export const APP_BASELINE_VERSION = '1.0.58';
+export const APP_BASELINE_SHA = 'b9136da768645cda5da214d950cc9ada47a52c45';
+export const APP_BASELINE_VERSION = '1.0.60';
+
+// Purge any stale legacy cached versions (< 1.0.60) on module load
+try {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const staleInstalled = localStorage.getItem('vidyalayam_installed_app_version');
+    if (staleInstalled && !isVersionGreater(staleInstalled, APP_BASELINE_VERSION)) {
+      localStorage.removeItem('vidyalayam_installed_app_version');
+    }
+    const staleGh = localStorage.getItem('vidyalayam_github_version');
+    if (staleGh && !isVersionGreater(staleGh, APP_BASELINE_VERSION)) {
+      localStorage.removeItem('vidyalayam_github_version');
+    }
+  }
+} catch {}
 
 /**
  * Parses numeric version parts (e.g. "v1.0.54" -> [1, 0, 54])
@@ -64,10 +78,10 @@ export function getAppVersion(): string {
       }
     }
 
-    // 2. Clear any stale localStorage versions (e.g. older v1.0.52 caches)
+    // 2. Clear any stale localStorage versions (e.g. older v1.0.52 or v1.0.58 caches)
     const installedVer = localStorage.getItem('vidyalayam_installed_app_version');
     if (installedVer) {
-      if (isVersionGreater(APP_BASELINE_VERSION, installedVer)) {
+      if (!isVersionGreater(installedVer, APP_BASELINE_VERSION)) {
         localStorage.removeItem('vidyalayam_installed_app_version');
       } else {
         const v = installedVer.trim();
@@ -77,7 +91,7 @@ export function getAppVersion(): string {
 
     const ghVer = localStorage.getItem('vidyalayam_github_version');
     if (ghVer) {
-      if (isVersionGreater(APP_BASELINE_VERSION, ghVer)) {
+      if (!isVersionGreater(ghVer, APP_BASELINE_VERSION)) {
         localStorage.removeItem('vidyalayam_github_version');
       } else {
         const v = ghVer.trim();

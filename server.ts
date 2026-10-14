@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
+import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { initializeApp, getApps } from 'firebase/app';
 import {
   getFirestore,
@@ -161,6 +162,218 @@ async function startServer() {
   });
 
   // =========================================================================
+  // GEMINI AI EXPRESSIVE GUJARATI TTS & ABBREVIATION ENGINE
+  // =========================================================================
+  const ttsAudioCache = new Map<string, { buffer: Buffer; mimeType: string; timestamp: number }>();
+  const TTS_CACHE_MAX = 250;
+
+  // Comprehensive Gujarati abbreviation expander
+  // e.g., 'ડો બાબા સાહેબ' -> 'ડૉક્ટર બાબાસાહેબ', 'પૂ. બાપુ' -> 'પૂજ્ય બાપુ', 'ધો. 10' -> 'ધોરણ ૧૦'
+  function expandGujaratiSpeechText(raw: string): string {
+    if (!raw || typeof raw !== 'string') return '';
+    let text = raw;
+
+    // 1. Dr. / Do. variations -> 'ડૉક્ટર ' (e.g. 'ડો બાબા સાહેબ' -> 'ડૉક્ટર બાબાસાહેબ')
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:ડૉ|ડો)(?:\.|\s+)/gu, '$1ડૉક્ટર ');
+    // 2. Pujya / Pu. variations -> 'પૂજ્ય '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:પૂ)(?:\.|\s+)/gu, '$1પૂજ્ય ');
+    // 3. Professor / Pro. variations -> 'પ્રોફેસર '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:પ્રો)(?:\.|\s+)/gu, '$1પ્રોફેસર ');
+    // 4. Shri. variations -> 'શ્રી '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:શ્રી)\.(?:\s*)/gu, '$1શ્રી ');
+    // 5. Swargiy / Swa. variations -> 'સ્વર્ગસ્થ '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:સ્વ)(?:\.|\s+)/gu, '$1સ્વર્ગસ્થ ');
+    // 6. Likhitang / Li. variations -> 'લિખિતંગ '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:લિ|લી)\.(?:\s*)/gu, '$1લિખિતંગ ');
+    // 7. Dhoran / Dho. variations -> 'ધોરણ '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:ધો)(?:\.|\s+)(\d+|[૧-૯])/gu, '$1ધોરણ $2');
+    // 8. Tarikh / Ta. variations -> 'તારીખ '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:તા)(?:\.|\s+)(\d+|[૧-૯])/gu, '$1તારીખ $2');
+    // 9. Number / No. variations -> 'નંબર '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:નં)(?:\.|\s+)(\d+|[૧-૯])/gu, '$1નંબર $2');
+    // 10. Mobile / Mo. variations -> 'મોબાઇલ '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:મો)(?:\.|\s+)(\d+|[૧-૯])/gu, '$1મોબાઇલ $2');
+    // 11. Rupees / Ru. variations -> 'રૂપિયા '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:રૂ)(?:\.|\s+)(\d+|[૧-૯])/gu, '$1રૂપિયા $2');
+    // 12. Kilometers / Ki.Mi. variations -> 'કિલોમીટર '
+    text = text.replace(/(?:કિ\.મી\.|કિમી)/gu, 'કિલોમીટર ');
+    // 13. Isvisan -> 'ઈસવીસન '
+    text = text.replace(/(?:ઈ\.સ\.|ઇ\.સ\.)/gu, 'ઈસવીસન ');
+    // 14. Kram / Kr. variations -> 'ક્રમ '
+    text = text.replace(/(^|[\s,।\.\-"\(])(?:ક્ર)\.(?:\s*)/gu, '$1ક્રમ ');
+    // 15. Page / Pej variations -> 'પેજ નંબર '
+    text = text.replace(/પેજ\s*નં\.?/gu, 'પેજ નંબર ');
+
+    // Clean markdown, links, hashtags, emojis
+    text = text
+      .replace(/https?:\/\/\S+/gu, ' ')
+      .replace(/[*#_~`>\[\]]/gu, ' ')
+      .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, ' ')
+      .replace(/\s+/gu, ' ')
+      .trim();
+
+    return text;
+  }
+
+  // Synthesize ultra-realistic, expressive Gujarati speech using Gemini AI
+  async function synthesizeExpressiveGujaratiAudio(
+    text: string,
+    voiceType: 'female' | 'male' = 'female'
+  ): Promise<{ buffer: Buffer; mimeType: string }> {
+    const expanded = expandGujaratiSpeechText(text);
+    if (!expanded) {
+      throw new Error('બોલવા માટેનું લખાણ ખાલી છે (Empty speech text)');
+    }
+
+    const isMale = voiceType === 'male';
+    const selectedVoice = isMale ? 'Zephyr' : 'Aoede';
+    const cacheKey = crypto.createHash('md5').update(`${selectedVoice}:${expanded}`).digest('hex');
+
+    const cached = ttsAudioCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 48 * 60 * 60 * 1000) {
+      return { buffer: cached.buffer, mimeType: cached.mimeType };
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      try {
+        const ai = new GoogleGenAI({
+          apiKey,
+          httpOptions: {
+            headers: { 'User-Agent': 'aistudio-build' },
+          },
+        });
+
+        // Prompt Gemini with expressive tone, natural emotions & respectful cadence
+        const speechStyle = isMale
+          ? 'Warm, respectful, articulate Gujarati male teacher speaking with natural emotions, human expression, lively cadence, and clear pronunciation'
+          : 'Warm, respectful, articulate Gujarati female school teacher speaking with pleasant emotions, human warmth, proper pauses, and clear pronunciation';
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.8-flash-lite-tts',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: expanded,
+                  speechMetadata: {
+                    style: speechStyle,
+                  },
+                },
+              ],
+            },
+          ],
+          config: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: selectedVoice },
+              },
+            },
+          },
+        });
+
+        const audioPart = response.candidates?.[0]?.content?.parts?.find(
+          (p) => p.inlineData && p.inlineData.data
+        );
+
+        if (audioPart?.inlineData?.data) {
+          const wavBuffer = Buffer.from(audioPart.inlineData.data, 'base64');
+          const mimeType = audioPart.inlineData.mimeType || 'audio/wav';
+
+          if (ttsAudioCache.size >= TTS_CACHE_MAX) {
+            const oldestKey = ttsAudioCache.keys().next().value;
+            if (oldestKey) ttsAudioCache.delete(oldestKey);
+          }
+          ttsAudioCache.set(cacheKey, { buffer: wavBuffer, mimeType, timestamp: Date.now() });
+
+          return { buffer: wavBuffer, mimeType };
+        }
+      } catch (geminiErr: any) {
+        console.warn('Gemini expressive TTS failed, trying fallback:', geminiErr?.message || geminiErr);
+      }
+    }
+
+    // High-fidelity fallback: Google TTS with expanded Gujarati speech text
+    const chunks = expanded.match(/.{1,180}(?:\s+|$)/gu) || [expanded];
+    const chunkBuffers: Buffer[] = [];
+    for (const chunk of chunks.slice(0, 20)) {
+      if (!chunk.trim()) continue;
+      try {
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk.trim())}&tl=gu&client=tw-ob`;
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)',
+          },
+        });
+        if (res.ok) {
+          const ab = await res.arrayBuffer();
+          chunkBuffers.push(Buffer.from(ab));
+        }
+      } catch (e) {
+        console.warn('Fallback chunk error:', e);
+      }
+    }
+
+    if (chunkBuffers.length > 0) {
+      const combined = Buffer.concat(chunkBuffers);
+      return { buffer: combined, mimeType: 'audio/mpeg' };
+    }
+
+    throw new Error('અવાજ તૈયાર થઈ શક્યો નથી (Audio synthesis unavailable)');
+  }
+
+  // POST /api/tts/speak: Synthesizes expressive Gujarati speech with emotions and expanded titles
+  app.post('/api/tts/speak', async (req: Request, res: Response) => {
+    try {
+      const { text, voice = 'female' } = req.body;
+      if (!text || typeof text !== 'string') {
+        return res.status(400).json({ error: 'કૃપા કરીને માન્ય લખાણ આપો (Valid text required)' });
+      }
+
+      const voiceType = voice === 'male' || voice === 'Zephyr' ? 'male' : 'female';
+      const result = await synthesizeExpressiveGujaratiAudio(text, voiceType);
+
+      res.setHeader('Content-Type', result.mimeType);
+      res.setHeader('Content-Length', result.buffer.length);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(result.buffer);
+    } catch (err: any) {
+      console.error('TTS speak error:', err);
+      return res.status(500).json({ error: err.message || 'અવાજ બનાવવામાં ભૂલ આવી (TTS synthesis failed)' });
+    }
+  });
+
+  // GET /api/tts/speak: Supports streaming direct speech via query parameters
+  app.get('/api/tts/speak', async (req: Request, res: Response) => {
+    try {
+      const text = String(req.query.text || '').trim();
+      const voice = req.query.voice === 'male' || req.query.voice === 'Zephyr' ? 'male' : 'female';
+      if (!text) {
+        return res.status(400).send('Text is required');
+      }
+      const result = await synthesizeExpressiveGujaratiAudio(text, voice);
+      res.setHeader('Content-Type', result.mimeType);
+      res.setHeader('Content-Length', result.buffer.length);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(result.buffer);
+    } catch (err: any) {
+      return res.status(500).send(err.message || 'TTS Error');
+    }
+  });
+
+  // GET /api/tts/voices: Lists available expressive Gujarati voices
+  app.get('/api/tts/voices', (_req: Request, res: Response) => {
+    res.json({
+      voices: [
+        { id: 'female', name: 'ગુજરાતી મહિલા વાણી (Aoede - હાવભાવ & લાગણી સાથે)', voice: 'Aoede', recommendedFor: 'સમાચાર & સુવિચાર' },
+        { id: 'male', name: 'ગુજરાતી પુરુષ વાણી (Zephyr - હાવભાવ & લાગણી સાથે)', voice: 'Zephyr', recommendedFor: 'બુલેટિન & સામાન્ય જ્ઞાન' },
+      ],
+    });
+  });
+
+  // =========================================================================
   // API: GitHub Update Checker & APK Proxy (Bypasses CORS & Rate Limits)
   // =========================================================================
   const appUpdateCache = new Map<string, { data: any; timestamp: number }>();
@@ -181,8 +394,8 @@ async function startServer() {
       let apkDownloadUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
       let releaseUrl = `https://github.com/${repo}/releases/latest`;
       let tagName = 'latest';
-      let releaseName = 'Vidyalayam v1.0.58 (Latest)';
-      let versionName = 'v1.0.58';
+      let releaseName = 'Vidyalayam v1.0.60 (Latest)';
+      let versionName = 'v1.0.60';
       let releaseCommitSha = '';
 
       // 1. Fetch latest commit
@@ -3608,10 +3821,7 @@ Format: Return strictly a valid JSON array of 10 objects:
     }
   });
 
-  // In-memory audio cache for high-fidelity Gemini TTS (stores base64 WAV)
-  const ttsAudioCache = new Map<string, { audioBase64: string; mimeType: string; timestamp: number }>();
-
-  // POST /api/tts: Generates ultra-realistic humanlike Gujarati audio using gemini-3.8-flash-lite-tts
+  // POST /api/tts: Generates ultra-realistic humanlike Gujarati audio with emotions and expanded titles
   app.post('/api/tts', async (req: Request, res: Response) => {
     try {
       const { text, voice, gender } = req.body;
@@ -3624,204 +3834,25 @@ Format: Return strictly a valid JSON array of 10 objects:
         return res.status(400).json({ error: 'Text is empty', fallback: true });
       }
 
-      const isMale = gender === 'male' || voice === 'Zephyr' || voice === 'Puck' || voice === 'Charon' || voice === 'Fenrir';
-      const selectedVoice = isMale ? 'Zephyr' : 'Aoede';
+      const isMale = gender === 'male' || voice === 'male' || voice === 'Zephyr' || voice === 'Puck' || voice === 'Charon' || voice === 'Fenrir';
+      const voiceType = isMale ? 'male' : 'female';
 
-      // Cache lookup (key based on voice gender + text)
-      const cacheKey = `${isMale ? 'male' : 'female'}:${selectedVoice}:${cleanText}`;
-      const cached = ttsAudioCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < 1000 * 60 * 60 * 24) {
-        return res.json({
-          success: true,
-          mimeType: cached.mimeType,
-          audioBase64: cached.audioBase64,
-          fromCache: true,
-          voice: selectedVoice,
-        });
-      }
-
-      // Helper function to synthesize native human Gujarati speech via high-fidelity pipeline
-      const synthesizeNativeGujaratiAudio = async (
-        text: string,
-        isMaleVoice: boolean
-      ): Promise<{ audioBase64: string; mimeType: string } | null> => {
-        try {
-          const rawParts = text.split(/(?<=[.!?।\n])\s+/);
-          const chunks: string[] = [];
-          for (const raw of rawParts) {
-            const trimmed = raw.trim();
-            if (!trimmed) continue;
-            if (trimmed.length <= 180) {
-              chunks.push(trimmed);
-            } else {
-              const subparts = trimmed.split(/(?<=[,])\s+/);
-              let curr = '';
-              for (const sub of subparts) {
-                if ((curr + ' ' + sub).length <= 180) {
-                  curr = curr ? curr + ' ' + sub : sub;
-                } else {
-                  if (curr) chunks.push(curr.trim());
-                  curr = sub;
-                }
-              }
-              if (curr) chunks.push(curr.trim());
-            }
-          }
-
-          if (chunks.length === 0) chunks.push(text.slice(0, 180));
-
-          // Fetch chunks in parallel for ultra-fast response (supports up to 25 chunks / ~3000 chars)
-          const targetChunks = chunks.slice(0, 25);
-          const chunkBuffers = await Promise.all(
-            targetChunks.map(async (chunk) => {
-              try {
-                const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=gu&client=tw-ob`;
-                const ttsRes = await fetch(url, {
-                  headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                  },
-                });
-                if (ttsRes.ok) {
-                  const ab = await ttsRes.arrayBuffer();
-                  return Buffer.from(ab);
-                }
-              } catch (e) {
-                console.warn('TTS chunk fetch failed:', e);
-              }
-              return null;
-            })
-          );
-
-          const validBuffers = chunkBuffers.filter((b): b is Buffer => b !== null && b.length > 0);
-          if (validBuffers.length === 0) return null;
-          let combined = Buffer.concat(validBuffers);
-
-          if (isMaleVoice) {
-            try {
-              const { spawn } = await import('child_process');
-              const ffmpeg = spawn('ffmpeg', [
-                '-i', 'pipe:0',
-                '-filter:a', 'asetrate=24000*0.82,aresample=24000,atempo=1.22',
-                '-f', 'mp3',
-                'pipe:1',
-              ]);
-
-              const ffmpegChunks: Buffer[] = [];
-              ffmpeg.stdout.on('data', (c) => ffmpegChunks.push(c));
-              ffmpeg.stdin.write(combined);
-              ffmpeg.stdin.end();
-
-              await new Promise<void>((resolve, reject) => {
-                ffmpeg.on('close', () => resolve());
-                ffmpeg.on('error', (e) => reject(e));
-              });
-
-              if (ffmpegChunks.length > 0) {
-                combined = Buffer.concat(ffmpegChunks);
-              }
-            } catch (ffmpegErr) {
-              console.warn('ffmpeg male audio transformation fallback:', ffmpegErr);
-            }
-          }
-
-          return {
-            audioBase64: combined.toString('base64'),
-            mimeType: 'audio/mpeg',
-          };
-        } catch (nativeErr) {
-          console.error('Native Gujarati audio pipeline error:', nativeErr);
-        }
-        return null;
-      };
-
-      const apiKey = process.env.GEMINI_API_KEY;
-      let audioBase64 = '';
-      let mimeType = 'audio/wav';
-      let activeVoiceName = isMale ? 'Zephyr' : 'Aoede';
-
-      if (apiKey) {
-        try {
-          const ai = new GoogleGenAI({
-            apiKey,
-            httpOptions: {
-              headers: {
-                'User-Agent': 'aistudio-build',
-              },
-            },
-          });
-
-          // gemini-3.8-flash-lite-tts produces studio-grade, authentic human Gujarati speech
-          const response = await ai.models.generateContent({
-            model: 'gemini-3.8-flash-lite-tts',
-            contents: cleanText,
-            config: {
-              responseModalities: ['AUDIO'],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: {
-                    voiceName: selectedVoice,
-                  },
-                },
-              },
-            },
-          });
-
-          const audioPart = response.candidates?.[0]?.content?.parts?.find(
-            (p) => p.inlineData && p.inlineData.data
-          );
-
-          if (audioPart?.inlineData?.data) {
-            audioBase64 = audioPart.inlineData.data;
-            mimeType = audioPart.inlineData.mimeType || 'audio/wav';
-          }
-        } catch (geminiErr: any) {
-          // If Gemini quota reached or unavailable, fall through seamlessly to native human Gujarati engine
-          console.warn('Gemini TTS unavailable, routing to high-fidelity native Gujarati voice engine...');
-        }
-      }
-
-      // If Gemini TTS didn't return audio, generate via high-fidelity native Gujarati voice pipeline
-      if (!audioBase64) {
-        const nativeResult = await synthesizeNativeGujaratiAudio(cleanText, isMale);
-        if (nativeResult) {
-          audioBase64 = nativeResult.audioBase64;
-          mimeType = nativeResult.mimeType;
-          activeVoiceName = isMale ? 'ગુજરાતી પુરુષ વાણી (Zephyr)' : 'ગુજરાતી મહિલા વાણી (Aoede)';
-        }
-      }
-
-      if (!audioBase64) {
-        return res.status(200).json({
-          success: false,
-          fallback: true,
-          message: 'Speech synthesis fallback enabled',
-        });
-      }
-
-      // Keep cache bounded to 150 items
-      if (ttsAudioCache.size >= 150) {
-        const oldestKey = ttsAudioCache.keys().next().value;
-        if (oldestKey) ttsAudioCache.delete(oldestKey);
-      }
-      ttsAudioCache.set(cacheKey, {
-        audioBase64,
-        mimeType,
-        timestamp: Date.now(),
-      });
+      const result = await synthesizeExpressiveGujaratiAudio(cleanText, voiceType);
 
       return res.json({
         success: true,
-        mimeType,
-        audioBase64,
+        mimeType: result.mimeType,
+        audioBase64: result.buffer.toString('base64'),
         fromCache: false,
-        voice: activeVoiceName,
+        voice: isMale ? 'ગુજરાતી પુરુષ વાણી (Zephyr - લાગણી & હાવભાવ સાથે)' : 'ગુજરાતી મહિલા વાણી (Aoede - લાગણી & હાવભાવ સાથે)',
+        expandedText: expandGujaratiSpeechText(cleanText),
       });
     } catch (err: any) {
       console.error('TTS endpoint error:', err);
       return res.status(200).json({
         success: false,
         fallback: true,
-        message: 'Speech synthesis fallback enabled',
+        message: err.message || 'Speech synthesis fallback enabled',
       });
     }
   });

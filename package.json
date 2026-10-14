@@ -25,6 +25,7 @@
     "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
     "lucide-react": "^0.546.0",
+    "msedge-tts": "^2.1.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "sharp": "^0.35.5",

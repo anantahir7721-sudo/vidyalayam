@@ -13,12 +13,15 @@ import {
   GraduationCap,
   Share2,
   Download,
+  Volume2,
+  Square,
 } from 'lucide-react';
 import { DailyInterestingFactsBulletin, DailyInterestingFact } from '../types';
 import { getDailyInterestingFactsBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
 import { shareDailyInterestingFactsAsPdf } from '../utils/dailyPdfShareUtils';
 import { printHtmlDocument, getPrintableDailyJanvaJevuHtml } from '../utils/printAndPdfUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import { ttsService, formatJanvaJevuSpeech } from '../services/ttsService';
 
 interface DailyJanvaJevuTabProps {
   schoolName?: string;
@@ -40,6 +43,32 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+
+  const [ttsPlaying, setTtsPlaying] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
+
+  useEffect(() => {
+    const unsub = ttsService.subscribe((s) => {
+      setTtsPlaying(s.isPlaying && s.activeId === `janva_${bulletin?.id}`);
+      setTtsLoading(s.isLoading && s.activeId === `janva_${bulletin?.id}`);
+    });
+    return () => unsub();
+  }, [bulletin?.id]);
+
+  const handleToggleListenJanva = () => {
+    if (!bulletin) return;
+    const janvaId = `janva_${bulletin.id}`;
+    if (ttsPlaying) {
+      ttsService.stop();
+    } else {
+      const speechText = formatJanvaJevuSpeech(bulletin);
+      ttsService.play(
+        janvaId,
+        speechText,
+        `આજનું જાણવા જેવું - ૧૨ રોચક તથ્યો (${bulletin.editionDate})`
+      );
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -240,6 +269,35 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Edge TTS Audio Button */}
+            <button
+              type="button"
+              onClick={handleToggleListenJanva}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-[0.98] ${
+                ttsPlaying
+                  ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
+                  : 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black'
+              }`}
+              title="માઈક્રોસોફ્ટ એજ ન્યુરલ ગુજરાતી અવાજમાં આજનું જાણવા જેવું સાંભળો"
+            >
+              {ttsLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>તૈયાર થઈ રહ્યું છે...</span>
+                </>
+              ) : ttsPlaying ? (
+                <>
+                  <Square className="w-4 h-4 fill-current" />
+                  <span>રોકો</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-4 h-4" />
+                  <span>🔊 તથ્યો સાંભળો</span>
+                </>
+              )}
+            </button>
+
             {/* Direct PDF Download */}
             <button
               type="button"

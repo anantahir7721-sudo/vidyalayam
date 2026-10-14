@@ -251,11 +251,25 @@ export async function loginSchool(
         // Also check if stored password in Firestore matches
         const storedPass = (schData.password || '').trim();
         if (storedPass && storedPass === cleanPass) {
-          try {
-            await createUserWithEmailAndPassword(auth, email, cleanPass);
-          } catch {}
+          let authedUser = auth.currentUser;
+          if (!authedUser || authedUser.email !== email) {
+            try {
+              const cred = await createUserWithEmailAndPassword(auth, email, cleanPass);
+              authedUser = cred.user;
+            } catch (createErr: any) {
+              if (createErr.code === 'auth/email-already-in-use') {
+                if (tempPass) {
+                  try {
+                    const oldCred = await signInWithEmailAndPassword(auth, email, tempPass);
+                    await updatePassword(oldCred.user, cleanPass);
+                    authedUser = oldCred.user;
+                  } catch {}
+                }
+              }
+            }
+          }
           return {
-            user: auth.currentUser,
+            user: authedUser || auth.currentUser,
             school: { id: schDoc.id, ...schData, status: schData.status || 'approved' },
             requiresPasswordReset: schData.mustResetPassword === true,
           };
@@ -344,7 +358,7 @@ export async function resetSchoolPasswordWithTemp(params: {
   // 3. Authenticate / update Firebase Auth user so user is properly signed in
   try {
     if (auth.currentUser && auth.currentUser.email === email) {
-      await updatePassword(auth.currentUser, newPassword.trim());
+      await updatePassword(auth.currentUser, newPassword.trim()).catch(() => {});
     } else {
       if (auth.currentUser) {
         await fbSignOut(auth).catch(() => {});
@@ -355,24 +369,30 @@ export async function resetSchoolPasswordWithTemp(params: {
         await signInWithEmailAndPassword(auth, email, newPassword.trim());
         signedIn = true;
       } catch (signErr: any) {
-        if (signErr.code === 'auth/user-not-found') {
+        if (signErr.code === 'auth/wrong-password' || signErr.code === 'auth/invalid-credential') {
+          try {
+            const oldCred = await signInWithEmailAndPassword(auth, email, temporaryPassword.trim());
+            await updatePassword(oldCred.user, newPassword.trim());
+            signedIn = true;
+          } catch {}
+        }
+        if (!signedIn && signErr.code === 'auth/user-not-found') {
           try {
             await createUserWithEmailAndPassword(auth, email, newPassword.trim());
             signedIn = true;
           } catch {}
-        } else if (signErr.code === 'auth/wrong-password' || signErr.code === 'auth/invalid-credential') {
-          if (updatedSchool?.password && updatedSchool.password !== newPassword.trim()) {
-            try {
-              const oldCred = await signInWithEmailAndPassword(auth, email, updatedSchool.password);
-              await updatePassword(oldCred.user, newPassword.trim());
-              signedIn = true;
-            } catch {}
-          }
         }
       }
     }
   } catch (authErr) {
     console.warn('Firebase auth sync note:', authErr);
+  }
+
+  // 4. Ensure final active session in auth
+  if (!auth.currentUser || auth.currentUser.email !== email) {
+    try {
+      await signInWithEmailAndPassword(auth, email, newPassword.trim());
+    } catch {}
   }
 
   const finalSchool: School = updatedSchool || {
@@ -452,7 +472,20 @@ export async function changeSchoolPassword(params: {
     }
   }
 
-  // 3. Keep local storage session in sync with the new password
+  // 3. Make sure active Firebase Auth session is maintained with the new password
+  if (authEmail && (!auth.currentUser || auth.currentUser.email !== authEmail)) {
+    try {
+      await signInWithEmailAndPassword(auth, authEmail, cleanNew);
+    } catch (finalSignErr: any) {
+      if (finalSignErr.code === 'auth/user-not-found') {
+        try {
+          await createUserWithEmailAndPassword(auth, authEmail, cleanNew);
+        } catch {}
+      }
+    }
+  }
+
+  // 4. Keep local storage session in sync with the new password
   try {
     const storedUserJson = localStorage.getItem('vidyalayam_auth_user');
     if (storedUserJson) {
@@ -475,12 +508,16 @@ export async function logoutSchool(): Promise<void> {
 }
 
 /**
- * Fetch school profile by school UID strictly from the AI Studio named database
+ * Fetch a school document by UID with triple lookup:
+ * 1. Directly via /schools/{uid}
+ * 2. Via query by ownerUid == uid
+ * 3. Via query by authenticated email (school_{diseCode}@gujarat-schools.internal)
  */
 export async function getSchoolByUid(uid: string): Promise<School | null> {
   if (!uid) return null;
 
   try {
+    // 1. Direct document lookup by uid
     const schoolRef = doc(db, 'schools', uid);
     let snap = await getDoc(schoolRef);
     if (!snap.exists()) {
@@ -491,9 +528,42 @@ export async function getSchoolByUid(uid: string): Promise<School | null> {
     if (snap.exists()) {
       const rawData = snap.data() as School;
       return {
+        id: snap.id,
         ...rawData,
         status: rawData.status || 'approved',
       };
+    }
+
+    // 2. Query by ownerUid
+    const qOwner = query(collection(db, 'schools'), where('ownerUid', '==', uid));
+    const snapOwner = await getDocs(qOwner);
+    if (!snapOwner.empty) {
+      const docSnap = snapOwner.docs[0];
+      const rawData = docSnap.data() as School;
+      return {
+        id: docSnap.id,
+        ...rawData,
+        status: rawData.status || 'approved',
+      };
+    }
+
+    // 3. Query by authenticated user's email DISE code
+    const curEmail = auth.currentUser?.email;
+    if (curEmail && curEmail.startsWith('school_') && curEmail.endsWith('@gujarat-schools.internal')) {
+      const extractedDise = curEmail.replace('school_', '').replace('@gujarat-schools.internal', '').trim();
+      if (extractedDise) {
+        const qDise = query(collection(db, 'schools'), where('diseCode', '==', extractedDise));
+        const snapDise = await getDocs(qDise);
+        if (!snapDise.empty) {
+          const docSnap = snapDise.docs[0];
+          const rawData = docSnap.data() as School;
+          return {
+            id: docSnap.id,
+            ...rawData,
+            status: rawData.status || 'approved',
+          };
+        }
+      }
     }
   } catch (err) {
     console.warn(`[getSchoolByUid] Error fetching school document for UID ${uid}:`, err);

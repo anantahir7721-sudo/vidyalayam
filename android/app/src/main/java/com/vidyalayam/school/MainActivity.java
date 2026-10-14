@@ -220,7 +220,7 @@ public class MainActivity extends BridgeActivity {
                     return pInfo.versionName.startsWith("v") ? pInfo.versionName : "v" + pInfo.versionName;
                 }
             } catch (Exception ignored) {}
-            return "v1.0.58";
+            return "v1.0.60";
         }
 
         @JavascriptInterface

@@ -14,12 +14,15 @@ import {
   Loader2,
   Download,
   Printer,
+  Volume2,
+  Square,
 } from 'lucide-react';
 import { DailySuvicharBulletin } from '../types';
 import { getDailySuvicharBulletin } from '../services/dailyKnowledgeService';
 import { shareDailySuvicharAsPdf, downloadDailySuvicharAsPdf } from '../utils/dailyPdfShareUtils';
 import { printHtmlDocument, getPrintableDailySuvicharHtml } from '../utils/printAndPdfUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import { ttsService, formatSuvicharSpeech } from '../services/ttsService';
 
 interface DailySuvicharTabProps {
   schoolName?: string;
@@ -40,6 +43,32 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
   const [offsetIndex, setOffsetIndex] = useState(0);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+
+  const [ttsPlaying, setTtsPlaying] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
+
+  useEffect(() => {
+    const unsub = ttsService.subscribe((s) => {
+      setTtsPlaying(s.isPlaying && s.activeId === `suvichar_${bulletin?.id}`);
+      setTtsLoading(s.isLoading && s.activeId === `suvichar_${bulletin?.id}`);
+    });
+    return () => unsub();
+  }, [bulletin?.id]);
+
+  const handleToggleListenSuvichar = () => {
+    if (!bulletin?.suvichar) return;
+    const suvicharId = `suvichar_${bulletin.id}`;
+    if (ttsPlaying) {
+      ttsService.stop();
+    } else {
+      const speechText = formatSuvicharSpeech(bulletin.suvichar);
+      ttsService.play(
+        suvicharId,
+        speechText,
+        `આજનો પ્રેરણાદાયી સુવિચાર (${bulletin.editionDate})`
+      );
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -203,6 +232,35 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
 
           {/* Action Buttons: Download PDF, WhatsApp PDF & Next Thought */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Edge TTS Audio Button */}
+            <button
+              type="button"
+              onClick={handleToggleListenSuvichar}
+              className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer ${
+                ttsPlaying
+                  ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
+                  : 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black'
+              }`}
+              title="માઈક્રોસોફ્ટ એજ ન્યુરલ ગુજરાતી અવાજમાં આજનો સુવિચાર સાંભળો"
+            >
+              {ttsLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>તૈયાર થઈ રહ્યું છે...</span>
+                </>
+              ) : ttsPlaying ? (
+                <>
+                  <Square className="w-4 h-4 fill-current" />
+                  <span>સુવિચાર રોકો</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-4 h-4" />
+                  <span>🔊 સુવિચાર સાંભળો</span>
+                </>
+              )}
+            </button>
+
             {/* Direct PDF Download */}
             <button
               type="button"

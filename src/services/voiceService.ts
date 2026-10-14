@@ -13,6 +13,7 @@
  */
 
 import { apiUrl } from '../utils/apiConfig';
+import { expandGujaratiSpeechText } from './ttsService';
 
 export interface VoiceOptions {
   rate?: number;
@@ -188,7 +189,10 @@ class VoiceService {
   public cleanTextForSpeech(text: string): string {
     if (!text) return '';
 
-    return text
+    // First expand Gujarati abbreviations like 'ડો બાબા સાહેબ' -> 'ડૉક્ટર બાબાસાહેબ'
+    const expanded = expandGujaratiSpeechText(text);
+
+    return expanded
       // Remove URLs
       .replace(/https?:\/\/\S+/gi, '')
       // Remove emojis and decorative symbols
