@@ -4,14 +4,11 @@ import {
   VolumeX,
   Play,
   Pause,
-  Square,
   Loader2,
   X,
-  User,
-  Gauge,
   Sparkles,
 } from 'lucide-react';
-import { ttsService, TTSPlayerState, TTSVoice } from '../services/ttsService';
+import { ttsService, TTSPlayerState } from '../services/ttsService';
 
 function formatDuration(seconds: number): string {
   if (!seconds || isNaN(seconds) || seconds <= 0) return '0:00';
@@ -22,7 +19,6 @@ function formatDuration(seconds: number): string {
 
 export const TTSFloatingBar: React.FC = () => {
   const [state, setState] = useState<TTSPlayerState>(ttsService.getState());
-  const [showVoicePicker, setShowVoicePicker] = useState(false);
 
   useEffect(() => {
     const unsub = ttsService.subscribe((s) => {
@@ -45,11 +41,6 @@ export const TTSFloatingBar: React.FC = () => {
 
   const handleStop = () => {
     ttsService.stop();
-  };
-
-  const handleVoiceChange = (voice: TTSVoice) => {
-    ttsService.setVoice(voice);
-    setShowVoicePicker(false);
   };
 
   const handleSpeedToggle = () => {
@@ -93,10 +84,10 @@ export const TTSFloatingBar: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-amber-300" />
-                  Gemini AI સંવાદી વાણી
+                  ગુજરાતી મહિલા શિક્ષક વાણી
                 </span>
-                <span className="text-[10px] text-slate-400">
-                  {state.voice === 'female' ? '• આરાધ્યા (Aoede)' : '• આરવ (Zephyr)'}
+                <span className="text-[10px] text-emerald-400 font-semibold">
+                  • ધ્વનિ (કુદરતી અવાજ)
                 </span>
               </div>
               <h4 className="text-xs font-bold text-white truncate leading-tight">
@@ -116,20 +107,10 @@ export const TTSFloatingBar: React.FC = () => {
             <button
               type="button"
               onClick={handleSpeedToggle}
-              className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-slate-200 transition-colors cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-slate-200 transition-colors cursor-pointer"
               title="વાચન ઝડપ બદલો"
             >
               {state.rate}x
-            </button>
-
-            {/* Voice Selector Toggle */}
-            <button
-              type="button"
-              onClick={() => setShowVoicePicker(!showVoicePicker)}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
-              title="અવાજ બદલો (આરાધ્યા / આરવ)"
-            >
-              <User className="w-4 h-4 text-amber-400" />
             </button>
 
             {/* Play / Pause Toggle */}
@@ -158,37 +139,6 @@ export const TTSFloatingBar: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {/* Dropdown for Voice selection */}
-        {showVoicePicker && (
-          <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
-            <span className="text-[11px] text-slate-400">અવાજ પસંદ કરો:</span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => handleVoiceChange('female')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                  state.voice === 'female'
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                આરાધ્યા (બહેન)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleVoiceChange('male')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                  state.voice === 'male'
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                આરવ (ભાઈ)
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

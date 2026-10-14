@@ -66,6 +66,19 @@ public class MainActivity extends BridgeActivity {
                                 if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
                                     mTextToSpeech.setLanguage(new Locale("hi", "IN"));
                                 }
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                    try {
+                                        java.util.Set<android.speech.tts.Voice> voices = mTextToSpeech.getVoices();
+                                        if (voices != null) {
+                                            for (android.speech.tts.Voice v : voices) {
+                                                if (v.getLocale() != null && "gu".equalsIgnoreCase(v.getLocale().getLanguage())) {
+                                                    mTextToSpeech.setVoice(v);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    } catch (Exception ignoredVoice) {}
+                                }
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }

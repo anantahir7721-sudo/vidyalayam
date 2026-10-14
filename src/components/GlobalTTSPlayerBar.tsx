@@ -6,11 +6,10 @@ import {
   Pause,
   Square,
   Loader2,
-  User,
   Zap,
   X,
 } from 'lucide-react';
-import { ttsService, TTSPlayerState, TTSVoice } from '../services/ttsService';
+import { ttsService, TTSPlayerState } from '../services/ttsService';
 
 export const GlobalTTSPlayerBar: React.FC = () => {
   const [state, setState] = useState<TTSPlayerState>(ttsService.getState());
@@ -36,11 +35,6 @@ export const GlobalTTSPlayerBar: React.FC = () => {
 
   const handleStop = () => {
     ttsService.stop();
-  };
-
-  const handleVoiceToggle = () => {
-    const nextVoice: TTSVoice = state.voice === 'female' ? 'male' : 'female';
-    ttsService.setVoice(nextVoice);
   };
 
   const handleRateToggle = () => {
@@ -90,7 +84,7 @@ export const GlobalTTSPlayerBar: React.FC = () => {
               <p className="text-[10px] text-amber-300/80 truncate">
                 {state.isLoading
                   ? 'અવાજ તૈયાર થઈ રહ્યો છે...'
-                  : `${state.voice === 'female' ? '👩 આરાધ્યા (બહેન - Gemini AI)' : '👨 આરવ (ભાઈ - Gemini AI)'} • ${state.rate}x સ્પીડ`}
+                  : `👩 ગુજરાતી મહિલા શિક્ષક વાણી • ${state.rate}x સ્પીડ`}
               </p>
             </div>
           </div>
@@ -113,16 +107,6 @@ export const GlobalTTSPlayerBar: React.FC = () => {
           </span>
 
           <div className="flex items-center gap-1.5">
-            {/* Voice toggle */}
-            <button
-              onClick={handleVoiceToggle}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-[10px] font-semibold text-slate-200 transition-colors cursor-pointer"
-              title="અવાજ બદલો (આરાધ્યા / આરવ)"
-            >
-              <User className="w-3 h-3 text-amber-400" />
-              <span>{state.voice === 'female' ? 'આરાધ્યા' : 'આરવ'}</span>
-            </button>
-
             {/* Speed toggle */}
             <button
               onClick={handleRateToggle}

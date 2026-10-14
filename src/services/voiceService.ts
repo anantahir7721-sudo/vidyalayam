@@ -12,7 +12,7 @@
  *    - Chrome 15s freeze prevention keep-alive.
  */
 
-import { apiUrl } from '../utils/apiConfig';
+import { apiFetch } from '../utils/apiConfig';
 import { expandGujaratiSpeechText } from './ttsService';
 
 export interface VoiceOptions {
@@ -282,20 +282,19 @@ class VoiceService {
       try {
         if (options.onLoading) options.onLoading(true);
 
-        const preferredVoiceName = gender === 'male' ? 'Zephyr' : 'Aoede';
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout for high-capacity synthesis
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-        const response = await fetch(apiUrl('/api/tts'), {
+        const response = await apiFetch('/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text: clean.slice(0, 3000), // optimal length for full bulletin / complete speech
-            voice: preferredVoiceName,
-            gender: gender,
+            text: clean.slice(0, 3000),
+            voice: 'gu-IN-DhwaniNeural',
+            gender: 'female',
           }),
           signal: controller.signal,
-        });
+        }, 25000);
 
         clearTimeout(timeoutId);
 

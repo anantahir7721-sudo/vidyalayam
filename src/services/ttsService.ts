@@ -1,7 +1,7 @@
-import { apiUrl } from '../utils/apiConfig';
+import { apiFetch } from '../utils/apiConfig';
 import { DailyNewsBulletin, DailySuvicharItem, DailyJanvaJevuBulletin } from '../types';
 
-export type TTSVoice = 'female' | 'male';
+export type TTSVoice = 'female';
 
 export interface TTSPlayerState {
   isPlaying: boolean;
@@ -29,7 +29,7 @@ class TTSServiceManager {
     isLoading: false,
     currentTitle: '',
     activeId: null,
-    voice: (localStorage.getItem('vidyalayam_tts_voice') as TTSVoice) || 'female',
+    voice: 'female',
     rate: 1.0,
     duration: 0,
     currentTime: 0,
@@ -112,9 +112,8 @@ class TTSServiceManager {
     return { ...this.state };
   }
 
-  public setVoice(voice: TTSVoice) {
-    this.state.voice = voice;
-    localStorage.setItem('vidyalayam_tts_voice', voice);
+  public setVoice(_voice: TTSVoice = 'female') {
+    this.state.voice = 'female';
     this.notify();
   }
 
@@ -179,15 +178,14 @@ class TTSServiceManager {
   /**
    * Preload audio for a text snippet in the background so it plays in 0ms when clicked
    */
-  public async preload(text: string, voice?: TTSVoice): Promise<void> {
+  public async preload(text: string): Promise<void> {
     const clean = expandGujaratiSpeechText(text.trim());
     if (!clean) return;
-    const voiceType = voice || this.state.voice;
-    const cacheKey = `${voiceType}:${clean.slice(0, 160)}`;
+    const cacheKey = `female:${clean.slice(0, 160)}`;
     if (this.clientBlobCache.has(cacheKey)) return;
 
     try {
-      const blob = await this.fetchAudioBlob(clean.slice(0, 160), voiceType);
+      const blob = await this.fetchAudioBlob(clean.slice(0, 160));
       if (blob) {
         this.clientBlobCache.set(cacheKey, blob);
       }
@@ -195,24 +193,24 @@ class TTSServiceManager {
   }
 
   /**
-   * Fast synthesis fetcher with in-memory caching
+   * Fast synthesis fetcher with in-memory caching and resilient network failover
    */
-  private async fetchAudioBlob(text: string, voice: TTSVoice, signal?: AbortSignal): Promise<Blob | null> {
-    const cacheKey = `${voice}:${text}`;
+  private async fetchAudioBlob(text: string, signal?: AbortSignal): Promise<Blob | null> {
+    const cacheKey = `female:${text}`;
     if (this.clientBlobCache.has(cacheKey)) {
       return this.clientBlobCache.get(cacheKey)!;
     }
 
     try {
-      const response = await fetch(apiUrl('/api/tts/speak'), {
+      const response = await apiFetch('/api/tts/speak', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text,
-          voice,
+          voice: 'female',
         }),
         signal,
-      });
+      }, 20000);
 
       if (!response.ok) {
         throw new Error(`TTS server responded with ${response.status}`);
@@ -233,11 +231,10 @@ class TTSServiceManager {
   private async playChunk(index: number): Promise<void> {
     if (index >= this.activeChunks.length) return;
     const chunkText = this.activeChunks[index];
-    const voiceType = this.activeVoiceType;
 
     try {
-      const blob = await this.fetchAudioBlob(chunkText, voiceType, this.currentAbortController?.signal);
-      if (!blob || !this.state.isPlaying && !this.state.isLoading) return;
+      const blob = await this.fetchAudioBlob(chunkText, this.currentAbortController?.signal);
+      if (!blob || (!this.state.isPlaying && !this.state.isLoading)) return;
 
       if (!this.audio) {
         this.audio = new Audio();
@@ -259,25 +256,24 @@ class TTSServiceManager {
       // In the background, prefetch the NEXT chunk immediately so there is ZERO waiting gap!
       if (index + 1 < this.activeChunks.length) {
         const nextText = this.activeChunks[index + 1];
-        this.fetchAudioBlob(nextText, voiceType).catch(() => {});
+        this.fetchAudioBlob(nextText).catch(() => {});
       }
     } catch (err: any) {
       if (err.name === 'AbortError') return;
-      console.warn('[TTSService] Chunk playback error, attempting fallback:', err);
+      console.warn('[TTSService] Cloud neural chunk failed, attempting offline fallback:', err);
       this.fallbackBrowserSpeech(chunkText);
     }
   }
 
   /**
-   * Main synthesis & play method using Gemini AI Expressive Speech API.
-   * Uses smart sentence-by-sentence streaming for sub-second instant response,
-   * with seamless Android Native TextToSpeech in APK container.
+   * Main synthesis & play method using authentic Gujarati Neural Voice.
+   * Employs sentence-by-sentence streaming for instant (< 0.8s) response time,
+   * with seamless offline fallback.
    */
   public async play(
     id: string,
     text: string,
-    title: string,
-    voiceOverride?: TTSVoice
+    title: string
   ): Promise<void> {
     if (this.state.activeId === id && this.state.isPlaying) {
       this.pause();
@@ -294,30 +290,15 @@ class TTSServiceManager {
     const cleanText = expandGujaratiSpeechText(text.trim());
     if (!cleanText) return;
 
-    const chosenVoice = voiceOverride || this.state.voice;
-    this.activeVoiceType = chosenVoice;
-
     this.state.activeId = id;
     this.state.currentTitle = title;
     this.state.isLoading = true;
     this.state.isPlaying = false;
+    this.state.voice = 'female';
     this.notify();
 
-    // 1. If running inside Native Android APK with AndroidBridge:
-    if (typeof (window as any).AndroidBridge?.speakText === 'function') {
-      try {
-        this.state.isLoading = false;
-        this.state.isPlaying = true;
-        this.notify();
-        (window as any).AndroidBridge.speakText(cleanText, this.state.rate);
-        return;
-      } catch (nativeErr) {
-        console.warn('Native speakText fallback to cloud/web:', nativeErr);
-      }
-    }
-
-    // 2. High-Speed Low-Latency Cloud Playback (Sentence / Paragraph Chunking):
-    // Splits long text so the first chunk begins playing in < 0.8 seconds!
+    // High-Speed Low-Latency Cloud Playback (Sentence / Paragraph Chunking):
+    // First short sentence starts playing within 0.8 seconds!
     this.activeChunks = splitIntoSpeechChunks(cleanText);
     this.currentChunkIdx = 0;
     this.currentAbortController = new AbortController();
@@ -326,13 +307,13 @@ class TTSServiceManager {
       await this.playChunk(0);
     } catch (err: any) {
       if (err.name === 'AbortError') return;
-      console.warn('[TTSService] Backend Gemini TTS failed, attempting browser fallback:', err);
+      console.warn('[TTSService] Primary neural speech failed, attempting offline fallback:', err);
       this.fallbackBrowserSpeech(cleanText);
     }
   }
 
   /**
-   * Client-side fallback if server is unreachable
+   * Client-side fallback if server is unreachable or offline
    */
   private fallbackBrowserSpeech(text: string) {
     if (typeof (window as any).AndroidBridge?.speakText === 'function') {
@@ -417,41 +398,47 @@ export function expandGujaratiSpeechText(raw: string): string {
   if (!raw || typeof raw !== 'string') return '';
   let text = raw;
 
+  // Specific historical honorifics & compound names
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:ડૉ|ડો)(?:\.|\s*)બાબા\s*સાહેબ/gu, '$1ડૉક્ટર બાબાસાહેબ');
+  text = text.replace(/બાબા\s+સાહેબ/gu, 'બાબાસાહેબ');
+  text = text.replace(/ગાંધી\s+જી/gu, 'ગાંધીજી');
+  text = text.replace(/સરદાર\s+પટેલ/gu, 'સરદાર વલ્લભભાઈ પટેલ');
+
   // 1. Dr. / Do. variations -> 'ડૉક્ટર ' (e.g. 'ડો બાબા સાહેબ' -> 'ડૉક્ટર બાબાસાહેબ')
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:ડૉ|ડો)(?:\.|\s+)/gu, '$1ડૉક્ટર ');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:ડૉ|ડો)(?:\.|\s*)\s+/gu, '$1ડૉક્ટર ');
   // 2. Pujya / Pu. variations -> 'પૂજ્ય '
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:પૂ)(?:\.|\s+)/gu, '$1પૂજ્ય ');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:પૂ)(?:\.|\s*)\s+/gu, '$1પૂજ્ય ');
   // 3. Professor / Pro. variations -> 'પ્રોફેસર '
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:પ્રો)(?:\.|\s+)/gu, '$1પ્રોફેસર ');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:પ્રો)(?:\.|\s*)\s+/gu, '$1પ્રોફેસર ');
   // 4. Shri. variations -> 'શ્રી '
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:શ્રી)\.(?:\s*)/gu, '$1શ્રી ');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:શ્રી)\.(?:\s*)/gu, '$1શ્રીમાન ');
   // 5. Swargiy / Swa. variations -> 'સ્વર્ગસ્થ '
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:સ્વ)(?:\.|\s+)/gu, '$1સ્વર્ગસ્થ ');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:સ્વ)(?:\.|\s*)\s+/gu, '$1સ્વર્ગસ્થ ');
   // 6. Likhitang / Li. variations -> 'લિખિતંગ '
   text = text.replace(/(^|[\s,।\.\-"\(])(?:લિ|લી)\.(?:\s*)/gu, '$1લિખિતંગ ');
   // 7. Dhoran / Dho. variations -> 'ધોરણ '
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:ધો)(?:\.|\s+)(\d+|[૧-૯])/gu, '$1ધોરણ $2');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:ધો)(?:\.|\s*)\s*(\d+|[૧-૯][૦-૯]*)/gu, '$1ધોરણ $2');
   // 8. Tarikh / Ta. variations -> 'તારીખ '
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:તા)(?:\.|\s+)(\d+|[૧-૯])/gu, '$1તારીખ $2');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:તા)(?:\.|\s*)\s*(\d+|[૧-૯][૦-૯]*)/gu, '$1તારીખ $2');
   // 9. Number / No. variations -> 'નંબર '
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:નં)(?:\.|\s+)(\d+|[૧-૯])/gu, '$1નંબર $2');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:નં)(?:\.|\s*)\s*(\d+|[૧-૯][૦-૯]*)/gu, '$1નંબર $2');
   // 10. Mobile / Mo. variations -> 'મોબાઇલ '
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:મો)(?:\.|\s+)(\d+|[૧-૯])/gu, '$1મોબાઇલ $2');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:મો)(?:\.|\s*)\s*(\d+|[૧-૯][૦-૯]*)/gu, '$1મોબાઇલ $2');
   // 11. Rupees / Ru. variations -> 'રૂપિયા '
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:રૂ)(?:\.|\s+)(\d+|[૧-૯])/gu, '$1રૂપિયા $2');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:રૂ)(?:\.|\s*)\s*(\d+|[૧-૯][૦-૯]*)/gu, '$1રૂપિયા $2');
   // 12. Kilometers / Ki.Mi. variations -> 'કિલોમીટર '
   text = text.replace(/(?:કિ\.મી\.|કિમી)/gu, 'કિલોમીટર ');
   // 13. Isvisan -> 'ઈસવીસન '
   text = text.replace(/(?:ઈ\.સ\.|ઇ\.સ\.)/gu, 'ઈસવીસન ');
   // 14. Kram / Kr. variations -> 'ક્રમ '
-  text = text.replace(/(^|[\s,।\.\-"\(])(?:ક્ર)\.(?:\s*)/gu, '$1ક્રમ ');
+  text = text.replace(/(^|[\s,।\.\-"\(])(?:ક્ર)(?:\.|\s*)\s*/gu, '$1ક્રમ ');
   // 15. Page / Pej variations -> 'પેજ નંબર '
   text = text.replace(/પેજ\s*નં\.?/gu, 'પેજ નંબર ');
 
-  // Clean markdown symbols, hashtags, links, emojis
+  // Clean markdown symbols, hashtags, links, emojis, brackets
   text = text
     .replace(/https?:\/\/\S+/gu, ' ')
-    .replace(/[*#_~`>\[\]]/gu, ' ')
+    .replace(/[*#_~`>\[\]\(\)]/gu, ' ')
     .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, ' ')
     .replace(/\s+/gu, ' ')
     .trim();
