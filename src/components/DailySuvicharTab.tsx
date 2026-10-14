@@ -52,6 +52,12 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
       setTtsPlaying(s.isPlaying && s.activeId === `suvichar_${bulletin?.id}`);
       setTtsLoading(s.isLoading && s.activeId === `suvichar_${bulletin?.id}`);
     });
+
+    if (bulletin?.suvichar) {
+      const speechText = formatSuvicharSpeech(bulletin.suvichar);
+      ttsService.preload(speechText.slice(0, 150));
+    }
+
     return () => unsub();
   }, [bulletin?.id]);
 

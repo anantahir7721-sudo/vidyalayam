@@ -21,18 +21,22 @@ export interface GitHubUpdateInfo {
 
 export const DEFAULT_REPO = 'anantahir7721-sudo/Vidyalayam-releases';
 export const APP_BASELINE_SHA = 'b9136da768645cda5da214d950cc9ada47a52c45';
-export const APP_BASELINE_VERSION = '1.0.60';
+export const APP_BASELINE_VERSION = '1.0.61';
 
-// Purge any stale legacy cached versions (< 1.0.60) on module load
+// Purge any stale legacy cached versions (< 1.0.61) on module load
 try {
   if (typeof window !== 'undefined' && window.localStorage) {
     const staleInstalled = localStorage.getItem('vidyalayam_installed_app_version');
-    if (staleInstalled && !isVersionGreater(staleInstalled, APP_BASELINE_VERSION)) {
+    if (staleInstalled && !isVersionGreater(staleInstalled, APP_BASELINE_VERSION) && staleInstalled !== '1.0.61' && staleInstalled !== 'v1.0.61') {
       localStorage.removeItem('vidyalayam_installed_app_version');
     }
     const staleGh = localStorage.getItem('vidyalayam_github_version');
-    if (staleGh && !isVersionGreater(staleGh, APP_BASELINE_VERSION)) {
+    if (staleGh && !isVersionGreater(staleGh, APP_BASELINE_VERSION) && staleGh !== '1.0.61' && staleGh !== 'v1.0.61') {
       localStorage.removeItem('vidyalayam_github_version');
+    }
+    const staleWeb = localStorage.getItem('vidyalayam_web_version');
+    if (staleWeb && !isVersionGreater(staleWeb, APP_BASELINE_VERSION) && staleWeb !== '1.0.61' && staleWeb !== 'v1.0.61') {
+      localStorage.removeItem('vidyalayam_web_version');
     }
   }
 } catch {}
@@ -78,10 +82,17 @@ export function getAppVersion(): string {
       }
     }
 
-    // 2. Clear any stale localStorage versions (e.g. older v1.0.52 or v1.0.58 caches)
+    // 2. On Web, prioritize latest verified web release version
+    const webVer = localStorage.getItem('vidyalayam_web_version');
+    if (webVer && (webVer === '1.0.61' || webVer === 'v1.0.61' || isVersionGreater(webVer, APP_BASELINE_VERSION))) {
+      const wv = webVer.trim();
+      return wv.startsWith('v') ? wv : `v${wv}`;
+    }
+
+    // 3. Clear any stale localStorage versions (e.g. older caches)
     const installedVer = localStorage.getItem('vidyalayam_installed_app_version');
     if (installedVer) {
-      if (!isVersionGreater(installedVer, APP_BASELINE_VERSION)) {
+      if (!isVersionGreater(installedVer, APP_BASELINE_VERSION) && installedVer !== '1.0.61' && installedVer !== 'v1.0.61') {
         localStorage.removeItem('vidyalayam_installed_app_version');
       } else {
         const v = installedVer.trim();
@@ -91,7 +102,7 @@ export function getAppVersion(): string {
 
     const ghVer = localStorage.getItem('vidyalayam_github_version');
     if (ghVer) {
-      if (!isVersionGreater(ghVer, APP_BASELINE_VERSION)) {
+      if (!isVersionGreater(ghVer, APP_BASELINE_VERSION) && ghVer !== '1.0.61' && ghVer !== 'v1.0.61') {
         localStorage.removeItem('vidyalayam_github_version');
       } else {
         const v = ghVer.trim();
@@ -276,17 +287,28 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
           localStorage.getItem(`vidyalayam_dismissed_banner_${remoteSha}`) === 'true');
 
       // The live installed version on this device
-      const liveVer = getAppVersion();
+      let liveVer = getAppVersion();
+
+      // On Web platform (non-AndroidBridge), dynamically sync current web version to the latest verified release
+      const isNativeAndroid = typeof (window as any).AndroidBridge?.getAppVersionName === 'function';
+      if (!isNativeAndroid && releaseVersionName) {
+        localStorage.setItem('vidyalayam_web_version', releaseVersionName);
+        liveVer = releaseVersionName;
+      }
 
       // Check whether remote release has a strictly higher version than currently installed
-      // (e.g., if live is 1.0.54 and release is 1.0.54, isNewer is FALSE; only if release is 1.0.55+ is it TRUE)
+      // (e.g., if live is 1.0.60 and release is 1.0.61, isNewer is TRUE for APK users!)
       let isNewer = false;
-      if (releaseVersionName) {
-        isNewer = isVersionGreater(releaseVersionName, liveVer);
+      if (isNativeAndroid) {
+        if (releaseVersionName) {
+          isNewer = isVersionGreater(releaseVersionName, liveVer);
+        } else {
+          const isSameSha = currentAppSha === remoteSha || (releaseCommitSha && currentAppSha === releaseCommitSha);
+          isNewer = !isSameSha && Boolean(remoteSha) && remoteSha !== APP_BASELINE_SHA;
+        }
       } else {
-        // Fallback to commit SHA comparison only if version name was not available
-        const isSameSha = currentAppSha === remoteSha || (releaseCommitSha && currentAppSha === releaseCommitSha);
-        isNewer = !isSameSha && Boolean(remoteSha) && remoteSha !== APP_BASELINE_SHA;
+        // On Web, user is already viewing the latest web release
+        isNewer = false;
       }
 
       if (isNewer) {

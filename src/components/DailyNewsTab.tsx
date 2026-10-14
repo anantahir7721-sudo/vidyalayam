@@ -66,6 +66,12 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
         setPlayingItemId(null);
       }
     });
+
+    if (bulletin) {
+      const speechText = formatNewsBulletinSpeech(bulletin);
+      ttsService.preload(speechText.slice(0, 150));
+    }
+
     return () => unsub();
   }, [bulletin?.id]);
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowUpCircle, 
   Download, 
@@ -28,6 +28,29 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
   const [downloadStatusMsg, setDownloadStatusMsg] = useState<string>('');
   const [apkDownloadedBlobUrl, setApkDownloadedBlobUrl] = useState<string | null>(null);
 
+  useEffect(() => {
+    (window as any).onApkDownloadProgress = (percent: number, loaded: number, total: number) => {
+      setDownloadingApk(true);
+      if (percent >= 0) {
+        setDownloadProgress(Math.min(100, Math.max(0, percent)));
+      }
+      const actualTotal = total > 0 ? total : 17458409;
+      setDownloadBytes({ loaded, total: actualTotal });
+      const loadedMb = (loaded / (1024 * 1024)).toFixed(1);
+      const totalMb = (actualTotal / (1024 * 1024)).toFixed(1);
+      const pctStr = percent >= 0 ? `${percent}%` : '';
+      setDownloadStatusMsg(`ડાઉનલોડ થઈ રહ્યું છે: ${loadedMb} MB / ${totalMb} MB ${pctStr ? `(${pctStr})` : ''}`);
+      if (percent >= 100) {
+        setDownloadProgress(100);
+        setDownloadStatusMsg('✅ APK ડાઉનલોડ પૂર્ણ! સિસ્ટમ ઇન્સ્ટોલર ખૂલી રહ્યું છે...');
+        setTimeout(() => setDownloadingApk(false), 2500);
+      }
+    };
+    return () => {
+      delete (window as any).onApkDownloadProgress;
+    };
+  }, []);
+
   if (!isOpen || !updateInfo || !updateInfo.updateAvailable) {
     return null;
   }
@@ -38,20 +61,13 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
 
   const handleApkDownload = async () => {
     setDownloadingApk(true);
-    setDownloadProgress(0);
-    setDownloadStatusMsg('APK ડાઉનલોડ શરૂ થઈ રહ્યું છે...');
+    setDownloadProgress(1);
+    setDownloadStatusMsg('નવી APK ડાઉનલોડ શરૂ થઈ રહી છે...');
 
     // 1. If running inside Native Android APK with AndroidBridge:
     if (isAndroidNativeApp() && typeof (window as any).AndroidBridge?.downloadAndInstallApk === 'function') {
       try {
-        setDownloadStatusMsg('બેકગ્રાઉન્ડમાં નવી APK ડાઉનલોડ થઈ રહી છે... પૂર્ણ થતાં આપોઆપ ઇન્સ્ટોલર ઓપન થશે.');
-        setDownloadProgress(45);
         (window as any).AndroidBridge.downloadAndInstallApk(apkDownloadUrl, 'Vidyalayam-Latest.apk');
-        setTimeout(() => {
-          setDownloadProgress(100);
-          setDownloadStatusMsg('✅ APK ડાઉનલોડ પૂર્ણ! સિસ્ટમ ઇન્સ્ટોલર ખૂલી રહ્યું છે...');
-          setDownloadingApk(false);
-        }, 3500);
         return;
       } catch (err) {
         console.warn('Native downloadAndInstallApk fallback to in-app stream:', err);

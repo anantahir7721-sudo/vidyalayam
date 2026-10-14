@@ -92,11 +92,11 @@ export const TTSFloatingBar: React.FC = () => {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  Edge Gujarati TTS
+                  <Sparkles className="w-3 h-3 text-amber-300" />
+                  Gemini AI સંવાદી વાણી
                 </span>
                 <span className="text-[10px] text-slate-400">
-                  {state.voice === 'female' ? '• ધ્વનિ (Female)' : '• નિરંજન (Male)'}
+                  {state.voice === 'female' ? '• આરાધ્યા (Aoede)' : '• આરવ (Zephyr)'}
                 </span>
               </div>
               <h4 className="text-xs font-bold text-white truncate leading-tight">
@@ -127,7 +127,7 @@ export const TTSFloatingBar: React.FC = () => {
               type="button"
               onClick={() => setShowVoicePicker(!showVoicePicker)}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
-              title="અવાજ બદલો (ધ્વનિ / નિરંજન)"
+              title="અવાજ બદલો (આરાધ્યા / આરવ)"
             >
               <User className="w-4 h-4 text-amber-400" />
             </button>
@@ -173,7 +173,7 @@ export const TTSFloatingBar: React.FC = () => {
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                ધ્વનિ (Female)
+                આરાધ્યા (બહેન)
               </button>
               <button
                 type="button"
@@ -184,7 +184,7 @@ export const TTSFloatingBar: React.FC = () => {
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                નિરંજન (Male)
+                આરવ (ભાઈ)
               </button>
             </div>
           </div>

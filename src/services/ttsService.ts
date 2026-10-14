@@ -19,6 +19,10 @@ class TTSServiceManager {
   private currentObjectUrl: string | null = null;
   private currentAbortController: AbortController | null = null;
   private listeners: Set<(state: TTSPlayerState) => void> = new Set();
+  private clientBlobCache = new Map<string, Blob>();
+  private activeChunks: string[] = [];
+  private currentChunkIdx = 0;
+  private activeVoiceType: TTSVoice = 'female';
 
   private state: TTSPlayerState = {
     isPlaying: false,
@@ -53,9 +57,15 @@ class TTSServiceManager {
     });
 
     this.audio.addEventListener('ended', () => {
-      this.state.isPlaying = false;
-      this.state.currentTime = 0;
-      this.notify();
+      // If there are more chunks in the queue, play the next one seamlessly!
+      if (this.currentChunkIdx + 1 < this.activeChunks.length) {
+        this.currentChunkIdx++;
+        this.playChunk(this.currentChunkIdx);
+      } else {
+        this.state.isPlaying = false;
+        this.state.currentTime = 0;
+        this.notify();
+      }
     });
 
     this.audio.addEventListener('timeupdate', () => {
@@ -67,9 +77,15 @@ class TTSServiceManager {
 
     this.audio.addEventListener('error', (e) => {
       console.warn('[TTSService] Audio playback error:', e);
-      this.state.isPlaying = false;
-      this.state.isLoading = false;
-      this.notify();
+      // Try next chunk or stop
+      if (this.currentChunkIdx + 1 < this.activeChunks.length) {
+        this.currentChunkIdx++;
+        this.playChunk(this.currentChunkIdx);
+      } else {
+        this.state.isPlaying = false;
+        this.state.isLoading = false;
+        this.notify();
+      }
     });
   }
 
@@ -115,6 +131,17 @@ class TTSServiceManager {
       this.currentAbortController.abort();
       this.currentAbortController = null;
     }
+    // Also stop Android Native TTS if running
+    if (typeof (window as any).AndroidBridge?.stopSpeaking === 'function') {
+      try {
+        (window as any).AndroidBridge.stopSpeaking();
+      } catch {}
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
+    }
     if (this.audio) {
       this.audio.pause();
       this.audio.currentTime = 0;
@@ -123,6 +150,8 @@ class TTSServiceManager {
       URL.revokeObjectURL(this.currentObjectUrl);
       this.currentObjectUrl = null;
     }
+    this.activeChunks = [];
+    this.currentChunkIdx = 0;
     this.state.isPlaying = false;
     this.state.isLoading = false;
     this.state.activeId = null;
@@ -131,6 +160,11 @@ class TTSServiceManager {
   }
 
   public pause() {
+    if (typeof (window as any).AndroidBridge?.stopSpeaking === 'function') {
+      try {
+        (window as any).AndroidBridge.stopSpeaking();
+      } catch {}
+    }
     if (this.audio && this.state.isPlaying) {
       this.audio.pause();
     }
@@ -143,8 +177,101 @@ class TTSServiceManager {
   }
 
   /**
+   * Preload audio for a text snippet in the background so it plays in 0ms when clicked
+   */
+  public async preload(text: string, voice?: TTSVoice): Promise<void> {
+    const clean = expandGujaratiSpeechText(text.trim());
+    if (!clean) return;
+    const voiceType = voice || this.state.voice;
+    const cacheKey = `${voiceType}:${clean.slice(0, 160)}`;
+    if (this.clientBlobCache.has(cacheKey)) return;
+
+    try {
+      const blob = await this.fetchAudioBlob(clean.slice(0, 160), voiceType);
+      if (blob) {
+        this.clientBlobCache.set(cacheKey, blob);
+      }
+    } catch {}
+  }
+
+  /**
+   * Fast synthesis fetcher with in-memory caching
+   */
+  private async fetchAudioBlob(text: string, voice: TTSVoice, signal?: AbortSignal): Promise<Blob | null> {
+    const cacheKey = `${voice}:${text}`;
+    if (this.clientBlobCache.has(cacheKey)) {
+      return this.clientBlobCache.get(cacheKey)!;
+    }
+
+    try {
+      const response = await fetch(apiUrl('/api/tts/speak'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          voice,
+        }),
+        signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`TTS server responded with ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      this.clientBlobCache.set(cacheKey, blob);
+      return blob;
+    } catch (err: any) {
+      if (err.name === 'AbortError') return null;
+      throw err;
+    }
+  }
+
+  /**
+   * Play a specific chunk from the active queue
+   */
+  private async playChunk(index: number): Promise<void> {
+    if (index >= this.activeChunks.length) return;
+    const chunkText = this.activeChunks[index];
+    const voiceType = this.activeVoiceType;
+
+    try {
+      const blob = await this.fetchAudioBlob(chunkText, voiceType, this.currentAbortController?.signal);
+      if (!blob || !this.state.isPlaying && !this.state.isLoading) return;
+
+      if (!this.audio) {
+        this.audio = new Audio();
+        this.setupAudioListeners();
+      }
+
+      if (this.currentObjectUrl) {
+        URL.revokeObjectURL(this.currentObjectUrl);
+      }
+      this.currentObjectUrl = URL.createObjectURL(blob);
+      this.audio.src = this.currentObjectUrl;
+      this.audio.playbackRate = this.state.rate;
+      await this.audio.play();
+
+      this.state.isLoading = false;
+      this.state.isPlaying = true;
+      this.notify();
+
+      // In the background, prefetch the NEXT chunk immediately so there is ZERO waiting gap!
+      if (index + 1 < this.activeChunks.length) {
+        const nextText = this.activeChunks[index + 1];
+        this.fetchAudioBlob(nextText, voiceType).catch(() => {});
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      console.warn('[TTSService] Chunk playback error, attempting fallback:', err);
+      this.fallbackBrowserSpeech(chunkText);
+    }
+  }
+
+  /**
    * Main synthesis & play method using Gemini AI Expressive Speech API.
-   * If current activeId is already playing, calling toggle will pause it.
+   * Uses smart sentence-by-sentence streaming for sub-second instant response,
+   * with seamless Android Native TextToSpeech in APK container.
    */
   public async play(
     id: string,
@@ -157,7 +284,7 @@ class TTSServiceManager {
       return;
     }
 
-    if (this.state.activeId === id && !this.state.isPlaying && this.audio?.src) {
+    if (this.state.activeId === id && !this.state.isPlaying && (this.audio?.src || typeof (window as any).AndroidBridge?.speakText === 'function')) {
       this.resume();
       return;
     }
@@ -168,6 +295,7 @@ class TTSServiceManager {
     if (!cleanText) return;
 
     const chosenVoice = voiceOverride || this.state.voice;
+    this.activeVoiceType = chosenVoice;
 
     this.state.activeId = id;
     this.state.currentTitle = title;
@@ -175,37 +303,27 @@ class TTSServiceManager {
     this.state.isPlaying = false;
     this.notify();
 
+    // 1. If running inside Native Android APK with AndroidBridge:
+    if (typeof (window as any).AndroidBridge?.speakText === 'function') {
+      try {
+        this.state.isLoading = false;
+        this.state.isPlaying = true;
+        this.notify();
+        (window as any).AndroidBridge.speakText(cleanText, this.state.rate);
+        return;
+      } catch (nativeErr) {
+        console.warn('Native speakText fallback to cloud/web:', nativeErr);
+      }
+    }
+
+    // 2. High-Speed Low-Latency Cloud Playback (Sentence / Paragraph Chunking):
+    // Splits long text so the first chunk begins playing in < 0.8 seconds!
+    this.activeChunks = splitIntoSpeechChunks(cleanText);
+    this.currentChunkIdx = 0;
     this.currentAbortController = new AbortController();
 
     try {
-      const response = await fetch(apiUrl('/api/tts/speak'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: cleanText,
-          voice: chosenVoice,
-        }),
-        signal: this.currentAbortController.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`TTS server responded with ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      if (!this.audio) {
-        this.audio = new Audio();
-        this.setupAudioListeners();
-      }
-
-      this.currentObjectUrl = URL.createObjectURL(blob);
-      this.audio.src = this.currentObjectUrl;
-      this.audio.playbackRate = this.state.rate;
-      await this.audio.play();
-
-      this.state.isLoading = false;
-      this.state.isPlaying = true;
-      this.notify();
+      await this.playChunk(0);
     } catch (err: any) {
       if (err.name === 'AbortError') return;
       console.warn('[TTSService] Backend Gemini TTS failed, attempting browser fallback:', err);
@@ -217,6 +335,16 @@ class TTSServiceManager {
    * Client-side fallback if server is unreachable
    */
   private fallbackBrowserSpeech(text: string) {
+    if (typeof (window as any).AndroidBridge?.speakText === 'function') {
+      try {
+        (window as any).AndroidBridge.speakText(text, this.state.rate);
+        this.state.isLoading = false;
+        this.state.isPlaying = true;
+        this.notify();
+        return;
+      } catch {}
+    }
+
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       this.stop();
       return;
@@ -233,7 +361,12 @@ class TTSServiceManager {
       this.notify();
     };
     utterance.onend = () => {
-      this.stop();
+      if (this.currentChunkIdx + 1 < this.activeChunks.length) {
+        this.currentChunkIdx++;
+        this.playChunk(this.currentChunkIdx);
+      } else {
+        this.stop();
+      }
     };
     utterance.onerror = () => {
       this.stop();
@@ -241,6 +374,39 @@ class TTSServiceManager {
 
     window.speechSynthesis.speak(utterance);
   }
+}
+
+/**
+ * Splits Gujarati speech text into short, natural sentence chunks
+ * so the initial audio chunk starts playing in under 1 second!
+ */
+export function splitIntoSpeechChunks(text: string): string[] {
+  if (!text) return [];
+  // Split on double newline or bullet sections
+  const paragraphs = text.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  const chunks: string[] = [];
+
+  for (const para of paragraphs) {
+    if (para.length <= 150) {
+      chunks.push(para);
+    } else {
+      // Split on punctuation: ।, ., ?, !
+      const parts = para.split(/([।\.\?!]+)/gu).filter(Boolean);
+      let buffer = '';
+      for (let i = 0; i < parts.length; i += 2) {
+        const seg = (parts[i] || '') + (parts[i + 1] || '');
+        if ((buffer + ' ' + seg).length > 150 && buffer.trim()) {
+          chunks.push(buffer.trim());
+          buffer = seg;
+        } else {
+          buffer = buffer ? `${buffer} ${seg}` : seg;
+        }
+      }
+      if (buffer.trim()) chunks.push(buffer.trim());
+    }
+  }
+
+  return chunks.length > 0 ? chunks : [text];
 }
 
 /**

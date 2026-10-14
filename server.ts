@@ -147,7 +147,7 @@ async function startServer() {
   // API: Health, Version & Server Time
   // =========================================================================
   app.get('/api/version', (_req: Request, res: Response) => {
-    res.json({ version: '1.0.0', time: Date.now() });
+    res.json({ version: '1.0.61', time: Date.now() });
   });
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', time: Date.now() });
@@ -394,8 +394,8 @@ async function startServer() {
       let apkDownloadUrl = `https://github.com/${repo}/releases/download/latest/app-debug.apk`;
       let releaseUrl = `https://github.com/${repo}/releases/latest`;
       let tagName = 'latest';
-      let releaseName = 'Vidyalayam v1.0.60 (Latest)';
-      let versionName = 'v1.0.60';
+      let releaseName = 'Vidyalayam v1.0.61 (Latest)';
+      let versionName = 'v1.0.61';
       let releaseCommitSha = '';
 
       // 1. Fetch latest commit

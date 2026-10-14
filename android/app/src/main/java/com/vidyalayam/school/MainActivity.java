@@ -39,20 +39,62 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
+import android.speech.tts.TextToSpeech;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.Locale;
 
 public class MainActivity extends BridgeActivity {
 
     public static final String NOTIFICATION_CHANNEL_ID = "vidyalayam_notifications_channel";
-    public static final String NOTIFICATION_CHANNEL_NAME = "વિદ્યાલયમ સૂચનાઓ (Vidyalayam Notifications)";
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 101;
     private WebView mPrintWebView = null;
+    private TextToSpeech mTextToSpeech = null;
+    private boolean mIsTtsReady = false;
+
+    private synchronized void initTts() {
+        if (mTextToSpeech == null) {
+            try {
+                mTextToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+                    @Override
+                    public void onInit(int status) {
+                        if (status == TextToSpeech.SUCCESS && mTextToSpeech != null) {
+                            try {
+                                Locale guLocale = new Locale("gu", "IN");
+                                int res = mTextToSpeech.setLanguage(guLocale);
+                                if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                                    mTextToSpeech.setLanguage(new Locale("hi", "IN"));
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            mIsTtsReady = true;
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mTextToSpeech != null) {
+            try {
+                mTextToSpeech.stop();
+                mTextToSpeech.shutdown();
+            } catch (Exception ignored) {}
+            mTextToSpeech = null;
+        }
+        super.onDestroy();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initTts();
 
         Window window = getWindow();
 
@@ -220,7 +262,59 @@ public class MainActivity extends BridgeActivity {
                     return pInfo.versionName.startsWith("v") ? pInfo.versionName : "v" + pInfo.versionName;
                 }
             } catch (Exception ignored) {}
-            return "v1.0.60";
+            return "v1.0.61";
+        }
+
+        // ================= TEXT TO SPEECH (GUJARATI NATIVE TTS) ================= //
+
+        @JavascriptInterface
+        public void speakText(final String text, final float rate) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (text == null || text.trim().isEmpty()) return;
+                        if (mTextToSpeech == null) {
+                            initTts();
+                        }
+                        if (mTextToSpeech != null) {
+                            mTextToSpeech.setSpeechRate(rate > 0 ? rate : 1.0f);
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                mTextToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "vidyalayam_tts_" + System.currentTimeMillis());
+                            } else {
+                                mTextToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void stopSpeaking() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (mTextToSpeech != null) {
+                            mTextToSpeech.stop();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public boolean isSpeaking() {
+            try {
+                return mTextToSpeech != null && mTextToSpeech.isSpeaking();
+            } catch (Exception e) {
+                return false;
+            }
         }
 
         @JavascriptInterface
@@ -901,21 +995,60 @@ public class MainActivity extends BridgeActivity {
                                     apkFile.delete();
                                 }
 
+                                int totalLength = conn.getContentLength();
+                                if (totalLength <= 0) {
+                                    String clHeader = conn.getHeaderField("Content-Length");
+                                    if (clHeader != null) {
+                                        try { totalLength = Integer.parseInt(clHeader); } catch (Exception ignored) {}
+                                    }
+                                }
+
                                 java.io.InputStream in = conn.getInputStream();
                                 FileOutputStream out = new FileOutputStream(apkFile);
-                                byte[] buffer = new byte[8192];
+                                byte[] buffer = new byte[16384];
                                 int bytesRead;
+                                long totalRead = 0;
+                                long lastProgressTime = 0;
+
                                 while ((bytesRead = in.read(buffer)) != -1) {
                                     out.write(buffer, 0, bytesRead);
+                                    totalRead += bytesRead;
+                                    long now = System.currentTimeMillis();
+
+                                    if (now - lastProgressTime > 100) {
+                                        lastProgressTime = now;
+                                        final int percent = totalLength > 0 ? (int) Math.min(99, (totalRead * 100) / totalLength) : -1;
+                                        final long fRead = totalRead;
+                                        final long fTotal = totalLength;
+
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (bridge != null && bridge.getWebView() != null) {
+                                                    bridge.getWebView().evaluateJavascript(
+                                                        "window.onApkDownloadProgress && window.onApkDownloadProgress(" + percent + ", " + fRead + ", " + fTotal + ");",
+                                                        null
+                                                    );
+                                                }
+                                            }
+                                        });
+                                    }
                                 }
                                 out.flush();
                                 out.close();
                                 in.close();
                                 conn.disconnect();
 
+                                final long finalDownloaded = totalRead;
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
+                                        if (bridge != null && bridge.getWebView() != null) {
+                                            bridge.getWebView().evaluateJavascript(
+                                                "window.onApkDownloadProgress && window.onApkDownloadProgress(100, " + finalDownloaded + ", " + finalDownloaded + ");",
+                                                null
+                                            );
+                                        }
                                         launchApkInstall(apkFile);
                                     }
                                 });
