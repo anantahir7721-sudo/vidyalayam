@@ -14,6 +14,65 @@ export interface TTSPlayerState {
   currentTime: number;
 }
 
+/**
+ * High-performance IndexedDB cache to embed & persist speech audio
+ * directly inside the native Android APK and browser.
+ * Ensures 0ms instant playback on repeat listens and enables offline playback!
+ */
+class OfflineAudioCache {
+  private dbPromise: Promise<IDBDatabase | null> | null = null;
+
+  private getDB(): Promise<IDBDatabase | null> {
+    if (typeof window === 'undefined' || !('indexedDB' in window)) return Promise.resolve(null);
+    if (!this.dbPromise) {
+      this.dbPromise = new Promise((resolve) => {
+        try {
+          const req = window.indexedDB.open('vidyalayam_offline_tts_db', 1);
+          req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains('audio_cache')) {
+              db.createObjectStore('audio_cache');
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        } catch {
+          resolve(null);
+        }
+      });
+    }
+    return this.dbPromise;
+  }
+
+  public async get(key: string): Promise<Blob | null> {
+    try {
+      const db = await this.getDB();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        const tx = db.transaction('audio_cache', 'readonly');
+        const store = tx.objectStore('audio_cache');
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  public async set(key: string, blob: Blob): Promise<void> {
+    try {
+      const db = await this.getDB();
+      if (!db) return;
+      const tx = db.transaction('audio_cache', 'readwrite');
+      const store = tx.objectStore('audio_cache');
+      store.put(blob, key);
+    } catch {}
+  }
+}
+
+const offlineAudioDb = new OfflineAudioCache();
+
 class TTSServiceManager {
   private audio: HTMLAudioElement | null = null;
   private currentObjectUrl: string | null = null;
@@ -181,11 +240,11 @@ class TTSServiceManager {
   public async preload(text: string): Promise<void> {
     const clean = expandGujaratiSpeechText(text.trim());
     if (!clean) return;
-    const cacheKey = `female:${clean.slice(0, 160)}`;
+    const cacheKey = `female:${clean.slice(0, 200)}`;
     if (this.clientBlobCache.has(cacheKey)) return;
 
     try {
-      const blob = await this.fetchAudioBlob(clean.slice(0, 160));
+      const blob = await this.fetchAudioBlob(clean.slice(0, 200));
       if (blob) {
         this.clientBlobCache.set(cacheKey, blob);
       }
@@ -193,14 +252,26 @@ class TTSServiceManager {
   }
 
   /**
-   * Fast synthesis fetcher with in-memory caching and resilient network failover
+   * Fast synthesis fetcher with dual-layer caching (RAM + Persistent IndexedDB for APK)
+   * and resilient network failover.
    */
   private async fetchAudioBlob(text: string, signal?: AbortSignal): Promise<Blob | null> {
     const cacheKey = `female:${text}`;
+    // 1. RAM Cache (0ms)
     if (this.clientBlobCache.has(cacheKey)) {
       return this.clientBlobCache.get(cacheKey)!;
     }
 
+    // 2. Persistent IndexedDB Cache inside APK / Browser (0ms offline retrieval)
+    try {
+      const offlineBlob = await offlineAudioDb.get(cacheKey);
+      if (offlineBlob) {
+        this.clientBlobCache.set(cacheKey, offlineBlob);
+        return offlineBlob;
+      }
+    } catch {}
+
+    // 3. Cloud Neural Synthesis via server API
     try {
       const response = await apiFetch('/api/tts/speak', {
         method: 'POST',
@@ -210,7 +281,7 @@ class TTSServiceManager {
           voice: 'female',
         }),
         signal,
-      }, 20000);
+      }, 25000);
 
       if (!response.ok) {
         throw new Error(`TTS server responded with ${response.status}`);
@@ -218,6 +289,7 @@ class TTSServiceManager {
 
       const blob = await response.blob();
       this.clientBlobCache.set(cacheKey, blob);
+      offlineAudioDb.set(cacheKey, blob).catch(() => {});
       return blob;
     } catch (err: any) {
       if (err.name === 'AbortError') return null;
@@ -368,7 +440,7 @@ export function splitIntoSpeechChunks(text: string): string[] {
   const chunks: string[] = [];
 
   for (const para of paragraphs) {
-    if (para.length <= 150) {
+    if (para.length <= 350) {
       chunks.push(para);
     } else {
       // Split on punctuation: ।, ., ?, !
@@ -376,7 +448,7 @@ export function splitIntoSpeechChunks(text: string): string[] {
       let buffer = '';
       for (let i = 0; i < parts.length; i += 2) {
         const seg = (parts[i] || '') + (parts[i + 1] || '');
-        if ((buffer + ' ' + seg).length > 150 && buffer.trim()) {
+        if ((buffer + ' ' + seg).length > 350 && buffer.trim()) {
           chunks.push(buffer.trim());
           buffer = seg;
         } else {

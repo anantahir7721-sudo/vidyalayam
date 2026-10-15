@@ -188,21 +188,32 @@ export function generateDailyNewsItems(dateKey: string): NewsItem[] {
   ];
 
   let itemIdx = 1;
+  const usedHeadlines = new Set<string>();
+
   for (const cat of categoryOrder) {
     const pool = MASTER_NEWS_TOPICS[cat.category] || [];
     if (pool.length === 0) continue;
 
     for (let c = 0; c < cat.count; c++) {
-      const selectedIndex = (hash + itemIdx * 7 + c * 13) % pool.length;
-      const baseItem = pool[selectedIndex];
+      let chosen = pool[0];
+      for (let offset = 0; offset < pool.length; offset++) {
+        const selectedIndex = (hash + itemIdx * 7 + (c + offset) * 13) % pool.length;
+        const candidate = pool[selectedIndex];
+        if (!usedHeadlines.has(candidate.headline)) {
+          chosen = candidate;
+          break;
+        }
+      }
+      usedHeadlines.add(chosen.headline);
+
       items.push({
         id: `news-${dateKey}-${itemIdx}`,
         category: cat.category,
         categoryLabel: cat.label,
         location: cat.defaultLocation,
-        headline: baseItem.headline,
-        summary: baseItem.summary,
-        impact: baseItem.impact,
+        headline: chosen.headline,
+        summary: chosen.summary,
+        impact: chosen.impact,
         source: 'વિદ્યાલયમ શૈક્ષણિક સંસ્કરણ',
         sourceDate: dateKey,
       });

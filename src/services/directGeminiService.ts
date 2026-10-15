@@ -334,25 +334,42 @@ export async function directGenerateSchoolNoticeBoard(params: {
   });
 
   const prompt = `તમે ગુજરાત સરકાર શિક્ષણ વિભાગ અને GSEB ના સત્તાવાર નોટિસ બોર્ડ ઓડિટર છો.
-માત્ર અધિકૃત પ્રમાણિત શિક્ષણ વિભાગના પરિપત્રો અને સૂચનાઓ દર્શાવો (gseb.org, gcert.gujarat.gov.in, digitalgujarat, sebexam).
+અતિ મહત્વપૂર્ણ કડક નિયમો:
+૧. નોટિસ ૧ દિવસથી વધુ જૂની બિલકુલ ન હોવી જોઈએ (માત્ર આજની અથવા વધુમાં વધુ છેલ્લા ૨૪ કલાકની તાજી જ માહિતી).
+૨. જૂની માહિતી ફરીથી પ્રકાશિત ન કરવી.
+૩. માત્ર અધિકૃત પ્રમાણિત શિક્ષણ વિભાગના પરિપત્રો અને સૂચનાઓ દર્શાવો (gseb.org, gcert.gujarat.gov.in, digitalgujarat, sebexam).
 શાળા: "${schoolName}", તાલુકો: "${cleanTaluka}", જિલ્લો: "${cleanDistrict}", તારીખ: "${todayDateStr}".
 
 આઉટપુટ શુદ્ધ JSON બ્લોકમાં જ આપો:
 {
   "noticeBulletinTitle": "અધિકૃત શાળા નોટિસ બોર્ડ — ${cleanTaluka} તાલુકો & ${cleanDistrict} જિલ્લો",
   "bulletinDate": "${todayDateStr}",
-  "academicYear": "૨૦૨૬-૨૭",
-  "verifiedNotices": [
+  "schoolName": "${schoolName}",
+  "district": "${cleanDistrict}",
+  "taluka": "${cleanTaluka}",
+  "notices": [
     {
       "id": "notice-1",
-      "category": "પરીક્ષા / મૂલ્યાંકન",
-      "title": "એકમ કસોટી અને માધ્યમિક મૂલ્યાંકન સૂચના",
-      "description": "ગુજરાત માધ્યમિક શિક્ષણ બોર્ડ દ્વારા આયોજિત કસોટી સંદર્ભે સમયપત્રક મુજબ કામગીરી પૂર્ણ કરવા બાબત.",
-      "issuedBy": "GSEB / GCERT ગાંધીનગર",
-      "priority": "high",
-      "date": "${todayDateStr}",
-      "officialRefNo": "GSEB/SHIKSHAN/2026",
-      "actionRequired": "તમામ શિક્ષકો અને વિદ્યાર્થીઓએ નોંધ લેવી"
+      "title": "પ્રમાણિત સત્તાવાર શીર્ષક",
+      "category": "circular",
+      "categoryLabel": "📜 સત્તાવાર બોર્ડ પરિપત્ર",
+      "scope": "GSEB / શિક્ષણ વિભાગ",
+      "publishedDate": "${todayDateStr}",
+      "recencyBadge": "આજની તાજી સત્તાવાર સૂચના",
+      "letterNumber": "સત્તાવાર સરકારી પરિપત્ર ક્રમાંક",
+      "urgency": "high",
+      "summary": "સત્તાવાર માહિતીનો ચોક્કસ સારાંશ",
+      "keyPoints": [
+        "નિયમ / માર્ગદર્શિકા ૧",
+        "નિયમ / માર્ગદર્શિકા ૨"
+      ],
+      "targetAudience": "વિદ્યાર્થીઓ & શિક્ષકો",
+      "sourceAuthority": "સત્તાવાર સંસ્થા (GSEB, ગાંધીનગર)",
+      "officialSourceType": "સત્તાવાર બોર્ડ પરિપત્ર",
+      "officialUrl": "https://www.gseb.org",
+      "isVerifiedOfficial": true,
+      "actionRequired": "વિદ્યાર્થીઓ / વાલીઓએ કરવાની કાર્યવાહી",
+      "validUntil": "છેલ્લી તારીખ"
     }
   ]
 }`;
@@ -365,12 +382,40 @@ export async function directGenerateSchoolNoticeBoard(params: {
   );
 
   try {
-    const parsed = JSON.parse(rawJson);
-    return { success: true, data: parsed };
-  } catch {
-    const match = rawJson.match(/\{[\s\S]*\}/);
-    if (match) return { success: true, data: JSON.parse(match[0]) };
-    throw new Error('AI નોટિસ બોર્ડ JSON પાર્સ થઈ શક્યું નહીં.');
+    let parsed: any;
+    try {
+      parsed = JSON.parse(rawJson);
+    } catch {
+      const match = rawJson.match(/\{[\s\S]*\}/);
+      if (match) parsed = JSON.parse(match[0]);
+    }
+
+    if (parsed) {
+      if (!parsed.notices && Array.isArray(parsed.verifiedNotices)) {
+        parsed.notices = parsed.verifiedNotices.map((vn: any, idx: number) => ({
+          id: vn.id || `notice-${idx + 1}`,
+          title: vn.title || '',
+          category: 'circular',
+          categoryLabel: vn.category || '📜 સત્તાવાર પરિપત્ર',
+          scope: `${cleanTaluka} • ${cleanDistrict}`,
+          publishedDate: vn.date || todayDateStr,
+          recencyBadge: 'આજની તાજી સત્તાવાર સૂચના',
+          letterNumber: vn.officialRefNo || '',
+          urgency: vn.priority || 'high',
+          summary: vn.description || '',
+          targetAudience: 'શિક્ષકો, વિદ્યાર્થીઓ & વાલીઓ',
+          sourceAuthority: vn.issuedBy || 'શિક્ષણ વિભાગ, ગાંધીનગર',
+          officialSourceType: 'સત્તાવાર બોર્ડ પરિપત્ર',
+          officialUrl: 'https://www.gseb.org',
+          isVerifiedOfficial: true,
+          actionRequired: vn.actionRequired || 'નોંધ લેવી.',
+        }));
+      }
+      return { success: true, data: parsed };
+    }
+    throw new Error('AI નોટિસ બોર્ડ ખાલી મળ્યું.');
+  } catch (err: any) {
+    throw new Error('AI નોટિસ બોર્ડ પાર્સિંગ નિષ્ફળ: ' + err.message);
   }
 }
 

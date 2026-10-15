@@ -86,8 +86,8 @@ export const TTSFloatingBar: React.FC = () => {
                   <Sparkles className="w-3 h-3 text-amber-300" />
                   ગુજરાતી મહિલા શિક્ષક વાણી
                 </span>
-                <span className="text-[10px] text-emerald-400 font-semibold">
-                  • ધ્વનિ (કુદરતી અવાજ)
+                <span className="text-[10px] text-amber-300 font-semibold">
+                  • Gemini AI (માનવીય અવાજ)
                 </span>
               </div>
               <h4 className="text-xs font-bold text-white truncate leading-tight">

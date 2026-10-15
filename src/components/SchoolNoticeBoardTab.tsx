@@ -208,9 +208,32 @@ export const SchoolNoticeBoardTab: React.FC<SchoolNoticeBoardTabProps> = ({
     fetchNotices(selectedDistrict, newTal);
   };
 
-  // Filter notices by category and search query
+  // Filter notices by category, search query, 1-day freshness, and deduplication
   const filteredNotices = useMemo(() => {
-    return noticeData.notices.filter((notice) => {
+    const seenTitles = new Set<string>();
+    const seenLetters = new Set<string>();
+
+    return (noticeData.notices || []).filter((notice) => {
+      if (!notice || !notice.title) return false;
+
+      // Anti-Republication & Deduplication: Ensure each notice appears exactly once
+      const normTitle = notice.title.replace(/[^\u0A80-\u0AFFa-zA-Z0-9]/g, '').slice(0, 25);
+      if (seenTitles.has(normTitle)) return false;
+      if (notice.letterNumber && seenLetters.has(notice.letterNumber.trim())) return false;
+
+      // 1-Day Freshness Filter (Strictly Max 1 Day / 24 Hours Old)
+      // Reject any notice that mentions multi-day age
+      if (
+        notice.recencyBadge?.includes('સપ્તાહ') ||
+        notice.recencyBadge?.includes('દિવસ જૂની') ||
+        notice.recencyBadge?.includes('સ્થાયી')
+      ) {
+        return false;
+      }
+
+      seenTitles.add(normTitle);
+      if (notice.letterNumber) seenLetters.add(notice.letterNumber.trim());
+
       // Category filter
       if (activeCategory === 'taluka') {
         const matchTaluka = notice.scope.includes(cleanLocationName(selectedTaluka)) || notice.category === 'taluka';

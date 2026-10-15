@@ -166,8 +166,52 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
     const pool = (bulletin.allLiveItems && bulletin.allLiveItems.length > 0)
       ? bulletin.allLiveItems
       : bulletin.items;
-    if (activeCategory === 'all') return pool;
-    return pool.filter((item) => item.category === activeCategory);
+    const rawFiltered = activeCategory === 'all'
+      ? pool
+      : pool.filter((item) => item.category === activeCategory);
+
+    // Client-side anti-duplicate filter (strict deduplication)
+    const uniqueList: typeof pool = [];
+    const seenSignatures = new Set<string>();
+
+    for (const item of rawFiltered) {
+      if (!item || !item.headline) continue;
+      // Normalized signature: first 26 chars without punctuation
+      const sig = item.headline
+        .replace(/^[A-Za-z\s]+(News)?\s*:\s*/i, '')
+        .replace(/\s*[-|]\s*(સંદેશ|દિવ્ય ભાસ્કર|ગુજરાત સમાચાર|ટીવી૯|બીબીસી|Sandesh|TV9|BBC|Divya Bhaskar|Gujarat Samachar).*$/i, '')
+        .replace(/[^\u0A80-\u0AFFa-zA-Z0-9]/g, '')
+        .slice(0, 26);
+
+      if (seenSignatures.has(sig)) continue;
+
+      // Also check key words overlap with already added items
+      const words = item.headline
+        .replace(/[^\u0A80-\u0AFFa-zA-Z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length >= 3 && !['અને', 'છે', 'હશે', 'માટે', 'પર', 'સાથે', 'કરી', 'થયા'].includes(w));
+
+      const isSubstantialDuplicate = uniqueList.some(prev => {
+        const prevWords = new Set(
+          prev.headline
+            .replace(/[^\u0A80-\u0AFFa-zA-Z0-9\s]/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length >= 3)
+        );
+        let common = 0;
+        for (const w of words) {
+          if (prevWords.has(w)) common++;
+        }
+        return common >= 3 && (common / Math.min(words.length, prevWords.size)) >= 0.55;
+      });
+
+      if (isSubstantialDuplicate) continue;
+
+      seenSignatures.add(sig);
+      uniqueList.push(item);
+    }
+
+    return uniqueList;
   }, [bulletin, activeCategory]);
 
   const displayedItems = useMemo(() => {

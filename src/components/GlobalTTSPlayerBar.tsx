@@ -84,7 +84,7 @@ export const GlobalTTSPlayerBar: React.FC = () => {
               <p className="text-[10px] text-amber-300/80 truncate">
                 {state.isLoading
                   ? 'અવાજ તૈયાર થઈ રહ્યો છે...'
-                  : `👩 ગુજરાતી મહિલા શિક્ષક વાણી • ${state.rate}x સ્પીડ`}
+                  : `👩 ગુજરાતી મહિલા શિક્ષક વાણી (Gemini AI) • ${state.rate}x સ્પીડ`}
               </p>
             </div>
           </div>
