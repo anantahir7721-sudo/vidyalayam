@@ -21,7 +21,7 @@ import { getDailyInterestingFactsBulletin, toGujaratiDigits } from '../services/
 import { shareDailyInterestingFactsAsPdf } from '../utils/dailyPdfShareUtils';
 import { printHtmlDocument, getPrintableDailyJanvaJevuHtml } from '../utils/printAndPdfUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
-import { ttsService, formatJanvaJevuSpeech } from '../services/ttsService';
+import { ttsService, formatJanvaJevuSpeech, formatSingleFactSpeech } from '../services/ttsService';
 
 interface DailyJanvaJevuTabProps {
   schoolName?: string;
@@ -46,11 +46,17 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
 
   const [ttsPlaying, setTtsPlaying] = useState(false);
   const [ttsLoading, setTtsLoading] = useState(false);
+  const [playingFactId, setPlayingFactId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsub = ttsService.subscribe((s) => {
       setTtsPlaying(s.isPlaying && s.activeId === `janva_${bulletin?.id}`);
       setTtsLoading(s.isLoading && s.activeId === `janva_${bulletin?.id}`);
+      if (s.isPlaying && s.activeId?.startsWith('janva_fact_')) {
+        setPlayingFactId(s.activeId.replace('janva_fact_', ''));
+      } else {
+        setPlayingFactId(null);
+      }
     });
     return () => unsub();
   }, [bulletin?.id]);
@@ -68,6 +74,16 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
         `આજનું જાણવા જેવું - ૧૨ રોચક તથ્યો (${bulletin.editionDate})`
       );
     }
+  };
+
+  const handlePlaySingleFact = (fact: DailyInterestingFact, idx: number) => {
+    const activeFactId = `janva_fact_${fact.id}`;
+    if (playingFactId === fact.id) {
+      ttsService.stop();
+      return;
+    }
+    const speech = formatSingleFactSpeech(fact, idx);
+    ttsService.play(activeFactId, speech, fact.title || `રોચક તથ્ય ${idx + 1}`);
   };
 
   useEffect(() => {
@@ -278,7 +294,7 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
                   ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
                   : 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black'
               }`}
-              title="માઈક્રોસોફ્ટ એજ ન્યુરલ ગુજરાતી અવાજમાં આજનું જાણવા જેવું સાંભળો"
+              title="Gemini AI ગુજરાતી અવાજમાં (કુદરતી માનવીય શિક્ષક વાણી) આજનું જાણવા જેવું સાંભળો"
             >
               {ttsLoading ? (
                 <>
@@ -434,6 +450,21 @@ export const DailyJanvaJevuTab: React.FC<DailyJanvaJevuTabProps> = ({
                       </span>
                     )}
                   </div>
+
+                  {/* Listen to this single fact */}
+                  <button
+                    type="button"
+                    onClick={() => handlePlaySingleFact(fact, fact.factNumber - 1)}
+                    className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                      playingFactId === fact.id
+                        ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                        : 'bg-slate-100 dark:bg-white/5 hover:bg-amber-500/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-amber-500/40 hover:text-amber-500'
+                    }`}
+                    title="આ તથ્ય સાંભળો"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold">{playingFactId === fact.id ? 'રોકો' : 'સાંભળો'}</span>
+                  </button>
                 </div>
 
                 {/* Title */}

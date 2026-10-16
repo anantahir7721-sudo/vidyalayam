@@ -14,6 +14,8 @@ import {
   Loader2,
   Quote,
   Download,
+  Volume2,
+  Square,
 } from 'lucide-react';
 import { DailyPrashnotariBulletin, PrashnotariQuestion } from '../types';
 import { getDailyPrashnotariBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
@@ -26,6 +28,11 @@ import {
   getPrintableDailyPrashnotariHtml,
 } from '../utils/printAndPdfUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import {
+  ttsService,
+  formatPrashnotariBulletinSpeech,
+  formatSingleQuestionSpeech,
+} from '../services/ttsService';
 
 interface DailyPrashnotariTabProps {
   schoolName?: string;
@@ -49,6 +56,49 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+
+  // Voice / TTS State
+  const [ttsPlaying, setTtsPlaying] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const [playingQuestionId, setPlayingQuestionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = ttsService.subscribe((s) => {
+      setTtsPlaying(s.isPlaying && s.activeId === `prashnotari_${bulletin?.id}`);
+      setTtsLoading(s.isLoading && s.activeId === `prashnotari_${bulletin?.id}`);
+      if (s.isPlaying && s.activeId?.startsWith('prashnotari_q_')) {
+        setPlayingQuestionId(s.activeId.replace('prashnotari_q_', ''));
+      } else {
+        setPlayingQuestionId(null);
+      }
+    });
+    return () => unsub();
+  }, [bulletin?.id]);
+
+  const handleToggleListenPrashnotari = () => {
+    if (!bulletin) return;
+    const prashnotariId = `prashnotari_${bulletin.id}`;
+    if (ttsPlaying) {
+      ttsService.stop();
+    } else {
+      const speechText = formatPrashnotariBulletinSpeech(bulletin);
+      ttsService.play(
+        prashnotariId,
+        speechText,
+        `આજની સામાન્ય જ્ઞાન પ્રશ્નોત્તરી (${bulletin.editionDate})`
+      );
+    }
+  };
+
+  const handlePlaySingleQuestion = (q: PrashnotariQuestion, idx: number) => {
+    const activeQId = `prashnotari_q_${q.id}`;
+    if (playingQuestionId === q.id) {
+      ttsService.stop();
+      return;
+    }
+    const speech = formatSingleQuestionSpeech(q, idx);
+    ttsService.play(activeQId, speech, `પ્રશ્ન ${idx + 1}`);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -299,6 +349,35 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
               </button>
             </div>
 
+            {/* Edge TTS Audio Button - Listen to All 20 Questions sequentially */}
+            <button
+              type="button"
+              onClick={handleToggleListenPrashnotari}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-[0.98] ${
+                ttsPlaying
+                  ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black'
+              }`}
+              title="બધી પ્રશ્નોત્તરી (૨૦ પ્રશ્નો-જવાબો) એક પછી એક ક્રમશઃ સાંભળો"
+            >
+              {ttsLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>તૈયાર થાય છે...</span>
+                </>
+              ) : ttsPlaying ? (
+                <>
+                  <Square className="w-4 h-4 fill-current" />
+                  <span>પ્રશ્નોત્તરી રોકો</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-4 h-4" />
+                  <span>🔊 બધી પ્રશ્નોત્તરી સાંભળો</span>
+                </>
+              )}
+            </button>
+
             {/* Direct PDF Download Button */}
             <button
               type="button"
@@ -486,6 +565,21 @@ export const DailyPrashnotariTab: React.FC<DailyPrashnotariTabProps> = ({
                       </span>
                     )}
                   </div>
+
+                  {/* Listen to single question & answer */}
+                  <button
+                    type="button"
+                    onClick={() => handlePlaySingleQuestion(q, q.questionNumber - 1)}
+                    className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                      playingQuestionId === q.id
+                        ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                        : 'bg-slate-100 dark:bg-white/5 hover:bg-sky-500/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-sky-500/40 hover:text-sky-600'
+                    }`}
+                    title="આ પ્રશ્ન અને જવાબ સાંભળો"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold">{playingQuestionId === q.id ? 'રોકો' : 'સાંભળો'}</span>
+                  </button>
                 </div>
 
                 {/* Question Text */}

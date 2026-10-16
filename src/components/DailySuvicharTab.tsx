@@ -46,11 +46,17 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
 
   const [ttsPlaying, setTtsPlaying] = useState(false);
   const [ttsLoading, setTtsLoading] = useState(false);
+  const [playingSectionId, setPlayingSectionId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsub = ttsService.subscribe((s) => {
       setTtsPlaying(s.isPlaying && s.activeId === `suvichar_${bulletin?.id}`);
       setTtsLoading(s.isLoading && s.activeId === `suvichar_${bulletin?.id}`);
+      if (s.isPlaying && s.activeId?.startsWith('suvichar_sec_')) {
+        setPlayingSectionId(s.activeId.replace('suvichar_sec_', ''));
+      } else {
+        setPlayingSectionId(null);
+      }
     });
 
     if (bulletin?.suvichar) {
@@ -74,6 +80,15 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
         `આજનો પ્રેરણાદાયી સુવિચાર (${bulletin.editionDate})`
       );
     }
+  };
+
+  const handlePlaySuvicharSection = (secKey: string, title: string, text: string) => {
+    const activeSecId = `suvichar_sec_${secKey}`;
+    if (playingSectionId === secKey) {
+      ttsService.stop();
+      return;
+    }
+    ttsService.play(activeSecId, `${title}: ${text}`, title);
   };
 
   useEffect(() => {
@@ -247,7 +262,7 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
                   ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
                   : 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black'
               }`}
-              title="માઈક્રોસોફ્ટ એજ ન્યુરલ ગુજરાતી અવાજમાં આજનો સુવિચાર સાંભળો"
+              title="Gemini AI ગુજરાતી અવાજમાં (કુદરતી માનવીય શિક્ષક વાણી) આજનો સુવિચાર સાંભળો"
             >
               {ttsLoading ? (
                 <>
@@ -362,7 +377,24 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
 
       {/* Main Suvichar Card */}
       <div className="glass-panel rounded-3xl border border-stone-200 dark:border-white/10 p-6 sm:p-8 shadow-xl relative overflow-hidden bg-white dark:bg-[#121921]">
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
+        {/* Listen to just this thought */}
+        <div className="absolute top-4 right-4 z-10">
+          <button
+            type="button"
+            onClick={() => handlePlaySuvicharSection('thought', 'આજનો સુવિચાર', `${thought} ${authorOrSource ? `— પ્રણેતા: ${authorOrSource}` : ''}`)}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+              playingSectionId === 'thought'
+                ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                : 'bg-stone-100 hover:bg-amber-500/10 text-stone-700 dark:text-stone-300 dark:bg-white/5 border-stone-200 dark:border-white/10 hover:border-amber-500/30 hover:text-amber-600'
+            }`}
+            title="માત્ર આ સુવિચાર સાંભળો"
+          >
+            <Volume2 className="w-3.5 h-3.5" />
+            <span>{playingSectionId === 'thought' ? 'રોકો' : 'આ સુવિચાર સાંભળો'}</span>
+          </button>
+        </div>
+
+        <div className="text-center space-y-4 max-w-3xl mx-auto pt-2">
           <div className="text-3xl sm:text-4xl text-[#9d512d] dark:text-[#f59c73] font-serif leading-none opacity-60">
             ❝
           </div>
@@ -400,9 +432,24 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
               <BookOpen className="w-4 h-4 shrink-0" />
               <span>📖 વિસ્તૃત સમજૂતી (Speech Explanation)</span>
             </div>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
-              બોલવાનો સમય: ~૧.૫ મિનિટ
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
+                બોલવાનો સમય: ~૧.૫ મિનિટ
+              </span>
+              <button
+                type="button"
+                onClick={() => handlePlaySuvicharSection('explanation', 'વિસ્તૃત સમજૂતી', explanation)}
+                className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
+                  playingSectionId === 'explanation'
+                    ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                    : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700 hover:bg-blue-200'
+                }`}
+                title="આ સમજૂતી સાંભળો"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                <span>{playingSectionId === 'explanation' ? 'રોકો' : 'સાંભળો'}</span>
+              </button>
+            </div>
           </div>
           <p className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed font-normal text-justify sm:text-left">
             {explanation}
@@ -416,9 +463,24 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
               <Lightbulb className="w-4 h-4 shrink-0" />
               <span>🌟 વ્યવહારિક ઉદાહરણ અને પ્રેરણા પ્રસંગ (Real-Life Example)</span>
             </div>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200">
-              બોલવાનો સમય: ~૧ મિનિટ
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200">
+                બોલવાનો સમય: ~૧ મિનિટ
+              </span>
+              <button
+                type="button"
+                onClick={() => handlePlaySuvicharSection('example', 'જીવન ઉદાહરણ', example)}
+                className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
+                  playingSectionId === 'example'
+                    ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                    : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200'
+                }`}
+                title="આ ઉદાહરણ સાંભળો"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                <span>{playingSectionId === 'example' ? 'રોકો' : 'સાંભળો'}</span>
+              </button>
+            </div>
           </div>
           <p className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed font-normal text-justify sm:text-left">
             {example}
@@ -428,9 +490,30 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
         {/* Key Highlights / Talking Points for Assembly */}
         {keyPoints && keyPoints.length > 0 && (
           <div className="glass-panel rounded-3xl border border-purple-500/20 bg-purple-50/50 dark:bg-purple-950/20 p-5 sm:p-6 space-y-3 shadow-sm">
-            <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-black text-sm">
-              <ListChecks className="w-4 h-4 shrink-0" />
-              <span>🎤 સભા વક્તવ્ય માટેના ૩ મુખ્ય સૂત્રો (Assembly Speech Highlights)</span>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-black text-sm">
+                <ListChecks className="w-4 h-4 shrink-0" />
+                <span>🎤 સભા વક્તવ્ય માટેના ૩ મુખ્ય સૂત્રો (Assembly Speech Highlights)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  handlePlaySuvicharSection(
+                    'keyPoints',
+                    'સભા વક્તવ્યના મુખ્ય મુદ્દા',
+                    keyPoints.map((pt, i) => `મુદ્દો ${i + 1}: ${pt}`).join('. ')
+                  )
+                }
+                className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
+                  playingSectionId === 'keyPoints'
+                    ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                    : 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700 hover:bg-purple-200'
+                }`}
+                title="આ મુખ્ય મુદ્દા સાંભળો"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                <span>{playingSectionId === 'keyPoints' ? 'રોકો' : 'સાંભળો'}</span>
+              </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               {keyPoints.map((point, index) => (
@@ -465,15 +548,31 @@ export const DailySuvicharTab: React.FC<DailySuvicharTabProps> = ({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleSharePdf}
-          disabled={isGeneratingPdf}
-          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-        >
-          <WhatsAppIcon className="w-3.5 h-3.5" />
-          <span>WhatsApp PDF શેર કરો</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => handlePlaySuvicharSection('moral', 'પાયાનું સંસ્કાર મૂલ્ય', moralValue)}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+              playingSectionId === 'moral'
+                ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                : 'bg-amber-100 hover:bg-amber-200 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200 border-amber-300 dark:border-amber-700'
+            }`}
+            title="આ મૂલ્ય બોધ સાંભળો"
+          >
+            <Volume2 className="w-3.5 h-3.5" />
+            <span>{playingSectionId === 'moral' ? 'રોકો' : 'આ બોધ સાંભળો'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSharePdf}
+            disabled={isGeneratingPdf}
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+          >
+            <WhatsAppIcon className="w-3.5 h-3.5" />
+            <span>WhatsApp PDF શેર કરો</span>
+          </button>
+        </div>
       </div>
 
       {/* WhatsApp Share Banner at the bottom */}

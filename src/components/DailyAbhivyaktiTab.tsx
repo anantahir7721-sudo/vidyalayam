@@ -22,6 +22,8 @@ import {
   HelpCircle,
   Lightbulb,
   RefreshCw,
+  Volume2,
+  Square,
 } from 'lucide-react';
 import { DailyAbhivyaktiBulletin, DailyAbhivyaktiIdea } from '../types';
 import { getDailyAbhivyaktiBulletin, toGujaratiDigits } from '../services/dailyKnowledgeService';
@@ -30,6 +32,11 @@ import { WhatsAppIcon } from './WhatsAppIcon';
 import { apiUrl, apiFetch, isNativeApp } from '../utils/apiConfig';
 import { directGenerateAbhivyakti } from '../services/directGeminiService';
 import { printHtmlDocument } from '../utils/printAndPdfUtils';
+import {
+  ttsService,
+  formatAbhivyaktiBulletinSpeech,
+  formatSingleAbhivyaktiSpeech,
+} from '../services/ttsService';
 
 interface DailyAbhivyaktiTabProps {
   schoolName?: string;
@@ -123,6 +130,46 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiGeneratedIdea, setAiGeneratedIdea] = useState<DailyAbhivyaktiIdea | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+
+  // Voice / TTS State
+  const [ttsPlaying, setTtsPlaying] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const [playingIdeaId, setPlayingIdeaId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = ttsService.subscribe((s) => {
+      setTtsPlaying(s.isPlaying && s.activeId === `abhivyakti_all_${bulletin?.id}`);
+      setTtsLoading(s.isLoading && s.activeId === `abhivyakti_all_${bulletin?.id}`);
+      if (s.isPlaying && s.activeId?.startsWith('abhivyakti_idea_')) {
+        setPlayingIdeaId(s.activeId.replace('abhivyakti_idea_', ''));
+      } else {
+        setPlayingIdeaId(null);
+      }
+    });
+
+    return () => unsub();
+  }, [bulletin?.id]);
+
+  const handleToggleListenAll = () => {
+    if (!bulletin) return;
+    const allId = `abhivyakti_all_${bulletin.id}`;
+    if (ttsPlaying) {
+      ttsService.stop();
+    } else {
+      const speech = formatAbhivyaktiBulletinSpeech(bulletin);
+      ttsService.play(allId, speech, `આજની અભિવ્યક્તિ પ્રવૃત્તિઓ (${bulletin.editionDate})`);
+    }
+  };
+
+  const handlePlaySingleIdea = (idea: DailyAbhivyaktiIdea) => {
+    const ideaId = `abhivyakti_idea_${idea.id}`;
+    if (playingIdeaId === idea.id) {
+      ttsService.stop();
+      return;
+    }
+    const speech = formatSingleAbhivyaktiSpeech(idea);
+    ttsService.play(ideaId, speech, idea.title);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -377,32 +424,65 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-950 via-slate-900 to-indigo-950 dark:from-[#1a1424] dark:via-[#231733] dark:to-[#0f0b17] border border-purple-700/40 dark:border-purple-500/25 p-5 sm:p-7 shadow-xl text-white">
         <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 space-y-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-500/20 text-purple-200 border border-purple-400/40 flex items-center gap-1.5 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-purple-300" />
-              શાળા પ્રાર્થના સંમેલન અભિવ્યક્તિ
-            </span>
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
-              બરાબર ૫ મિનિટ સ્ક્રિપ્ટ
-            </span>
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
-              🤖 Gemini AI સહાયક સજ્જ
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-500/20 text-purple-200 border border-purple-400/40 flex items-center gap-1.5 shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-300" />
+                  શાળા પ્રાર્થના સંમેલન અભિવ્યક્તિ
+                </span>
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  બરાબર ૫ મિનિટ સ્ક્રિપ્ટ
+                </span>
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
+                  🤖 Gemini AI સહાયક સજ્જ
+                </span>
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
+                <Drama className="w-7 h-7 text-purple-400" />
+                અભિવ્યક્તિ (Abhivyakti) — સ્ટેજ પ્રેઝન્ટેશન & ટેલેન્ટ વિચારો
+              </h2>
+
+              <p className="text-xs sm:text-sm text-purple-100/90 max-w-3xl leading-relaxed">
+                પ્રાર્થના સભામાં તમારી પ્રતિભા ખીલવો! સંગીત, ઢોલ વાદન, એકપાત્રીય અભિનય, મિમિક્રી, હિન્દી સંવાદો, કાવ્ય પઠન,
+                રસપ્રદ રમતો અને કોયડાની ૫ મિનિટની સ્ટેજ-રેડી સ્ક્રિપ્ટ. તમે AI ને પૂછીને પણ તમારી રુચિ મુજબની પ્રસ્તુતિ બનાવી શકો છો!
+              </p>
+            </div>
+
+            {/* Master Top Listen All Button */}
+            <div className="shrink-0 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={handleToggleListenAll}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-lg active:scale-95 ${
+                  ttsPlaying
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
+                    : 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black'
+                }`}
+                title="બધી અભિવ્યક્તિ પ્રવૃત્તિઓ એક પછી એક ક્રમશઃ સાંભળો"
+              >
+                {ttsLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>તૈયાર થઈ રહ્યું છે...</span>
+                  </>
+                ) : ttsPlaying ? (
+                  <>
+                    <Square className="w-4 h-4 fill-current" />
+                    <span>પ્રવૃત્તિઓ રોકો</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-4 h-4" />
+                    <span>🔊 બધી પ્રવૃત્તિઓ સાંભળો</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
-            <Drama className="w-7 h-7 text-purple-400" />
-            અભિવ્યક્તિ (Abhivyakti) — સ્ટેજ પ્રેઝન્ટેશન & ટેલેન્ટ વિચારો
-          </h2>
-
-          <p className="text-xs sm:text-sm text-purple-100/90 max-w-3xl leading-relaxed">
-            પ્રાર્થના સભામાં તમારી પ્રતિભા ખીલવો! સંગીત, ઢોલ વાદન, એકપાત્રીય અભિનય, મિમિક્રી, હિન્દી સંવાદો, કાવ્ય પઠન,
-            રસપ્રદ રમતો અને કોયડાની ૫ મિનિટની સ્ટેજ-રેડી સ્ક્રિપ્ટ. તમે AI ને પૂછીને પણ તમારી રુચિ મુજબની પ્રસ્તુતિ બનાવી શકો છો!
-          </p>
         </div>
-      </div>
 
       {/* AI Interactive Abhivyakti Coach Box */}
       <div className="rounded-3xl bg-gradient-to-br from-sky-950/80 via-slate-900 to-indigo-950 dark:from-[#131c26] dark:via-[#162330] dark:to-[#0c141d] border border-sky-600/40 dark:border-sky-500/30 p-5 sm:p-6 shadow-lg space-y-4 text-white">
@@ -686,6 +766,21 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
                     </span>
 
                     <div className="flex items-center gap-1.5">
+                      {/* Play single idea voice button */}
+                      <button
+                        type="button"
+                        onClick={() => handlePlaySingleIdea(idea)}
+                        className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                          playingIdeaId === idea.id
+                            ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                            : 'bg-slate-100 dark:bg-white/5 hover:bg-purple-500/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-purple-500/40 hover:text-purple-600'
+                        }`}
+                        title="આ પ્રવૃત્તિ સાંભળો"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                        <span className="text-[11px] font-bold">{playingIdeaId === idea.id ? 'રોકો' : 'સાંભળો'}</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleCopyScript(idea)}
@@ -777,13 +872,29 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setActiveIdeaModal(null)}
-                className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handlePlaySingleIdea(activeIdeaModal)}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                    playingIdeaId === activeIdeaModal.id
+                      ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                      : 'bg-purple-100 hover:bg-purple-200 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-300 dark:border-purple-700'
+                  }`}
+                  title="આ સંપૂર્ણ પ્રવૃત્તિ સાંભળો"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>{playingIdeaId === activeIdeaModal.id ? 'રોકો' : 'સાંભળો'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveIdeaModal(null)}
+                  className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* 5-Min Time Breakdown Table */}
@@ -835,7 +946,29 @@ export const DailyAbhivyaktiTab: React.FC<DailyAbhivyaktiTabProps> = ({
 
             {/* Footer Actions */}
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-white/10">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handlePlaySingleIdea(activeIdeaModal)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md ${
+                    playingIdeaId === activeIdeaModal.id
+                      ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
+                      : 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black'
+                  }`}
+                  title="સંપૂર્ણ સ્ક્રિપ્ટ સાંભળો"
+                >
+                  {playingIdeaId === activeIdeaModal.id ? (
+                    <>
+                      <Square className="w-4 h-4 fill-current" />
+                      <span>સ્ક્રિપ્ટ રોકો</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-4 h-4" />
+                      <span>🔊 આખી સ્ક્રિપ્ટ સાંભળો</span>
+                    </>
+                  )}
+                </button>
                 <button
                   type="button"
                   onClick={() => handleCopyScript(activeIdeaModal)}

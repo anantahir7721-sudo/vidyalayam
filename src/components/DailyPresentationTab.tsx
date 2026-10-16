@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Presentation,
   BookOpen,
@@ -12,6 +12,7 @@ import {
   School,
   Users,
   Volume2,
+  Square,
   Download,
   Loader2,
   Share2,
@@ -28,6 +29,11 @@ import {
 } from '../utils/dailyPdfShareUtils';
 import { printHtmlDocument } from '../utils/printAndPdfUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import {
+  ttsService,
+  formatPresentationSpeech,
+  formatPresentationSectionSpeech,
+} from '../services/ttsService';
 
 interface DailyPresentationTabProps {
   schoolName?: string;
@@ -70,6 +76,46 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
 
   const [copied, setCopied] = useState<boolean>(false);
   const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg'>('md');
+
+  // TTS / Voice State
+  const [ttsPlaying, setTtsPlaying] = useState<boolean>(false);
+  const [ttsLoading, setTtsLoading] = useState<boolean>(false);
+  const [playingSectionId, setPlayingSectionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = ttsService.subscribe((s) => {
+      setTtsPlaying(s.isPlaying && s.activeId === `pres_all_${presentation?.title}`);
+      setTtsLoading(s.isLoading && s.activeId === `pres_all_${presentation?.title}`);
+      if (s.isPlaying && s.activeId?.startsWith('pres_sec_')) {
+        setPlayingSectionId(s.activeId.replace('pres_sec_', ''));
+      } else {
+        setPlayingSectionId(null);
+      }
+    });
+
+    return () => unsub();
+  }, [presentation?.title]);
+
+  const handleToggleListenAllPresentation = () => {
+    if (!presentation) return;
+    const allId = `pres_all_${presentation.title}`;
+    if (ttsPlaying) {
+      ttsService.stop();
+    } else {
+      const speech = formatPresentationSpeech(presentation);
+      ttsService.play(allId, speech, `વક્તવ્ય પ્રસ્તુતિ: ${presentation.title}`);
+    }
+  };
+
+  const handlePlaySection = (secKey: string, sectionTitle: string, sectionContent: string) => {
+    const activeSecId = `pres_sec_${secKey}`;
+    if (playingSectionId === secKey) {
+      ttsService.stop();
+      return;
+    }
+    const speech = formatPresentationSectionSpeech(sectionTitle, sectionContent);
+    ttsService.play(activeSecId, speech, sectionTitle);
+  };
 
   // Filter available subjects based on selected standard
   const availableSubjects = useMemo(() => {
@@ -627,8 +673,37 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
               </h2>
             </div>
 
-            {/* Action Buttons: Direct PDF Download, WhatsApp Share, Copy, Print */}
+            {/* Action Buttons: Edge TTS Master Button, Direct PDF Download, WhatsApp Share, Copy, Print */}
             <div className="flex items-center gap-2 flex-wrap">
+              {/* Edge TTS Master Audio Button - Sequential Full Speech */}
+              <button
+                type="button"
+                onClick={handleToggleListenAllPresentation}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
+                  ttsPlaying
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
+                    : 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black'
+                }`}
+                title="આખું ૫ મિનિટ વક્તવ્ય એક પછી એક ક્રમશઃ સાંભળો"
+              >
+                {ttsLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>તૈયાર થાય છે...</span>
+                  </>
+                ) : ttsPlaying ? (
+                  <>
+                    <Square className="w-4 h-4 fill-current" />
+                    <span>વક્તવ્ય રોકો</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-4 h-4" />
+                    <span>🔊 આખું વક્તવ્ય સાંભળો</span>
+                  </>
+                )}
+              </button>
+
               {/* Direct PDF Download Button */}
               <button
                 type="button"
@@ -739,14 +814,38 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
           <div className="space-y-4">
             {/* Step 1: સંબોધન (Opening Salutation) */}
             <div className="bg-emerald-50/80 dark:bg-emerald-950/25 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl p-4 sm:p-5 space-y-1.5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs uppercase tracking-wider">
                   <Volume2 className="w-4 h-4 text-emerald-600" />
                   <span>૧. આદરપૂર્વક સંબોધન (Opening Speech)</span>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
-                  આશરે ૨૦ સેકન્ડ
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
+                    આશરે ૨૦ સેકન્ડ
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handlePlaySection(
+                        'pres_opening',
+                        'સભા સંબોધન',
+                        presentation.openingSpeech ||
+                          (String(presentation.environment).includes('પ્રાર્થના')
+                            ? 'માનનીય આચાર્યશ્રી, વંદનીય ગુરુજનો અને મારા વહાલા વિદ્યાર્થી મિત્રો, સૌને મારા સાદર પ્રણામ.'
+                            : 'આદરણીય શિક્ષકશ્રી અને મારા વહાલા સહપાઠી મિત્રો, સૌને મારા નમસ્કાર.')
+                      )
+                    }
+                    className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
+                      playingSectionId === 'pres_opening'
+                        ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                        : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200'
+                    }`}
+                    title="આ સંબોધન સાંભળો"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                    <span>{playingSectionId === 'pres_opening' ? 'રોકો' : 'સાંભળો'}</span>
+                  </button>
+                </div>
               </div>
               <p className={`font-bold text-slate-900 dark:text-emerald-100 ${textSizeClass}`}>
                 "{presentation.openingSpeech || (String(presentation.environment).includes('પ્રાર્થના') ? 'માનનીય આચાર્યશ્રી, વંદનીય ગુરુજનો અને મારા વહાલા વિદ્યાર્થી મિત્રો, સૌને મારા સાદર પ્રણામ.' : 'આદરણીય શિક્ષકશ્રી અને મારા વહાલા સહપાઠી મિત્રો, સૌને મારા નમસ્કાર.')}"
@@ -755,11 +854,30 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
 
             {/* Step 2: ટોપિક પરિચય (Topic Announcement) */}
             <div className="bg-blue-50/80 dark:bg-blue-950/25 border border-blue-200 dark:border-blue-800/40 rounded-2xl p-4 sm:p-5 space-y-1.5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 font-extrabold text-xs uppercase tracking-wider">
                   <BookOpen className="w-4 h-4 text-blue-600" />
                   <span>૨. વિષય રજૂઆત (Topic Announcement)</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handlePlaySection(
+                      'pres_intro',
+                      'વિષય રજૂઆત',
+                      `આજે હું આપ સૌની સમક્ષ ${presentation.standard || `ધોરણ ${selectedStandard}`} ના ${presentation.subject || currentSubject.name} વિષયના અત્યંત મહત્વના ટોપિક "${presentation.title}" વિશે સરળ રજૂઆત કરવા જઈ રહ્યો છું.`
+                    )
+                  }
+                  className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
+                    playingSectionId === 'pres_intro'
+                      ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                      : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700 hover:bg-blue-200'
+                  }`}
+                  title="આ વિષય પ્રવેશ સાંભળો"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>{playingSectionId === 'pres_intro' ? 'રોકો' : 'સાંભળો'}</span>
+                </button>
               </div>
               <p className={`font-semibold text-slate-800 dark:text-blue-100 ${textSizeClass}`}>
                 "આજે હું આપ સૌની સમક્ષ {presentation.standard || `ધોરણ ${selectedStandard}`} ના {presentation.subject || currentSubject.name} વિષયના અત્યંત મહત્વના અને રોચક ટોપિક <strong className="text-blue-900 dark:text-white underline">"{presentation.title}"</strong> વિશે આત્મવિશ્વાસપૂર્વક સંપૂર્ણ રજૂઆત કરવા જઈ રહ્યો/રહી છું."
@@ -780,9 +898,24 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
 
               {/* Paragraph 1: Core Concept / Theory */}
               {paragraph1 && (
-                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 shadow-2xs space-y-1">
-                  <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-                    ૧. પાયાની વિભાવના & પાઠ્યપુસ્તક સિદ્ધાંત:
+                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 shadow-2xs space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                      ૧. પાયાની વિભાવના & પાઠ્યપુસ્તક સિદ્ધાંત:
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handlePlaySection('pres_p1', 'મુદ્દો ૧: પાયાની વિભાવના', paragraph1)}
+                      className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                        playingSectionId === 'pres_p1'
+                          ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                          : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100'
+                      }`}
+                      title="આ મુદ્દો સાંભળો"
+                    >
+                      <Volume2 className="w-3 h-3" />
+                      <span>{playingSectionId === 'pres_p1' ? 'રોકો' : 'સાંભળો'}</span>
+                    </button>
                   </div>
                   <p className={`text-slate-800 dark:text-slate-200 font-medium leading-relaxed ${textSizeClass}`}>
                     {paragraph1}
@@ -792,9 +925,24 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
 
               {/* Paragraph 2: In-Depth Explanation / Concept Details */}
               {paragraph2 && (
-                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 shadow-2xs space-y-1">
-                  <div className="text-[11px] font-bold text-blue-700 dark:text-blue-400">
-                    ૨. વિગતવાર વિશ્લેષણ & સમજૂતી:
+                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 shadow-2xs space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[11px] font-bold text-blue-700 dark:text-blue-400">
+                      ૨. વિગતવાર વિશ્લેષણ & સમજૂતી:
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handlePlaySection('pres_p2', 'મુદ્દો ૨: વિગતવાર વિશ્લેષણ', paragraph2)}
+                      className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                        playingSectionId === 'pres_p2'
+                          ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                          : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100'
+                      }`}
+                      title="આ મુદ્દો સાંભળો"
+                    >
+                      <Volume2 className="w-3 h-3" />
+                      <span>{playingSectionId === 'pres_p2' ? 'રોકો' : 'સાંભળો'}</span>
+                    </button>
                   </div>
                   <p className={`text-slate-800 dark:text-slate-200 font-medium whitespace-pre-line leading-relaxed ${textSizeClass}`}>
                     {paragraph2}
@@ -804,10 +952,25 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
 
               {/* Paragraph 3: Summary, Relevance or Natural Example if any */}
               {paragraph3 && (
-                <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 shadow-2xs space-y-1">
-                  <div className="text-[11px] font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
-                    <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-                    <span>૩. ઉપસંહાર & વાસ્તવિક જોડાણ:</span>
+                <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 shadow-2xs space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[11px] font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+                      <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
+                      <span>૩. ઉપસંહાર & વાસ્તવિક જોડાણ:</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handlePlaySection('pres_p3', 'મુદ્દો ૩: વ્યવહારિક જોડાણ', paragraph3)}
+                      className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                        playingSectionId === 'pres_p3'
+                          ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                          : 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800 hover:bg-amber-200'
+                      }`}
+                      title="આ મુદ્દો સાંભળો"
+                    >
+                      <Volume2 className="w-3 h-3" />
+                      <span>{playingSectionId === 'pres_p3' ? 'રોકો' : 'સાંભળો'}</span>
+                    </button>
                   </div>
                   <p className={`text-slate-800 dark:text-amber-100 font-medium whitespace-pre-line leading-relaxed ${textSizeClass}`}>
                     {paragraph3}
@@ -818,10 +981,30 @@ export const DailyPresentationTab: React.FC<DailyPresentationTabProps> = ({
 
             {/* Step 4: સમાપન & આભારવિધિ (Closing Salutation) */}
             <div className="bg-emerald-50/80 dark:bg-emerald-950/25 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl p-4 sm:p-5 space-y-1.5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs uppercase tracking-wider">
                   <span>૪. સમાપન & આભાર દર્શન (Closing Salutation)</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handlePlaySection(
+                      'pres_closing',
+                      'સમાપન & આભાર દર્શન',
+                      presentation.closingSpeech ||
+                        'આમ, આ ટોપિક આપણને રોજિંદા જીવનમાં પણ ખૂબ ઉપયોગી છે. મારી આ રજૂઆત શાંતિપૂર્વક અને સ્નેહપૂર્વક સાંભળવા બદલ આપ સૌનો હૃદયપૂર્વક આભાર વ્યક્ત કરું છું. અસ્તુ, ભારત માતા કી જય! જય હિન્દ!'
+                    )
+                  }
+                  className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
+                    playingSectionId === 'pres_closing'
+                      ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                      : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200'
+                  }`}
+                  title="આ સમાપન સાંભળો"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>{playingSectionId === 'pres_closing' ? 'રોકો' : 'સાંભળો'}</span>
+                </button>
               </div>
               <p className={`font-bold text-emerald-900 dark:text-emerald-200 ${textSizeClass}`}>
                 "{presentation.closingSpeech || 'આમ, આ ટોપિક આપણને રોજિંદા જીવનમાં પણ ખૂબ ઉપયોગી છે. મારી આ રજૂઆત શાંતિપૂર્વક અને સ્નેહપૂર્વક સાંભળવા બદલ આપ સૌનો હૃદયપૂર્વક આભાર વ્યક્ત કરું છું. અસ્તુ, ભારત માતા કી જય! જય હિન્દ!'}"

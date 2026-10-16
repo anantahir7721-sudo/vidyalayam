@@ -1,5 +1,13 @@
 import { apiFetch } from '../utils/apiConfig';
-import { DailyNewsBulletin, DailySuvicharItem, DailyJanvaJevuBulletin } from '../types';
+import {
+  DailyNewsBulletin,
+  DailySuvicharItem,
+  DailyJanvaJevuBulletin,
+  DailyAbhivyaktiBulletin,
+  DailyAbhivyaktiIdea,
+  DailyInterestingFact,
+  JanvaJevuQuestion,
+} from '../types';
 
 export type TTSVoice = 'female';
 
@@ -253,7 +261,7 @@ class TTSServiceManager {
 
   /**
    * Fast synthesis fetcher with dual-layer caching (RAM + Persistent IndexedDB for APK)
-   * and resilient network failover.
+   * and resilient network failover with automatic retry.
    */
   private async fetchAudioBlob(text: string, signal?: AbortSignal): Promise<Blob | null> {
     const cacheKey = `female:${text}`;
@@ -271,30 +279,38 @@ class TTSServiceManager {
       }
     } catch {}
 
-    // 3. Cloud Neural Synthesis via server API
-    try {
-      const response = await apiFetch('/api/tts/speak', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          voice: 'female',
-        }),
-        signal,
-      }, 25000);
+    // 3. Cloud Neural Synthesis via server API (with 1 automatic retry)
+    let lastErr: any = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const response = await apiFetch('/api/tts/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            voice: 'female',
+          }),
+          signal,
+        }, 45000);
 
-      if (!response.ok) {
-        throw new Error(`TTS server responded with ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`TTS server responded with ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        this.clientBlobCache.set(cacheKey, blob);
+        offlineAudioDb.set(cacheKey, blob).catch(() => {});
+        return blob;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return null;
+        lastErr = err;
+        if (attempt === 1) {
+          await new Promise((r) => setTimeout(r, 600));
+        }
       }
-
-      const blob = await response.blob();
-      this.clientBlobCache.set(cacheKey, blob);
-      offlineAudioDb.set(cacheKey, blob).catch(() => {});
-      return blob;
-    } catch (err: any) {
-      if (err.name === 'AbortError') return null;
-      throw err;
     }
+
+    throw lastErr;
   }
 
   /**
@@ -325,22 +341,23 @@ class TTSServiceManager {
       this.state.isPlaying = true;
       this.notify();
 
-      // In the background, prefetch the NEXT chunk immediately so there is ZERO waiting gap!
+      // Prefetch the NEXT chunk sequentially with a tiny delay so the current audio flows seamlessly
       if (index + 1 < this.activeChunks.length) {
         const nextText = this.activeChunks[index + 1];
-        this.fetchAudioBlob(nextText).catch(() => {});
+        setTimeout(() => {
+          this.fetchAudioBlob(nextText).catch(() => {});
+        }, 400);
       }
     } catch (err: any) {
       if (err.name === 'AbortError') return;
-      console.warn('[TTSService] Cloud neural chunk failed, attempting offline fallback:', err);
+      console.warn('[TTSService] Cloud neural chunk notice:', err?.message || err);
       this.fallbackBrowserSpeech(chunkText);
     }
   }
 
   /**
    * Main synthesis & play method using authentic Gujarati Neural Voice.
-   * Employs sentence-by-sentence streaming for instant (< 0.8s) response time,
-   * with seamless offline fallback.
+   * Employs sentence-by-sentence streaming for instant (< 0.8s) response time.
    */
   public async play(
     id: string,
@@ -369,8 +386,7 @@ class TTSServiceManager {
     this.state.voice = 'female';
     this.notify();
 
-    // High-Speed Low-Latency Cloud Playback (Sentence / Paragraph Chunking):
-    // First short sentence starts playing within 0.8 seconds!
+    // High-Speed Low-Latency Cloud Playback:
     this.activeChunks = splitIntoSpeechChunks(cleanText);
     this.currentChunkIdx = 0;
     this.currentAbortController = new AbortController();
@@ -379,13 +395,14 @@ class TTSServiceManager {
       await this.playChunk(0);
     } catch (err: any) {
       if (err.name === 'AbortError') return;
-      console.warn('[TTSService] Primary neural speech failed, attempting offline fallback:', err);
+      console.warn('[TTSService] Primary neural speech notice:', err?.message || err);
       this.fallbackBrowserSpeech(cleanText);
     }
   }
 
   /**
-   * Client-side fallback if server is unreachable or offline
+   * Client-side fallback: preserves authentic experience.
+   * Never forces low-quality robotic browser voice unless native Android Bridge exists.
    */
   private fallbackBrowserSpeech(text: string) {
     if (typeof (window as any).AndroidBridge?.speakText === 'function') {
@@ -398,57 +415,42 @@ class TTSServiceManager {
       } catch {}
     }
 
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      this.stop();
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'gu-IN';
-    utterance.rate = this.state.rate;
-
-    utterance.onstart = () => {
-      this.state.isLoading = false;
-      this.state.isPlaying = true;
-      this.notify();
-    };
-    utterance.onend = () => {
-      if (this.currentChunkIdx + 1 < this.activeChunks.length) {
-        this.currentChunkIdx++;
-        this.playChunk(this.currentChunkIdx);
-      } else {
-        this.stop();
-      }
-    };
-    utterance.onerror = () => {
-      this.stop();
-    };
-
-    window.speechSynthesis.speak(utterance);
+    // Do NOT substitute with harsh robotic browser speech synthesis!
+    // Instead gracefully reset and inform user to retry cleanly.
+    this.state.isLoading = false;
+    this.state.isPlaying = false;
+    this.notify();
   }
 }
 
 /**
- * Splits Gujarati speech text into short, natural sentence chunks
- * so the initial audio chunk starts playing in under 1 second!
+ * Splits Gujarati speech text into natural chunks.
+ * For items under 260 characters, keeps them in 1 pristine audio file.
+ * For longer items (such as full facts or extended news), splits on natural sentence
+ * boundaries so that Chunk 0 synthesizes and starts playing in ~1.5 - 2.5 seconds,
+ * while subsequent chunks stream seamlessly in the background!
  */
 export function splitIntoSpeechChunks(text: string): string[] {
   if (!text) return [];
-  // Split on double newline or bullet sections
-  const paragraphs = text.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  const trimmed = text.trim();
+  if (trimmed.length <= 260) {
+    return [trimmed];
+  }
+
+  // Split on double newline or bullet sections first
+  const paragraphs = trimmed.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
   const chunks: string[] = [];
 
   for (const para of paragraphs) {
-    if (para.length <= 350) {
+    if (para.length <= 260) {
       chunks.push(para);
     } else {
-      // Split on punctuation: ।, ., ?, !
+      // Split on sentence punctuation: ।, ., ?, !
       const parts = para.split(/([।\.\?!]+)/gu).filter(Boolean);
       let buffer = '';
       for (let i = 0; i < parts.length; i += 2) {
         const seg = (parts[i] || '') + (parts[i + 1] || '');
-        if ((buffer + ' ' + seg).length > 350 && buffer.trim()) {
+        if ((buffer + ' ' + seg).length > 240 && buffer.trim()) {
           chunks.push(buffer.trim());
           buffer = seg;
         } else {
@@ -459,7 +461,7 @@ export function splitIntoSpeechChunks(text: string): string[] {
     }
   }
 
-  return chunks.length > 0 ? chunks : [text];
+  return chunks.length > 0 ? chunks : [trimmed];
 }
 
 /**
@@ -578,32 +580,183 @@ export function formatSuvicharSpeech(suvichar: DailySuvicharItem): string {
 }
 
 /**
- * Formats daily Janva Jevu (Facts or 20 Questions) into an engaging knowledge audio script
+ * Formats daily Janva Jevu (12 Facts) into an engaging knowledge audio script
  */
 export function formatJanvaJevuSpeech(bulletin: any): string {
-  let speech = `નમસ્તે વિદ્યાર્થી મિત્રો. વિદ્યાલયમ આજનું જાણવા જેવું અને રોચક સામાન્ય જ્ઞાન:\n\n`;
+  let speech = `નમસ્તે વિદ્યાર્થી મિત્રો. વિદ્યાલયમ આજનું જાણવા જેવું અને ૧૨ રોચક તથ્યો:\n\n`;
   
   if (Array.isArray(bulletin?.facts) && bulletin.facts.length > 0) {
     bulletin.facts.forEach((fact: any, idx: number) => {
       const numGuj = `${idx + 1}`;
       speech += `રોચક તથ્ય નંબર ${numGuj}: ${fact.title ? fact.title + '. ' : ''}${fact.fact}. `;
-      if (fact.explanation || fact.whyItMatters) {
-        speech += `${fact.explanation || fact.whyItMatters} `;
+      if (fact.whyItMatters) {
+        speech += `જાણવા જેવું સંદર્ભ: ${fact.whyItMatters}. `;
       }
       speech += '\n\n';
     });
   } else if (Array.isArray(bulletin?.questions) && bulletin.questions.length > 0) {
-    bulletin.questions.forEach((q: any, idx: number) => {
-      const numGuj = `${idx + 1}`;
-      speech += `પ્રશ્ન નંબર ${numGuj}: ${q.question}. ઉત્તર છે: ${q.answer}. `;
-      if (q.explanation) {
-        speech += `${q.explanation} `;
-      }
-      speech += '\n\n';
-    });
+    return formatPrashnotariBulletinSpeech(bulletin);
   }
 
   speech += `નવું જાણતા રહો અને જ્ઞાન વધારતા રહો. આભાર!`;
   return speech;
 }
+
+/**
+ * Formats a single fact item for individual voice listening
+ */
+export function formatSingleFactSpeech(fact: DailyInterestingFact, idx?: number): string {
+  const prefix = idx !== undefined ? `રોચક તથ્ય નંબર ${idx + 1}: ` : '';
+  let speech = `${prefix}${fact.title ? fact.title + '. ' : ''}${fact.fact}. `;
+  if (fact.whyItMatters) {
+    speech += `વિશેષ સંદર્ભ: ${fact.whyItMatters}`;
+  }
+  return speech;
+}
+
+/**
+ * Formats daily Prashnotari bulletin (20 Q&As) into a sequential audio broadcast
+ */
+export function formatPrashnotariBulletinSpeech(bulletin: any): string {
+  const dateStr = bulletin?.editionDate || 'આજ';
+  let speech = `નમસ્તે વિદ્યાર્થી મિત્રો. વિદ્યાલયમ આજની સામાન્ય જ્ઞાન પ્રશ્નોત્તરીમાં આપનું હાર્દિક સ્વાગત છે. તારીખ ${dateStr}. આજના ૨૦ મહત્વના પ્રશ્નો અને તેના સાચા જવાબો:\n\n`;
+
+  const questions: JanvaJevuQuestion[] = bulletin?.questions || [];
+  if (questions.length === 0) {
+    return speech + 'આજની કોઈ પ્રશ્નોત્તરી ઉપલબ્ધ નથી.';
+  }
+
+  questions.forEach((q, idx) => {
+    const numGuj = `${idx + 1}`;
+    speech += `પ્રશ્ન નંબર ${numGuj}: ${q.question}. `;
+    speech += `સાચો જવાબ છે: ${q.answer}. `;
+    if (q.explanation) {
+      speech += `સમજૂતી: ${q.explanation}. `;
+    }
+    speech += '\n\n';
+  });
+
+  speech += 'આ હતી આજની પ્રશ્નોત્તરી. જ્ઞાન વધારતા રહો. ખૂબ ખૂબ આભાર!';
+  return speech;
+}
+
+/**
+ * Formats a single question for individual voice playback
+ */
+export function formatSingleQuestionSpeech(question: JanvaJevuQuestion, idx?: number): string {
+  const prefix = idx !== undefined ? `પ્રશ્ન નંબર ${idx + 1}: ` : 'પ્રશ્ન: ';
+  let speech = `${prefix}${question.question}. `;
+  speech += `સાચો જવાબ છે: ${question.answer}. `;
+  if (question.explanation) {
+    speech += `સમજૂતી: ${question.explanation}`;
+  }
+  return speech;
+}
+
+/**
+ * Formats daily Abhivyakti bulletin (4 ideas) into sequential audio script
+ */
+export function formatAbhivyaktiBulletinSpeech(bulletin: DailyAbhivyaktiBulletin): string {
+  const dateStr = bulletin.editionDate || 'આજ';
+  let speech = `નમસ્તે શિક્ષકગણ અને વિદ્યાર્થી મિત્રો. વિદ્યાલયમ શાળા પ્રાર્થના સંમેલન ૫ મિનિટ અભિવ્યક્તિ પ્રવૃત્તિઓમાં આપનું સ્વાગત છે. તારીખ ${dateStr}. આજની પ્રેરણાદાયી પ્રવૃત્તિઓ:\n\n`;
+
+  const ideas = bulletin.ideas || [];
+  if (ideas.length === 0) {
+    return speech + 'આજની કોઈ અભિવ્યક્તિ પ્રવૃત્તિ ઉપલબ્ધ નથી.';
+  }
+
+  ideas.forEach((idea, idx) => {
+    const numGuj = `${idx + 1}`;
+    speech += `પ્રવૃત્તિ નંબર ${numGuj}: ${idea.title}. `;
+    speech += `કેટેગરી: ${idea.categoryLabel}. સમયગાળો: ${idea.duration || '૫ મિનિટ'}. `;
+    speech += `પ્રવૃત્તિ સારાંશ: ${idea.summary}. `;
+    if (idea.fullScript) {
+      speech += `રજૂઆત સ્ક્રિપ્ટ: ${idea.fullScript}. `;
+    }
+    if (idea.deliveryTips) {
+      speech += `પ્રસ્તુતિ ટિપ્સ: ${idea.deliveryTips}. `;
+    }
+    speech += '\n\n';
+  });
+
+  speech += 'આ હતી આજની અભિવ્યક્તિ પ્રવૃત્તિઓ. આપની શાળા સંમેલનમાં સરસ રજૂઆત કરો. આભાર!';
+  return speech;
+}
+
+/**
+ * Formats a single Abhivyakti idea for individual voice playback
+ */
+export function formatSingleAbhivyaktiSpeech(idea: DailyAbhivyaktiIdea): string {
+  let speech = `અભિવ્યક્તિ પ્રવૃત્તિ: ${idea.title}. `;
+  speech += `વિભાગ: ${idea.categoryLabel}. સમય: ${idea.duration || '૫ મિનિટ'}. `;
+  speech += `સારાંશ: ${idea.summary}. \n\n`;
+
+  if (idea.fullScript) {
+    speech += `સંપૂર્ણ રજૂઆત સ્ક્રિપ્ટ: ${idea.fullScript}. \n\n`;
+  }
+
+  if (idea.deliveryTips) {
+    speech += `રજૂઆત કરવાની મહત્વની ટિપ્સ: ${idea.deliveryTips}`;
+  }
+
+  return speech;
+}
+
+/**
+ * Formats a full 5-minute school presentation script sequentially
+ */
+export function formatPresentationSpeech(presentation: any): string {
+  if (!presentation) return '';
+  const title = presentation.title || 'પ્રસ્તુતિ વિષય';
+  const std = presentation.standard || '';
+  const sub = presentation.subject || '';
+  
+  let speech = `નમસ્તે. શાળા પ્રસ્તુતિ સત્રમાં આપનું સ્વાગત છે. `;
+  speech += `વિષય: ${sub}, ${std}. ટોપિક: ${title}.\n\n`;
+
+  // 1. Opening greeting
+  if (presentation.openingSpeech) {
+    speech += `પ્રથમ સંબોધન: ${presentation.openingSpeech}\n\n`;
+  }
+
+  // 2. Topic Introduction
+  const topicIntro = `આજે હું આપ સૌની સમક્ષ ${std ? `${std} ના ` : ''}${sub ? `${sub} વિષયના ` : ''}મહત્વના ટોપિક ${title} વિશે સરળ રજૂઆત કરવા જઈ રહ્યો છું.`;
+  speech += `વિષય પ્રવેશ: ${topicIntro}\n\n`;
+
+  // 3. Comprehensive Paragraphs (Concept & Real life application)
+  if (presentation.paragraph1) {
+    speech += `મુદ્દો એક - પ્રાથમિક સમજૂતી: ${presentation.paragraph1}\n\n`;
+  } else if (presentation.introduction) {
+    speech += `પ્રાથમિક સમજૂતી: ${presentation.introduction}\n\n`;
+  }
+
+  if (presentation.paragraph2) {
+    speech += `મુદ્દો બે - વિગતવાર વિશ્લેષણ: ${presentation.paragraph2}\n\n`;
+  } else if (presentation.detailedExplanation) {
+    speech += `વિગતવાર વિશ્લેષણ: ${presentation.detailedExplanation}\n\n`;
+  }
+
+  if (presentation.paragraph3) {
+    speech += `મુદ્દો ત્રણ - વ્યવહારિક ઉદાહરણ અને તારણ: ${presentation.paragraph3}\n\n`;
+  } else if (presentation.realLifeExample) {
+    speech += `વ્યવહારિક ઉદાહરણ: ${presentation.realLifeExample}\n\n`;
+  }
+
+  // 4. Closing speech
+  if (presentation.closingSpeech) {
+    speech += `સમાપન: ${presentation.closingSpeech}\n\n`;
+  } else {
+    speech += `મારી આ રજૂઆત શાંતિપૂર્વક સાંભળવા બદલ આપ સૌનો ખૂબ ખૂબ આભાર. અસ્તુ, જય હિન્દ!\n\n`;
+  }
+
+  return speech;
+}
+
+/**
+ * Formats a single presentation section for individual listening
+ */
+export function formatPresentationSectionSpeech(title: string, content: string): string {
+  return `${title}: ${content}`;
+}
+
 

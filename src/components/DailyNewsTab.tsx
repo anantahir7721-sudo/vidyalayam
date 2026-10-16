@@ -437,7 +437,7 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
                   ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
                   : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black'
               }`}
-              title="માઈક્રોસોફ્ટ એજ ન્યુરલ ગુજરાતી અવાજમાં આજના સમાચાર સાંભળો"
+              title="Gemini AI ગુજરાતી અવાજમાં (કુદરતી માનવીય શિક્ષક વાણી) આજના સમાચાર સાંભળો"
             >
               {ttsLoading ? (
                 <>
@@ -452,7 +452,7 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
               ) : (
                 <>
                   <Volume2 className="w-4 h-4" />
-                  <span>🔊 સમાચાર સાંભળો</span>
+                  <span>🔊 બધા સમાચાર સાંભળો</span>
                 </>
               )}
             </button>
@@ -632,7 +632,7 @@ export const DailyNewsTab: React.FC<DailyNewsTabProps> = ({
                     title="આ સમાચાર સાંભળો"
                   >
                     <Volume2 className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline text-[10px]">{playingItemId === item.id ? 'રોકો' : 'સાંભળો'}</span>
+                    <span className="text-[10px] font-bold">{playingItemId === item.id ? 'રોકો' : 'સાંભળો'}</span>
                   </button>
                 </div>
               </div>
