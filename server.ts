@@ -2063,7 +2063,7 @@ async function startServer() {
 }`;
 
           // Robust model selection with fallback across key pool
-          const candidateModels = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
+          const candidateModels = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
           const aiText = await geminiKeyPool.execute(async (ai) => {
             let lastErr: any = null;
             for (const candidateModel of candidateModels) {
@@ -2557,8 +2557,10 @@ Schema per question:
 
       // Model priority with robust fallbacks:
       const candidateModels = [
-        'gemini-3.1-flash-lite',
+        'gemini-3.5-flash',
+        'gemini-3.6-flash',
         'gemini-3.8-flash',
+        'gemini-3.1-flash-lite',
         'gemini-flash-latest',
       ];
 
@@ -2741,8 +2743,10 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
 કૃપા કરીને આ રસ આધારિત પ્રાર્થના સભા માટે ૫ મિનિટની ખૂબ જ રોમાંચક અને અસરકારક અભિવ્યક્તિ પ્રસ્તુતિ તૈયાર કરી આપો.`;
 
       const candidateModels = [
-        'gemini-3.1-flash-lite',
+        'gemini-3.5-flash',
+        'gemini-3.6-flash',
         'gemini-3.8-flash',
+        'gemini-3.1-flash-lite',
         'gemini-flash-latest',
       ];
 
