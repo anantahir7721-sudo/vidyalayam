@@ -48,6 +48,7 @@ import java.util.Locale;
 public class MainActivity extends BridgeActivity {
 
     public static final String NOTIFICATION_CHANNEL_ID = "vidyalayam_notifications_channel";
+    public static final String NOTIFICATION_CHANNEL_NAME = "વિદ્યાલયમ શાળા સૂચનાઓ";
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 101;
     private WebView mPrintWebView = null;
     private TextToSpeech mTextToSpeech = null;
