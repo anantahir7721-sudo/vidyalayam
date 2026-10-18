@@ -29,6 +29,7 @@ import {
   ResultVisibilityType,
 } from '../types';
 import { findConflictingExam } from '../services/onlineExamService';
+import { getExamStartTimestamp } from '../utils/onlineExamStatusUtils';
 import { AiQuestionImporterModal } from './AiQuestionImporterModal';
 import { QuestionBankModal } from './QuestionBankModal';
 import { IosDateInput } from './IosDatePicker';
@@ -281,6 +282,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
     setIsSaving(true);
     try {
       const finalStatus = forcedStatus || status;
+      const scheduledStartTimestamp = getExamStartTimestamp({ scheduledDate, scheduledStartTime }) || Date.now();
       const examPayload = {
         examType,
         standard,
@@ -290,6 +292,7 @@ export const OnlineExamEditor: React.FC<OnlineExamEditorProps> = ({
         durationMinutes: Number(durationMinutes) || 30,
         scheduledDate,
         scheduledStartTime,
+        scheduledStartTimestamp,
         status: finalStatus,
         resultVisibility,
         randomizeQuestions,

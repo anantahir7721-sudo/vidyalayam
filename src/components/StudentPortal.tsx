@@ -39,6 +39,13 @@ import {
   clearStudentSession,
 } from '../services/onlineExamService';
 import {
+  isExamConcluded,
+  isExamLive,
+  isExamUpcoming,
+  getEffectiveExamStatus,
+  getExamStartTimestamp,
+} from '../utils/onlineExamStatusUtils';
+import {
   subscribeToStudentNotifications,
   checkUpcomingExamReminders,
 } from '../services/notificationService';
@@ -248,7 +255,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
       const trueServerNow = await getServerTime();
       const targetExam = exams.find((e) => e.id === examId);
 
-      if (targetExam?.scheduledStartTimestamp && trueServerNow < targetExam.scheduledStartTimestamp) {
+      // Strict Check: Cannot start if exam is concluded or was scheduled yesterday
+      if (isExamConcluded(targetExam, trueServerNow)) {
+        setStartExamError(
+          'પરીક્ષા પૂર્ણ થઈ ગઈ છે. પરીક્ષાનો સત્તાવાર સમય અને પ્રવેશ સમય સમાપ્ત થઈ ગયેલ હોવાથી હવે પરીક્ષા આપી શકાશે નહીં.'
+        );
+        return;
+      }
+
+      const startMs = getExamStartTimestamp(targetExam);
+      if (startMs && trueServerNow < startMs) {
         setStartExamError(
           'પરીક્ષા હજુ શરૂ થઈ નથી. સત્તાવાર સમય પર જ શરૂ થશે. (મોબાઇલની તારીખ કે સમય બદલવાથી પરીક્ષા વહેલી શરૂ થશે નહીં.)'
         );
@@ -270,19 +286,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
 
     for (const ex of exams) {
       if (ex.attempt && ex.attempt.status === 'submitted') continue;
-      if (!ex.scheduledStartTimestamp) continue;
+      if (isExamConcluded(ex, serverTime)) continue;
 
-      const diff = ex.scheduledStartTimestamp - serverTime;
-      // If countdown has reached 0 and not past late entry cutoff
-      const durationMs = (ex.durationMinutes || 60) * 60 * 1000;
-      const cutoffTime = ex.scheduledStartTimestamp + durationMs + 10 * 60 * 1000;
+      const startMs = getExamStartTimestamp(ex);
+      if (!startMs) continue;
+
+      const diff = startMs - serverTime;
+      const durationMs = (Number(ex.durationMinutes) || 60) * 60 * 1000;
+      const cutoffTime = startMs + durationMs + 10 * 60 * 1000;
 
       if (diff <= 0 && serverTime <= cutoffTime) {
         if (!autoStartTriggeredRef.current[ex.id]) {
           autoStartTriggeredRef.current[ex.id] = true;
           // Re-verify with live cloud server before launching
           getServerTime().then((trueNow) => {
-            if (trueNow >= (ex.scheduledStartTimestamp || 0)) {
+            if (!isExamConcluded(ex, trueNow) && trueNow >= startMs) {
               setActiveExamId(ex.id);
             }
           });
@@ -324,31 +342,30 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
     );
   }
 
-  // Helper to check if an exam has reached the 10-minute late cutoff
+  // Helper to check if an exam has reached cutoff or is from a past date (e.g. yesterday)
   const isExamPastLateCutoff = (ex: any) => {
-    if (!ex.scheduledStartTimestamp) return false;
-    const durationMs = (ex.durationMinutes || 60) * 60 * 1000;
-    const cutoffTime = ex.scheduledStartTimestamp + durationMs + 10 * 60 * 1000;
-    return serverTime > cutoffTime;
+    return isExamConcluded(ex, serverTime);
   };
 
   // Filter Upcoming / Live exams vs History exams (all exams without arbitrary type separation)
   // Priority order:
-  // 1. Live Now (within scheduled duration + 10m buffer)
+  // 1. Live Now (within scheduled duration + 10m buffer on today's date)
   // 2. Upcoming (starting soonest first)
-  // 3. Expired / Past Cutoff
+  // 3. Expired / Past Cutoff / Yesterday
   const upcomingExams = exams
     .filter((e) => !e.attempt || e.attempt.status !== 'submitted')
     .sort((a, b) => {
-      const aExpired = isExamPastLateCutoff(a);
-      const bExpired = isExamPastLateCutoff(b);
+      const aExpired = isExamConcluded(a, serverTime);
+      const bExpired = isExamConcluded(b, serverTime);
       if (aExpired !== bExpired) return aExpired ? 1 : -1;
 
-      const aIsScheduled = a.scheduledStartTimestamp && serverTime < a.scheduledStartTimestamp;
-      const bIsScheduled = b.scheduledStartTimestamp && serverTime < b.scheduledStartTimestamp;
-      if (!aIsScheduled && bIsScheduled) return -1;
-      if (aIsScheduled && !bIsScheduled) return 1;
-      return (a.scheduledStartTimestamp || 0) - (b.scheduledStartTimestamp || 0);
+      const aIsLive = isExamLive(a, serverTime);
+      const bIsLive = isExamLive(b, serverTime);
+      if (aIsLive !== bIsLive) return aIsLive ? -1 : 1;
+
+      const aStart = getExamStartTimestamp(a) || 0;
+      const bStart = getExamStartTimestamp(b) || 0;
+      return aStart - bStart;
     });
   const historyExams = exams.filter((e) => e.attempt && e.attempt.status === 'submitted');
 
@@ -558,12 +575,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
 
       {/* Prominent Live / Upcoming Exam Highlight Banner */}
       {(() => {
-        const priorityExam = upcomingExams.find((ex) => !isExamPastLateCutoff(ex));
+        const priorityExam = upcomingExams.find((ex) => !isExamConcluded(ex, serverTime));
         if (!priorityExam) return null;
 
-        const isLive =
-          !priorityExam.scheduledStartTimestamp ||
-          serverTime >= priorityExam.scheduledStartTimestamp;
+        const isLive = isExamLive(priorityExam, serverTime);
 
         return (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-1">
@@ -779,10 +794,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
                 {upcomingExams.map((ex) => {
                   const attempt = ex.attempt;
                   const hasSubmitted = attempt && attempt.status === 'submitted';
-                  const isScheduled =
-                    ex.scheduledStartTimestamp && serverTime < ex.scheduledStartTimestamp;
-                  const isCutoff = isExamPastLateCutoff(ex);
-                  const isLive = !isScheduled && !hasSubmitted && !isCutoff;
+                  const isCutoff = isExamConcluded(ex, serverTime);
+                  const isLive = !hasSubmitted && isExamLive(ex, serverTime);
+                  const isScheduled = !hasSubmitted && !isLive && isExamUpcoming(ex, serverTime);
 
                   return (
                     <div

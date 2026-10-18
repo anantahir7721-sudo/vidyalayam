@@ -42,6 +42,12 @@ import {
   getServerTime,
   findConflictingExam,
 } from '../services/onlineExamService';
+import {
+  isExamConcluded,
+  isExamLive,
+  isExamUpcoming,
+  getEffectiveExamStatus,
+} from '../utils/onlineExamStatusUtils';
 import { createBulkStudentNotifications } from '../services/notificationService';
 import { OnlineExamEditor } from './OnlineExamEditor';
 import { OnlineExamAnalyticsModal } from './OnlineExamAnalyticsModal';
@@ -73,14 +79,9 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
   const [editingQuestions, setEditingQuestions] = useState<MCQQuestion[]>([]);
   const [isCloneAsNew, setIsCloneAsNew] = useState(false);
 
-  // Helper: check if exam is completed or its time has expired
-  const isExamConcluded = (exam: OnlineExam) => {
-    if (exam.status === 'completed') return true;
-    if (exam.scheduledStartTimestamp && exam.durationMinutes) {
-      const endTimestamp = exam.scheduledStartTimestamp + Number(exam.durationMinutes) * 60 * 1000;
-      if (serverTime > endTimestamp) return true;
-    }
-    return false;
+  // Helper: check if exam is completed or its time has expired (supports past dates, e.g. yesterday)
+  const checkExamConcluded = (exam: OnlineExam) => {
+    return isExamConcluded(exam, serverTime);
   };
 
   // Analytics Modal
@@ -146,8 +147,9 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
       }
 
       // Status filter
-      if (selectedStatus !== 'all' && ex.status !== selectedStatus) {
-        return false;
+      if (selectedStatus !== 'all') {
+        const effective = getEffectiveExamStatus(ex, serverTime);
+        if (effective !== selectedStatus) return false;
       }
 
       // Search filter
@@ -160,11 +162,11 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
 
       return true;
     });
-  }, [exams, activeTab, selectedStandard, selectedStatus, searchQuery]);
+  }, [exams, activeTab, selectedStandard, selectedStatus, searchQuery, serverTime]);
 
   // Handle Create / Edit Save
   const handleSaveExam = async (examPayload: any, questions: MCQQuestion[]) => {
-    const isCompleted = editingExam ? isExamConcluded(editingExam) : false;
+    const isCompleted = editingExam ? checkExamConcluded(editingExam) : false;
     const shouldCreateNew = !editingExam || isCloneAsNew || isCompleted;
 
     // Validate time clash against other exams
@@ -244,7 +246,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
   // Launch Editor for existing exam
   const handleOpenEdit = async (exam: OnlineExam) => {
     const qs = await getExamQuestions(school.id, exam.id);
-    const concluded = isExamConcluded(exam);
+    const concluded = checkExamConcluded(exam);
     setEditingExam(exam);
     setEditingQuestions(qs);
     // If exam is already completed or ended, editing it MUST create a new entry to preserve student marks!
@@ -477,11 +479,10 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredExams.map((exam) => {
-            const isLive =
-              exam.status === 'live' ||
-              (exam.status === 'scheduled' &&
-                 exam.scheduledStartTimestamp &&
-                 serverTime >= exam.scheduledStartTimestamp);
+            const concluded = checkExamConcluded(exam);
+            const isLive = isExamLive(exam, serverTime);
+            const isUpcoming = isExamUpcoming(exam, serverTime);
+            const effectiveStatus = getEffectiveExamStatus(exam, serverTime);
 
             return (
               <div
@@ -501,12 +502,12 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
                         <span className="text-emerald-950 dark:text-emerald-200 font-extrabold">લાઈવ (Live)</span>
                       </span>
-                    ) : exam.status === 'scheduled' ? (
+                    ) : isUpcoming ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-500/20 text-blue-950 dark:text-blue-300 border border-blue-400 dark:border-blue-500/30 flex items-center gap-1">
                         <Clock className="w-3 h-3 text-blue-700 dark:text-blue-300" />
                         <span className="text-blue-950 dark:text-blue-200 font-extrabold">શેડ્યૂલ</span>
                       </span>
-                    ) : exam.status === 'completed' ? (
+                    ) : concluded || effectiveStatus === 'completed' ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-500/20 text-purple-950 dark:text-purple-300 border border-purple-400 dark:border-purple-500/30">
                         <span className="text-purple-950 dark:text-purple-200 font-extrabold">પૂર્ણ (Completed)</span>
                       </span>
@@ -522,8 +523,8 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                     {exam.title}
                   </h3>
 
-                  {/* Countdown Notice if scheduled */}
-                  {exam.status === 'scheduled' &&
+                  {/* Countdown Notice if scheduled and upcoming */}
+                  {isUpcoming &&
                     exam.scheduledStartTimestamp &&
                     serverTime < exam.scheduledStartTimestamp && (
                       <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-[11px] text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
@@ -578,7 +579,7 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                     </button>
 
                     {/* Edit or Retake New Entry */}
-                    {isExamConcluded(exam) ? (
+                    {checkExamConcluded(exam) ? (
                       <button
                         type="button"
                         onClick={() => handleOpenRetakeNew(exam)}

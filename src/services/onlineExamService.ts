@@ -24,6 +24,23 @@ import {
 } from '../types';
 import { apiUrl, apiFetch, isNativeApp } from '../utils/apiConfig';
 import { directExtractQuestions } from './directGeminiService';
+export {
+  isExamConcluded,
+  isExamLive,
+  isExamUpcoming,
+  getEffectiveExamStatus,
+  getExamStartTimestamp,
+  getExamEndTimestamp,
+  getExamCutoffTimestamp,
+  getLocalDateString,
+} from '../utils/onlineExamStatusUtils';
+import {
+  isExamConcluded,
+  isExamLive,
+  isExamUpcoming,
+  getEffectiveExamStatus,
+  getExamStartTimestamp,
+} from '../utils/onlineExamStatusUtils';
 
 /**
  * Fetch all online exams for a given school.
@@ -1010,6 +1027,7 @@ export async function fetchStudentExams(token: string) {
 
     const enrichedExams = studentExams.map((ex) => {
       const attempt = attemptsMap.get(ex.id);
+      const effectiveStatus = getEffectiveExamStatus(ex, now);
       return {
         id: ex.id,
         title: ex.title,
@@ -1023,7 +1041,7 @@ export async function fetchStudentExams(token: string) {
         totalMarks: ex.totalMarks,
         questionsCount: ex.questionsCount,
         instructions: ex.instructions,
-        status: ex.status,
+        status: effectiveStatus,
         resultVisibility: ex.resultVisibility,
         attempt: attempt
           ? {
@@ -1090,7 +1108,14 @@ export async function startStudentExam(token: string, examId: string) {
   }
 
   const examData = examSnap.data() as any;
-  if (examData.scheduledStartTimestamp && now < examData.scheduledStartTimestamp) {
+
+  // Strict Lifecycle Check: If the exam was scheduled yesterday or its time has passed, it is permanently closed!
+  if (isExamConcluded(examData, now)) {
+    throw new Error('પરીક્ષા પૂર્ણ થઈ ગઈ છે. પરીક્ષાનો સત્તાવાર સમય અને પ્રવેશ સમય સમાપ્ત થઈ ગયેલ હોવાથી હવે પરીક્ષા શરૂ કરી શકાશે નહીં.');
+  }
+
+  const startMs = getExamStartTimestamp(examData);
+  if (startMs && now < startMs) {
     throw new Error('પરીક્ષા હજુ શરૂ થઈ નથી. સત્તાવાર સમય પર જ શરૂ થશે. (મોબાઇલની તારીખ કે સમય બદલવાથી પરીક્ષા વહેલી શરૂ થશે નહીં.)');
   }
 
@@ -1098,16 +1123,13 @@ export async function startStudentExam(token: string, examId: string) {
   // If exam has a scheduled start time and duration:
   // - Students joining within 5 minutes of scheduled start get full exam duration.
   // - Students joining after 5 minutes lose 1 minute of exam duration for every minute past the 5-minute grace.
-  // - Example: 20 min exam. If 3 min late: gets full 20 mins. If 6 min late: gets 19 mins.
   // - Once scheduled start + duration + 5 minutes grace is passed, the exam window is permanently closed.
   const durationMinutes = Number(examData.durationMinutes) || 30;
   const durationMs = durationMinutes * 60 * 1000;
   const gracePeriodMs = 5 * 60 * 1000; // 5 minutes grace
 
-  if (examData.scheduledStartTimestamp) {
-    const scheduledStart = Number(examData.scheduledStartTimestamp);
-    const examWindowEnd = scheduledStart + durationMs + gracePeriodMs;
-
+  if (startMs) {
+    const examWindowEnd = startMs + durationMs + gracePeriodMs;
     if (now > examWindowEnd) {
       throw new Error('પરીક્ષા પૂર્ણ થઈ ગઈ છે. પરીક્ષાનો સત્તાવાર સમય અને 5 મિનિટનો વધારાનો પ્રવેશ સમય સમાપ્ત થઈ ગયેલ હોવાથી હવે પરીક્ષા શરૂ કરી શકાશે નહીં.');
     }

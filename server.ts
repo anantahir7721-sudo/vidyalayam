@@ -26,6 +26,13 @@ import {
 } from 'firebase/firestore';
 import { generateCurriculumPresentationScript } from './src/data/presentationCurriculumData';
 import { MASTER_NEWS_TOPICS } from './src/data/newsTopicsData';
+import {
+  isExamConcluded,
+  isExamLive,
+  isExamUpcoming,
+  getEffectiveExamStatus,
+  getExamStartTimestamp,
+} from './src/utils/onlineExamStatusUtils';
 
 dotenv.config();
 
@@ -2852,8 +2859,7 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
 
       const enrichedExams = studentExams.map((ex) => {
         const attempt = attemptsMap.get(ex.id);
-        const isScheduled = ex.scheduledStartTimestamp > now;
-        const isLive = ex.status === 'live' || (!isScheduled && ex.status === 'scheduled');
+        const effectiveStatus = getEffectiveExamStatus(ex, now);
 
         return {
           id: ex.id,
@@ -2868,7 +2874,7 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
           totalMarks: ex.totalMarks,
           questionsCount: ex.questionsCount,
           instructions: ex.instructions,
-          status: ex.status,
+          status: effectiveStatus,
           resultVisibility: ex.resultVisibility,
           attempt: attempt
             ? {
@@ -2912,34 +2918,26 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
       const examData = examSnap.data() as any;
       const now = Date.now();
 
-      // Enforce scheduled start time (cannot start early)
-      if (examData.scheduledStartTimestamp && now < examData.scheduledStartTimestamp) {
-        const diffMs = examData.scheduledStartTimestamp - now;
+      // Enforce concluded / expired status (including exams scheduled yesterday or past cutoff)
+      if (isExamConcluded(examData, now)) {
         return res.status(403).json({
-          error: 'પરીક્ષા હજુ શરૂ થઈ નથી.',
+          error: 'પરીક્ષા પૂર્ણ થઈ ગઈ છે. પરીક્ષાનો સમય સમાપ્ત થઈ ગયેલ હોવાથી હવે પરીક્ષા શરૂ કરી શકાશે નહીં.',
+          isExpired: true,
           scheduledStartTimestamp: examData.scheduledStartTimestamp,
-          remainingMs: diffMs,
           serverTime: now,
         });
       }
 
-      // Late entry prevention rule:
-      // If student tries to start after the exam's designated completion time + 10 minutes grace,
-      // prevent starting and inform them that the exam has concluded.
-      if (examData.scheduledStartTimestamp && examData.durationMinutes) {
-        const durationMs = Number(examData.durationMinutes) * 60 * 1000;
-        const examOfficialEndTime = examData.scheduledStartTimestamp + durationMs;
-        const cutoffTime = examOfficialEndTime + 10 * 60 * 1000; // 10 minutes past exam completion
-
-        if (now > cutoffTime) {
-          return res.status(403).json({
-            error: 'પરીક્ષા પૂર્ણ થઈ ગઈ છે. પરીક્ષાનો સમય સમાપ્ત થઈ ગયેલ હોવાથી હવે પરીક્ષા શરૂ કરી શકાશે નહીં.',
-            isExpired: true,
-            scheduledStartTimestamp: examData.scheduledStartTimestamp,
-            examOfficialEndTime,
-            serverTime: now,
-          });
-        }
+      // Enforce scheduled start time (cannot start early)
+      const startMs = getExamStartTimestamp(examData);
+      if (startMs && now < startMs) {
+        const diffMs = startMs - now;
+        return res.status(403).json({
+          error: 'પરીક્ષા હજુ શરૂ થઈ નથી.',
+          scheduledStartTimestamp: startMs,
+          remainingMs: diffMs,
+          serverTime: now,
+        });
       }
 
       // Check existing attempt
