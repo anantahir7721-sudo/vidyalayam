@@ -71,8 +71,9 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     if (!notif.read) {
       await markNotificationAsRead(schoolId, notif.id);
     }
-    if (notif.actionUrl && onNavigateTab) {
-      onNavigateTab(notif.actionUrl);
+    const target = notif.actionTab || notif.actionUrl || (notif.category === 'birthday' ? 'birthdays' : notif.category === 'github_update' ? 'settings' : null);
+    if (target && onNavigateTab) {
+      onNavigateTab(target);
       onClose();
     }
   };
@@ -89,6 +90,12 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
   };
 
   const getCategoryBadge = (category: string, itemTitle: string = '') => {
+    if (category === 'github_update' || itemTitle.toLowerCase().includes('github') || itemTitle.includes('અપડેટ ઉપલબ્ધ')) {
+      return { label: '🚀 સિસ્ટમ અપડેટ (GitHub)', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300' };
+    }
+    if (category === 'birthday' || itemTitle.toLowerCase().includes('birthday') || itemTitle.includes('જન્મદિવસ')) {
+      return { label: '🎂 જન્મદિવસ (Birthday)', color: 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300' };
+    }
     if (category.includes('result') || itemTitle.includes('પરિણામ')) {
       return { label: 'પરીક્ષા પરિણામ (Result)', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' };
     }

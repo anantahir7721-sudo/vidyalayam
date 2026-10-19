@@ -13,6 +13,7 @@ import {
   Calendar,
   BookOpen,
   Award,
+  GitBranch,
 } from 'lucide-react';
 import {
   checkNotificationPermission,
@@ -25,6 +26,7 @@ import {
   scheduleNativeRoutineAlarms,
 } from '../utils/notificationUtils';
 import { apiUrl } from '../utils/apiConfig';
+import { sendTestGitHubPushNotification } from '../services/appUpdateService';
 
 interface NotificationSettingsModalProps {
   isOpen: boolean;
@@ -148,6 +150,22 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
       'વિદ્યા વિનયેન શોભતે — શિક્ષણ અને સંસ્કાર દ્વારા રાષ્ટ્ર નિર્માણ. આપનો દિવસ શુભ રહે!',
       'general'
     );
+    setTimeout(() => setActiveTestKey(null), 3000);
+  };
+
+  const handleSendGitHubUpdateNotification = async () => {
+    setActiveTestKey('github');
+    try {
+      await sendTestGitHubPushNotification(
+        'તપાસ: GitHub પર નવો કોડ પુશ થયો છે! (ટેસ્ટ નોટિફિકેશન સફળ)'
+      );
+    } catch {
+      await sendNotification(
+        '🚀 વિદ્યાલયમ નવી અપડેટ (GitHub)',
+        'GitHub પર નવો ફેરફાર પુશ થયો છે: "નવી સુવિધાઓ અને કાર્યક્ષમતા સુધારણાઓ". નવી સુવિધાઓ જોવા ક્લિક કરો.',
+        'github_update'
+      );
+    }
     setTimeout(() => setActiveTestKey(null), 3000);
   };
 
@@ -327,7 +345,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
               <button
                 type="button"
                 onClick={handleSendNewsNotification}
@@ -338,7 +356,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                   <Send className="w-3.5 h-3.5 shrink-0" />
                   <span className="truncate">{activeTestKey === 'news' ? 'મોકલી દીધા!' : 'દિવ્ય ભાસ્કર સમાચાર'}</span>
                 </div>
-                <span className="text-[10px] font-normal opacity-90 truncate max-w-full">આજના તાજા લાઈવ સમાચાર</span>
+                <span className="text-[10px] font-normal opacity-90 truncate max-w-full">આજના તાજા સમાચાર</span>
               </button>
 
               <button
@@ -349,9 +367,9 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
               >
                 <div className="flex items-center gap-1">
                   <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{activeTestKey === 'circular' ? 'મોકલી દીધો!' : 'GSEB બોર્ડ પરિપત્ર'}</span>
+                  <span className="truncate">{activeTestKey === 'circular' ? 'મોકલી દીધો!' : 'GSEB પરિપત્ર'}</span>
                 </div>
-                <span className="text-[10px] font-normal opacity-90 truncate max-w-full">સત્તાવાર પરિપત્ર એલર્ટ</span>
+                <span className="text-[10px] font-normal opacity-90 truncate max-w-full">સત્તાવાર પરિપત્ર</span>
               </button>
 
               <button
@@ -365,6 +383,19 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                   <span className="truncate">{activeTestKey === 'thought' ? 'મોકલી દીધો!' : 'આજનો સુવિચાર'}</span>
                 </div>
                 <span className="text-[10px] font-normal opacity-90 truncate max-w-full">શાળા પ્રાર્થના & સંકલ્પ</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSendGitHubUpdateNotification}
+                disabled={activeTestKey !== null}
+                className="p-2.5 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 text-center shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer border border-slate-700/60"
+              >
+                <div className="flex items-center gap-1">
+                  <GitBranch className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="truncate">{activeTestKey === 'github' ? 'મોકલી દીધો!' : 'GitHub અપડેટ'}</span>
+                </div>
+                <span className="text-[10px] font-normal opacity-90 truncate max-w-full">નવા કમિટ્સ & રીલીઝ</span>
               </button>
             </div>
           </div>
@@ -441,6 +472,29 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                   type="checkbox"
                   checked={prefs.attendanceAlerts}
                   onChange={() => handleTogglePref('attendanceAlerts')}
+                  className="w-4 h-4 rounded text-terracotta accent-[#9d512d] focus:ring-amber-500 cursor-pointer shrink-0"
+                />
+              </label>
+
+              {/* GitHub Updates & Releases */}
+              <label className="flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-white/10 hover:border-amber-400/40 transition-colors cursor-pointer gap-3">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <GitBranch className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      GitHub નવી સિસ્ટમ અપડેટ્સ & રીલીઝ
+                    </div>
+                    <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+                      GitHub પર નવો ફેરફાર અથવા આવૃત્તિ પુશ થતાં તાત્કાલિક પુશ નોટિફિકેશન
+                    </div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={prefs.systemUpdates !== false}
+                  onChange={() => handleTogglePref('systemUpdates')}
                   className="w-4 h-4 rounded text-terracotta accent-[#9d512d] focus:ring-amber-500 cursor-pointer shrink-0"
                 />
               </label>

@@ -29,6 +29,7 @@ import {
   RefreshCw,
   Bell,
   Settings,
+  Cake,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -43,6 +44,7 @@ export type ActiveTabType =
   | 'students'
   | 'admissions'
   | 'staff'
+  | 'birthdays'
   | 'marks'
   | 'exams'
   | 'online_exams'
@@ -163,6 +165,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'students', label: 'વિદ્યાર્થીઓ', icon: <Users className="w-3.5 h-3.5" /> },
     { id: 'admissions', label: 'નવા પ્રવેશ', icon: <UserPlus className="w-3.5 h-3.5 text-blue-500" /> },
     { id: 'staff', label: 'સ્ટાફ', icon: <UserCheck className="w-3.5 h-3.5" /> },
+    { id: 'birthdays', label: '🎂 જન્મદિવસ', icon: <Cake className="w-3.5 h-3.5 text-pink-500" /> },
     { id: 'exams', label: 'પરીક્ષાઓ & કસોટી', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'online_exams', label: '📝 ઓનલાઇન MCQ', icon: <FileText className="w-3.5 h-3.5 text-emerald-400" /> },
     { id: 'results', label: 'પરિણામ', icon: <Award className="w-3.5 h-3.5" /> },

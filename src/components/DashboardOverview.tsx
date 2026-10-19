@@ -33,6 +33,8 @@ import {
   Flame,
   Presentation,
   Bell,
+  Cake,
+  PartyPopper,
 } from 'lucide-react';
 import { ActiveTabType } from './Navbar';
 import { VidyalayamLogo } from './VidyalayamLogo';
@@ -40,6 +42,7 @@ import { UniversalStudentSearch } from './UniversalStudentSearch';
 import { DailyKnowledgeModal } from './DailyKnowledgeModal';
 import { updateSchoolProfile } from '../services/firestoreService';
 import { getAppVersion } from '../services/appUpdateService';
+import { getTodayBirthdays, getUpcomingBirthdays } from '../services/birthdayService';
 
 interface DashboardOverviewProps {
   school: School;
@@ -250,6 +253,14 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const ekamKasotiCount = marks.filter((m) => m.examType.includes('એકમ કસોટી')).length;
   const termExamsCount = marks.filter((m) => !m.examType.includes('એકમ કસોટી')).length;
 
+  const todayBirthdays = React.useMemo(() => {
+    return getTodayBirthdays(students, staffList, new Date(), 'gu');
+  }, [students, staffList]);
+
+  const upcomingBirthdays = React.useMemo(() => {
+    return getUpcomingBirthdays(students, staffList, 5, new Date(), 'gu');
+  }, [students, staffList]);
+
   // Unified modules (No duplicates: Ekam Kasoti & Term Exams unified under 'exams')
   const modules = [
     {
@@ -287,6 +298,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       badge: `${staffList.length} સ્ટાફ સભ્યો`,
       color: 'hover:border-amber-500/40',
       actionText: 'સ્ટાફ સંચાલન',
+    },
+    {
+      id: 'birthdays' as ActiveTabType,
+      title: '🎂 જન્મદિવસ કેન્દ્ર (Birthday Celebrations)',
+      desc: 'વિદ્યાર્થીઓ અને સ્ટાફના જન્મદિવસ માટે ઓટો-જનરેટેડ સુંદર બર્થડે કાર્ડ, વિવિધ શુભકામના સંદેશ, A4 PDF પ્રિન્ટ અને ગ્રૂપ શેરિંગ.',
+      icon: <Cake className="w-5 h-5 text-pink-400" />,
+      badge: todayBirthdays.length > 0 ? `આજે ${todayBirthdays.length} જન્મદિવસ!` : 'કાર્ડ & શુભેચ્છાઓ',
+      color: 'hover:border-pink-500/40',
+      actionText: 'બર્થડે કાર્ડ જુઓ',
     },
     {
       id: 'exams' as ActiveTabType,
@@ -683,6 +703,79 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
         </div>
       </section>
+
+      {/* =========================================================================
+          TODAY'S & UPCOMING BIRTHDAYS CELEBRATION BANNER
+          ========================================================================= */}
+      {todayBirthdays.length > 0 ? (
+        <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-pink-400/40 dark:border-pink-500/30 bg-gradient-to-r from-pink-50 via-rose-50 to-amber-50 dark:from-[#24131b] dark:via-[#1c1219] dark:to-[#1e1511] p-5 sm:p-6 shadow-xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-5 relative z-10">
+            <div className="flex items-center gap-4 text-center md:text-left">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-400 text-white flex items-center justify-center shrink-0 shadow-lg shadow-pink-500/30 animate-bounce">
+                <Cake className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+                  <span className="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-pink-500 text-white shadow-xs">
+                    🎉 આજના જન્મદિવસ (Today's Birthday)
+                  </span>
+                  <span className="text-xs font-bold text-pink-800 dark:text-pink-300">
+                    {todayBirthdays.length} સભ્યો
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                  આજે {todayBirthdays.map((p) => p.name).slice(0, 3).join(', ')}{todayBirthdays.length > 3 ? ` અને અન્ય ${todayBirthdays.length - 3}` : ''} નો જન્મદિવસ છે!
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  શાળા તરફથી સુંદર શુભેચ્છા કાર્ડ ઓટોમેટિક તૈયાર થઈ ગયું છે. કાર્ડ ડાઉનલોડ કરો અને વોટ્સએપ ગ્રૂપમાં શેર કરો.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="flex -space-x-3 overflow-hidden p-1">
+                {todayBirthdays.slice(0, 4).map((p) => (
+                  <div key={p.id} className="inline-block h-11 w-11 rounded-full ring-2 ring-white dark:ring-slate-900 overflow-hidden bg-rose-200">
+                    {p.customPhotoUrl || p.photoUrl ? (
+                      <img src={p.customPhotoUrl || p.photoUrl} alt={p.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-rose-800 font-bold text-xs">
+                        {p.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate('birthdays')}
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 text-white text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-pink-500/25 active:scale-95 transition-all cursor-pointer"
+              >
+                <span>બર્થડે કાર્ડ જુઓ & શેર કરો</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : upcomingBirthdays.length > 0 ? (
+        <div className="rounded-2xl border border-pink-200/60 dark:border-pink-500/20 bg-pink-50/50 dark:bg-pink-950/20 px-4 py-3 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2.5 text-slate-800 dark:text-slate-200">
+            <Cake className="w-4 h-4 text-pink-500" />
+            <span>
+              <strong>આગામી ૫ દિવસમાં જન્મદિવસ:</strong>{' '}
+              {upcomingBirthdays.slice(0, 3).map((p) => `${p.name} (${p.relativeLabel})`).join(', ')}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('birthdays')}
+            className="text-pink-600 dark:text-pink-400 hover:underline font-bold flex items-center gap-1 cursor-pointer shrink-0"
+          >
+            <span>યાદી જુઓ</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : null}
 
       {/* =========================================================================
           DAILY KNOWLEDGE & NEWS WIDGET (દૈનિક શાળા સમાચાર અને સામાન્ય જ્ઞાન)

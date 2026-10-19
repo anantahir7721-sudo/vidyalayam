@@ -14,10 +14,26 @@ import {
   Info,
   ShieldCheck,
   RefreshCw,
+  Copy,
+  Check,
+  ExternalLink,
+  GitBranch,
+  Send,
+  Radio,
 } from 'lucide-react';
 import { useTheme, ThemeMode } from '../context/ThemeContext';
 import { School } from '../types';
-import { GitHubUpdateInfo, getAppVersion } from '../services/appUpdateService';
+import {
+  GitHubUpdateInfo,
+  getAppVersion,
+  getGitHubWebhookUrl,
+  sendTestGitHubPushNotification,
+} from '../services/appUpdateService';
+import {
+  checkNotificationPermission,
+  requestNotificationPermission,
+  sendNotification,
+} from '../utils/notificationUtils';
 import { VidyalayamLogo } from './VidyalayamLogo';
 import { haptic } from '../utils/haptics';
 import { useDeviceType } from '../utils/useDeviceType';
@@ -42,6 +58,54 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const { theme, themeMode, setThemeMode } = useTheme();
   const device = useDeviceType();
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testStatus, setTestStatus] = useState<string | null>(null);
+  const [showWebhookGuide, setShowWebhookGuide] = useState(false);
+
+  const webhookUrl = getGitHubWebhookUrl();
+
+  const handleCopyWebhook = () => {
+    try {
+      navigator.clipboard.writeText(webhookUrl);
+      setCopiedWebhook(true);
+      haptic.success();
+      setTimeout(() => setCopiedWebhook(false), 3000);
+    } catch {
+      // Fallback
+    }
+  };
+
+  const handleSendTestPush = async () => {
+    setSendingTest(true);
+    setTestStatus('ટેસ્ટ નોટિફિકેશન મોકલી રહ્યા છીએ...');
+    haptic.medium();
+
+    try {
+      const perm = await requestNotificationPermission();
+      if (perm === 'denied') {
+        setTestStatus('⚠️ નોટિફિકેશન પરવાનગી બંધ છે. બ્રાઉઝર સેટિંગ્સમાંથી ચાલુ કરો.');
+        setSendingTest(false);
+        return;
+      }
+
+      const res = await sendTestGitHubPushNotification(
+        'તપાસ: GitHub પર નવો કોડ પુશ થયો છે! (ટેસ્ટ નોટિફિકેશન સફળ)'
+      );
+
+      if (res.success) {
+        setTestStatus('✅ ટેસ્ટ પુશ નોટિફિકેશન મોકલી દેવાયું છે! તમારા ફોન/સ્ક્રીન પર ચેક કરો.');
+        haptic.success();
+      } else {
+        setTestStatus(`⚠️ ${res.message}`);
+      }
+    } catch (e: any) {
+      setTestStatus(`⚠️ ભૂલ: ${e.message || 'Error'}`);
+    } finally {
+      setSendingTest(false);
+      setTimeout(() => setTestStatus(null), 5000);
+    }
+  };
 
   const handleSelectMode = (mode: ThemeMode) => {
     haptic.light();
@@ -287,6 +351,130 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </span>
           </div>
         )}
+
+        {/* GITHUB WEBHOOK & REAL-TIME PUSH NOTIFICATIONS */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900 text-white shadow-md border border-slate-700/60 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <Radio className="w-4 h-4 animate-pulse text-amber-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <GitBranch className="w-3.5 h-3.5 text-amber-400" />
+                    <span>GitHub પુશ નોટિફિકેશન સિસ્ટમ</span>
+                  </h4>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    લાઈવ સક્રિય
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  GitHub પર નવો કોડ અથવા રીલીઝ પુશ થતાં જ તમામ ડિવાઇસ પર તાત્કાલિક પુશ નોટિફિકેશન
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSendTestPush}
+              disabled={sendingTest}
+              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+            >
+              <Send className={`w-3.5 h-3.5 ${sendingTest ? 'animate-spin' : ''}`} />
+              <span>{sendingTest ? 'મોકલી રહ્યું છે...' : '🔔 ટેસ્ટ પુશ નોટિફિકેશન'}</span>
+            </button>
+          </div>
+
+          {testStatus && (
+            <div className="p-3 rounded-xl bg-slate-800/90 border border-slate-700 text-xs font-medium text-amber-300 animate-in fade-in duration-200">
+              {testStatus}
+            </div>
+          )}
+
+          {/* Webhook URL Input & Copy */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between text-xs text-slate-300">
+              <span className="font-semibold flex items-center gap-1">
+                <span>Webhook URL</span>
+                <span className="text-[10px] text-slate-400">(GitHub Repo Settings માં ઉમેરો)</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowWebhookGuide(!showWebhookGuide)}
+                className="text-[11px] text-amber-400 hover:underline cursor-pointer flex items-center gap-1"
+              >
+                {showWebhookGuide ? 'માર્ગદર્શિકા છુપાવો' : 'સેટઅપ માર્ગદર્શિકા (3 Steps)'}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex-1 p-2.5 rounded-xl bg-black/50 border border-slate-700/80 font-mono text-[11px] sm:text-xs text-amber-300 truncate select-all">
+                {webhookUrl}
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyWebhook}
+                className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                {copiedWebhook ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-emerald-400">કૉપિ થઈ ગઈ!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>કૉપિ કરો</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Setup Guide Accordion */}
+          {showWebhookGuide && (
+            <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs text-slate-300 space-y-2 animate-in fade-in duration-150">
+              <div className="font-bold text-amber-300 flex items-center gap-1">
+                <span>GitHub Webhook કેવી રીતે જોડવો:</span>
+              </div>
+              <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-300 leading-relaxed pl-1">
+                <li>
+                  તમારા GitHub રિપોઝીટરી (<strong>anantahir7721-sudo/Vidyalayam-releases</strong>) માં <strong>Settings &gt; Webhooks &gt; Add webhook</strong> પર ક્લિક કરો.
+                </li>
+                <li>
+                  <strong>Payload URL</strong> માં ઉપરની કૉપિ કરેલ લિંક પેસ્ટ કરો.
+                </li>
+                <li>
+                  <strong>Content type</strong> માં <strong>application/json</strong> પસંદ કરો અને <strong>"Just the push event"</strong> રાખીને <strong>Add webhook</strong> બટન દબાવો.
+                </li>
+              </ol>
+            </div>
+          )}
+
+          {/* Dual Mechanism Note */}
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <span>
+              <strong>ઓટોમેટિક બેકગ્રાઉન્ડ સ્કેન:</strong> જો વેબહુક કન્ફિગર ન હોય તો પણ આપણું સર્વર દર ૧ મિનિટે GitHub તપાસીને નવો ફેરફાર પુશ થતાં જ આપોઆપ તમામ ડિવાઇસ પર પુશ નોટિફિકેશન મોકલે છે!
+            </span>
+          </div>
+
+          {/* Latest GitHub Commit metadata if available */}
+          {updateInfo?.latestCommitMessage && (
+            <div className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-[11px] text-slate-300 flex items-center justify-between gap-2 flex-wrap">
+              <span className="truncate max-w-[260px] sm:max-w-md">
+                છેલ્લો કમિટ: <em>"{updateInfo.latestCommitMessage}"</em>
+              </span>
+              {updateInfo.latestCommitSha && (
+                <span className="font-mono text-amber-400 font-bold">
+                  #{updateInfo.latestCommitSha.slice(0, 7)}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* SECTION 3: DISPLAY & DEVICE VIEW MODE */}

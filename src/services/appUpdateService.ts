@@ -4,6 +4,9 @@
  */
 
 import { apiUrl } from '../utils/apiConfig';
+import { db } from '../firebase/config';
+import { collection, query, where, limit, onSnapshot } from 'firebase/firestore';
+import { sendNotification } from '../utils/notificationUtils';
 
 export interface GitHubUpdateInfo {
   updateAvailable: boolean;
@@ -307,8 +310,9 @@ export async function checkForGitHubUpdate(force = false): Promise<GitHubUpdateI
           isNewer = !isSameSha && Boolean(remoteSha) && remoteSha !== APP_BASELINE_SHA;
         }
       } else {
-        // On Web, user is already viewing the latest web release
-        isNewer = false;
+        // On Web, detect if a new commit or release was pushed to GitHub
+        const isSameSha = currentAppSha === remoteSha;
+        isNewer = !isSameSha && Boolean(remoteSha) && remoteSha !== APP_BASELINE_SHA;
       }
 
       if (isNewer) {
@@ -448,3 +452,203 @@ export async function applyAppUpdate(newSha?: string): Promise<void> {
     window.location.reload();
   }
 }
+
+/**
+ * Returns the public Webhook URL to configure inside GitHub Repository Settings
+ */
+export function getGitHubWebhookUrl(): string {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/api/webhooks/github`;
+  }
+  return '/api/webhooks/github';
+}
+
+/**
+ * Dispatch an immediate test push notification mimicking a GitHub code push
+ */
+export async function sendTestGitHubPushNotification(customMessage?: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const res = await fetch(apiUrl('/api/webhooks/github/test'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: customMessage || 'નવી સુવિધાઓ અને કાર્યક્ષમતા સુધારણાઓ GitHub પર અપડેટ કરવામાં આવ્યા છે.',
+        author: 'Vidyalayam Developer',
+      }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return { success: true, message: data.message || 'ટેસ્ટ નોટિફિકેશન મોકલવામાં આવ્યું છે!' };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Error triggering test notification' };
+  }
+}
+
+/**
+ * Real-Time GitHub Push Notification Listener:
+ * 1. Connects to SSE (/api/updates/stream) for instant zero-latency push alerts
+ * 2. Listens to Firestore system_notifications with category 'github_update' for multi-device sync
+ * 3. Triggers native push notifications (Android APK & Browser Web Push) via sendNotification()
+ * 4. Dispatches in-app custom event 'github-push-received'
+ */
+export function subscribeToGitHubPushNotifications(
+  onUpdateDetected?: (info: GitHubUpdateInfo) => void
+): () => void {
+  let isSubscribed = true;
+  let eventSource: EventSource | null = null;
+  let firestoreUnsub: (() => void) | null = null;
+
+  const handleIncomingPush = (data: {
+    sha?: string;
+    shortSha?: string;
+    message?: string;
+    author?: string;
+    repo?: string;
+    title?: string;
+    body?: string;
+    apkDownloadUrl?: string;
+    releaseUrl?: string;
+    compareUrl?: string;
+  }) => {
+    if (!data || !data.sha) return;
+    const sha = data.sha;
+    const shortSha = data.shortSha || sha.slice(0, 7);
+
+    // Check if user disabled system updates in prefs
+    try {
+      const prefsStr = localStorage.getItem('vidyalayam_notification_prefs');
+      if (prefsStr) {
+        const prefs = JSON.parse(prefsStr);
+        if (prefs.systemUpdates === false) {
+          return;
+        }
+      }
+    } catch {}
+
+    // Check if already notified for this commit SHA
+    const lastNotified = localStorage.getItem('vidyalayam_last_notified_commit');
+    if (lastNotified === sha) {
+      return;
+    }
+
+    // Mark as notified
+    localStorage.setItem('vidyalayam_last_notified_commit', sha);
+
+    const title = data.title || `🚀 વિદ્યાલયમ નવી અપડેટ (${shortSha})`;
+    const body = data.body || `GitHub પર નવો ફેરફાર પુશ થયો: "${data.message || 'નવી સુવિધાઓ'}".`;
+
+    // 1. Dispatch Push Notification (Web & Android APK)
+    sendNotification(title, body, 'github_update').catch((e) => {
+      console.warn('[AppUpdate] Push notification dispatch failed:', e);
+    });
+
+    const updateInfo: GitHubUpdateInfo = {
+      updateAvailable: true,
+      currentVersion: getAppVersion(),
+      latestVersion: shortSha,
+      latestCommitSha: sha,
+      latestCommitMessage: data.message || '',
+      authorName: data.author || 'Vidyalayam Developer',
+      repo: data.repo || DEFAULT_REPO,
+      htmlUrl: data.compareUrl || `https://github.com/${data.repo || DEFAULT_REPO}`,
+      apkDownloadUrl: data.apkDownloadUrl,
+      releaseUrl: data.releaseUrl,
+    };
+
+    // 2. Notify callback and dispatch global custom event
+    if (onUpdateDetected) {
+      onUpdateDetected(updateInfo);
+    }
+
+    try {
+      window.dispatchEvent(new CustomEvent('github-push-received', { detail: updateInfo }));
+    } catch {}
+  };
+
+  // 1. Connect to SSE stream (/api/updates/stream)
+  try {
+    const streamUrl = apiUrl('/api/updates/stream');
+    eventSource = new EventSource(streamUrl);
+
+    eventSource.addEventListener('github-push', (event: MessageEvent) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        handleIncomingPush(parsed);
+      } catch (err) {
+        console.warn('[AppUpdate] Failed parsing SSE push event:', err);
+      }
+    });
+
+    eventSource.onerror = () => {
+      // EventSource automatically retries connection
+    };
+  } catch (sseErr) {
+    console.warn('[AppUpdate] SSE not supported or connection error:', sseErr);
+  }
+
+  // 2. Also listen via Firestore system_notifications (multi-device redundancy)
+  try {
+    const notifsCol = collection(db, 'system_notifications');
+    const q = query(
+      notifsCol,
+      where('category', '==', 'github_update'),
+      limit(5)
+    );
+
+    let isInitialFirestore = true;
+    firestoreUnsub = onSnapshot(
+      q,
+      (snapshot) => {
+        if (!isSubscribed) return;
+        if (isInitialFirestore) {
+          isInitialFirestore = false;
+          // Record current SHAs so opening the app doesn't re-alert old pushes
+          snapshot.docs.forEach((doc) => {
+            const d = doc.data();
+            const metaSha = d?.metadata?.sha;
+            if (metaSha && !localStorage.getItem('vidyalayam_last_notified_commit')) {
+              localStorage.setItem('vidyalayam_last_notified_commit', metaSha);
+            }
+          });
+          return;
+        }
+
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const d = change.doc.data();
+            if (d && d.metadata?.isGitHubPush) {
+              handleIncomingPush({
+                sha: d.metadata.sha,
+                shortSha: d.metadata.shortSha,
+                message: d.metadata.commitMessage,
+                author: d.metadata.author,
+                repo: d.metadata.repo,
+                title: d.title,
+                body: d.body,
+                apkDownloadUrl: d.metadata.apkDownloadUrl,
+              });
+            }
+          }
+        });
+      },
+      (err) => {
+        console.warn('[AppUpdate] Firestore update listener warning:', err);
+      }
+    );
+  } catch (fsErr) {
+    console.warn('[AppUpdate] Firestore setup warning:', fsErr);
+  }
+
+  return () => {
+    isSubscribed = false;
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
+    if (firestoreUnsub) {
+      firestoreUnsub();
+      firestoreUnsub = null;
+    }
+  };
+}
+

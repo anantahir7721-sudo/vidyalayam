@@ -863,6 +863,292 @@ async function startServer() {
   });
 
   // =========================================================================
+  // GITHUB WEBHOOK & REAL-TIME PUSH NOTIFICATIONS
+  // 1. Handles GitHub Webhook POST /api/webhooks/github on push/release
+  // 2. Dispatches real-time notifications via SSE (/api/updates/stream) & Firestore (system_notifications)
+  // 3. Automated background monitoring every 60s for automatic push detection even without webhooks
+  // 4. Test endpoint POST /api/webhooks/github/test for instant UI testing
+  // =========================================================================
+
+  const updateSubscribers = new Set<Response>();
+
+  function broadcastUpdateEvent(event: string, data: any) {
+    const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    for (const client of updateSubscribers) {
+      try {
+        client.write(payload);
+      } catch {
+        updateSubscribers.delete(client);
+      }
+    }
+  }
+
+  let latestGitHubPushEvent: any = null;
+
+  async function recordAndDispatchGitHubPush(eventData: {
+    repo: string;
+    sha: string;
+    shortSha: string;
+    message: string;
+    author: string;
+    branch: string;
+    compareUrl?: string;
+    isRelease?: boolean;
+    versionName?: string;
+    apkDownloadUrl?: string;
+  }) {
+    latestGitHubPushEvent = {
+      ...eventData,
+      timestamp: Date.now(),
+    };
+
+    // Invalidate app update cache so /api/app-update-check returns fresh data immediately
+    appUpdateCache.clear();
+
+    const docId = `gh_push_${eventData.sha ? eventData.sha.slice(0, 12) : Date.now()}`;
+    const notificationTitle = eventData.isRelease
+      ? `🚀 વિદ્યાલયમ નવી આવૃત્તિ ${eventData.versionName || ''} ઉપલબ્ધ!`
+      : `🚀 વિદ્યાલયમ GitHub નવી અપડેટ (${eventData.shortSha})`;
+    const notificationBody = eventData.isRelease
+      ? `નવી આવૃત્તિ GitHub પર પ્રસિદ્ધ થઈ છે: ${eventData.message || 'નવા ફીચર્સ અને સુધારાઓ'}. અપડેટ કરવા ટેપ કરો.`
+      : `GitHub પર નવો ફેરફાર પુશ થયો: "${eventData.message || 'નવી અપડેટ'}" (લેખક: ${eventData.author}). નવી સુવિધાઓ જોવા ક્લિક કરો.`;
+
+    try {
+      const docRef = doc(db, 'system_notifications', docId);
+      await setDoc(docRef, {
+        id: docId,
+        title: notificationTitle,
+        body: notificationBody,
+        targetType: 'all',
+        category: 'github_update',
+        createdAt: new Date().toISOString(),
+        timestamp: Date.now(),
+        read: false,
+        actionTab: 'settings',
+        actionUrl: eventData.compareUrl || `https://github.com/${eventData.repo}`,
+        metadata: {
+          isGitHubPush: true,
+          repo: eventData.repo,
+          sha: eventData.sha,
+          shortSha: eventData.shortSha,
+          commitMessage: eventData.message,
+          author: eventData.author,
+          branch: eventData.branch,
+          apkDownloadUrl: eventData.apkDownloadUrl,
+        },
+      });
+    } catch (err) {
+      console.warn('[GitHubWebhook] Firestore record write failed:', err);
+    }
+
+    // Broadcast in real-time to all connected web & APK clients
+    broadcastUpdateEvent('github-push', {
+      ...eventData,
+      title: notificationTitle,
+      body: notificationBody,
+      timestamp: Date.now(),
+    });
+  }
+
+  // 1. GitHub Incoming Webhook Handler
+  app.post('/api/webhooks/github', async (req: Request, res: Response) => {
+    try {
+      const eventType = (req.headers['x-github-event'] as string) || 'push';
+      console.log(`[GitHubWebhook] Received event: ${eventType}`);
+
+      if (eventType === 'ping') {
+        return res.json({
+          success: true,
+          message: 'Ping received! Vidyalayam GitHub Webhook is successfully connected and listening for pushes.',
+        });
+      }
+
+      if (eventType === 'push') {
+        const repo = req.body.repository?.full_name || 'anantahir7721-sudo/Vidyalayam-releases';
+        const headCommit = req.body.head_commit || (Array.isArray(req.body.commits) ? req.body.commits[req.body.commits.length - 1] : null);
+        const sha = headCommit?.id || req.body.after || '';
+        const shortSha = sha ? sha.slice(0, 7) : 'update';
+        const message = headCommit?.message || req.body.commits?.[0]?.message || 'Code changes pushed to repository';
+        const author = headCommit?.author?.name || req.body.pusher?.name || 'Vidyalayam Developer';
+        const branch = (req.body.ref || '').replace('refs/heads/', '') || 'main';
+        const compareUrl = req.body.compare || req.body.repository?.html_url;
+
+        await recordAndDispatchGitHubPush({
+          repo,
+          sha,
+          shortSha,
+          message,
+          author,
+          branch,
+          compareUrl,
+          apkDownloadUrl: `https://github.com/${repo}/releases/download/latest/app-debug.apk`,
+        });
+
+        return res.json({
+          success: true,
+          notified: true,
+          sha,
+          message: 'Push notification recorded and dispatched successfully.',
+        });
+      }
+
+      if (eventType === 'release') {
+        const repo = req.body.repository?.full_name || 'anantahir7721-sudo/Vidyalayam-releases';
+        const release = req.body.release;
+        const tagName = release?.tag_name || 'latest';
+        const versionName = release?.name || tagName;
+        const message = release?.body || release?.name || 'New release published';
+        const author = release?.author?.login || 'Vidyalayam Developer';
+        const sha = release?.target_commitish || '';
+        const shortSha = sha ? sha.slice(0, 7) : tagName;
+        const compareUrl = release?.html_url;
+
+        await recordAndDispatchGitHubPush({
+          repo,
+          sha,
+          shortSha,
+          message,
+          author,
+          branch: 'release',
+          compareUrl,
+          isRelease: true,
+          versionName,
+          apkDownloadUrl: `https://github.com/${repo}/releases/download/latest/app-debug.apk`,
+        });
+
+        return res.json({
+          success: true,
+          notified: true,
+          release: tagName,
+        });
+      }
+
+      return res.json({ success: true, ignored: eventType });
+    } catch (err: any) {
+      console.error('[GitHubWebhook] Error handling webhook:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 2. Test GitHub Push Notification trigger
+  app.post('/api/webhooks/github/test', async (req: Request, res: Response) => {
+    try {
+      const testSha = crypto.randomBytes(20).toString('hex');
+      const testShortSha = testSha.slice(0, 7);
+      const author = String(req.body.author || 'Vidyalayam Developer');
+      const message = String(req.body.message || 'નવી સુવિધાઓ અને કાર્યક્ષમતા સુધારણાઓ GitHub પર અપડેટ કરવામાં આવ્યા છે.');
+      const repo = String(req.body.repo || 'anantahir7721-sudo/Vidyalayam-releases');
+
+      await recordAndDispatchGitHubPush({
+        repo,
+        sha: testSha,
+        shortSha: testShortSha,
+        message,
+        author,
+        branch: 'main',
+        compareUrl: `https://github.com/${repo}`,
+        apkDownloadUrl: `https://github.com/${repo}/releases/download/latest/app-debug.apk`,
+      });
+
+      return res.json({
+        success: true,
+        message: 'Test GitHub push notification dispatched successfully!',
+        testSha: testShortSha,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 3. SSE Stream for Real-time Update Broadcasting
+  app.get('/api/updates/stream', (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+
+    updateSubscribers.add(res);
+
+    res.write(`event: connected\ndata: ${JSON.stringify({ status: 'connected', latestPush: latestGitHubPushEvent })}\n\n`);
+
+    const pingInterval = setInterval(() => {
+      try {
+        res.write(': ping\n\n');
+      } catch {
+        clearInterval(pingInterval);
+        updateSubscribers.delete(res);
+      }
+    }, 25000);
+
+    req.on('close', () => {
+      clearInterval(pingInterval);
+      updateSubscribers.delete(res);
+    });
+  });
+
+  // 4. Latest Push Endpoint
+  app.get('/api/github/latest-push', (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      latestPush: latestGitHubPushEvent,
+      monitorActive: true,
+      monitoredRepo: 'anantahir7721-sudo/Vidyalayam-releases',
+    });
+  });
+
+  // 5. Automated Background GitHub Push Detector (runs every 60s)
+  let lastMonitoredCommitSha = '';
+  async function checkGitHubCommitsBackground() {
+    const repo = 'anantahir7721-sudo/Vidyalayam-releases';
+    try {
+      const res = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, {
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+          'User-Agent': 'Vidyalayam-Auto-Update-Monitor',
+        },
+        signal: AbortSignal.timeout(6000),
+      });
+
+      if (res.ok) {
+        const commits = await res.json();
+        if (Array.isArray(commits) && commits.length > 0) {
+          const top = commits[0];
+          const sha = top.sha;
+          if (!lastMonitoredCommitSha) {
+            lastMonitoredCommitSha = sha;
+            return;
+          }
+
+          if (sha !== lastMonitoredCommitSha) {
+            console.log(`[GitHubMonitor] Detected NEW commit pushed to GitHub: ${sha.slice(0, 7)}`);
+            lastMonitoredCommitSha = sha;
+            const msg = top.commit?.message || 'New commit pushed to GitHub';
+            const author = top.commit?.author?.name || 'Vidyalayam Developer';
+            const shortSha = sha.slice(0, 7);
+
+            await recordAndDispatchGitHubPush({
+              repo,
+              sha,
+              shortSha,
+              message: msg,
+              author,
+              branch: 'main',
+              compareUrl: top.html_url,
+              apkDownloadUrl: `https://github.com/${repo}/releases/download/latest/app-debug.apk`,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore background network transient blips
+    }
+  }
+
+  // Periodic check every 60 seconds (initial check after 6 seconds)
+  setInterval(checkGitHubCommitsBackground, 60000);
+  setTimeout(checkGitHubCommitsBackground, 6000);
+
+  // =========================================================================
   // API: Student Login (by Student's DISE Code stored in school student data)
   // =========================================================================
   app.post('/api/student/login', async (req: Request, res: Response) => {
@@ -3326,6 +3612,97 @@ ${studentName ? `વિદ્યાર્થીનું નામ: "${studentNa
     } catch (err: any) {
       console.error('Error in /api/send-bulk-parent-sms:', err);
       return res.status(500).json({ error: 'SMS મોકલવામાં સમસ્યા થઈ.' });
+    }
+  });
+
+  // =========================================================================
+  // Temporary Birthday Custom Photos (Auto-deleted after birthday is over / 24h)
+  // =========================================================================
+  const BIRTHDAY_PHOTOS_DIR = path.join(process.cwd(), '.cache', 'birthday_photos');
+  try {
+    if (!fs.existsSync(BIRTHDAY_PHOTOS_DIR)) {
+      fs.mkdirSync(BIRTHDAY_PHOTOS_DIR, { recursive: true });
+    }
+  } catch {}
+
+  function cleanupExpiredBirthdayPhotos() {
+    try {
+      if (!fs.existsSync(BIRTHDAY_PHOTOS_DIR)) return;
+      const files = fs.readdirSync(BIRTHDAY_PHOTOS_DIR);
+      const now = Date.now();
+      const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+      let deletedCount = 0;
+
+      for (const file of files) {
+        const filePath = path.join(BIRTHDAY_PHOTOS_DIR, file);
+        const stats = fs.statSync(filePath);
+        if (now - stats.mtimeMs > ONE_DAY_MS) {
+          fs.unlinkSync(filePath);
+          deletedCount++;
+        }
+      }
+      if (deletedCount > 0) {
+        console.log(`[BirthdayCleanup] Cleaned up ${deletedCount} expired temporary birthday photos.`);
+      }
+    } catch (e) {
+      console.warn('[BirthdayCleanup] Cleanup error:', e);
+    }
+  }
+
+  // Run cleanup on server boot and hourly
+  cleanupExpiredBirthdayPhotos();
+  setInterval(cleanupExpiredBirthdayPhotos, 60 * 60 * 1000);
+
+  // Upload temporary custom photo for birthday card
+  app.post('/api/birthday/temp-photo', async (req: Request, res: Response) => {
+    try {
+      const { schoolId, personId, photoDataUrl } = req.body;
+      if (!schoolId || !personId || !photoDataUrl) {
+        return res.status(400).json({ error: 'Missing required parameters.' });
+      }
+
+      const matches = photoDataUrl.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+      if (!matches || matches.length !== 3) {
+        return res.status(400).json({ error: 'Invalid data URL format.' });
+      }
+
+      const buffer = Buffer.from(matches[2], 'base64');
+      const safeSchool = String(schoolId).replace(/[^a-zA-Z0-9_-]/g, '');
+      const safePerson = String(personId).replace(/[^a-zA-Z0-9_-]/g, '');
+      const todayStr = new Date().toISOString().split('T')[0];
+      const filename = `${safeSchool}_${safePerson}_${todayStr}.jpg`;
+      const filePath = path.join(BIRTHDAY_PHOTOS_DIR, filename);
+
+      fs.writeFileSync(filePath, buffer);
+      return res.json({
+        success: true,
+        filename,
+        url: `/api/birthday/temp-photo/${safeSchool}/${safePerson}`,
+      });
+    } catch (err: any) {
+      console.error('Error saving birthday temp photo:', err);
+      return res.status(500).json({ error: 'Failed to save temporary photo.' });
+    }
+  });
+
+  // Serve temporary custom photo for birthday card
+  app.get('/api/birthday/temp-photo/:schoolId/:personId', (req: Request, res: Response) => {
+    try {
+      const { schoolId, personId } = req.params;
+      const safeSchool = String(schoolId).replace(/[^a-zA-Z0-9_-]/g, '');
+      const safePerson = String(personId).replace(/[^a-zA-Z0-9_-]/g, '');
+      const todayStr = new Date().toISOString().split('T')[0];
+      const filename = `${safeSchool}_${safePerson}_${todayStr}.jpg`;
+      const filePath = path.join(BIRTHDAY_PHOTOS_DIR, filename);
+
+      if (fs.existsSync(filePath)) {
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return fs.createReadStream(filePath).pipe(res);
+      }
+      return res.status(404).json({ error: 'Birthday photo expired or not found.' });
+    } catch (err: any) {
+      return res.status(500).json({ error: 'Failed to retrieve photo.' });
     }
   });
 

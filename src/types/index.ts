@@ -517,7 +517,9 @@ export type AppNotificationCategory =
   | 'school_approval'
   | 'password_reset'
   | 'admission_update'
-  | 'general_notice';
+  | 'birthday'
+  | 'general_notice'
+  | 'github_update';
 
 export interface AppNotification {
   id: string;
@@ -534,6 +536,8 @@ export interface AppNotification {
   timestamp: number;
   read?: boolean;
   actionUrl?: string;
+  actionTab?: string;
+  iconUrl?: string;
   metadata?: Record<string, any>;
 }
 

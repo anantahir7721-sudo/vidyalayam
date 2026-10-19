@@ -126,7 +126,7 @@ export function scheduleNativeRoutineAlarms(): void {
 export async function sendNotification(
   title: string,
   body: string,
-  type: 'general' | 'exam' | 'daily' | 'attendance' | 'alert' = 'general'
+  type: 'general' | 'exam' | 'daily' | 'attendance' | 'alert' | 'birthday' | 'github_update' = 'general'
 ): Promise<boolean> {
   // 1. Android APK Native Notification
   if (isNativeAndroid()) {
@@ -141,23 +141,36 @@ export async function sendNotification(
   // 2. Web Notification API
   if (typeof window !== 'undefined' && 'Notification' in window) {
     try {
-      if (Notification.permission === 'granted') {
-        new Notification(title, {
+      const createAndAttachNotif = () => {
+        const targetTab = type === 'birthday' ? 'birthdays' : type === 'github_update' ? 'settings' : 'overview';
+        const notif = new Notification(title, {
           body,
           icon: '/icon-192.png',
           badge: '/favicon-32x32.png',
           tag: `vidyalayam-${type}-${Date.now()}`,
+          data: { tab: targetTab },
         });
+
+        notif.onclick = (event) => {
+          event.preventDefault();
+          window.focus();
+          if (type === 'birthday') {
+            window.location.hash = '#birthdays';
+            window.dispatchEvent(new CustomEvent('vidyalayam_navigate_tab', { detail: { tab: 'birthdays' } }));
+          } else if (type === 'github_update') {
+            window.location.hash = '#settings';
+            window.dispatchEvent(new CustomEvent('vidyalayam_navigate_tab', { detail: { tab: 'settings' } }));
+          }
+        };
+      };
+
+      if (Notification.permission === 'granted') {
+        createAndAttachNotif();
         return true;
       } else if (Notification.permission !== 'denied') {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-          new Notification(title, {
-            body,
-            icon: '/icon-192.png',
-            badge: '/favicon-32x32.png',
-            tag: `vidyalayam-${type}-${Date.now()}`,
-          });
+          createAndAttachNotif();
           return true;
         }
       }

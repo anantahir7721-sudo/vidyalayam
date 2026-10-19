@@ -24,13 +24,16 @@ import { StudentPortal } from './components/StudentPortal';
 import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
 import { FirstLaunchPermissionModal } from './components/FirstLaunchPermissionModal';
 import { TTSFloatingBar } from './components/TTSFloatingBar';
+import { BirthdayTab } from './components/BirthdayTab';
 import { SettingsTab } from './components/SettingsTab';
 import { runScheduledNotificationCheck } from './services/notificationService';
+import { checkAndDispatchBirthdayNotification } from './services/birthdayService';
 import {
   checkForGitHubUpdate,
   applyAppUpdate,
   GitHubUpdateInfo,
   dismissUpdateBannerPermanently,
+  subscribeToGitHubPushNotifications,
 } from './services/appUpdateService';
 import { AppUpdateModal } from './components/AppUpdateModal';
 import { School, Student, MarkRecord, Staff, SchoolStatus, StudentSession } from './types';
@@ -320,10 +323,21 @@ export default function App() {
     // 2. Allow explicit manual checks (from Navbar, Settings, or Profile)
     window.addEventListener('check-app-update', checkUpdate as EventListener);
 
+    // 3. Real-Time GitHub Push Notification Subscriber (SSE + Firestore)
+    const unsubPushes = subscribeToGitHubPushNotifications((info) => {
+      if (!isMounted) return;
+      setAppUpdate(info);
+      setUpdateToastMessage(
+        `🚀 નવી અપડેટ પુશ થઈ (${info.latestVersion || 'લેટેસ્ટ'}): ${info.latestCommitMessage || 'નવા સુધારાઓ ઉપલબ્ધ છે'}`
+      );
+      setShowUpdateModal(true);
+    });
+
     return () => {
       isMounted = false;
       clearTimeout(timer);
       window.removeEventListener('check-app-update', checkUpdate as EventListener);
+      unsubPushes();
     };
   }, []);
 
@@ -403,6 +417,44 @@ export default function App() {
       return next.length > 0 ? next : ['overview'];
     });
   }, []);
+
+  // Support opening Birthday tab (or other tabs) via URL hash, query param, or notification click event
+  useEffect(() => {
+    const handleCheckRoute = () => {
+      try {
+        const hash = window.location.hash.replace('#', '').trim();
+        const params = new URLSearchParams(window.location.search);
+        const tab = (params.get('tab') || hash) as ActiveTabType;
+        if (tab === 'birthdays' || (tab as any) === 'birthday') {
+          navigateToTab('birthdays');
+        }
+      } catch {}
+    };
+
+    handleCheckRoute();
+    window.addEventListener('hashchange', handleCheckRoute);
+
+    const handleCustomNav = (e: any) => {
+      if (e.detail?.tab) {
+        navigateToTab(e.detail.tab as ActiveTabType);
+      }
+    };
+    window.addEventListener('vidyalayam_navigate_tab', handleCustomNav);
+
+    return () => {
+      window.removeEventListener('hashchange', handleCheckRoute);
+      window.removeEventListener('vidyalayam_navigate_tab', handleCustomNav);
+    };
+  }, [navigateToTab]);
+
+  // Automated birthday check & notification dispatch for today's celebrants
+  useEffect(() => {
+    if (school?.id && (students.length > 0 || staffList.length > 0)) {
+      checkAndDispatchBirthdayNotification(school, students, staffList).catch((err) => {
+        console.warn('Birthday check failed:', err);
+      });
+    }
+  }, [school?.id, students.length, staffList.length]);
 
   // Expose native back button handler for Android hardware back and edge swipe
   useEffect(() => {
@@ -855,6 +907,14 @@ export default function App() {
               school={school}
               onBack={navigateBack}
               onGenerateIdCard={() => navigateToTab('idcards')}
+            />
+          )}
+
+          {activeTab === 'birthdays' && (
+            <BirthdayTab
+              school={school}
+              students={students}
+              staff={staffList}
             />
           )}
 
