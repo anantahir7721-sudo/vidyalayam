@@ -28,6 +28,7 @@ import {
 } from '../services/birthdayService';
 import { BirthdayCard } from './BirthdayCard';
 import { School, Student, Staff } from '../types';
+import { downloadPdfFile, printHtmlDocument } from '../utils/printAndPdfUtils';
 
 interface BirthdayTabProps {
   school: School;
@@ -99,6 +100,7 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
   }, [customWishes, school?.id, todayDateKey]);
 
   const [isGeneratingAllPdf, setIsGeneratingAllPdf] = useState(false);
+  const [isPrintingAll, setIsPrintingAll] = useState(false);
   const [showAssemblyModal, setShowAssemblyModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -179,7 +181,7 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
     );
   }, [selectedPersonId, todayBirthdays, upcomingBirthdays]);
 
-  // Batch Export: Download All Today's Cards in a Single Multi-Page PDF (Exact A4 300 DPI)
+  // Batch Export: Download All Today's Cards in a Single Multi-Page PDF (Exact A4)
   const handleDownloadAllCardsInOnePdf = async () => {
     if (todayBirthdays.length === 0 || isGeneratingAllPdf) return;
     setIsGeneratingAllPdf(true);
@@ -188,6 +190,7 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      let addedPagesCount = 0;
 
       for (let i = 0; i < todayBirthdays.length; i++) {
         const person = todayBirthdays[i];
@@ -195,13 +198,14 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
         if (!cardElement) continue;
 
         const canvas = await html2canvas(cardElement, {
-          scale: 3,
+          scale: 2,
           useCORS: true,
-          allowTaint: true,
+          allowTaint: false,
           backgroundColor: '#FFFFFF',
+          logging: false,
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.96);
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const margin = 8;
         const targetWidth = pdfWidth - margin * 2;
         const targetHeight = (canvas.height * targetWidth) / canvas.width;
@@ -216,19 +220,105 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
         const x = (pdfWidth - renderWidth) / 2;
         const y = (pdfHeight - renderHeight) / 2;
 
-        if (i > 0) {
+        if (addedPagesCount > 0) {
           pdf.addPage();
         }
         pdf.addImage(imgData, 'JPEG', x, y, renderWidth, renderHeight, undefined, 'FAST');
+        addedPagesCount++;
       }
 
       const todayStr = new Date().toISOString().split('T')[0];
       const schoolClean = (school.schoolName || 'School').replace(/[^a-zA-Z0-9]/g, '_');
-      pdf.save(`All_Birthday_Cards_${schoolClean}_${todayStr}_A4.pdf`);
+      const filename = `All_Birthday_Cards_${schoolClean}_${todayStr}_A4.pdf`;
+
+      // Convert to blob and download via unified downloader (works in Native Android APK and all browsers)
+      const pdfBlob = pdf.output('blob');
+      await downloadPdfFile(pdfBlob, filename);
     } catch (err) {
       console.error('Error generating consolidated birthday PDF:', err);
     } finally {
       setIsGeneratingAllPdf(false);
+    }
+  };
+
+  // Direct Print All Today's Cards
+  const handlePrintAllCards = async () => {
+    if (todayBirthdays.length === 0 || isPrintingAll) return;
+    setIsPrintingAll(true);
+
+    try {
+      const cardImages: string[] = [];
+
+      for (let i = 0; i < todayBirthdays.length; i++) {
+        const person = todayBirthdays[i];
+        const cardElement = document.getElementById(`batch_card_${person.id}`);
+        if (!cardElement) continue;
+
+        const canvas = await html2canvas(cardElement, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: '#FFFFFF',
+          logging: false,
+        });
+
+        cardImages.push(canvas.toDataURL('image/jpeg', 0.95));
+      }
+
+      if (cardImages.length === 0) return;
+
+      const schoolClean = school.schoolName || 'શાળા';
+      const multiPrintHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>All Birthday Cards - ${schoolClean}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 8mm;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+    }
+    .print-card-page {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      page-break-after: always;
+      break-after: page;
+    }
+    .print-card-page:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+    img {
+      max-width: 194mm;
+      max-height: 278mm;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  ${cardImages.map((src) => `<div class="print-card-page"><img src="${src}" alt="Birthday Card" /></div>`).join('')}
+</body>
+</html>
+      `;
+
+      printHtmlDocument(multiPrintHtml, `All_Birthday_Cards_${schoolClean}`);
+    } catch (err) {
+      console.error('Error printing all birthday cards:', err);
+    } finally {
+      setIsPrintingAll(false);
     }
   };
 
@@ -300,6 +390,17 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
                 >
                   <Download className="w-4 h-4" />
                   <span>{isGeneratingAllPdf ? 'PDF બની રહ્યું છે...' : 'બધા કાર્ડ એક જ PDF માં'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePrintAllCards}
+                  disabled={isPrintingAll || isGeneratingAllPdf}
+                  className="px-4 py-2.5 rounded-2xl bg-white/95 text-purple-700 hover:bg-white text-xs font-bold shadow-lg flex items-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                  title="બધા કાર્ડ સીધા પ્રિન્ટ કરો"
+                >
+                  <Printer className="w-4 h-4 text-purple-600" />
+                  <span>{isPrintingAll ? 'પ્રિન્ટ તૈયાર થાય છે...' : 'બધા કાર્ડ પ્રિન્ટ કરો'}</span>
                 </button>
 
                 <button
@@ -553,7 +654,7 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
       {/* Hidden Batch Container for Rendering all Cards into Multi-page PDF */}
       <div
         ref={batchContainerRef}
-        style={{ position: 'fixed', left: '-9999px', top: '-9999px', pointerEvents: 'none' }}
+        style={{ position: 'fixed', left: 0, top: 0, width: '490px', opacity: 0.001, zIndex: -100, pointerEvents: 'none' }}
       >
         {todayBirthdays.map((person) => (
           <div key={`batch_wrap_${person.id}`} id={`batch_card_${person.id}`} style={{ width: '480px' }}>

@@ -10,6 +10,7 @@ import {
   Palette,
   Sparkles,
   Heart,
+  Printer,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -20,6 +21,7 @@ import {
   getLocalizedSchoolName,
 } from '../services/birthdayService';
 import { School, Staff } from '../types';
+import { downloadPdfFile, printHtmlDocument } from '../utils/printAndPdfUtils';
 
 export interface CardColorTheme {
   id: string;
@@ -222,6 +224,8 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [isEditingWish, setIsEditingWish] = useState(false);
   const [customWishText, setCustomWishText] = useState(person.wish);
   const [photoPreview, setPhotoPreview] = useState<string>(person.customPhotoUrl || person.photoUrl || '');
@@ -335,16 +339,18 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
   const handleDownloadPdf = async () => {
     if (!cardRef.current || isDownloading) return;
     setIsDownloading(true);
+    setDownloadStatus(lang === 'gu' ? 'PDF બની રહ્યું છે...' : 'Preparing PDF...');
 
     try {
       const canvas = await html2canvas(cardRef.current, {
-        scale: 3, // Crisp 300+ DPI
+        scale: 2, // Stable 300 DPI on A4 without crashing Android mobile RAM
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: '#FFFFFF',
+        logging: false,
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.96);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
       const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
@@ -365,12 +371,99 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
       const y = (pdfHeight - renderHeight) / 2;
 
       pdf.addImage(imgData, 'JPEG', x, y, renderWidth, renderHeight, undefined, 'FAST');
-      const cleanName = person.name.replace(/[^a-zA-Z0-9]/g, '_');
-      pdf.save(`Birthday_Card_${cleanName}_A4.pdf`);
+      const cleanName = person.name.replace(/[^a-zA-Z0-9]/g, '_') || 'Student';
+      const filename = `Birthday_Card_${cleanName}_A4.pdf`;
+
+      // Convert to Blob and download via Vidyalayam unified downloader (Native Android APK + Web)
+      const pdfBlob = pdf.output('blob');
+      await downloadPdfFile(pdfBlob, filename);
+      setDownloadStatus(lang === 'gu' ? 'PDF ડાઉનલોડ સફળ!' : 'PDF Downloaded!');
+      setTimeout(() => setDownloadStatus(null), 2500);
     } catch (err) {
       console.error('Error downloading birthday card PDF:', err);
+      setDownloadStatus(lang === 'gu' ? 'PDF બનાવવામાં ક્ષતિ આવી' : 'PDF Error');
+      setTimeout(() => setDownloadStatus(null), 3000);
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  // Print Birthday Card directly (supports Native Android APK PrintManager + Browser Print)
+  const handlePrintCard = async () => {
+    if (!cardRef.current || isPrinting) return;
+    setIsPrinting(true);
+    setDownloadStatus(lang === 'gu' ? 'પ્રિન્ટ તૈયાર થાય છે...' : 'Preparing Print...');
+
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#FFFFFF',
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const cleanName = person.name.replace(/[^a-zA-Z0-9]/g, '_') || 'Student';
+
+      const printHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${person.name} - Birthday Card</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 8mm;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .print-card-wrapper {
+      width: 100%;
+      max-width: 194mm;
+      height: auto;
+      max-height: 280mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: auto;
+    }
+    img {
+      max-width: 100%;
+      max-height: 278mm;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="print-card-wrapper">
+    <img src="${imgData}" alt="Birthday Card" />
+  </div>
+</body>
+</html>
+      `;
+
+      printHtmlDocument(printHtml, `Birthday_Card_${cleanName}`);
+      setTimeout(() => setDownloadStatus(null), 1500);
+    } catch (err) {
+      console.error('Error printing birthday card:', err);
+      setDownloadStatus(lang === 'gu' ? 'પ્રિન્ટ ક્ષતિ' : 'Print Error');
+      setTimeout(() => setDownloadStatus(null), 3000);
+    } finally {
+      setIsPrinting(false);
     }
   };
 
@@ -381,18 +474,21 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
 
     try {
       const canvas = await html2canvas(cardRef.current, {
-        scale: 3,
+        scale: 2,
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: '#FFFFFF',
+        logging: false,
       });
 
       const dataUrl = canvas.toDataURL('image/png');
-      const cleanName = person.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const cleanName = person.name.replace(/[^a-zA-Z0-9]/g, '_') || 'Student';
       const link = document.createElement('a');
       link.download = `Birthday_Card_${cleanName}.png`;
       link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (err) {
       console.error('Error saving birthday card image:', err);
     } finally {
@@ -554,14 +650,33 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
             type="button"
             onClick={handleDownloadPdf}
             disabled={isDownloading}
-            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-[#C45A2D] hover:brightness-110 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-[#C45A2D] hover:brightness-110 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
             title="સંપૂર્ણ A4 પ્રિન્ટ PDF ડાઉનલોડ કરો"
           >
             <Download className="w-3.5 h-3.5" />
             <span>{isDownloading ? (lang === 'gu' ? 'તૈયાર થાય છે...' : 'Saving...') : 'A4 PDF'}</span>
           </button>
+
+          {/* Direct Print Card Button */}
+          <button
+            type="button"
+            onClick={handlePrintCard}
+            disabled={isPrinting || isDownloading}
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+            title="કાર્ડ સીધું પ્રિન્ટ કરો (A4 Print)"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>{isPrinting ? (lang === 'gu' ? 'પ્રિન્ટ...' : 'Printing...') : (lang === 'gu' ? 'પ્રિન્ટ' : 'Print')}</span>
+          </button>
         </div>
       </div>
+
+      {/* Download / Print Progress Toast */}
+      {downloadStatus && (
+        <div className="w-full max-w-[480px] mb-2 p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-center text-xs font-bold text-amber-800 dark:text-amber-200 animate-in fade-in duration-150">
+          {downloadStatus}
+        </div>
+      )}
 
       {/* Inline Wish Editor */}
       {isEditingWish && (
