@@ -647,10 +647,22 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
       )}
 
       {/* ========================================================================= */}
+      {/* ========================================================================= */}
       {/* THE BIRTHDAY CARD CANVAS                                                  */}
       {/* 100% Responsive, Perfectly Centered on Mobile, Exact A4 Aspect Ratio      */}
       {/* ========================================================================= */}
-      <div className="w-full max-w-[480px] px-1 sm:px-0 flex justify-center">
+      <div className="w-full max-w-[440px] px-2 sm:px-0 flex flex-col items-center mx-auto">
+        {/* Mobile-Friendly A4 Print Preview Pill */}
+        <div className="w-full mb-2.5 px-3 py-1.5 rounded-xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs flex items-center justify-between">
+          <span className="font-extrabold flex items-center gap-1.5 text-[11px] sm:text-xs">
+            <span>📄</span>
+            <span>{lang === 'gu' ? 'A4 રોયલ કાર્ડ પ્રીવ્યૂ' : 'Royal A4 Card Preview'}</span>
+          </span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white">
+            {lang === 'gu' ? 'પ્રિન્ટ અને પીડીએફ રેડી' : 'Print & PDF Ready'}
+          </span>
+        </div>
+
         <div
           ref={cardRef}
           style={{
@@ -658,74 +670,133 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
             borderColor: currentTheme.cardBorder,
             color: currentTheme.textColor,
           }}
-          className="relative w-full aspect-[210/297] min-h-[590px] sm:min-h-[665px] overflow-hidden rounded-[24px] sm:rounded-[28px] border-[4px] sm:border-[5px] shadow-2xl p-4 sm:p-6 flex flex-col justify-between select-none mx-auto transition-colors duration-300"
+          className="relative w-full aspect-[210/297] overflow-hidden rounded-[20px] sm:rounded-[24px] border-[3.5px] sm:border-[4px] shadow-2xl p-3 sm:p-5 flex flex-col justify-between select-none mx-auto transition-colors duration-300"
         >
-          {/* Subtle Corner Vignette Overlay */}
+          {/* 1. Middle Royal Gold Inset Accent Line */}
           <div
-            className="absolute inset-0 pointer-events-none opacity-30 mix-blend-multiply"
-            style={{
-              backgroundImage: `radial-gradient(circle at 50% 15%, rgba(255, 255, 255, 0.7) 0%, transparent 60%),
-                                radial-gradient(circle at 10% 85%, rgba(0, 0, 0, 0.05) 0%, transparent 45%),
-                                radial-gradient(circle at 90% 85%, rgba(0, 0, 0, 0.05) 0%, transparent 45%)`,
-            }}
+            className="absolute inset-[6px] sm:inset-[8px] rounded-[15px] sm:rounded-[18px] border-[1.5px] sm:border-[2px] border-[#D4AF37] pointer-events-none z-10"
           />
 
+          {/* 2. Inner Royal Hairline Frame */}
+          <div
+            className="absolute inset-[11px] sm:inset-[14px] rounded-[11px] sm:rounded-[14px] border border-[#D4AF37]/50 pointer-events-none z-10"
+          />
+
+          {/* 4 Victorian Royal Corner Filigrees */}
+          {/* Top-Left */}
+          <div className="absolute top-[8px] left-[8px] pointer-events-none z-20">
+            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" className="sm:w-[56px] sm:h-[56px]">
+              <path d="M 8 8 L 82 8 M 8 8 L 8 82" stroke="#D4AF37" strokeWidth="3.5" strokeLinecap="round" />
+              <path d="M 16 16 L 68 16 M 16 16 L 16 68" stroke={currentTheme.cardBorder} strokeWidth="2" strokeLinecap="round" />
+              <path d="M 16 16 C 36 10, 52 16, 64 12 C 48 24, 48 40, 64 54 C 48 44, 34 54, 28 68 C 22 52, 12 52, 12 66 C 14 50, 12 34, 16 16 Z" fill="#D4AF37" fillOpacity="0.35" stroke="#D4AF37" strokeWidth="1.2" />
+              <circle cx="8" cy="8" r="5" fill="#D4AF37" />
+              <circle cx="16" cy="16" r="3.5" fill={currentTheme.cardBorder} />
+            </svg>
+          </div>
+
+          {/* Top-Right */}
+          <div className="absolute top-[8px] right-[8px] pointer-events-none z-20 rotate-90">
+            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" className="sm:w-[56px] sm:h-[56px]">
+              <path d="M 8 8 L 82 8 M 8 8 L 8 82" stroke="#D4AF37" strokeWidth="3.5" strokeLinecap="round" />
+              <path d="M 16 16 L 68 16 M 16 16 L 16 68" stroke={currentTheme.cardBorder} strokeWidth="2" strokeLinecap="round" />
+              <path d="M 16 16 C 36 10, 52 16, 64 12 C 48 24, 48 40, 64 54 C 48 44, 34 54, 28 68 C 22 52, 12 52, 12 66 C 14 50, 12 34, 16 16 Z" fill="#D4AF37" fillOpacity="0.35" stroke="#D4AF37" strokeWidth="1.2" />
+              <circle cx="8" cy="8" r="5" fill="#D4AF37" />
+              <circle cx="16" cy="16" r="3.5" fill={currentTheme.cardBorder} />
+            </svg>
+          </div>
+
+          {/* Bottom-Right */}
+          <div className="absolute bottom-[8px] right-[8px] pointer-events-none z-20 rotate-180">
+            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" className="sm:w-[56px] sm:h-[56px]">
+              <path d="M 8 8 L 82 8 M 8 8 L 8 82" stroke="#D4AF37" strokeWidth="3.5" strokeLinecap="round" />
+              <path d="M 16 16 L 68 16 M 16 16 L 16 68" stroke={currentTheme.cardBorder} strokeWidth="2" strokeLinecap="round" />
+              <path d="M 16 16 C 36 10, 52 16, 64 12 C 48 24, 48 40, 64 54 C 48 44, 34 54, 28 68 C 22 52, 12 52, 12 66 C 14 50, 12 34, 16 16 Z" fill="#D4AF37" fillOpacity="0.35" stroke="#D4AF37" strokeWidth="1.2" />
+              <circle cx="8" cy="8" r="5" fill="#D4AF37" />
+              <circle cx="16" cy="16" r="3.5" fill={currentTheme.cardBorder} />
+            </svg>
+          </div>
+
+          {/* Bottom-Left */}
+          <div className="absolute bottom-[8px] left-[8px] pointer-events-none z-20 -rotate-90">
+            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" className="sm:w-[56px] sm:h-[56px]">
+              <path d="M 8 8 L 82 8 M 8 8 L 8 82" stroke="#D4AF37" strokeWidth="3.5" strokeLinecap="round" />
+              <path d="M 16 16 L 68 16 M 16 16 L 16 68" stroke={currentTheme.cardBorder} strokeWidth="2" strokeLinecap="round" />
+              <path d="M 16 16 C 36 10, 52 16, 64 12 C 48 24, 48 40, 64 54 C 48 44, 34 54, 28 68 C 22 52, 12 52, 12 66 C 14 50, 12 34, 16 16 Z" fill="#D4AF37" fillOpacity="0.35" stroke="#D4AF37" strokeWidth="1.2" />
+              <circle cx="8" cy="8" r="5" fill="#D4AF37" />
+              <circle cx="16" cy="16" r="3.5" fill={currentTheme.cardBorder} />
+            </svg>
+          </div>
+
           {/* Left Decorative Festive Balloon Accent */}
-          <div className="absolute top-[320px] left-3 sm:left-5 pointer-events-none opacity-80 z-10">
-            <svg width="42" height="88" viewBox="0 0 50 110" fill="none" stroke={currentTheme.balloonStroke} strokeWidth="1.6" strokeLinecap="round">
-              <ellipse cx="25" cy="30" rx="18" ry="24" fill={currentTheme.balloonFill} fillOpacity="0.4" />
+          <div className="absolute top-[280px] left-2.5 sm:left-4 pointer-events-none opacity-70 z-10">
+            <svg width="34" height="72" viewBox="0 0 50 110" fill="none" stroke={currentTheme.balloonStroke} strokeWidth="1.6" strokeLinecap="round">
+              <ellipse cx="25" cy="30" rx="18" ry="24" fill={currentTheme.balloonFill} fillOpacity="0.45" />
               <path d="M 23 54 L 27 54 L 25 58 Z" fill={currentTheme.balloonStroke} />
               <path d="M 25 58 Q 28 75 22 88 Q 18 98 24 108" fill="none" />
             </svg>
           </div>
 
           {/* Right Decorative Festive Balloon Accent */}
-          <div className="absolute top-[200px] right-3 sm:right-5 pointer-events-none opacity-80 z-10">
-            <svg width="44" height="92" viewBox="0 0 50 110" fill="none" stroke={currentTheme.balloonStroke} strokeWidth="1.6" strokeLinecap="round">
-              <ellipse cx="25" cy="30" rx="19" ry="25" fill={currentTheme.balloonFill} fillOpacity="0.4" />
+          <div className="absolute top-[170px] right-2.5 sm:right-4 pointer-events-none opacity-70 z-10">
+            <svg width="36" height="76" viewBox="0 0 50 110" fill="none" stroke={currentTheme.balloonStroke} strokeWidth="1.6" strokeLinecap="round">
+              <ellipse cx="25" cy="30" rx="19" ry="25" fill={currentTheme.balloonFill} fillOpacity="0.45" />
               <path d="M 23 55 L 27 55 L 25 59 Z" fill={currentTheme.balloonStroke} />
               <path d="M 25 59 Q 20 72 27 86 Q 31 96 26 108" fill="none" />
             </svg>
           </div>
 
-          {/* Top Header: School Name (Guaranteed 100% Horizontally Centered, No Clipping) */}
-          <div className="relative z-10 w-full text-center pt-0.5 px-2">
+          {/* Top Header: School Name & Insignia (100% Centered, No Clipping) */}
+          <div className="relative z-10 w-full text-center pt-1 px-2">
+            {/* Top Royal Crest Insignia */}
+            <div className="flex items-center justify-center gap-1.5 mb-0.5">
+              <span className="text-[#D4AF37] text-[10px] sm:text-xs">✦</span>
+              <span className="text-[#D4AF37] text-xs sm:text-sm font-bold">⚜</span>
+              <span className="text-[#D4AF37] text-[10px] sm:text-xs">✦</span>
+            </div>
+
             <h2
               style={{
                 fontFamily: lang === 'gu' ? "'Anek Gujarati', Georgia, serif" : 'Georgia, serif',
                 letterSpacing: lang === 'gu' ? '0.01em' : '0.025em',
+                color: currentTheme.titleColor,
               }}
-              className="text-[14px] sm:text-[17px] md:text-[19px] font-black uppercase leading-snug drop-shadow-2xs max-w-full mx-auto break-words text-center"
+              className="text-[14px] sm:text-[17px] font-black uppercase leading-snug drop-shadow-2xs max-w-full mx-auto break-words text-center"
             >
               {displaySchoolName}
             </h2>
             {displayLocation && (
               <p
                 style={{ color: currentTheme.subtextColor }}
-                className="text-[10px] sm:text-[11px] font-extrabold tracking-widest uppercase mt-0.5 opacity-90 text-center"
+                className="text-[9.5px] sm:text-[11px] font-extrabold tracking-widest uppercase mt-0.5 opacity-90 text-center"
               >
                 {displayLocation}
               </p>
             )}
+
+            {/* Ornamental Gold Divider */}
+            <div
+              className="w-36 sm:w-48 h-[1px] mx-auto mt-1"
+              style={{ background: 'linear-gradient(90deg, transparent 0%, #D4AF37 50%, transparent 100%)' }}
+            />
           </div>
 
-          {/* Happy Birthday Heading: Fully Localized in English or Gujarati */}
-          <div className="relative z-10 w-full text-center -mt-1 px-2">
+          {/* Happy Birthday Heading: Fully Localized */}
+          <div className="relative z-10 w-full text-center -mt-0.5 px-2">
             {lang === 'en' ? (
               <>
                 <div
                   style={{ color: currentTheme.subtextColor }}
-                  className="text-[20px] sm:text-[23px] font-normal tracking-[0.2em] uppercase leading-none opacity-85 text-center"
+                  className="text-[14px] sm:text-[16px] font-extrabold tracking-[0.25em] uppercase leading-none opacity-85 text-center"
                 >
-                  happy
+                  ✦ happy ✦
                 </div>
                 <div
                   style={{
-                    fontFamily: "'Playfair Display', 'Brush Script MT', 'Great Vibes', cursive, serif",
+                    fontFamily: "'Playfair Display', Georgia, serif",
                     lineHeight: '0.95',
                     color: currentTheme.titleColor,
                   }}
-                  className="text-[48px] sm:text-[56px] font-bold italic tracking-tight drop-shadow-xs mt-0.5 text-center"
+                  className="text-[40px] sm:text-[48px] font-bold italic tracking-tight drop-shadow-xs mt-0.5 text-center"
                 >
                   Birthday
                 </div>
@@ -734,17 +805,17 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
               <>
                 <div
                   style={{ color: currentTheme.subtextColor }}
-                  className="text-[15px] sm:text-[17px] font-extrabold tracking-widest uppercase leading-none opacity-90 text-center"
+                  className="text-[12px] sm:text-[14px] font-extrabold tracking-widest uppercase leading-none opacity-90 text-center"
                 >
-                  જન્મદિવસની
+                  ✦ જન્મદિવસની ✦
                 </div>
                 <div
                   style={{
-                    fontFamily: "'Anek Gujarati', 'Playfair Display', Georgia, serif",
+                    fontFamily: "'Anek Gujarati', Georgia, serif",
                     lineHeight: '1.15',
                     color: currentTheme.titleColor,
                   }}
-                  className="text-[30px] sm:text-[38px] font-black tracking-tight drop-shadow-xs mt-0.5 text-center"
+                  className="text-[26px] sm:text-[32px] font-black tracking-tight drop-shadow-xs mt-0.5 text-center"
                 >
                   હાર્દિક શુભકામનાઓ
                 </div>
@@ -752,61 +823,37 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
             )}
           </div>
 
-          {/* Center Visual: Circular Portrait with Seal & Soft Floral Blossoms */}
+          {/* Center Visual: Large 165px-195px Circular Portrait with Royal Gold Bezel & Laurels */}
           <div className="relative z-10 flex items-center justify-center my-auto py-1">
-            {/* Subtle Embossed Circular Seal Ring behind portrait */}
-            <div
-              className="absolute w-[185px] h-[185px] sm:w-[224px] sm:h-[224px] rounded-full border-[2px] sm:border-[2.5px] flex items-center justify-center pointer-events-none"
-              style={{ borderColor: currentTheme.sealBorder, opacity: 0.55 }}
-            >
-              <div
-                className="w-[172px] h-[172px] sm:w-[210px] sm:h-[210px] rounded-full border border-dashed flex items-center justify-center"
-                style={{ borderColor: currentTheme.sealBorder }}
-              >
-                <div
-                  className="w-[156px] h-[156px] sm:w-[192px] sm:h-[192px] rounded-full border border-dotted opacity-40"
-                  style={{ borderColor: currentTheme.sealBorder }}
-                />
-              </div>
-            </div>
-
-            {/* Left Floral Blossom Accent */}
-            <div className="absolute -left-2 sm:-left-3 pointer-events-none z-20">
-              <svg width="68" height="68" viewBox="0 0 100 100" fill="none" className="sm:w-[78px] sm:h-[78px]">
-                <circle cx="50" cy="22" r="14" fill={currentTheme.blossomPetals[0]} fillOpacity="0.85" />
-                <circle cx="50" cy="78" r="14" fill={currentTheme.blossomPetals[0]} fillOpacity="0.85" />
-                <circle cx="22" cy="50" r="14" fill={currentTheme.blossomPetals[0]} fillOpacity="0.85" />
-                <circle cx="78" cy="50" r="14" fill={currentTheme.blossomPetals[0]} fillOpacity="0.85" />
-                <circle cx="30" cy="30" r="14" fill={currentTheme.blossomPetals[1]} fillOpacity="0.9" />
-                <circle cx="70" cy="30" r="14" fill={currentTheme.blossomPetals[1]} fillOpacity="0.9" />
-                <circle cx="30" cy="70" r="14" fill={currentTheme.blossomPetals[1]} fillOpacity="0.9" />
-                <circle cx="70" cy="70" r="14" fill={currentTheme.blossomPetals[1]} fillOpacity="0.9" />
-                <circle cx="50" cy="50" r="11" fill={currentTheme.blossomCore} />
-                <circle cx="50" cy="50" r="7" fill={currentTheme.blossomCoreCenter} />
+            {/* Left Golden Laurel Branch */}
+            <div className="absolute left-2 sm:left-6 pointer-events-none z-10 opacity-90">
+              <svg width="34" height="82" viewBox="0 0 50 120" fill="none" className="sm:w-[44px] sm:h-[105px]">
+                <path d="M 38 116 C 28 85, 18 45, 34 8" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                <path d="M 34 14 C 26 10, 18 18, 24 26 C 30 23, 32 18, 34 14 Z" fill="#D4AF37" />
+                <path d="M 31 34 C 20 28, 12 38, 20 46 C 26 43, 28 38, 31 34 Z" fill="#D4AF37" />
+                <path d="M 26 54 C 14 48, 6 58, 14 66 C 20 63, 23 58, 26 54 Z" fill="#D4AF37" />
+                <path d="M 23 74 C 10 68, 2 78, 10 86 C 16 83, 20 78, 23 74 Z" fill="#D4AF37" />
+                <path d="M 25 94 C 13 88, 6 98, 14 104 C 20 102, 23 97, 25 94 Z" fill="#D4AF37" />
               </svg>
             </div>
 
-            {/* Right Floral Blossom Accent */}
-            <div className="absolute -right-2 sm:-right-3 pointer-events-none z-20">
-              <svg width="68" height="68" viewBox="0 0 100 100" fill="none" className="sm:w-[78px] sm:h-[78px]">
-                <circle cx="50" cy="22" r="14" fill={currentTheme.blossomPetals[0]} fillOpacity="0.85" />
-                <circle cx="50" cy="78" r="14" fill={currentTheme.blossomPetals[0]} fillOpacity="0.85" />
-                <circle cx="22" cy="50" r="14" fill={currentTheme.blossomPetals[0]} fillOpacity="0.85" />
-                <circle cx="78" cy="50" r="14" fill={currentTheme.blossomPetals[0]} fillOpacity="0.85" />
-                <circle cx="30" cy="30" r="14" fill={currentTheme.blossomPetals[1]} fillOpacity="0.9" />
-                <circle cx="70" cy="30" r="14" fill={currentTheme.blossomPetals[1]} fillOpacity="0.9" />
-                <circle cx="30" cy="70" r="14" fill={currentTheme.blossomPetals[1]} fillOpacity="0.9" />
-                <circle cx="70" cy="70" r="14" fill={currentTheme.blossomPetals[1]} fillOpacity="0.9" />
-                <circle cx="50" cy="50" r="11" fill={currentTheme.blossomCore} />
-                <circle cx="50" cy="50" r="7" fill={currentTheme.blossomCoreCenter} />
+            {/* Right Golden Laurel Branch */}
+            <div className="absolute right-2 sm:right-6 pointer-events-none z-10 opacity-90 scale-x-[-1]">
+              <svg width="34" height="82" viewBox="0 0 50 120" fill="none" className="sm:w-[44px] sm:h-[105px]">
+                <path d="M 38 116 C 28 85, 18 45, 34 8" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                <path d="M 34 14 C 26 10, 18 18, 24 26 C 30 23, 32 18, 34 14 Z" fill="#D4AF37" />
+                <path d="M 31 34 C 20 28, 12 38, 20 46 C 26 43, 28 38, 31 34 Z" fill="#D4AF37" />
+                <path d="M 26 54 C 14 48, 6 58, 14 66 C 20 63, 23 58, 26 54 Z" fill="#D4AF37" />
+                <path d="M 23 74 C 10 68, 2 78, 10 86 C 16 83, 20 78, 23 74 Z" fill="#D4AF37" />
+                <path d="M 25 94 C 13 88, 6 98, 14 104 C 20 102, 23 97, 25 94 Z" fill="#D4AF37" />
               </svg>
             </div>
 
-            {/* Central Portrait Photo Frame */}
+            {/* Central Portrait Photo Frame with Multi-layer Gold Rim */}
             <div
-              className={`relative w-[136px] h-[136px] sm:w-[162px] sm:h-[162px] rounded-full p-1 sm:p-1.5 bg-gradient-to-b ${currentTheme.frameGradient} shadow-xl z-10 flex items-center justify-center`}
+              className="relative w-[155px] h-[155px] sm:w-[190px] sm:h-[190px] rounded-full p-1.5 sm:p-2 bg-gradient-to-tr from-[#FFE8A3] via-[#D4AF37] to-[#AA7C11] shadow-xl z-20 flex items-center justify-center"
             >
-              <div className="w-full h-full rounded-full overflow-hidden bg-white/90 border-[2px] sm:border-[2.5px] border-white shadow-inner flex items-center justify-center">
+              <div className="w-full h-full rounded-full overflow-hidden bg-white border-[3px] sm:border-[4px] border-white shadow-inner flex items-center justify-center">
                 {photoPreview ? (
                   <img
                     src={photoPreview}
@@ -817,81 +864,93 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
                     }`}
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-stone-100 text-stone-500">
-                    <User className="w-14 h-14 sm:w-16 sm:h-16 stroke-1" />
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-stone-100 text-[#D4AF37]">
+                    <span className="text-4xl sm:text-5xl font-black">
+                      {person.name ? person.name.charAt(0) : '★'}
+                    </span>
                   </div>
                 )}
+              </div>
+
+              {/* Star Medallion Badge */}
+              <div className="absolute -bottom-1.5 w-6 h-6 rounded-full bg-gradient-to-tr from-[#FFE8A3] via-[#D4AF37] to-[#AA7C11] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm z-30">
+                ★
               </div>
             </div>
           </div>
 
-          {/* Student / Staff Name & Details (Guaranteed Centered, No Overflow) */}
-          <div className="relative z-10 w-full text-center -mt-1 px-2">
+          {/* Student / Staff Name & Details */}
+          <div className="relative z-10 w-full text-center -mt-0.5 px-2">
             <h3
               style={{
                 fontFamily: lang === 'gu' ? "'Anek Gujarati', Georgia, serif" : "'Playfair Display', Georgia, serif",
                 letterSpacing: '0.01em',
                 color: currentTheme.titleColor,
               }}
-              className="text-[20px] sm:text-[23px] font-black leading-tight break-words max-w-full mx-auto text-center"
+              className="text-[18px] sm:text-[22px] font-black leading-tight break-words max-w-full mx-auto text-center"
             >
               {person.name}
             </h3>
 
             <div
               style={{ color: currentTheme.subtextColor }}
-              className="flex items-center justify-center gap-1.5 sm:gap-2 text-[11px] sm:text-[12px] font-bold mt-0.5 opacity-90 flex-wrap text-center"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 text-[10.5px] sm:text-[12px] font-extrabold mt-0.5 opacity-90 flex-wrap text-center"
             >
-              <span>{person.formattedDob}</span>
+              <span className="px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/10 border border-[#D4AF37]/50 shadow-2xs">
+                🎂 {person.formattedDob}
+              </span>
               {person.standard && (
-                <>
-                  <span>•</span>
-                  <span>
-                    {lang === 'gu'
-                      ? `ધોરણ ${person.standard}${person.section ? `-${person.section}` : ''}`
-                      : `Class: ${person.standard}${person.section ? `-${person.section}` : ''}`}
-                  </span>
-                </>
+                <span className="px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/10 border border-[#D4AF37]/50 shadow-2xs">
+                  🎓 {lang === 'gu'
+                    ? `ધોરણ ${person.standard}${person.section ? `-${person.section}` : ''}`
+                    : `Class ${person.standard}${person.section ? `-${person.section}` : ''}`}
+                </span>
               )}
               {person.designation && (
-                <>
-                  <span>•</span>
-                  <span>{person.designation}</span>
-                </>
+                <span className="px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/10 border border-[#D4AF37]/50 shadow-2xs">
+                  💼 {person.designation}
+                </span>
               )}
             </div>
           </div>
 
-          {/* Sincere Birthday Wish Message (With themed translucent container) */}
-          <div className="relative z-10 w-full text-center px-1 sm:px-3 my-auto">
+          {/* Sincere Birthday Wish Message (Large Bold Readable Plaque with Gold Ribbon Tag & Quotes) */}
+          <div className="relative z-10 w-full text-center px-1 sm:px-2 my-auto">
             <div
               style={{
-                background: currentTheme.wishBg,
-                borderColor: currentTheme.wishBorder,
+                background: currentTheme.wishBg || 'rgba(255, 255, 255, 0.94)',
+                borderColor: '#D4AF37',
               }}
-              className="p-2 sm:p-2.5 rounded-2xl border backdrop-blur-xs shadow-2xs max-w-full mx-auto"
+              className="p-2 sm:p-3 rounded-2xl border-[1.5px] sm:border-2 shadow-sm max-w-full mx-auto"
             >
+              {/* Ribbon Header */}
+              <div className="inline-block px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-[#D4AF37]/40 text-[9.5px] sm:text-[10.5px] font-extrabold tracking-wider uppercase mb-1">
+                ✨ {lang === 'gu' ? 'જન્મદિવસ શુભકામના સંદેશ' : 'BIRTHDAY WISH'} ✨
+              </div>
+
               <p
                 style={{
                   fontFamily: lang === 'gu' ? "'Anek Gujarati', sans-serif" : 'ui-sans-serif, system-ui, sans-serif',
-                  lineHeight: '1.45',
+                  lineHeight: '1.5',
                   color: currentTheme.textColor,
                 }}
-                className="text-[11.5px] sm:text-[12.5px] font-semibold tracking-normal text-center"
+                className="text-[12.5px] sm:text-[14px] font-extrabold tracking-normal text-center"
               >
+                <span className="text-[#D4AF37] font-black mr-1 text-sm sm:text-base">❝</span>
                 {customWishText}
+                <span className="text-[#D4AF37] font-black ml-1 text-sm sm:text-base">❞</span>
               </p>
             </div>
           </div>
 
           {/* Footer: Prominent School Family Blessing (શુભેચ્છામાં [શાળાનું નામ] પરિવાર) */}
           <div
-            style={{ borderColor: currentTheme.regardsBorder }}
-            className="relative z-10 pt-2 border-t w-full text-center px-2"
+            style={{ borderColor: '#D4AF37' }}
+            className="relative z-10 pt-1.5 border-t w-full text-center px-2"
           >
             <div
-              style={{ fontFamily: "'Playfair Display', cursive, serif", color: currentTheme.subtextColor }}
-              className="text-[12px] sm:text-[13px] font-bold italic mb-0.5 opacity-90 text-center"
+              style={{ fontFamily: "'Playfair Display', Georgia, serif", color: currentTheme.subtextColor }}
+              className="text-[11px] sm:text-[12px] font-bold italic mb-0.5 opacity-90 text-center"
             >
               {lang === 'gu' ? 'શુભેચ્છક:' : 'With Warm Compliments:'}
             </div>
@@ -905,7 +964,7 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
 
             <div
               style={{ color: currentTheme.subtextColor }}
-              className="text-[10px] sm:text-[11px] font-bold opacity-80 mt-0.5 text-center"
+              className="text-[9.5px] sm:text-[10.5px] font-bold opacity-80 mt-0.5 text-center"
             >
               {lang === 'gu'
                 ? 'આચાર્યશ્રી, શિક્ષકગણ તથા સમસ્ત સ્ટાફ પરિવાર'
