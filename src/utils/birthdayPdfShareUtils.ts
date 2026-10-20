@@ -222,11 +222,11 @@ export function getBalloonBouquetDataUri(
       <ellipse cx="70" cy="98" rx="10" ry="16" fill="#FFFFFF" fill-opacity="0.65" transform="rotate(-20 70 98)" />
       <polygon points="78,165 86,165 82,171" fill="${colors.border || '#0F172A'}" />
 
-      <!-- Golden Stars & Sparkles -->
-      <text x="18" y="36" font-size="16" font-weight="bold" fill="#D4AF37">✦</text>
-      <text x="126" y="24" font-size="18" font-weight="bold" fill="#D4AF37">★</text>
-      <text x="12" y="152" font-size="13" font-weight="bold" fill="#D4AF37">✦</text>
-      <text x="132" y="172" font-size="15" font-weight="bold" fill="#D4AF37">★</text>
+      <!-- Golden Stars & Sparkles (Pure Vector Paths - Zero Font/Encoding Dependencies) -->
+      <path d="M 18 30 Q 18 36 12 36 Q 18 36 18 42 Q 18 36 24 36 Q 18 36 18 30 Z" fill="#D4AF37" />
+      <polygon points="126,18 128.5,23.5 135,23.5 129.5,27.5 131.5,33 126,29 120.5,33 122.5,27.5 117,23.5 123.5,23.5" fill="#D4AF37" />
+      <path d="M 12 147 Q 12 152 7 152 Q 12 152 12 157 Q 12 152 17 152 Q 12 152 12 147 Z" fill="#D4AF37" />
+      <polygon points="132,166 134,171 140,171 135,175 137,180 132,176.5 127,180 129,175 124,171 130,171" fill="#D4AF37" />
     ` : `
       <!-- Right Swirling Golden Ribbons -->
       <path d="M 112 115 Q 120 165 80 218 Q 76 245 80 285" stroke="#D4AF37" stroke-width="2" fill="none" opacity="0.9" />
@@ -249,16 +249,16 @@ export function getBalloonBouquetDataUri(
       <ellipse cx="94" cy="98" rx="10" ry="16" fill="#FFFFFF" fill-opacity="0.65" transform="rotate(20 94 98)" />
       <polygon points="78,165 86,165 82,171" fill="${colors.border || '#0F172A'}" />
 
-      <!-- Golden Stars & Sparkles -->
-      <text x="134" y="36" font-size="16" font-weight="bold" fill="#D4AF37">✦</text>
-      <text x="26" y="24" font-size="18" font-weight="bold" fill="#D4AF37">★</text>
-      <text x="140" y="152" font-size="13" font-weight="bold" fill="#D4AF37">✦</text>
-      <text x="20" y="172" font-size="15" font-weight="bold" fill="#D4AF37">★</text>
+      <!-- Golden Stars & Sparkles (Pure Vector Paths - Zero Font/Encoding Dependencies) -->
+      <path d="M 134 30 Q 134 36 128 36 Q 134 36 134 42 Q 134 36 140 36 Q 134 36 134 30 Z" fill="#D4AF37" />
+      <polygon points="26,18 28.5,23.5 35,23.5 29.5,27.5 31.5,33 26,29 20.5,33 22.5,27.5 17,23.5 23.5,23.5" fill="#D4AF37" />
+      <path d="M 140 147 Q 140 152 135 152 Q 140 152 140 157 Q 140 152 145 152 Q 140 152 140 147 Z" fill="#D4AF37" />
+      <polygon points="20,166 22,171 28,171 23,175 25,180 20,176.5 15,180 17,175 12,171 18,171" fill="#D4AF37" />
     `}
   </svg>`;
 
   try {
-    return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+    return 'data:image/svg+xml;base64,' + btoa(svg);
   } catch {
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   }
@@ -595,10 +595,10 @@ function buildBirthdayCardA4Html(
           </div>
         </div>
 
-        <!-- 4. Person Name & Identity Badges (Strict Mathematical Centering via inline-flex) -->
+        <!-- 4. Person Name & Identity Badges (100% Mathematically Centered via inline-block with balanced padding) -->
         <div style="text-align: center; width: 100%; margin: 0 0 6px 0;">
           <h2 style="
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
             font-family: ${lang === 'gu' ? GUJARATI_FONT_STACK : "'Playfair Display', 'Merriweather', Georgia, serif"};
             font-size: 30px;
             font-weight: 900;
@@ -608,70 +608,143 @@ function buildBirthdayCardA4Html(
             text-transform: uppercase;
           ">${person.name}</h2>
 
-          <!-- Identity Badges: Using inline-flex with explicit height and middle alignment for 100% precision -->
+          <!-- Identity Badges: Symmetrical, centered inline-blocks with balanced vertical metrics -->
           <div style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
+            text-align: center;
+            width: 100%;
             margin-top: 6px;
           ">
             <!-- DOB Badge -->
             <div style="
-              display: inline-flex;
-              align-items: center;
-              justify-content: center;
-              height: 34px;
-              line-height: 34px;
+              display: inline-block;
+              vertical-align: middle;
+              height: 38px;
+              line-height: 38px;
               padding: 0 18px;
-              background: ${theme.badgeBg || '#ffffff'};
+              background: #0F172A;
               border: 1.8px solid #D4AF37;
               border-radius: 9999px;
-              box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+              box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+              margin: 4px 6px;
+              text-align: center;
+              white-space: nowrap;
               box-sizing: border-box;
             ">
-              <span style="font-size: 15px; margin-right: 6px; display: inline-flex; align-items: center; line-height: 1;">🎂</span>
-              <span style="font-size: 14px; font-weight: 800; color: ${theme.badgeText}; font-family: ${GUJARATI_FONT_STACK}; display: inline-flex; align-items: center; line-height: 1;">${displayDobText}</span>
+              <span style="
+                display: inline-block;
+                vertical-align: middle;
+                width: 17px;
+                height: 17px;
+                margin-right: 7px;
+                line-height: 1;
+              ">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                  <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8" />
+                  <path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1" />
+                  <path d="M2 21h20" />
+                  <line x1="7" y1="8" x2="7" y2="10" />
+                  <line x1="12" y1="8" x2="12" y2="10" />
+                  <line x1="17" y1="8" x2="17" y2="10" />
+                  <circle cx="7" cy="4" r="1" fill="#F59E0B" stroke="#F59E0B" />
+                  <circle cx="12" cy="4" r="1" fill="#F59E0B" stroke="#F59E0B" />
+                  <circle cx="17" cy="4" r="1" fill="#F59E0B" stroke="#F59E0B" />
+                </svg>
+              </span>
+              <span style="
+                display: inline-block;
+                vertical-align: middle;
+                font-size: 14px;
+                font-weight: 800;
+                color: #FFFFFF;
+                font-family: ${GUJARATI_FONT_STACK};
+                letter-spacing: 0.3px;
+                line-height: 1;
+              ">${displayDobText}</span>
             </div>
 
             <!-- Standard Badge -->
             ${rawStandard ? `
               <div style="
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                height: 34px;
-                line-height: 34px;
+                display: inline-block;
+                vertical-align: middle;
+                height: 38px;
+                line-height: 38px;
                 padding: 0 18px;
-                background: ${theme.badgeBg || '#ffffff'};
+                background: #0F172A;
                 border: 1.8px solid #D4AF37;
                 border-radius: 9999px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+                box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+                margin: 4px 6px;
+                text-align: center;
+                white-space: nowrap;
                 box-sizing: border-box;
               ">
-                <span style="font-size: 15px; margin-right: 6px; display: inline-flex; align-items: center; line-height: 1;">🎓</span>
-                <span style="font-size: 14px; font-weight: 800; color: ${theme.badgeText}; font-family: ${GUJARATI_FONT_STACK}; display: inline-flex; align-items: center; line-height: 1;">${displayStandardText}</span>
+                <span style="
+                  display: inline-block;
+                  vertical-align: middle;
+                  width: 17px;
+                  height: 17px;
+                  margin-right: 7px;
+                  line-height: 1;
+                ">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                  </svg>
+                </span>
+                <span style="
+                  display: inline-block;
+                  vertical-align: middle;
+                  font-size: 14px;
+                  font-weight: 800;
+                  color: #FFFFFF;
+                  font-family: ${GUJARATI_FONT_STACK};
+                  letter-spacing: 0.3px;
+                  line-height: 1;
+                ">${displayStandardText}</span>
               </div>
             ` : ''}
 
             <!-- Designation Badge (Staff) -->
             ${person.designation ? `
               <div style="
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                height: 34px;
-                line-height: 34px;
+                display: inline-block;
+                vertical-align: middle;
+                height: 38px;
+                line-height: 38px;
                 padding: 0 18px;
-                background: ${theme.badgeBg || '#ffffff'};
+                background: #0F172A;
                 border: 1.8px solid #D4AF37;
                 border-radius: 9999px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+                box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+                margin: 4px 6px;
+                text-align: center;
+                white-space: nowrap;
                 box-sizing: border-box;
               ">
-                <span style="font-size: 15px; margin-right: 6px; display: inline-flex; align-items: center; line-height: 1;">💼</span>
-                <span style="font-size: 14px; font-weight: 800; color: ${theme.badgeText}; font-family: ${GUJARATI_FONT_STACK}; display: inline-flex; align-items: center; line-height: 1;">${person.designation}</span>
+                <span style="
+                  display: inline-block;
+                  vertical-align: middle;
+                  width: 17px;
+                  height: 17px;
+                  margin-right: 7px;
+                  line-height: 1;
+                ">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                  </svg>
+                </span>
+                <span style="
+                  display: inline-block;
+                  vertical-align: middle;
+                  font-size: 14px;
+                  font-weight: 800;
+                  color: #FFFFFF;
+                  font-family: ${GUJARATI_FONT_STACK};
+                  letter-spacing: 0.3px;
+                  line-height: 1;
+                ">${person.designation}</span>
               </div>
             ` : ''}
           </div>
@@ -785,6 +858,36 @@ function buildBirthdayCardA4Html(
 }
 
 /**
+ * Guarantees that all <img> elements (photo and balloon bouquets) are completely loaded
+ * and decoded before html2canvas executes, preventing blank or missing balloons in the PDF.
+ */
+async function waitForContainerImagesToLoad(container: HTMLElement): Promise<void> {
+  const images = Array.from(container.querySelectorAll('img'));
+  if (images.length === 0) return;
+
+  await Promise.all(
+    images.map((img) => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        let isDone = false;
+        const done = () => {
+          if (!isDone) {
+            isDone = true;
+            resolve();
+          }
+        };
+        img.addEventListener('load', done, { once: true });
+        img.addEventListener('error', done, { once: true });
+        if (img.decode) {
+          img.decode().then(done).catch(done);
+        }
+        setTimeout(done, 1200);
+      });
+    })
+  );
+}
+
+/**
  * Capture an individual Birthday Card into a high-res Canvas
  */
 async function renderCardToCanvas(options: BirthdayCardPrintOptions): Promise<HTMLCanvasElement> {
@@ -808,6 +911,11 @@ async function renderCardToCanvas(options: BirthdayCardPrintOptions): Promise<HT
   document.body.appendChild(container);
 
   try {
+    // 1. Wait for photo and balloon images to completely decode in the DOM
+    await waitForContainerImagesToLoad(container);
+    // 2. Allow layout and font rasterization to settle
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
     const canvas = await html2canvas(container, HTML2CANVAS_BIRTHDAY_OPTIONS);
     return canvas;
   } finally {
