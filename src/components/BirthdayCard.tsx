@@ -682,10 +682,10 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
             className="absolute inset-[11px] sm:inset-[14px] rounded-[11px] sm:rounded-[14px] border border-[#D4AF37]/50 pointer-events-none z-10"
           />
 
-          {/* 4 Victorian Royal Corner Filigrees */}
+          {/* 4 Victorian Royal Corner Filigrees (Compact 38px, neatly in corners) */}
           {/* Top-Left */}
           <div className="absolute top-[8px] left-[8px] pointer-events-none z-20">
-            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" className="sm:w-[56px] sm:h-[56px]">
+            <svg width="38" height="38" viewBox="0 0 100 100" fill="none" className="sm:w-[46px] sm:h-[46px]">
               <path d="M 8 8 L 82 8 M 8 8 L 8 82" stroke="#D4AF37" strokeWidth="3.5" strokeLinecap="round" />
               <path d="M 16 16 L 68 16 M 16 16 L 16 68" stroke={currentTheme.cardBorder} strokeWidth="2" strokeLinecap="round" />
               <path d="M 16 16 C 36 10, 52 16, 64 12 C 48 24, 48 40, 64 54 C 48 44, 34 54, 28 68 C 22 52, 12 52, 12 66 C 14 50, 12 34, 16 16 Z" fill="#D4AF37" fillOpacity="0.35" stroke="#D4AF37" strokeWidth="1.2" />
@@ -696,7 +696,7 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
 
           {/* Top-Right */}
           <div className="absolute top-[8px] right-[8px] pointer-events-none z-20 rotate-90">
-            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" className="sm:w-[56px] sm:h-[56px]">
+            <svg width="38" height="38" viewBox="0 0 100 100" fill="none" className="sm:w-[46px] sm:h-[46px]">
               <path d="M 8 8 L 82 8 M 8 8 L 8 82" stroke="#D4AF37" strokeWidth="3.5" strokeLinecap="round" />
               <path d="M 16 16 L 68 16 M 16 16 L 16 68" stroke={currentTheme.cardBorder} strokeWidth="2" strokeLinecap="round" />
               <path d="M 16 16 C 36 10, 52 16, 64 12 C 48 24, 48 40, 64 54 C 48 44, 34 54, 28 68 C 22 52, 12 52, 12 66 C 14 50, 12 34, 16 16 Z" fill="#D4AF37" fillOpacity="0.35" stroke="#D4AF37" strokeWidth="1.2" />
@@ -707,7 +707,7 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
 
           {/* Bottom-Right */}
           <div className="absolute bottom-[8px] right-[8px] pointer-events-none z-20 rotate-180">
-            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" className="sm:w-[56px] sm:h-[56px]">
+            <svg width="38" height="38" viewBox="0 0 100 100" fill="none" className="sm:w-[46px] sm:h-[46px]">
               <path d="M 8 8 L 82 8 M 8 8 L 8 82" stroke="#D4AF37" strokeWidth="3.5" strokeLinecap="round" />
               <path d="M 16 16 L 68 16 M 16 16 L 16 68" stroke={currentTheme.cardBorder} strokeWidth="2" strokeLinecap="round" />
               <path d="M 16 16 C 36 10, 52 16, 64 12 C 48 24, 48 40, 64 54 C 48 44, 34 54, 28 68 C 22 52, 12 52, 12 66 C 14 50, 12 34, 16 16 Z" fill="#D4AF37" fillOpacity="0.35" stroke="#D4AF37" strokeWidth="1.2" />
@@ -718,7 +718,7 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
 
           {/* Bottom-Left */}
           <div className="absolute bottom-[8px] left-[8px] pointer-events-none z-20 -rotate-90">
-            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" className="sm:w-[56px] sm:h-[56px]">
+            <svg width="38" height="38" viewBox="0 0 100 100" fill="none" className="sm:w-[46px] sm:h-[46px]">
               <path d="M 8 8 L 82 8 M 8 8 L 8 82" stroke="#D4AF37" strokeWidth="3.5" strokeLinecap="round" />
               <path d="M 16 16 L 68 16 M 16 16 L 16 68" stroke={currentTheme.cardBorder} strokeWidth="2" strokeLinecap="round" />
               <path d="M 16 16 C 36 10, 52 16, 64 12 C 48 24, 48 40, 64 54 C 48 44, 34 54, 28 68 C 22 52, 12 52, 12 66 C 14 50, 12 34, 16 16 Z" fill="#D4AF37" fillOpacity="0.35" stroke="#D4AF37" strokeWidth="1.2" />
@@ -728,8 +728,8 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
           </div>
 
           {/* Left Decorative Festive Balloon Accent */}
-          <div className="absolute top-[280px] left-2.5 sm:left-4 pointer-events-none opacity-70 z-10">
-            <svg width="34" height="72" viewBox="0 0 50 110" fill="none" stroke={currentTheme.balloonStroke} strokeWidth="1.6" strokeLinecap="round">
+          <div className="absolute top-[280px] left-2 sm:left-3.5 pointer-events-none opacity-60 z-10">
+            <svg width="28" height="60" viewBox="0 0 50 110" fill="none" stroke={currentTheme.balloonStroke} strokeWidth="1.6" strokeLinecap="round">
               <ellipse cx="25" cy="30" rx="18" ry="24" fill={currentTheme.balloonFill} fillOpacity="0.45" />
               <path d="M 23 54 L 27 54 L 25 58 Z" fill={currentTheme.balloonStroke} />
               <path d="M 25 58 Q 28 75 22 88 Q 18 98 24 108" fill="none" />
@@ -737,21 +737,21 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
           </div>
 
           {/* Right Decorative Festive Balloon Accent */}
-          <div className="absolute top-[170px] right-2.5 sm:right-4 pointer-events-none opacity-70 z-10">
-            <svg width="36" height="76" viewBox="0 0 50 110" fill="none" stroke={currentTheme.balloonStroke} strokeWidth="1.6" strokeLinecap="round">
+          <div className="absolute top-[170px] right-2 sm:right-3.5 pointer-events-none opacity-60 z-10">
+            <svg width="28" height="60" viewBox="0 0 50 110" fill="none" stroke={currentTheme.balloonStroke} strokeWidth="1.6" strokeLinecap="round">
               <ellipse cx="25" cy="30" rx="19" ry="25" fill={currentTheme.balloonFill} fillOpacity="0.45" />
               <path d="M 23 55 L 27 55 L 25 59 Z" fill={currentTheme.balloonStroke} />
               <path d="M 25 59 Q 20 72 27 86 Q 31 96 26 108" fill="none" />
             </svg>
           </div>
 
-          {/* Top Header: School Name & Insignia (100% Centered, No Clipping) */}
-          <div className="relative z-10 w-full text-center pt-1 px-2">
+          {/* Top Header: School Name & Insignia (100% Centered, strictly inside bounds) */}
+          <div className="relative z-10 w-full text-center pt-1 px-4">
             {/* Top Royal Crest Insignia */}
             <div className="flex items-center justify-center gap-1.5 mb-0.5">
-              <span className="text-[#D4AF37] text-[10px] sm:text-xs">✦</span>
-              <span className="text-[#D4AF37] text-xs sm:text-sm font-bold">⚜</span>
-              <span className="text-[#D4AF37] text-[10px] sm:text-xs">✦</span>
+              <span className="text-[#D4AF37] text-[10px]">✦</span>
+              <span className="text-[#D4AF37] text-xs font-bold">⚜</span>
+              <span className="text-[#D4AF37] text-[10px]">✦</span>
             </div>
 
             <h2
@@ -760,14 +760,14 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
                 letterSpacing: lang === 'gu' ? '0.01em' : '0.025em',
                 color: currentTheme.titleColor,
               }}
-              className="text-[14px] sm:text-[17px] font-black uppercase leading-snug drop-shadow-2xs max-w-full mx-auto break-words text-center"
+              className="text-[13px] sm:text-[16px] font-black uppercase leading-snug drop-shadow-2xs max-w-[82%] mx-auto break-words text-center"
             >
               {displaySchoolName}
             </h2>
             {displayLocation && (
               <p
                 style={{ color: currentTheme.subtextColor }}
-                className="text-[9.5px] sm:text-[11px] font-extrabold tracking-widest uppercase mt-0.5 opacity-90 text-center"
+                className="text-[9px] sm:text-[10.5px] font-extrabold tracking-widest uppercase mt-0.5 opacity-90 text-center"
               >
                 {displayLocation}
               </p>
@@ -775,7 +775,7 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
 
             {/* Ornamental Gold Divider */}
             <div
-              className="w-36 sm:w-48 h-[1px] mx-auto mt-1"
+              className="w-32 sm:w-44 h-[1px] mx-auto mt-1"
               style={{ background: 'linear-gradient(90deg, transparent 0%, #D4AF37 50%, transparent 100%)' }}
             />
           </div>
@@ -786,7 +786,7 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
               <>
                 <div
                   style={{ color: currentTheme.subtextColor }}
-                  className="text-[14px] sm:text-[16px] font-extrabold tracking-[0.25em] uppercase leading-none opacity-85 text-center"
+                  className="text-[13px] sm:text-[15px] font-extrabold tracking-[0.25em] uppercase leading-none opacity-85 text-center"
                 >
                   ✦ happy ✦
                 </div>
@@ -796,7 +796,7 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
                     lineHeight: '0.95',
                     color: currentTheme.titleColor,
                   }}
-                  className="text-[40px] sm:text-[48px] font-bold italic tracking-tight drop-shadow-xs mt-0.5 text-center"
+                  className="text-[36px] sm:text-[44px] font-bold italic tracking-tight drop-shadow-xs mt-0.5 text-center"
                 >
                   Birthday
                 </div>
@@ -805,7 +805,7 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
               <>
                 <div
                   style={{ color: currentTheme.subtextColor }}
-                  className="text-[12px] sm:text-[14px] font-extrabold tracking-widest uppercase leading-none opacity-90 text-center"
+                  className="text-[11px] sm:text-[13px] font-extrabold tracking-widest uppercase leading-none opacity-90 text-center"
                 >
                   ✦ જન્મદિવસની ✦
                 </div>
@@ -815,7 +815,7 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
                     lineHeight: '1.15',
                     color: currentTheme.titleColor,
                   }}
-                  className="text-[26px] sm:text-[32px] font-black tracking-tight drop-shadow-xs mt-0.5 text-center"
+                  className="text-[24px] sm:text-[30px] font-black tracking-tight drop-shadow-xs mt-0.5 text-center"
                 >
                   હાર્દિક શુભકામનાઓ
                 </div>
@@ -823,11 +823,11 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
             )}
           </div>
 
-          {/* Center Visual: Large 165px-195px Circular Portrait with Royal Gold Bezel & Laurels */}
-          <div className="relative z-10 flex items-center justify-center my-auto py-1">
+          {/* Center Visual: Proportional Round Portrait with Royal Gold Bezel & Laurels */}
+          <div className="relative z-10 flex items-center justify-center my-auto py-0.5">
             {/* Left Golden Laurel Branch */}
-            <div className="absolute left-2 sm:left-6 pointer-events-none z-10 opacity-90">
-              <svg width="34" height="82" viewBox="0 0 50 120" fill="none" className="sm:w-[44px] sm:h-[105px]">
+            <div className="absolute left-6 sm:left-14 pointer-events-none z-10 opacity-90">
+              <svg width="28" height="68" viewBox="0 0 50 120" fill="none" className="sm:w-[36px] sm:h-[86px]">
                 <path d="M 38 116 C 28 85, 18 45, 34 8" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" fill="none" />
                 <path d="M 34 14 C 26 10, 18 18, 24 26 C 30 23, 32 18, 34 14 Z" fill="#D4AF37" />
                 <path d="M 31 34 C 20 28, 12 38, 20 46 C 26 43, 28 38, 31 34 Z" fill="#D4AF37" />
@@ -838,8 +838,8 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
             </div>
 
             {/* Right Golden Laurel Branch */}
-            <div className="absolute right-2 sm:right-6 pointer-events-none z-10 opacity-90 scale-x-[-1]">
-              <svg width="34" height="82" viewBox="0 0 50 120" fill="none" className="sm:w-[44px] sm:h-[105px]">
+            <div className="absolute right-6 sm:right-14 pointer-events-none z-10 opacity-90 scale-x-[-1]">
+              <svg width="28" height="68" viewBox="0 0 50 120" fill="none" className="sm:w-[36px] sm:h-[86px]">
                 <path d="M 38 116 C 28 85, 18 45, 34 8" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" fill="none" />
                 <path d="M 34 14 C 26 10, 18 18, 24 26 C 30 23, 32 18, 34 14 Z" fill="#D4AF37" />
                 <path d="M 31 34 C 20 28, 12 38, 20 46 C 26 43, 28 38, 31 34 Z" fill="#D4AF37" />
@@ -849,23 +849,23 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
               </svg>
             </div>
 
-            {/* Central Portrait Photo Frame with Multi-layer Gold Rim */}
+            {/* Central Portrait Photo Frame with Multi-layer Gold Rim (aspect-square shrink-0 prevents any squashing) */}
             <div
-              className="relative w-[155px] h-[155px] sm:w-[190px] sm:h-[190px] rounded-full p-1.5 sm:p-2 bg-gradient-to-tr from-[#FFE8A3] via-[#D4AF37] to-[#AA7C11] shadow-xl z-20 flex items-center justify-center"
+              className="relative w-[140px] h-[140px] sm:w-[170px] sm:h-[170px] aspect-square shrink-0 rounded-full p-1.5 sm:p-2 bg-gradient-to-tr from-[#FFE8A3] via-[#D4AF37] to-[#AA7C11] shadow-xl z-20 flex items-center justify-center"
             >
-              <div className="w-full h-full rounded-full overflow-hidden bg-white border-[3px] sm:border-[4px] border-white shadow-inner flex items-center justify-center">
+              <div className="w-full h-full rounded-full overflow-hidden bg-white border-[2.5px] sm:border-[3.5px] border-white shadow-inner flex items-center justify-center">
                 {photoPreview ? (
                   <img
                     src={photoPreview}
                     alt={person.name}
                     crossOrigin="anonymous"
-                    className={`w-full h-full rounded-full transition-all ${
+                    className={`w-full h-full rounded-full aspect-square ${
                       photoFit === 'contain' ? 'object-contain bg-white p-1' : 'object-cover'
                     }`}
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-stone-100 text-[#D4AF37]">
-                    <span className="text-4xl sm:text-5xl font-black">
+                    <span className="text-3xl sm:text-4xl font-black">
                       {person.name ? person.name.charAt(0) : '★'}
                     </span>
                   </div>
@@ -873,28 +873,28 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
               </div>
 
               {/* Star Medallion Badge */}
-              <div className="absolute -bottom-1.5 w-6 h-6 rounded-full bg-gradient-to-tr from-[#FFE8A3] via-[#D4AF37] to-[#AA7C11] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm z-30">
+              <div className="absolute -bottom-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-tr from-[#FFE8A3] via-[#D4AF37] to-[#AA7C11] text-white flex items-center justify-center text-[10px] sm:text-xs font-bold border-1.5 border-white shadow-xs z-30">
                 ★
               </div>
             </div>
           </div>
 
           {/* Student / Staff Name & Details */}
-          <div className="relative z-10 w-full text-center -mt-0.5 px-2">
+          <div className="relative z-10 w-full text-center my-0.5 px-2">
             <h3
               style={{
                 fontFamily: lang === 'gu' ? "'Anek Gujarati', Georgia, serif" : "'Playfair Display', Georgia, serif",
                 letterSpacing: '0.01em',
                 color: currentTheme.titleColor,
               }}
-              className="text-[18px] sm:text-[22px] font-black leading-tight break-words max-w-full mx-auto text-center"
+              className="text-[17px] sm:text-[20px] font-black leading-tight break-words max-w-full mx-auto text-center"
             >
               {person.name}
             </h3>
 
             <div
               style={{ color: currentTheme.subtextColor }}
-              className="flex items-center justify-center gap-1.5 sm:gap-2 text-[10.5px] sm:text-[12px] font-extrabold mt-0.5 opacity-90 flex-wrap text-center"
+              className="flex items-center justify-center gap-1.5 text-[10px] sm:text-[11.5px] font-extrabold mt-0.5 opacity-90 flex-wrap text-center"
             >
               <span className="px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/10 border border-[#D4AF37]/50 shadow-2xs">
                 🎂 {person.formattedDob}
@@ -921,50 +921,50 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
                 background: currentTheme.wishBg || 'rgba(255, 255, 255, 0.94)',
                 borderColor: '#D4AF37',
               }}
-              className="p-2 sm:p-3 rounded-2xl border-[1.5px] sm:border-2 shadow-sm max-w-full mx-auto"
+              className="p-2 sm:p-2.5 rounded-2xl border-[1.5px] shadow-xs max-w-full mx-auto"
             >
               {/* Ribbon Header */}
-              <div className="inline-block px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-[#D4AF37]/40 text-[9.5px] sm:text-[10.5px] font-extrabold tracking-wider uppercase mb-1">
+              <div className="inline-block px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-[#D4AF37]/40 text-[9px] sm:text-[10px] font-extrabold tracking-wider uppercase mb-0.5">
                 ✨ {lang === 'gu' ? 'જન્મદિવસ શુભકામના સંદેશ' : 'BIRTHDAY WISH'} ✨
               </div>
 
               <p
                 style={{
                   fontFamily: lang === 'gu' ? "'Anek Gujarati', sans-serif" : 'ui-sans-serif, system-ui, sans-serif',
-                  lineHeight: '1.5',
+                  lineHeight: '1.45',
                   color: currentTheme.textColor,
                 }}
-                className="text-[12.5px] sm:text-[14px] font-extrabold tracking-normal text-center"
+                className="text-[12px] sm:text-[13.5px] font-extrabold tracking-normal text-center"
               >
-                <span className="text-[#D4AF37] font-black mr-1 text-sm sm:text-base">❝</span>
+                <span className="text-[#D4AF37] font-black mr-1 text-xs sm:text-sm">❝</span>
                 {customWishText}
-                <span className="text-[#D4AF37] font-black ml-1 text-sm sm:text-base">❞</span>
+                <span className="text-[#D4AF37] font-black ml-1 text-xs sm:text-sm">❞</span>
               </p>
             </div>
           </div>
 
-          {/* Footer: Prominent School Family Blessing (શુભેચ્છામાં [શાળાનું નામ] પરિવાર) */}
+          {/* Footer: Prominent School Family Blessing (Comfortable clearance above bottom border) */}
           <div
             style={{ borderColor: '#D4AF37' }}
-            className="relative z-10 pt-1.5 border-t w-full text-center px-2"
+            className="relative z-10 pt-1 border-t w-full text-center px-2 pb-0.5"
           >
             <div
               style={{ fontFamily: "'Playfair Display', Georgia, serif", color: currentTheme.subtextColor }}
-              className="text-[11px] sm:text-[12px] font-bold italic mb-0.5 opacity-90 text-center"
+              className="text-[10.5px] sm:text-[11.5px] font-bold italic mb-0.5 opacity-90 text-center"
             >
               {lang === 'gu' ? 'શુભેચ્છક:' : 'With Warm Compliments:'}
             </div>
 
             <div
               style={{ color: currentTheme.titleColor }}
-              className="text-[13px] sm:text-[15px] font-black tracking-tight leading-snug drop-shadow-2xs text-center max-w-full mx-auto break-words"
+              className="text-[12.5px] sm:text-[14.5px] font-black tracking-tight leading-snug drop-shadow-2xs text-center max-w-full mx-auto break-words"
             >
               {schoolFamilyBlessing}
             </div>
 
             <div
               style={{ color: currentTheme.subtextColor }}
-              className="text-[9.5px] sm:text-[10.5px] font-bold opacity-80 mt-0.5 text-center"
+              className="text-[9px] sm:text-[10px] font-bold opacity-80 mt-0.5 text-center"
             >
               {lang === 'gu'
                 ? 'આચાર્યશ્રી, શિક્ષકગણ તથા સમસ્ત સ્ટાફ પરિવાર'

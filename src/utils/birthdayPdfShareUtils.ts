@@ -83,13 +83,76 @@ async function safeGetImageDataUrl(url?: string): Promise<string | null> {
       reader.readAsDataURL(blob);
     });
   } catch {
-    // If CORS is rejected by browser, return null so we can render clean fallback initials
     return null;
   }
 }
 
 /**
- * Standard html2canvas options for pixel-perfect A4 capture
+ * Loads an image from URL/DataURL and performs true center-crop to a 1:1 square
+ * on an offscreen HTML5 Canvas.
+ * This completely eliminates html2canvas stretching bugs with rectangular photos!
+ */
+async function getSquareCroppedImageDataUrl(
+  url?: string,
+  fit: 'cover' | 'contain' = 'cover',
+  targetSize = 600
+): Promise<string | null> {
+  const rawDataUrl = await safeGetImageDataUrl(url);
+  if (!rawDataUrl) return null;
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(rawDataUrl);
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Clear canvas with white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, targetSize, targetSize);
+
+        const nw = img.naturalWidth || img.width;
+        const nh = img.naturalHeight || img.height;
+
+        if (fit === 'contain') {
+          // Center contain with margin
+          const scale = Math.min((targetSize * 0.9) / nw, (targetSize * 0.9) / nh);
+          const drawW = nw * scale;
+          const drawH = nh * scale;
+          const dx = (targetSize - drawW) / 2;
+          const dy = (targetSize - drawH) / 2;
+          ctx.drawImage(img, dx, dy, drawW, drawH);
+        } else {
+          // True center-crop (cover): crops exact central square
+          const minDim = Math.min(nw, nh);
+          const sx = (nw - minDim) / 2;
+          const sy = (nh - minDim) / 2;
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
+        }
+
+        const squareDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        resolve(squareDataUrl);
+      } catch {
+        resolve(rawDataUrl);
+      }
+    };
+    img.onerror = () => resolve(rawDataUrl);
+    img.src = rawDataUrl;
+  });
+}
+
+/**
+ * Standard html2canvas options for pixel-perfect A4 capture (Exact 794px x 1123px = 210mm x 297mm)
  */
 const HTML2CANVAS_BIRTHDAY_OPTIONS = {
   scale: 2, // 300 DPI equivalent on A4
@@ -102,20 +165,20 @@ const HTML2CANVAS_BIRTHDAY_OPTIONS = {
   x: 0,
   y: 0,
   width: 794,
-  height: 1120,
+  height: 1123,
   windowWidth: 794,
-  windowHeight: 1120,
+  windowHeight: 1123,
 };
 
 /**
  * Constructs clean, high-resolution HTML for the Birthday Card
- * Designed specifically for 794px x 1120px A4 geometry.
+ * Designed specifically for 794px x 1123px exact A4 geometry with zero overflow and zero squashing.
  */
 function buildBirthdayCardA4Html(
   options: BirthdayCardPrintOptions,
   photoDataUrl: string | null
 ): string {
-  const { person, school, theme, customWishText, photoFit = 'cover', lang = 'gu' } = options;
+  const { person, school, theme, customWishText, lang = 'gu' } = options;
 
   const displaySchoolName = school.schoolName || (lang === 'gu' ? 'શ્રી પ્રાથમિક શાળા' : 'Primary School');
   const displayLocation = [school.taluka, school.district].filter(Boolean).join(', ');
@@ -127,9 +190,9 @@ function buildBirthdayCardA4Html(
 
   const studentInitial = person.name ? person.name.charAt(0).toUpperCase() : '★';
 
-  // Corner Victorian filigree SVG snippet for 4 corners (100% SVG path/circle, zero textPath)
+  // Corner Victorian filigree SVG snippet for 4 corners (Clean 52px, safely inside borders without text overlap)
   const cornerFiligree = (rotateDeg: number, top?: string, left?: string, right?: string, bottom?: string) => `
-    <svg width="84" height="84" viewBox="0 0 100 100" fill="none" style="
+    <svg width="54" height="54" viewBox="0 0 100 100" fill="none" style="
       position: absolute;
       ${top ? `top: ${top};` : ''}
       ${left ? `left: ${left};` : ''}
@@ -146,14 +209,12 @@ function buildBirthdayCardA4Html(
       <circle cx="16" cy="16" r="3" fill="${theme.cardBorder}"/>
       <circle cx="82" cy="8" r="3" fill="#D4AF37"/>
       <circle cx="8" cy="82" r="3" fill="#D4AF37"/>
-      <circle cx="68" cy="16" r="2.5" fill="${theme.cardBorder}"/>
-      <circle cx="16" cy="68" r="2.5" fill="${theme.cardBorder}"/>
     </svg>
   `;
 
-  // Classical Victory Laurel Branch flanking the portrait
+  // Classical Victory Laurel Branch flanking the portrait (52px x 120px)
   const laurelBranch = (isFlipped: boolean) => `
-    <svg width="68" height="155" viewBox="0 0 50 120" fill="none" style="
+    <svg width="52" height="120" viewBox="0 0 50 120" fill="none" style="
       transform: ${isFlipped ? 'scaleX(-1)' : 'none'};
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
     ">
@@ -173,16 +234,11 @@ function buildBirthdayCardA4Html(
   return `
     <div style="
       width: 794px;
-      height: 1120px;
-      max-height: 1120px;
+      height: 1123px;
+      max-height: 1123px;
       box-sizing: border-box;
       background: ${theme.bgGradient};
       color: ${theme.textColor};
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: center;
       position: relative;
       overflow: hidden;
       font-family: ${GUJARATI_FONT_STACK};
@@ -192,12 +248,12 @@ function buildBirthdayCardA4Html(
       <!-- 1. Outer Royal Solid Frame -->
       <div style="
         position: absolute;
-        top: 20px;
-        left: 20px;
-        right: 20px;
-        bottom: 20px;
-        border: 4px solid ${theme.cardBorder};
-        border-radius: 20px;
+        top: 18px;
+        left: 18px;
+        right: 18px;
+        bottom: 18px;
+        border: 3.5px solid ${theme.cardBorder};
+        border-radius: 18px;
         pointer-events: none;
         box-sizing: border-box;
       "></div>
@@ -205,12 +261,12 @@ function buildBirthdayCardA4Html(
       <!-- 2. Middle Royal Gold Inset Accent Line -->
       <div style="
         position: absolute;
-        top: 27px;
-        left: 27px;
-        right: 27px;
-        bottom: 27px;
-        border: 2px solid #D4AF37;
-        border-radius: 15px;
+        top: 24px;
+        left: 24px;
+        right: 24px;
+        bottom: 24px;
+        border: 1.5px solid #D4AF37;
+        border-radius: 14px;
         pointer-events: none;
         box-sizing: border-box;
       "></div>
@@ -218,384 +274,401 @@ function buildBirthdayCardA4Html(
       <!-- 3. Inner Royal Delicate Hairline Frame -->
       <div style="
         position: absolute;
-        top: 33px;
-        left: 33px;
-        right: 33px;
-        bottom: 33px;
+        top: 30px;
+        left: 30px;
+        right: 30px;
+        bottom: 30px;
         border: 1px solid ${theme.sealBorder};
-        border-radius: 11px;
+        border-radius: 10px;
         pointer-events: none;
-        opacity: 0.75;
+        opacity: 0.65;
         box-sizing: border-box;
       "></div>
 
-      <!-- 4 Victorian Royal Corner Filigrees -->
+      <!-- 4 Victorian Royal Corner Filigrees (Neatly tucked inside corners, zero text collision) -->
       ${cornerFiligree(0, '22px', '22px')}
       ${cornerFiligree(90, '22px', undefined, '22px')}
       ${cornerFiligree(180, undefined, undefined, '22px', '22px')}
       ${cornerFiligree(270, undefined, '22px', undefined, '22px')}
 
       <!-- Left Festive Gold-accented Balloon Accent -->
-      <div style="position: absolute; top: 400px; left: 28px; opacity: 0.75; pointer-events: none;">
-        <svg width="60" height="120" viewBox="0 0 50 110" fill="none" stroke="${theme.balloonStroke}" stroke-width="2" stroke-linecap="round">
-          <ellipse cx="25" cy="30" rx="20" ry="26" fill="${theme.balloonFill}" fill-opacity="0.6" />
-          <path d="M 23 56 L 27 56 L 25 60 Z" fill="${theme.balloonStroke}" />
-          <path d="M 25 60 Q 30 80 20 96 Q 15 104 22 110" fill="none" stroke-width="1.6" />
+      <div style="position: absolute; top: 380px; left: 28px; opacity: 0.65; pointer-events: none;">
+        <svg width="50" height="100" viewBox="0 0 50 110" fill="none" stroke="${theme.balloonStroke}" stroke-width="1.8" stroke-linecap="round">
+          <ellipse cx="25" cy="30" rx="19" ry="25" fill="${theme.balloonFill}" fill-opacity="0.6" />
+          <path d="M 23 55 L 27 55 L 25 59 Z" fill="${theme.balloonStroke}" />
+          <path d="M 25 59 Q 30 78 20 94 Q 15 102 22 108" fill="none" stroke-width="1.5" />
         </svg>
       </div>
 
       <!-- Right Festive Gold-accented Balloon Accent -->
-      <div style="position: absolute; top: 290px; right: 28px; opacity: 0.75; pointer-events: none;">
-        <svg width="60" height="120" viewBox="0 0 50 110" fill="none" stroke="${theme.balloonStroke}" stroke-width="2" stroke-linecap="round">
-          <ellipse cx="25" cy="30" rx="20" ry="26" fill="${theme.balloonFill}" fill-opacity="0.6" />
-          <path d="M 23 56 L 27 56 L 25 60 Z" fill="${theme.balloonStroke}" />
-          <path d="M 25 60 Q 18 78 28 94 Q 32 103 24 110" fill="none" stroke-width="1.6" />
+      <div style="position: absolute; top: 270px; right: 28px; opacity: 0.65; pointer-events: none;">
+        <svg width="50" height="100" viewBox="0 0 50 110" fill="none" stroke="${theme.balloonStroke}" stroke-width="1.8" stroke-linecap="round">
+          <ellipse cx="25" cy="30" rx="19" ry="25" fill="${theme.balloonFill}" fill-opacity="0.6" />
+          <path d="M 23 55 L 27 55 L 25 59 Z" fill="${theme.balloonStroke}" />
+          <path d="M 25 59 Q 18 76 28 92 Q 32 101 24 108" fill="none" stroke-width="1.5" />
         </svg>
       </div>
 
-      <!-- Header: School Name & Location (Generous Top Clearance, No Printer Badge Clashing) -->
-      <div style="text-align: center; width: 100%; position: relative; z-index: 2; padding-top: 14px;">
-        <!-- Top Royal Insignia Crest -->
-        <div style="
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          margin-bottom: 4px;
-        ">
-          <span style="color: #D4AF37; font-size: 15px;">✦</span>
-          <span style="color: #D4AF37; font-size: 22px; line-height: 1;">⚜</span>
-          <span style="color: #D4AF37; font-size: 15px;">✦</span>
-        </div>
-
-        <h1 style="
-          margin: 0;
-          font-size: 27px;
-          font-weight: 900;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
-          line-height: 1.25;
-          color: ${theme.titleColor};
-          display: block;
-          max-width: 660px;
-          margin-left: auto;
-          margin-right: auto;
-        ">${displaySchoolName}</h1>
-
-        ${displayLocation ? `
-          <div style="
-            font-size: 13.5px;
-            font-weight: 800;
-            color: ${theme.subtextColor};
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            opacity: 0.95;
-            margin-top: 3px;
-          ">${displayLocation}</div>
-        ` : ''}
-
-        <!-- Ornamental Tapered Gold Divider Line -->
-        <div style="
-          width: 260px;
-          height: 1.5px;
-          background: linear-gradient(90deg, transparent 0%, #D4AF37 50%, transparent 100%);
-          margin: 7px auto 0 auto;
-        "></div>
-      </div>
-
-      <!-- Birthday Salutation Header -->
-      <div style="text-align: center; width: 100%; position: relative; z-index: 2; margin-top: 0px;">
-        ${lang === 'en' ? `
-          <div style="
-            font-size: 17px;
-            font-weight: 800;
-            letter-spacing: 7px;
-            text-transform: uppercase;
-            color: ${theme.subtextColor};
-            margin-bottom: 2px;
-            opacity: 0.92;
-          ">✦ HAPPY ✦</div>
-          <div style="
-            font-family: 'Playfair Display', Georgia, serif;
-            font-size: 64px;
-            font-style: italic;
-            font-weight: 700;
-            line-height: 1;
-            color: ${theme.titleColor};
-            letter-spacing: -0.5px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.06);
-          ">Birthday</div>
-        ` : `
-          <div style="
-            font-size: 18px;
-            font-weight: 800;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: ${theme.subtextColor};
-            margin-bottom: 2px;
-            opacity: 0.92;
-          ">✦ જન્મદિવસની ✦</div>
-          <div style="
-            font-size: 46px;
-            font-weight: 900;
-            line-height: 1.15;
-            color: ${theme.titleColor};
-            letter-spacing: -0.5px;
-          ">હાર્દિક શુભકામનાઓ</div>
-        `}
-      </div>
-
-      <!-- Center Portrait Section (Prominent, High-Resolution 320px with Royal Golden Bezel & Victory Laurels) -->
+      <!-- ========================================================================= -->
+      <!-- INNER SAFE CONTENT CONTAINER (Strictly padded safely away from all borders) -->
+      <!-- ========================================================================= -->
       <div style="
         position: relative;
         z-index: 2;
         width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 44px 50px 36px 50px;
         display: flex;
+        flex-direction: column;
+        justify-content: space-between;
         align-items: center;
-        justify-content: center;
-        margin: 6px 0;
       ">
-        <!-- Left Classical Golden Victory Laurel Branch -->
-        <div style="position: absolute; left: 140px; pointer-events: none; z-index: 4;">
-          ${laurelBranch(false)}
+        <!-- 1. Header: School Name & Location (Cleanly centered, never touches corner filigrees) -->
+        <div style="text-align: center; width: 100%;">
+          <!-- Top Royal Insignia Crest -->
+          <div style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 3px;
+          ">
+            <span style="color: #D4AF37; font-size: 13px;">✦</span>
+            <span style="color: #D4AF37; font-size: 18px; line-height: 1;">⚜</span>
+            <span style="color: #D4AF37; font-size: 13px;">✦</span>
+          </div>
+
+          <h1 style="
+            margin: 0;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            line-height: 1.25;
+            color: ${theme.titleColor};
+            display: block;
+            max-width: 530px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+          ">${displaySchoolName}</h1>
+
+          ${displayLocation ? `
+            <div style="
+              font-size: 12.5px;
+              font-weight: 800;
+              color: ${theme.subtextColor};
+              letter-spacing: 2px;
+              text-transform: uppercase;
+              opacity: 0.95;
+              margin-top: 3px;
+            ">${displayLocation}</div>
+          ` : ''}
+
+          <!-- Ornamental Tapered Gold Divider Line -->
+          <div style="
+            width: 220px;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent 0%, #D4AF37 50%, transparent 100%);
+            margin: 6px auto 0 auto;
+          "></div>
         </div>
 
-        <!-- Right Classical Golden Victory Laurel Branch -->
-        <div style="position: absolute; right: 140px; pointer-events: none; z-index: 4;">
-          ${laurelBranch(true)}
+        <!-- 2. Birthday Salutation Header -->
+        <div style="text-align: center; width: 100%;">
+          ${lang === 'en' ? `
+            <div style="
+              font-size: 15px;
+              font-weight: 800;
+              letter-spacing: 6px;
+              text-transform: uppercase;
+              color: ${theme.subtextColor};
+              margin-bottom: 1px;
+              opacity: 0.92;
+            ">✦ HAPPY ✦</div>
+            <div style="
+              font-family: 'Playfair Display', Georgia, serif;
+              font-size: 54px;
+              font-style: italic;
+              font-weight: 700;
+              line-height: 1;
+              color: ${theme.titleColor};
+              letter-spacing: -0.5px;
+              text-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            ">Birthday</div>
+          ` : `
+            <div style="
+              font-size: 16px;
+              font-weight: 800;
+              letter-spacing: 3px;
+              text-transform: uppercase;
+              color: ${theme.subtextColor};
+              margin-bottom: 2px;
+              opacity: 0.92;
+            ">✦ જન્મદિવસની ✦</div>
+            <div style="
+              font-size: 38px;
+              font-weight: 900;
+              line-height: 1.15;
+              color: ${theme.titleColor};
+              letter-spacing: -0.5px;
+            ">હાર્દિક શુભકામનાઓ</div>
+          `}
         </div>
 
-        <!-- Central Portrait Photo (Large 320px Diameter with Multi-layer Gold Rim) -->
+        <!-- 3. Center Portrait Section (Guaranteed 100% Round Circle, Never Squashed or Stretched) -->
         <div style="
           position: relative;
-          z-index: 3;
-          width: 320px;
-          height: 320px;
-          border-radius: 50%;
-          padding: 8px;
-          background: linear-gradient(135deg, #FFE8A3 0%, #D4AF37 35%, #FFF6D6 60%, #AA7C11 100%);
-          box-shadow: 0 16px 36px rgba(0,0,0,0.22);
+          width: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
+          margin: 4px 0;
         ">
+          <!-- Left Classical Golden Victory Laurel Branch -->
+          <div style="position: absolute; left: 205px; pointer-events: none; z-index: 4;">
+            ${laurelBranch(false)}
+          </div>
+
+          <!-- Right Classical Golden Victory Laurel Branch -->
+          <div style="position: absolute; right: 205px; pointer-events: none; z-index: 4;">
+            ${laurelBranch(true)}
+          </div>
+
+          <!-- Central Portrait Photo (Strictly 236px x 236px, flex-shrink: 0, guaranteed circle) -->
           <div style="
-            width: 100%;
-            height: 100%;
+            position: relative;
+            z-index: 3;
+            width: 236px;
+            height: 236px;
+            min-width: 236px;
+            min-height: 236px;
+            max-width: 236px;
+            max-height: 236px;
+            flex-shrink: 0;
             border-radius: 50%;
-            overflow: hidden;
-            background: #ffffff;
-            border: 5px solid #ffffff;
+            padding: 6px;
+            box-sizing: border-box;
+            background: linear-gradient(135deg, #FFE8A3 0%, #D4AF37 35%, #FFF6D6 60%, #AA7C11 100%);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.18);
             display: flex;
             align-items: center;
             justify-content: center;
           ">
-            ${photoDataUrl ? `
-              <img
-                src="${photoDataUrl}"
-                alt="${person.name}"
-                style="
+            <div style="
+              width: 100%;
+              height: 100%;
+              border-radius: 50%;
+              overflow: hidden;
+              background: #ffffff;
+              border: 4px solid #ffffff;
+              box-sizing: border-box;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            ">
+              ${photoDataUrl ? `
+                <img
+                  src="${photoDataUrl}"
+                  alt="${person.name}"
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 50%;
+                    display: block;
+                  "
+                />
+              ` : `
+                <div style="
                   width: 100%;
                   height: 100%;
-                  border-radius: 50%;
-                  object-fit: ${photoFit};
-                  display: block;
-                "
-              />
-            ` : `
-              <div style="
-                width: 100%;
-                height: 100%;
-                background: #F8FAFC;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                color: #64748B;
-              ">
-                <span style="font-size: 105px; font-weight: 900; color: #D4AF37;">${studentInitial}</span>
-              </div>
-            `}
-          </div>
+                  background: #F8FAFC;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: #64748B;
+                ">
+                  <span style="font-size: 80px; font-weight: 900; color: #D4AF37;">${studentInitial}</span>
+                </div>
+              `}
+            </div>
 
-          <!-- Star Medallion at Bottom Apex -->
+            <!-- Star Medallion at Bottom Apex -->
+            <div style="
+              position: absolute;
+              bottom: -6px;
+              background: linear-gradient(135deg, #FFE8A3 0%, #D4AF37 50%, #AA7C11 100%);
+              color: #ffffff;
+              width: 28px;
+              height: 28px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 15px;
+              border: 2px solid #ffffff;
+              box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+              z-index: 5;
+            ">
+              ★
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Person Name & Identity Badges -->
+        <div style="text-align: center; width: 100%; margin: 2px 0;">
+          <h2 style="
+            margin: 0;
+            font-size: 28px;
+            font-weight: 900;
+            line-height: 1.2;
+            color: ${theme.titleColor};
+            letter-spacing: 0.5px;
+          ">${person.name}</h2>
+
+          <!-- Identity Badges -->
           <div style="
-            position: absolute;
-            bottom: -8px;
-            background: linear-gradient(135deg, #FFE8A3 0%, #D4AF37 50%, #AA7C11 100%);
-            color: #ffffff;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
+            margin-top: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 17px;
-            border: 2.5px solid #ffffff;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            z-index: 5;
+            gap: 10px;
+            flex-wrap: wrap;
           ">
-            ★
+            <div style="
+              background: ${theme.badgeBg};
+              color: ${theme.badgeText};
+              border: 1.5px solid #D4AF37;
+              border-radius: 9999px;
+              padding: 4px 16px;
+              font-size: 13.5px;
+              font-weight: 800;
+              letter-spacing: 0.3px;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            ">
+              🎂 ${person.formattedDob}
+            </div>
+            ${person.standard ? `
+              <div style="
+                background: ${theme.badgeBg};
+                color: ${theme.badgeText};
+                border: 1.5px solid #D4AF37;
+                border-radius: 9999px;
+                padding: 4px 16px;
+                font-size: 13.5px;
+                font-weight: 800;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+              ">
+                🎓 ${lang === 'gu' ? `ધોરણ ${person.standard}${person.section ? `-${person.section}` : ''}` : `Class ${person.standard}`}
+              </div>
+            ` : ''}
+            ${person.designation ? `
+              <div style="
+                background: ${theme.badgeBg};
+                color: ${theme.badgeText};
+                border: 1.5px solid #D4AF37;
+                border-radius: 9999px;
+                padding: 4px 16px;
+                font-size: 13.5px;
+                font-weight: 800;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+              ">
+                💼 ${person.designation}
+              </div>
+            ` : ''}
           </div>
         </div>
-      </div>
 
-      <!-- Person Name & Identity Badges -->
-      <div style="text-align: center; width: 100%; position: relative; z-index: 2; margin-top: 4px;">
-        <h2 style="
-          margin: 0;
-          font-size: 34px;
-          font-weight: 900;
-          line-height: 1.2;
-          color: ${theme.titleColor};
-          letter-spacing: 0.3px;
-        ">${person.name}</h2>
-
-        <!-- Identity Badges -->
+        <!-- 5. Wish Message Plaque (Large, Bold Typography, Well-spaced) -->
         <div style="
-          margin-top: 7px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          flex-wrap: wrap;
+          width: 100%;
+          max-width: 590px;
+          background: ${theme.wishBg || 'rgba(255, 255, 255, 0.94)'};
+          border: 1.8px solid #D4AF37;
+          border-radius: 18px;
+          padding: 14px 26px 16px 26px;
+          box-sizing: border-box;
+          text-align: center;
+          margin: 4px 0;
+          box-shadow: 0 8px 22px rgba(0,0,0,0.05);
         ">
+          <!-- Top Ornamental Ribbon Badge -->
           <div style="
+            display: inline-block;
             background: ${theme.badgeBg};
             color: ${theme.badgeText};
-            border: 1.5px solid #D4AF37;
+            border: 1px solid #D4AF37;
             border-radius: 9999px;
-            padding: 5px 20px;
-            font-size: 14.5px;
+            padding: 3px 14px;
+            font-size: 11.5px;
             font-weight: 800;
-            letter-spacing: 0.3px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
           ">
-            🎂 ${person.formattedDob}
+            ✨ ${lang === 'gu' ? 'જન્મદિવસ શુભકામના સંદેશ' : 'HEARTFELT BIRTHDAY WISHES'} ✨
           </div>
-          ${person.standard ? `
-            <div style="
-              background: ${theme.badgeBg};
-              color: ${theme.badgeText};
-              border: 1.5px solid #D4AF37;
-              border-radius: 9999px;
-              padding: 5px 20px;
-              font-size: 14.5px;
-              font-weight: 800;
-              box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-            ">
-              🎓 ${lang === 'gu' ? `ધોરણ ${person.standard}${person.section ? `-${person.section}` : ''}` : `Class ${person.standard}`}
-            </div>
-          ` : ''}
-          ${person.designation ? `
-            <div style="
-              background: ${theme.badgeBg};
-              color: ${theme.badgeText};
-              border: 1.5px solid #D4AF37;
-              border-radius: 9999px;
-              padding: 5px 20px;
-              font-size: 14.5px;
-              font-weight: 800;
-              box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-            ">
-              💼 ${person.designation}
-            </div>
-          ` : ''}
-        </div>
-      </div>
 
-      <!-- Wish Message Plaque (Large, Bold 24px/22px Typography with Golden Accent Quotes) -->
-      <div style="
-        position: relative;
-        z-index: 2;
-        width: 100%;
-        max-width: 690px;
-        background: ${theme.wishBg || 'rgba(255, 255, 255, 0.94)'};
-        border: 2px solid #D4AF37;
-        border-radius: 22px;
-        padding: 20px 34px 22px 34px;
-        box-sizing: border-box;
-        text-align: center;
-        margin: 6px 0;
-        box-shadow: 0 10px 28px rgba(0,0,0,0.06);
-      ">
-        <!-- Top Ornamental Ribbon Badge -->
-        <div style="
-          display: inline-block;
-          background: ${theme.badgeBg};
-          color: ${theme.badgeText};
-          border: 1px solid #D4AF37;
-          border-radius: 9999px;
-          padding: 4px 18px;
-          font-size: 13px;
-          font-weight: 800;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          margin-bottom: 10px;
-        ">
-          ✨ ${lang === 'gu' ? 'જન્મદિવસ શુભકામના સંદેશ' : 'HEARTFELT BIRTHDAY WISHES'} ✨
+          <p style="
+            margin: 0;
+            font-size: ${lang === 'gu' ? '21px' : '19.5px'};
+            font-weight: 800;
+            line-height: 1.55;
+            color: ${theme.textColor};
+            letter-spacing: 0.2px;
+          ">
+            <span style="color: #D4AF37; font-size: 26px; font-weight: 900; line-height: 0; vertical-align: -4px; margin-right: 4px;">❝</span>
+            ${customWishText}
+            <span style="color: #D4AF37; font-size: 26px; font-weight: 900; line-height: 0; vertical-align: -4px; margin-left: 4px;">❞</span>
+          </p>
         </div>
 
-        <p style="
-          margin: 0;
-          font-size: ${lang === 'gu' ? '24px' : '22px'};
-          font-weight: 800;
-          line-height: 1.65;
-          color: ${theme.textColor};
-          letter-spacing: 0.25px;
-        ">
-          <span style="color: #D4AF37; font-size: 32px; font-weight: 900; line-height: 0; vertical-align: -6px; margin-right: 6px;">❝</span>
-          ${customWishText}
-          <span style="color: #D4AF37; font-size: 32px; font-weight: 900; line-height: 0; vertical-align: -6px; margin-left: 6px;">❞</span>
-        </p>
-      </div>
-
-      <!-- Regards & School Family Blessing Footer -->
-      <div style="
-        position: relative;
-        z-index: 2;
-        width: 100%;
-        text-align: center;
-        padding-top: 10px;
-        margin-bottom: 6px;
-      ">
-        <!-- Tapered Gold Divider Line -->
+        <!-- 6. Regards & School Family Blessing Footer (Comfortably clear of bottom border) -->
         <div style="
-          width: 320px;
-          height: 1.5px;
-          background: linear-gradient(90deg, transparent 0%, #D4AF37 50%, transparent 100%);
-          margin: 0 auto 10px auto;
-        "></div>
-
-        <div style="
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 15px;
-          font-style: italic;
-          font-weight: 700;
-          color: ${theme.subtextColor};
-          margin-bottom: 3px;
+          width: 100%;
+          text-align: center;
+          margin-top: 4px;
+          padding-bottom: 4px;
         ">
-          ${lang === 'gu' ? 'શુભેચ્છક:' : 'With Warm Compliments:'}
-        </div>
+          <!-- Tapered Gold Divider Line -->
+          <div style="
+            width: 240px;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent 0%, #D4AF37 50%, transparent 100%);
+            margin: 0 auto 8px auto;
+          "></div>
 
-        <div style="
-          font-size: 23px;
-          font-weight: 900;
-          line-height: 1.25;
-          color: ${theme.titleColor};
-          letter-spacing: 0.3px;
-        ">
-          ${schoolFamilyBlessing}
-        </div>
+          <div style="
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 13.5px;
+            font-style: italic;
+            font-weight: 700;
+            color: ${theme.subtextColor};
+            margin-bottom: 2px;
+          ">
+            ${lang === 'gu' ? 'શુભેચ્છક:' : 'With Warm Compliments:'}
+          </div>
 
-        <div style="
-          font-size: 14px;
-          font-weight: 700;
-          color: ${theme.subtextColor};
-          margin-top: 3px;
-          opacity: 0.92;
-        ">
-          ${lang === 'gu' ? 'આચાર્યશ્રી, શિક્ષકગણ તથા સમસ્ત સ્ટાફ પરિવાર' : 'Principal, Teachers & Entire Staff'}
+          <div style="
+            font-size: 20px;
+            font-weight: 900;
+            line-height: 1.25;
+            color: ${theme.titleColor};
+            letter-spacing: 0.3px;
+          ">
+            ${schoolFamilyBlessing}
+          </div>
+
+          <div style="
+            font-size: 12.5px;
+            font-weight: 700;
+            color: ${theme.subtextColor};
+            margin-top: 2px;
+            opacity: 0.92;
+          ">
+            ${lang === 'gu' ? 'આચાર્યશ્રી, શિક્ષકગણ તથા સમસ્ત સ્ટાફ પરિવાર' : 'Principal, Teachers & Entire Staff'}
+          </div>
         </div>
       </div>
     </div>
@@ -607,7 +680,8 @@ function buildBirthdayCardA4Html(
  */
 async function renderCardToCanvas(options: BirthdayCardPrintOptions): Promise<HTMLCanvasElement> {
   await waitForFontsToRender();
-  const photoDataUrl = await safeGetImageDataUrl(options.photoUrl);
+  // Guarantee photo is cropped to an exact 1:1 square on an offscreen canvas to avoid html2canvas stretching
+  const photoDataUrl = await getSquareCroppedImageDataUrl(options.photoUrl, options.photoFit);
 
   const container = document.createElement('div');
   container.id = 'vidyalayam_birthday_pdf_container';
@@ -617,7 +691,7 @@ async function renderCardToCanvas(options: BirthdayCardPrintOptions): Promise<HT
   container.style.zIndex = '-99999';
   container.style.pointerEvents = 'none';
   container.style.width = '794px';
-  container.style.height = '1120px';
+  container.style.height = '1123px';
   container.style.overflow = 'hidden';
   container.style.backgroundColor = '#ffffff';
 
