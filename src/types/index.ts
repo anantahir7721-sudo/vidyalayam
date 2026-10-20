@@ -490,6 +490,7 @@ export interface SchoolsStorageSummary {
 export interface NativeAndroidBridge {
   isAndroidApp: () => boolean;
   printHtml: (html: string, jobName: string) => void;
+  print?: () => void;
   saveBase64Pdf: (base64Data: string, filename: string, mimeType: string) => void;
   downloadBase64Pdf?: (base64Data: string, filename: string, mimeType: string) => void;
   shareBase64Pdf?: (base64Data: string, filename: string, mimeType: string, shareText?: string) => void;

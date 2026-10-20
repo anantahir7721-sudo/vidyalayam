@@ -63,16 +63,63 @@ export function printHtmlDocument(html: string, jobTitle: string = 'Vidyalayam_D
   // 1. Android APK Native Path (Native PrintManager sheet)
   if (isAndroidNativeApp()) {
     try {
-      window.AndroidBridge!.printHtml(html, cleanTitle);
-      return;
+      if (typeof window.AndroidBridge?.printHtml === 'function') {
+        window.AndroidBridge.printHtml(html, cleanTitle);
+        return;
+      } else if (typeof window.AndroidBridge?.print === 'function') {
+        window.AndroidBridge.print();
+        return;
+      }
     } catch (err) {
       console.warn('[printHtmlDocument] AndroidBridge print failed, falling back:', err);
     }
   }
 
-  // 2. High-Reliability In-Page Print Architecture:
-  // Mounts a dedicated print portal with @media print CSS rules and calls window.print().
-  // This is NEVER suppressed by browser popup blockers or zero-pixel iframe security policies.
+  // 2. High-Reliability Clean Off-screen IFrame Print (Guaranteed across all browsers & mobile devices)
+  try {
+    const existingFrame = document.getElementById('vidyalayam_print_iframe');
+    if (existingFrame && document.body.contains(existingFrame)) {
+      document.body.removeChild(existingFrame);
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'vidyalayam_print_iframe';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          console.warn('[printHtmlDocument] iframe print error:', e);
+        } finally {
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 30000);
+        }
+      }, 400);
+      return;
+    }
+  } catch (iframeErr) {
+    console.warn('[printHtmlDocument] IFrame print failed, trying direct portal print:', iframeErr);
+  }
+
+  // 3. Fallback: In-Page Print Portal without destroying flexbox styles
   try {
     let printContainer = document.getElementById('vidyalayam_print_portal');
     if (!printContainer) {
@@ -97,11 +144,9 @@ export function printHtmlDocument(html: string, jobTitle: string = 'Vidyalayam_D
             display: none !important;
             visibility: hidden !important;
           }
-          #vidyalayam_print_portal, #vidyalayam_print_portal * {
+          #vidyalayam_print_portal {
             display: block !important;
             visibility: visible !important;
-          }
-          #vidyalayam_print_portal {
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
@@ -131,29 +176,10 @@ export function printHtmlDocument(html: string, jobTitle: string = 'Vidyalayam_D
     window.addEventListener('afterprint', cleanup, { once: true });
     setTimeout(cleanup, 25000);
 
-    // Call window.print() directly inside user interaction turn
     window.print();
     return;
   } catch (directPrintErr) {
-    console.warn('[printHtmlDocument] Direct print error, falling back to popup/iframe:', directPrintErr);
-  }
-
-  // 3. Fallback: Window Popup / Iframe with visible bounds
-  try {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        try {
-          printWindow.print();
-        } catch (e) {}
-      }, 300);
-    }
-  } catch (popErr) {
-    console.error('[printHtmlDocument] All print methods failed:', popErr);
+    console.warn('[printHtmlDocument] Direct print error:', directPrintErr);
   }
 }
 
@@ -175,11 +201,12 @@ export async function downloadPdfFile(
   // 1. Android APK Native Path
   if (isAndroidNativeApp()) {
     try {
-      const base64Data = typeof source === 'string' ? source : await blobToBase64(source);
+      const rawBase64 = typeof source === 'string' ? source : await blobToBase64(source);
+      const cleanBase64 = rawBase64.includes(',') ? rawBase64.split(',')[1].trim() : rawBase64.trim();
       if (window.AndroidBridge!.downloadBase64Pdf) {
-        window.AndroidBridge!.downloadBase64Pdf(base64Data, cleanFilename, 'application/pdf');
+        window.AndroidBridge!.downloadBase64Pdf(cleanBase64, cleanFilename, 'application/pdf');
       } else {
-        window.AndroidBridge!.saveBase64Pdf(base64Data, cleanFilename, 'application/pdf');
+        window.AndroidBridge!.saveBase64Pdf(cleanBase64, cleanFilename, 'application/pdf');
       }
       return { success: true, method: 'android_native_download' };
     } catch (err) {
@@ -191,7 +218,8 @@ export async function downloadPdfFile(
   try {
     let blob: Blob;
     if (typeof source === 'string') {
-      const byteCharacters = atob(source);
+      const raw = source.includes(',') ? source.split(',')[1].trim() : source.trim();
+      const byteCharacters = atob(raw);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -208,7 +236,7 @@ export async function downloadPdfFile(
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
     return { success: true, method: 'browser_download' };
   } catch (err) {
     console.error('[downloadPdfFile] Browser download failed:', err);

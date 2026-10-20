@@ -26,9 +26,14 @@ import {
   getUpcomingBirthdays,
   checkAndDispatchBirthdayNotification,
 } from '../services/birthdayService';
-import { BirthdayCard } from './BirthdayCard';
+import { BirthdayCard, BIRTHDAY_CARD_THEMES } from './BirthdayCard';
 import { School, Student, Staff } from '../types';
 import { downloadPdfFile, printHtmlDocument } from '../utils/printAndPdfUtils';
+import {
+  downloadAllBirthdayCardsPdf,
+  printAllBirthdayCards,
+  BirthdayCardPrintOptions,
+} from '../utils/birthdayPdfShareUtils';
 
 interface BirthdayTabProps {
   school: School;
@@ -104,9 +109,6 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
   const [showAssemblyModal, setShowAssemblyModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Hidden container for multi-card batch PDF generation
-  const batchContainerRef = useRef<HTMLDivElement>(null);
-
   // Trigger automated notification dispatch for today's birthdays on load
   useEffect(() => {
     if (school && school.id) {
@@ -181,59 +183,38 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
     );
   }, [selectedPersonId, todayBirthdays, upcomingBirthdays]);
 
+  // Helper to build options list for today's birthdays
+  const getTodayCardsPrintOptions = (): BirthdayCardPrintOptions[] => {
+    return todayBirthdays.map((person) => {
+      let hash = 0;
+      const str = person.id || person.name || 'default';
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+      }
+      const theme = BIRTHDAY_CARD_THEMES[hash % BIRTHDAY_CARD_THEMES.length];
+      const customWishText = customWishes[person.id] || person.wish;
+      const photoUrl = customPhotos[person.id] || person.customPhotoUrl || person.photoUrl;
+
+      return {
+        person,
+        school,
+        theme,
+        customWishText,
+        photoUrl,
+        photoFit: 'cover' as const,
+        lang,
+      };
+    });
+  };
+
   // Batch Export: Download All Today's Cards in a Single Multi-Page PDF (Exact A4)
   const handleDownloadAllCardsInOnePdf = async () => {
     if (todayBirthdays.length === 0 || isGeneratingAllPdf) return;
     setIsGeneratingAllPdf(true);
 
     try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      let addedPagesCount = 0;
-
-      for (let i = 0; i < todayBirthdays.length; i++) {
-        const person = todayBirthdays[i];
-        const cardElement = document.getElementById(`batch_card_${person.id}`);
-        if (!cardElement) continue;
-
-        const canvas = await html2canvas(cardElement, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: '#FFFFFF',
-          logging: false,
-        });
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        const margin = 8;
-        const targetWidth = pdfWidth - margin * 2;
-        const targetHeight = (canvas.height * targetWidth) / canvas.width;
-
-        let renderHeight = targetHeight;
-        let renderWidth = targetWidth;
-        if (renderHeight > pdfHeight - margin * 2) {
-          renderHeight = pdfHeight - margin * 2;
-          renderWidth = (canvas.width * renderHeight) / canvas.height;
-        }
-
-        const x = (pdfWidth - renderWidth) / 2;
-        const y = (pdfHeight - renderHeight) / 2;
-
-        if (addedPagesCount > 0) {
-          pdf.addPage();
-        }
-        pdf.addImage(imgData, 'JPEG', x, y, renderWidth, renderHeight, undefined, 'FAST');
-        addedPagesCount++;
-      }
-
-      const todayStr = new Date().toISOString().split('T')[0];
-      const schoolClean = (school.schoolName || 'School').replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `All_Birthday_Cards_${schoolClean}_${todayStr}_A4.pdf`;
-
-      // Convert to blob and download via unified downloader (works in Native Android APK and all browsers)
-      const pdfBlob = pdf.output('blob');
-      await downloadPdfFile(pdfBlob, filename);
+      const optionsList = getTodayCardsPrintOptions();
+      await downloadAllBirthdayCardsPdf(optionsList, school.schoolName || 'School');
     } catch (err) {
       console.error('Error generating consolidated birthday PDF:', err);
     } finally {
@@ -247,74 +228,8 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
     setIsPrintingAll(true);
 
     try {
-      const cardImages: string[] = [];
-
-      for (let i = 0; i < todayBirthdays.length; i++) {
-        const person = todayBirthdays[i];
-        const cardElement = document.getElementById(`batch_card_${person.id}`);
-        if (!cardElement) continue;
-
-        const canvas = await html2canvas(cardElement, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: '#FFFFFF',
-          logging: false,
-        });
-
-        cardImages.push(canvas.toDataURL('image/jpeg', 0.95));
-      }
-
-      if (cardImages.length === 0) return;
-
-      const schoolClean = school.schoolName || 'શાળા';
-      const multiPrintHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>All Birthday Cards - ${schoolClean}</title>
-  <style>
-    @page {
-      size: A4 portrait;
-      margin: 8mm;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #ffffff;
-    }
-    .print-card-page {
-      width: 100%;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      page-break-after: always;
-      break-after: page;
-    }
-    .print-card-page:last-child {
-      page-break-after: auto;
-      break-after: auto;
-    }
-    img {
-      max-width: 194mm;
-      max-height: 278mm;
-      width: auto;
-      height: auto;
-      object-fit: contain;
-      border-radius: 8px;
-    }
-  </style>
-</head>
-<body>
-  ${cardImages.map((src) => `<div class="print-card-page"><img src="${src}" alt="Birthday Card" /></div>`).join('')}
-</body>
-</html>
-      `;
-
-      printHtmlDocument(multiPrintHtml, `All_Birthday_Cards_${schoolClean}`);
+      const optionsList = getTodayCardsPrintOptions();
+      await printAllBirthdayCards(optionsList, school.schoolName || 'શાળા');
     } catch (err) {
       console.error('Error printing all birthday cards:', err);
     } finally {
@@ -649,23 +564,6 @@ export const BirthdayTab: React.FC<BirthdayTabProps> = ({ school, students, staf
             )}
           </div>
         </div>
-      </div>
-
-      {/* Hidden Batch Container for Rendering all Cards into Multi-page PDF */}
-      <div
-        ref={batchContainerRef}
-        style={{ position: 'fixed', left: 0, top: 0, width: '490px', opacity: 0.001, zIndex: -100, pointerEvents: 'none' }}
-      >
-        {todayBirthdays.map((person) => (
-          <div key={`batch_wrap_${person.id}`} id={`batch_card_${person.id}`} style={{ width: '480px' }}>
-            <BirthdayCard
-              person={person}
-              school={school}
-              staffList={staff}
-              lang={lang}
-            />
-          </div>
-        ))}
       </div>
 
       {/* Morning Assembly Announcement Slip Modal */}

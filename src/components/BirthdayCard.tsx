@@ -22,6 +22,11 @@ import {
 } from '../services/birthdayService';
 import { School, Staff } from '../types';
 import { downloadPdfFile, printHtmlDocument } from '../utils/printAndPdfUtils';
+import {
+  downloadBirthdayCardPdf,
+  printBirthdayCard,
+  downloadBirthdayCardPng,
+} from '../utils/birthdayPdfShareUtils';
 
 export interface CardColorTheme {
   id: string;
@@ -337,52 +342,31 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
 
   // Download Individual Birthday Card as High-Quality A4 Print PDF
   const handleDownloadPdf = async () => {
-    if (!cardRef.current || isDownloading) return;
+    if (isDownloading) return;
     setIsDownloading(true);
-    setDownloadStatus(lang === 'gu' ? 'PDF બની રહ્યું છે...' : 'Preparing PDF...');
+    setDownloadStatus(lang === 'gu' ? 'A4 PDF બની રહ્યું છે...' : 'Preparing A4 PDF...');
 
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2, // Stable 300 DPI on A4 without crashing Android mobile RAM
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#FFFFFF',
-        logging: false,
+      const res = await downloadBirthdayCardPdf({
+        person,
+        school,
+        theme: currentTheme,
+        customWishText,
+        photoUrl: photoPreview,
+        photoFit,
+        lang,
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
-      const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
-
-      // Standard A4 aspect ratio with 8mm margins
-      const margin = 8;
-      const targetWidth = pdfWidth - margin * 2;
-      const targetHeight = (canvas.height * targetWidth) / canvas.width;
-
-      let renderWidth = targetWidth;
-      let renderHeight = targetHeight;
-      if (renderHeight > pdfHeight - margin * 2) {
-        renderHeight = pdfHeight - margin * 2;
-        renderWidth = (canvas.width * renderHeight) / canvas.height;
+      if (res.success) {
+        setDownloadStatus(lang === 'gu' ? '✅ A4 PDF સફળતાપૂર્વક ડાઉનલોડ થઈ ગઈ!' : '✅ A4 PDF Downloaded!');
+      } else {
+        setDownloadStatus(lang === 'gu' ? 'PDF બનાવવામાં ક્ષતિ આવી' : 'PDF Error');
       }
-
-      const x = (pdfWidth - renderWidth) / 2;
-      const y = (pdfHeight - renderHeight) / 2;
-
-      pdf.addImage(imgData, 'JPEG', x, y, renderWidth, renderHeight, undefined, 'FAST');
-      const cleanName = person.name.replace(/[^a-zA-Z0-9]/g, '_') || 'Student';
-      const filename = `Birthday_Card_${cleanName}_A4.pdf`;
-
-      // Convert to Blob and download via Vidyalayam unified downloader (Native Android APK + Web)
-      const pdfBlob = pdf.output('blob');
-      await downloadPdfFile(pdfBlob, filename);
-      setDownloadStatus(lang === 'gu' ? 'PDF ડાઉનલોડ સફળ!' : 'PDF Downloaded!');
-      setTimeout(() => setDownloadStatus(null), 2500);
+      setTimeout(() => setDownloadStatus(null), 3500);
     } catch (err) {
       console.error('Error downloading birthday card PDF:', err);
       setDownloadStatus(lang === 'gu' ? 'PDF બનાવવામાં ક્ષતિ આવી' : 'PDF Error');
-      setTimeout(() => setDownloadStatus(null), 3000);
+      setTimeout(() => setDownloadStatus(null), 3500);
     } finally {
       setIsDownloading(false);
     }
@@ -390,74 +374,22 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
 
   // Print Birthday Card directly (supports Native Android APK PrintManager + Browser Print)
   const handlePrintCard = async () => {
-    if (!cardRef.current || isPrinting) return;
+    if (isPrinting || isDownloading) return;
     setIsPrinting(true);
     setDownloadStatus(lang === 'gu' ? 'પ્રિન્ટ તૈયાર થાય છે...' : 'Preparing Print...');
 
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#FFFFFF',
-        logging: false,
+      await printBirthdayCard({
+        person,
+        school,
+        theme: currentTheme,
+        customWishText,
+        photoUrl: photoPreview,
+        photoFit,
+        lang,
       });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const cleanName = person.name.replace(/[^a-zA-Z0-9]/g, '_') || 'Student';
-
-      const printHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>${person.name} - Birthday Card</title>
-  <style>
-    @page {
-      size: A4 portrait;
-      margin: 8mm;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .print-card-wrapper {
-      width: 100%;
-      max-width: 194mm;
-      height: auto;
-      max-height: 280mm;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: auto;
-    }
-    img {
-      max-width: 100%;
-      max-height: 278mm;
-      width: auto;
-      height: auto;
-      object-fit: contain;
-      border-radius: 8px;
-    }
-  </style>
-</head>
-<body>
-  <div class="print-card-wrapper">
-    <img src="${imgData}" alt="Birthday Card" />
-  </div>
-</body>
-</html>
-      `;
-
-      printHtmlDocument(printHtml, `Birthday_Card_${cleanName}`);
-      setTimeout(() => setDownloadStatus(null), 1500);
+      setDownloadStatus(lang === 'gu' ? '✅ પ્રિન્ટ સંવાદ ખૂલ્યો!' : '✅ Print Ready!');
+      setTimeout(() => setDownloadStatus(null), 2500);
     } catch (err) {
       console.error('Error printing birthday card:', err);
       setDownloadStatus(lang === 'gu' ? 'પ્રિન્ટ ક્ષતિ' : 'Print Error');
@@ -469,28 +401,29 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
 
   // Download Individual Birthday Card as HD PNG Image
   const handleDownloadImage = async () => {
-    if (!cardRef.current || isDownloading) return;
+    if (isDownloading) return;
     setIsDownloading(true);
+    setDownloadStatus(lang === 'gu' ? 'ઇમેજ તૈયાર થાય છે...' : 'Preparing Image...');
 
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#FFFFFF',
-        logging: false,
+      const res = await downloadBirthdayCardPng({
+        person,
+        school,
+        theme: currentTheme,
+        customWishText,
+        photoUrl: photoPreview,
+        photoFit,
+        lang,
       });
 
-      const dataUrl = canvas.toDataURL('image/png');
-      const cleanName = person.name.replace(/[^a-zA-Z0-9]/g, '_') || 'Student';
-      const link = document.createElement('a');
-      link.download = `Birthday_Card_${cleanName}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (res.success) {
+        setDownloadStatus(lang === 'gu' ? '✅ HD ઇમેજ સેવ થઈ ગઈ!' : '✅ HD Image Saved!');
+      }
+      setTimeout(() => setDownloadStatus(null), 2500);
     } catch (err) {
       console.error('Error saving birthday card image:', err);
+      setDownloadStatus(lang === 'gu' ? 'ઇમેજ સેવ કરવામાં ક્ષતિ' : 'Image Save Error');
+      setTimeout(() => setDownloadStatus(null), 3000);
     } finally {
       setIsDownloading(false);
     }
@@ -824,25 +757,17 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
             {/* Subtle Embossed Circular Seal Ring behind portrait */}
             <div
               className="absolute w-[185px] h-[185px] sm:w-[224px] sm:h-[224px] rounded-full border-[2px] sm:border-[2.5px] flex items-center justify-center pointer-events-none"
-              style={{ borderColor: currentTheme.sealBorder, opacity: 0.4 }}
+              style={{ borderColor: currentTheme.sealBorder, opacity: 0.55 }}
             >
               <div
-                className="w-[172px] h-[172px] sm:w-[210px] sm:h-[210px] rounded-full border border-dashed"
+                className="w-[172px] h-[172px] sm:w-[210px] sm:h-[210px] rounded-full border border-dashed flex items-center justify-center"
                 style={{ borderColor: currentTheme.sealBorder }}
-              />
-              {/* Curved circular seal text */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-70" viewBox="0 0 200 200">
-                <path
-                  id={`circlePath_${person.id}`}
-                  d="M 100, 100 m -75, 0 a 75,75 0 1,1 150,0 a 75,75 0 1,1 -150,0"
-                  fill="none"
+              >
+                <div
+                  className="w-[156px] h-[156px] sm:w-[192px] sm:h-[192px] rounded-full border border-dotted opacity-40"
+                  style={{ borderColor: currentTheme.sealBorder }}
                 />
-                <text fontSize="10" fontWeight="bold" fill={currentTheme.sealColor} letterSpacing="2.5">
-                  <textPath href={`#circlePath_${person.id}`} startOffset="50%" textAnchor="middle">
-                    ★ {displaySchoolName?.toUpperCase() || 'VIDYALAYAM SCHOOL'} ★
-                  </textPath>
-                </text>
-              </svg>
+              </div>
             </div>
 
             {/* Left Floral Blossom Accent */}

@@ -435,21 +435,51 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
           {/* Quick Setup Guide Accordion */}
           {showWebhookGuide && (
-            <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs text-slate-300 space-y-2 animate-in fade-in duration-150">
-              <div className="font-bold text-amber-300 flex items-center gap-1">
-                <span>GitHub Webhook કેવી રીતે જોડવો:</span>
+            <div className="p-4 rounded-2xl bg-slate-800/90 border border-amber-500/30 text-xs text-slate-300 space-y-3 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-700/80">
+                <span className="font-bold text-amber-300 flex items-center gap-1.5 text-xs">
+                  <span>📱 Android Mobile માં Webhook સેટ કરવાની રીત</span>
+                </span>
+                <a
+                  href="https://github.com/anantahir7721-sudo/Vidyalayam-releases/settings/hooks/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center gap-1 transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  <span>GitHub Webhooks ખોલો</span>
+                </a>
               </div>
-              <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-300 leading-relaxed pl-1">
+
+              <div className="text-[11px] text-amber-200/90 bg-amber-500/10 p-2 rounded-xl border border-amber-500/20">
+                💡 <strong>મોબાઇલ ટિપ:</strong> GitHub ના મોબાઇલ પેજ પર સેટિંગ્સ મેનુ છુપાયેલ હોઈ શકે છે. જો 'Settings' ન દેખાય તો Chrome બ્રાઉઝરમાં ઉપર જમણી બાજુના ૩ ટપકાં <strong>(⋮)</strong> પર ક્લિક કરીને <strong>'Desktop site'</strong> ટીક કરો.
+              </div>
+
+              <ol className="list-decimal list-inside space-y-2 text-[11.5px] text-slate-200 leading-relaxed pl-0.5">
                 <li>
-                  તમારા GitHub રિપોઝીટરી (<strong>anantahir7721-sudo/Vidyalayam-releases</strong>) માં <strong>Settings &gt; Webhooks &gt; Add webhook</strong> પર ક્લિક કરો.
+                  તમારા એન્ડ્રોઇડ ફોનમાં Chrome બ્રાઉઝર ખોલો અને તમારા રિપોઝીટરીના <strong>Settings &gt; Webhooks &gt; Add webhook</strong> પર જાઓ (અથવા ઉપરનું પીળું બટન દબાવો).
                 </li>
                 <li>
-                  <strong>Payload URL</strong> માં ઉપરની કૉપિ કરેલ લિંક પેસ્ટ કરો.
+                  <strong>Payload URL:</strong> ઉપર દર્શાવેલ <em>'કૉપિ કરો'</em> બટન દબાવીને તમારી વેબહુક લિંક અહીં પેસ્ટ કરો.
                 </li>
                 <li>
-                  <strong>Content type</strong> માં <strong>application/json</strong> પસંદ કરો અને <strong>"Just the push event"</strong> રાખીને <strong>Add webhook</strong> બટન દબાવો.
+                  <strong>Content type:</strong> ડ્રોપડાઉનમાંથી ફરજિયાતપણે <strong>application/json</strong> પસંદ કરો (ડિફોલ્ટ urlencoded ના રાખશો).
+                </li>
+                <li>
+                  <strong>Secret:</strong> ખાલી (Blank) રહેવા દો.
+                </li>
+                <li>
+                  <strong>Which events would you like to trigger this webhook?</strong> માં <strong>"Just the push event"</strong> પસંદ રાખો.
+                </li>
+                <li>
+                  <strong>Active</strong> ચેકબોક્સ પર ટીક (✓) કરેલું રાખો અને નીચે આપેલ લીલું બટન <strong>"Add webhook"</strong> દબાવો.
                 </li>
               </ol>
+
+              <div className="pt-2 border-t border-slate-700/60 text-[11px] text-emerald-300 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>બસ આટલું કરતાં જ GitHub પર કોઈ પણ કોડ કે APK પુશ થશે કે તરત જ તમારા મોબાઇલમાં નોટિફિકેશન આવી જશે!</span>
+              </div>
             </div>
           )}
 
