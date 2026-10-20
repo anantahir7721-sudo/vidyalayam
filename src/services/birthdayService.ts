@@ -146,74 +146,74 @@ export function getLocalizedSchoolName(schoolName: string | undefined | null, la
  */
 export const BIRTHDAY_WISHES_COLLECTION: Array<{ en: string; gu: string; keywords: string[] }> = [
   {
-    en: 'We wish you a lot of SUCCESS and ACHIEVEMENT in this year. May this year with your strength and hard work you accomplish all the milestones and your every dream comes true.',
+    en: 'We wish you a lot of success and achievement in this year. May this year with your strength and hard work you accomplish all the milestones and your every dream comes true.',
     gu: 'આપના જન્મદિને હાર્દિક શુભકામનાઓ! આપનું નવું વર્ષ જ્ઞાન, પ્રગતિ અને સફળતાથી પરિપૂર્ણ રહે. આપ મહેનત અને સંસ્કાર થકી જીવનના સર્વોચ્ચ શિખરો સર કરો તેવી પ્રભુને પ્રાર્થના.',
-    keywords: ['SUCCESS and ACHIEVEMENT', 'સફળતા અને પ્રગતિ'],
+    keywords: ['Success and Achievement', 'સફળતા અને પ્રગતિ'],
   },
   {
-    en: 'May your journey ahead be filled with KNOWLEDGE, INSPIRATION, and GREAT VICTORIES. Keep shining bright and making our school and your family proud.',
+    en: 'May your journey ahead be filled with knowledge, inspiration, and great victories. Keep shining bright and making our school and your family proud.',
     gu: 'જન્મદિવસની ખૂબ ખૂબ શુભેચ્છાઓ! આપની શૈક્ષણિક યાત્રા તેજસ્વી બને અને આપ જ્ઞાન, સદાચાર તથા ઉચ્ચ લક્ષ્યો સાથે સતત આગળ વધો તેવી અંતઃકરણપૂર્વકની શુભકામના.',
-    keywords: ['KNOWLEDGE, INSPIRATION, and GREAT VICTORIES', 'જ્ઞાન અને તેજસ્વી ભવિષ્ય'],
+    keywords: ['Knowledge and Inspiration', 'જ્ઞાન અને તેજસ્વી ભવિષ્ય'],
   },
   {
-    en: 'Wishing you boundless JOY, WISDOM, and EXCELLENCE in every step of your life. May your hard work always lead you to glorious achievements.',
+    en: 'Wishing you boundless joy, wisdom, and excellence in every step of your life. May your hard work always lead you to glorious achievements.',
     gu: 'જન્મદિવસના પાવન અવસરે હાર્દિક અભિનંદન! આપનું જીવન વિદ્યા, વિનય અને ઉત્સાહથી સુવાસિત રહે અને આપ ઉત્તરોત્તર નવી સિદ્ધિઓ હાંસલ કરતા રહો.',
-    keywords: ['JOY, WISDOM, and EXCELLENCE', 'વિદ્યા, વિનય અને ઉત્સાહ'],
+    keywords: ['Joy, Wisdom and Excellence', 'વિદ્યા, વિનય અને ઉત્સાહ'],
   },
   {
-    en: 'May this special day bring you immense HAPPINESS, HEALTH, and BRIGHT HORIZONS. Strive for greatness and let your good deeds illuminate the world.',
+    en: 'May this special day bring you immense happiness, health, and bright horizons. Strive for greatness and let your good deeds illuminate the world.',
     gu: 'જન્મદિવસની મંગલમય શુભકામનાઓ! આપ દીર્ઘાયુ બનો, સ્વસ્થ રહો અને ઉચ્ચ સંસ્કારો સાથે પરિવાર તથા શાળાનું નામ રોશન કરો તેવી શુભ ભાવના.',
-    keywords: ['HAPPINESS, HEALTH, and BRIGHT HORIZONS', 'ઉચ્ચ સંસ્કાર અને સુખી જીવન'],
+    keywords: ['Happiness and Health', 'ઉચ્ચ સંસ્કાર અને સુખી જીવન'],
   },
   {
-    en: 'Sending our warmest blessings on your birthday! May your PASSION for learning and COURAGE to explore guide you towards a magnificent future.',
+    en: 'Sending our warmest blessings on your birthday! May your passion for learning and courage to explore guide you towards a magnificent future.',
     gu: 'આપને જન્મદિવસની ખૂબ ખૂબ વધાઈ! જ્ઞાનની સાધનામાં સદાય અગ્રેસર રહો અને જીવનના પ્રત્યેક ક્ષેત્રમાં વિજયી બનો તેવી શાળા પરિવાર તરફથી શુભકામના.',
-    keywords: ['PASSION for learning and COURAGE', 'જ્ઞાનની સાધના અને વિજય'],
+    keywords: ['Passion for Learning', 'જ્ઞાનની સાધના અને વિજય'],
   },
   {
-    en: 'Every milestone begins with courage. May this year bless you with FOCUS, DETERMINATION, and GLORIOUS MOMENTS that inspire everyone around you.',
+    en: 'Every milestone begins with courage. May this year bless you with focus, determination, and glorious moments that inspire everyone around you.',
     gu: 'જન્મદિને અનંત આશીર્વાદ! આપની એકાગ્રતા અને દૃઢ સંકલ્પશક્તિ આપને અપેક્ષા કરતાં પણ વધુ ભવ્ય સફળતા અપાવે તેવી અંતરની પ્રાર્થના.',
-    keywords: ['FOCUS, DETERMINATION, and GLORIOUS MOMENTS', 'એકાગ્રતા અને દૃઢ સંકલ્પ'],
+    keywords: ['Focus and Determination', 'એકાગ્રતા અને દૃઢ સંકલ્પ'],
   },
   {
-    en: 'Happy Birthday! May kindness be your compass, wisdom your shield, and perseverance your engine to reach INFINITE HEIGHTS of success.',
+    en: 'Happy Birthday! May kindness be your compass, wisdom your shield, and perseverance your engine to reach infinite heights of success.',
     gu: 'જન્મદિવસ મુબારક! સદ્ગુણો, પરોપકાર અને જ્ઞાનથી આપનું વ્યક્તિત્વ મહેકી ઊઠે અને આપ જીવનમાં સફળતાના ઉચ્ચ શિખરો સર કરો તેવી અભિલાષા.',
-    keywords: ['INFINITE HEIGHTS of success', 'સદ્ગુણ અને સન્માન'],
+    keywords: ['Kindness and Wisdom', 'સદ્ગુણ અને સન્માન'],
   },
   {
-    en: 'May you always have the CURIOSITY to question, the STRENGTH to stand strong, and the HUMILITY to keep learning every day. Happy Birthday!',
+    en: 'May you always have the curiosity to question, the strength to stand strong, and the humility to keep learning every day. Happy Birthday!',
     gu: 'જન્મદિવસની હાર્દિક શુભેચ્છાઓ! આપ જિજ્ઞાસુ, સાહસિક અને વિવેકી બની દેશના ઉત્તમ નાગરિક બનો તેવી ઈશ્વર ચરણોમાં પ્રાર્થના.',
-    keywords: ['CURIOSITY, STRENGTH, and HUMILITY', 'સાહસ અને વિવેક'],
+    keywords: ['Curiosity and Strength', 'સાહસ અને વિવેક'],
   },
   {
-    en: 'Warmest birthday wishes from the entire school family! May your talents bloom like fresh flowers and bring FRAGRANCE OF SUCCESS wherever you go.',
+    en: 'Warmest birthday wishes from the entire school family! May your talents bloom like fresh flowers and bring the fragrance of success wherever you go.',
     gu: 'શાળા પરિવાર તરફથી જન્મદિનની સ્નેહભરી શુભેચ્છાઓ! આપના સુષુપ્ત ગુણો ખીલે અને આપ સર્વત્ર પ્રસિદ્ધિ મેળવો તેવી આશા.',
-    keywords: ['FRAGRANCE OF SUCCESS', 'પ્રસિદ્ધિ અને સિદ્ધિ'],
+    keywords: ['Fragrance of Success', 'પ્રસિદ્ધિ અને સિદ્ધિ'],
   },
   {
-    en: 'A very Happy Birthday to our wonderful learner! Keep your standards high, your thoughts noble, and your EFFORTS TIRELESS.',
+    en: 'A very Happy Birthday to our wonderful learner! Keep your standards high, your thoughts noble, and your efforts tireless.',
     gu: 'જન્મદિને ખૂબ ખૂબ આશીર્વાદ! આપના વિચારો ઉમદા રહે, કર્મ શ્રેષ્ઠ બને અને આપ જીવનના દરેક મોરચે ઝળહળતી સફળતા મેળવો.',
-    keywords: ['EFFORTS TIRELESS', 'ઉમદા કર્મ અને ઝળહળતી સફળતા'],
+    keywords: ['Noble Thoughts and Success', 'ઉમદા કર્મ અને ઝળહળતી સફળતા'],
   },
   {
-    en: 'May this year be a glorious chapter filled with BRILLIANT IDEAS, ACADEMIC TRIUMPHS, and lifelong memories. Have a wonderful birthday celebration!',
+    en: 'May this year be a glorious chapter filled with brilliant ideas, academic triumphs, and lifelong memories. Have a wonderful birthday celebration!',
     gu: 'આપનું નવું વર્ષ અદ્ભુત સિદ્ધિઓ, ઉમદા વિચારો અને શૈક્ષણિક પ્રગતિથી સભર રહે. જન્મદિવસની હૃદયપૂર્વકની મંગલ શુભકામનાઓ!',
-    keywords: ['BRILLIANT IDEAS, ACADEMIC TRIUMPHS', 'અદ્ભુત સિદ્ધિઓ'],
+    keywords: ['Brilliant Ideas and Triumphs', 'અદ્ભુત સિદ્ધિઓ'],
   },
   {
-    en: 'On your special day, we pray for your PROSPERITY, PEACE, and GLOWING FUTURE. May you shine as a beacon of values and knowledge.',
+    en: 'On your special day, we pray for your prosperity, peace, and glowing future. May you shine as a beacon of values and knowledge.',
     gu: 'જન્મદિનના શુભ અવસરે ઈશ્વર આપને ઉત્તમ બુદ્ધિ, સદ્વિચાર અને પ્રગતિના પંથે અવિરત આગળ વધવાની શક્તિ પ્રદાન કરે તેવી પ્રાર્થના.',
-    keywords: ['PROSPERITY, PEACE, and GLOWING FUTURE', 'ઉત્તમ બુદ્ધિ અને સદ્વિચાર'],
+    keywords: ['Prosperity and Glowing Future', 'ઉત્તમ બુદ્ધિ અને સદ્વિચાર'],
   },
   {
-    en: 'Happy Birthday! May your hard work today become the FOUNDATION of your glorious tomorrow. Keep striving with passion and integrity.',
+    en: 'Happy Birthday! May your hard work today become the foundation of your glorious tomorrow. Keep striving with passion and integrity.',
     gu: 'જન્મદિવસની હાર્દિક વધાઈ! આપની આજની પરિશ્રમરૂપી સાધના આવતીકાલના ઉજ્જવળ ભવિષ્યનો મજબૂત પાયો બને તેવી શાળા પરિવારની શુભકામના.',
-    keywords: ['FOUNDATION of your glorious tomorrow', 'પરિશ્રમ અને ઉજ્જવળ ભવિષ્ય'],
+    keywords: ['Foundation of Tomorrow', 'પરિશ્રમ અને ઉજ્જવળ ભવિષ્ય'],
   },
   {
-    en: 'May the light of learning always guide your path. Wishing you a year blessed with CREATIVE ENERGY, DISCIPLINE, and GOLDEN ACCOMPLISHMENTS.',
+    en: 'May the light of learning always guide your path. Wishing you a year blessed with creative energy, discipline, and golden accomplishments.',
     gu: 'વિદ્યારૂપી અમૃત સદાય આપના જીવનને પ્રકાશિત રાખે. નવું વર્ષ રચનાત્મક ઊર્જા અને સોનેરી સિદ્ધિઓથી પરિપૂર્ણ રહે તેવી શુભેચ્છાઓ!',
-    keywords: ['CREATIVE ENERGY, DISCIPLINE, and GOLDEN ACCOMPLISHMENTS', 'સોનેરી સિદ્ધિઓ'],
+    keywords: ['Creative Energy', 'સોનેરી સિદ્ધિઓ'],
   },
 ];
 
@@ -222,29 +222,29 @@ export const BIRTHDAY_WISHES_COLLECTION: Array<{ en: string; gu: string; keyword
  */
 export const STAFF_BIRTHDAY_WISHES: Array<{ en: string; gu: string; keywords: string[] }> = [
   {
-    en: 'Wishing you a very Happy Birthday! Thank you for your DEDICATION, WISDOM, and TIRELESS GUIDANCE in shaping the future of our students and school.',
+    en: 'Wishing you a very Happy Birthday! Thank you for your dedication, wisdom, and tireless guidance in shaping the future of our students and school.',
     gu: 'આદરણીય સ્ટાફ મિત્રને જન્મદિનની હાર્દિક શુભકામનાઓ! વિદ્યાર્થીઓના ઘડતર અને શાળાના વિકાસમાં આપનું સમર્પણ તથા માર્ગદર્શન સદાય પ્રેરણાદાયી રહે.',
-    keywords: ['DEDICATION, WISDOM, and TIRELESS GUIDANCE', 'સમર્પણ અને માર્ગદર્શન'],
+    keywords: ['Dedication and Wisdom', 'સમર્પણ અને માર્ગદર્શન'],
   },
   {
-    en: 'May this year bestow upon you GOOD HEALTH, PROSPERITY, and ENDLESS SATISFACTION in your noble profession of building nation builders.',
+    en: 'May this year bestow upon you good health, prosperity, and endless satisfaction in your noble profession of building nation builders.',
     gu: 'જન્મદિવસની ખૂબ ખૂબ શુભેચ્છાઓ! ઈશ્વર આપને ઉત્તમ સ્વાસ્થ્ય, દીર્ઘાયુ અને પરિવારમાં સદાય સુખ-શાંતિ અર્પે તેવી પ્રાર્થના.',
-    keywords: ['GOOD HEALTH, PROSPERITY, and ENDLESS SATISFACTION', 'ઉત્તમ સ્વાસ્થ્ય અને દીર્ઘાયુ'],
+    keywords: ['Health and Prosperity', 'ઉત્તમ સ્વાસ્થ્ય અને દીર્ઘાયુ'],
   },
   {
-    en: 'Warmest birthday wishes! Your inspiring leadership, kindness, and hard work make our campus a place of EXCELLENCE and WARMTH.',
+    en: 'Warmest birthday wishes! Your inspiring leadership, kindness, and hard work make our campus a place of excellence and warmth.',
     gu: 'જન્મદિને શાળા પરિવાર તરફથી સાદર વંદન અને શુભકામના! આપના જ્ઞાન અને સદ્ભાવનાથી સમગ્ર શાળા પરિસર સતત પ્રજ્વલિત રહે.',
-    keywords: ['EXCELLENCE and WARMTH', 'જ્ઞાન અને સદ્ભાવના'],
+    keywords: ['Excellence and Warmth', 'જ્ઞાન અને સદ્ભાવના'],
   },
   {
-    en: 'Happy Birthday to our esteemed colleague! May you continue to illuminate young minds with your KNOWLEDGE, PATIENCE, and NOBLE SERVICE.',
+    en: 'Happy Birthday to our esteemed colleague! May you continue to illuminate young minds with your knowledge, patience, and noble service.',
     gu: 'જન્મદિવસના પાવન અવસરે હાર્દિક અભિનંદન! આપના જ્ઞાન, ધીરજ અને નિષ્ઠાવાન શિક્ષણકાર્ય થકી વિદ્યાર્થીઓનું જીવન સદાય રોશન રહે તેવી અભિલાષા.',
-    keywords: ['KNOWLEDGE, PATIENCE, and NOBLE SERVICE', 'જ્ઞાન, ધીરજ અને નિષ્ઠા'],
+    keywords: ['Knowledge and Service', 'જ્ઞાન, ધીરજ અને નિષ્ઠા'],
   },
   {
     en: 'Wishing you peace, happiness, and continued fulfillment in your sacred vocation. Thank you for making our school proud every day!',
     gu: 'શિક્ષણના પવિત્ર યજ્ઞમાં આપનું યોગદાન સદાય પ્રશંસનીય છે. ઈશ્વર આપને અને આપના પરિવારને સદાય આનંદ અને સમૃદ્ધિ અર્પે એવી મંગલ ભાવના.',
-    keywords: ['PEACE, HAPPINESS, and CONTINUED FULFILLMENT', 'આનંદ અને સમૃદ્ધિ'],
+    keywords: ['Peace and Fulfillment', 'આનંદ અને સમૃદ્ધિ'],
   },
 ];
 

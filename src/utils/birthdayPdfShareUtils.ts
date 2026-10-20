@@ -190,47 +190,6 @@ function buildBirthdayCardA4Html(
 
   const studentInitial = person.name ? person.name.charAt(0).toUpperCase() : '★';
 
-  // Corner Victorian filigree SVG snippet for 4 corners (Clean 52px, safely inside borders without text overlap)
-  const cornerFiligree = (rotateDeg: number, top?: string, left?: string, right?: string, bottom?: string) => `
-    <svg width="54" height="54" viewBox="0 0 100 100" fill="none" style="
-      position: absolute;
-      ${top ? `top: ${top};` : ''}
-      ${left ? `left: ${left};` : ''}
-      ${right ? `right: ${right};` : ''}
-      ${bottom ? `bottom: ${bottom};` : ''}
-      transform: rotate(${rotateDeg}deg);
-      pointer-events: none;
-      z-index: 10;
-    ">
-      <path d="M 8 8 L 82 8 M 8 8 L 8 82" stroke="#D4AF37" stroke-width="3" stroke-linecap="round"/>
-      <path d="M 16 16 L 68 16 M 16 16 L 16 68" stroke="${theme.cardBorder}" stroke-width="1.8" stroke-linecap="round"/>
-      <path d="M 16 16 C 36 10, 52 16, 64 12 C 48 24, 48 40, 64 54 C 48 44, 34 54, 28 68 C 22 52, 12 52, 12 66 C 14 50, 12 34, 16 16 Z" fill="#D4AF37" fill-opacity="0.35" stroke="#D4AF37" stroke-width="1.2"/>
-      <circle cx="8" cy="8" r="4.5" fill="#D4AF37"/>
-      <circle cx="16" cy="16" r="3" fill="${theme.cardBorder}"/>
-      <circle cx="82" cy="8" r="3" fill="#D4AF37"/>
-      <circle cx="8" cy="82" r="3" fill="#D4AF37"/>
-    </svg>
-  `;
-
-  // Classical Victory Laurel Branch flanking the portrait (52px x 120px)
-  const laurelBranch = (isFlipped: boolean) => `
-    <svg width="52" height="120" viewBox="0 0 50 120" fill="none" style="
-      transform: ${isFlipped ? 'scaleX(-1)' : 'none'};
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
-    ">
-      <path d="M 38 116 C 28 85, 18 45, 34 8" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round" fill="none" />
-      <path d="M 34 14 C 26 10, 18 18, 24 26 C 30 23, 32 18, 34 14 Z" fill="#D4AF37" />
-      <path d="M 31 34 C 20 28, 12 38, 20 46 C 26 43, 28 38, 31 34 Z" fill="#D4AF37" />
-      <path d="M 37 31 C 45 27, 49 35, 43 41 C 39 39, 38 35, 37 31 Z" fill="#E5C158" />
-      <path d="M 26 54 C 14 48, 6 58, 14 66 C 20 63, 23 58, 26 54 Z" fill="#D4AF37" />
-      <path d="M 34 51 C 42 47, 47 55, 41 61 C 37 59, 36 55, 34 51 Z" fill="#E5C158" />
-      <path d="M 23 74 C 10 68, 2 78, 10 86 C 16 83, 20 78, 23 74 Z" fill="#D4AF37" />
-      <path d="M 32 71 C 41 67, 45 75, 39 81 C 35 79, 34 75, 32 71 Z" fill="#E5C158" />
-      <path d="M 25 94 C 13 88, 6 98, 14 104 C 20 102, 23 97, 25 94 Z" fill="#D4AF37" />
-      <path d="M 33 91 C 42 87, 46 95, 40 100 C 36 98, 35 94, 33 91 Z" fill="#E5C158" />
-    </svg>
-  `;
-
   return `
     <div style="
       width: 794px;
@@ -253,7 +212,7 @@ function buildBirthdayCardA4Html(
         right: 18px;
         bottom: 18px;
         border: 3.5px solid ${theme.cardBorder};
-        border-radius: 18px;
+        border-radius: 14px;
         pointer-events: none;
         box-sizing: border-box;
       "></div>
@@ -266,7 +225,7 @@ function buildBirthdayCardA4Html(
         right: 24px;
         bottom: 24px;
         border: 1.5px solid #D4AF37;
-        border-radius: 14px;
+        border-radius: 10px;
         pointer-events: none;
         box-sizing: border-box;
       "></div>
@@ -274,40 +233,22 @@ function buildBirthdayCardA4Html(
       <!-- 3. Inner Royal Delicate Hairline Frame -->
       <div style="
         position: absolute;
-        top: 30px;
-        left: 30px;
-        right: 30px;
-        bottom: 30px;
+        top: 28px;
+        left: 28px;
+        right: 28px;
+        bottom: 28px;
         border: 1px solid ${theme.sealBorder};
-        border-radius: 10px;
+        border-radius: 7px;
         pointer-events: none;
-        opacity: 0.65;
+        opacity: 0.55;
         box-sizing: border-box;
       "></div>
 
-      <!-- 4 Victorian Royal Corner Filigrees (Neatly tucked inside corners, zero text collision) -->
-      ${cornerFiligree(0, '22px', '22px')}
-      ${cornerFiligree(90, '22px', undefined, '22px')}
-      ${cornerFiligree(180, undefined, undefined, '22px', '22px')}
-      ${cornerFiligree(270, undefined, '22px', undefined, '22px')}
-
-      <!-- Left Festive Gold-accented Balloon Accent -->
-      <div style="position: absolute; top: 380px; left: 28px; opacity: 0.65; pointer-events: none;">
-        <svg width="50" height="100" viewBox="0 0 50 110" fill="none" stroke="${theme.balloonStroke}" stroke-width="1.8" stroke-linecap="round">
-          <ellipse cx="25" cy="30" rx="19" ry="25" fill="${theme.balloonFill}" fill-opacity="0.6" />
-          <path d="M 23 55 L 27 55 L 25 59 Z" fill="${theme.balloonStroke}" />
-          <path d="M 25 59 Q 30 78 20 94 Q 15 102 22 108" fill="none" stroke-width="1.5" />
-        </svg>
-      </div>
-
-      <!-- Right Festive Gold-accented Balloon Accent -->
-      <div style="position: absolute; top: 270px; right: 28px; opacity: 0.65; pointer-events: none;">
-        <svg width="50" height="100" viewBox="0 0 50 110" fill="none" stroke="${theme.balloonStroke}" stroke-width="1.8" stroke-linecap="round">
-          <ellipse cx="25" cy="30" rx="19" ry="25" fill="${theme.balloonFill}" fill-opacity="0.6" />
-          <path d="M 23 55 L 27 55 L 25 59 Z" fill="${theme.balloonStroke}" />
-          <path d="M 25 59 Q 18 76 28 92 Q 32 101 24 108" fill="none" stroke-width="1.5" />
-        </svg>
-      </div>
+      <!-- 4 Symmetrical Pure CSS Royal Gold Corner Diamond Accents (Never Glitch in html2canvas) -->
+      <div style="position: absolute; top: 21px; left: 21px; width: 10px; height: 10px; background: #D4AF37; transform: rotate(45deg); pointer-events: none; z-index: 10;"></div>
+      <div style="position: absolute; top: 21px; right: 21px; width: 10px; height: 10px; background: #D4AF37; transform: rotate(45deg); pointer-events: none; z-index: 10;"></div>
+      <div style="position: absolute; bottom: 21px; right: 21px; width: 10px; height: 10px; background: #D4AF37; transform: rotate(45deg); pointer-events: none; z-index: 10;"></div>
+      <div style="position: absolute; bottom: 21px; left: 21px; width: 10px; height: 10px; background: #D4AF37; transform: rotate(45deg); pointer-events: none; z-index: 10;"></div>
 
       <!-- ========================================================================= -->
       <!-- INNER SAFE CONTENT CONTAINER (Strictly padded safely away from all borders) -->
@@ -318,13 +259,13 @@ function buildBirthdayCardA4Html(
         width: 100%;
         height: 100%;
         box-sizing: border-box;
-        padding: 44px 50px 36px 50px;
+        padding: 42px 48px 36px 48px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
       ">
-        <!-- 1. Header: School Name & Location (Cleanly centered, never touches corner filigrees) -->
+        <!-- 1. Header: School Name & Location -->
         <div style="text-align: center; width: 100%;">
           <!-- Top Royal Insignia Crest -->
           <div style="
@@ -332,23 +273,23 @@ function buildBirthdayCardA4Html(
             align-items: center;
             justify-content: center;
             gap: 8px;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
           ">
             <span style="color: #D4AF37; font-size: 13px;">✦</span>
-            <span style="color: #D4AF37; font-size: 18px; line-height: 1;">⚜</span>
+            <span style="color: #D4AF37; font-size: 20px; line-height: 1;">⚜</span>
             <span style="color: #D4AF37; font-size: 13px;">✦</span>
           </div>
 
           <h1 style="
             margin: 0;
-            font-size: 24px;
+            font-size: 25px;
             font-weight: 900;
             letter-spacing: 0.5px;
             text-transform: uppercase;
             line-height: 1.25;
             color: ${theme.titleColor};
             display: block;
-            max-width: 530px;
+            max-width: 560px;
             margin-left: auto;
             margin-right: auto;
             text-align: center;
@@ -376,20 +317,20 @@ function buildBirthdayCardA4Html(
         </div>
 
         <!-- 2. Birthday Salutation Header -->
-        <div style="text-align: center; width: 100%;">
+        <div style="text-align: center; width: 100%; margin: 2px 0;">
           ${lang === 'en' ? `
             <div style="
-              font-size: 15px;
+              font-size: 14.5px;
               font-weight: 800;
               letter-spacing: 6px;
               text-transform: uppercase;
               color: ${theme.subtextColor};
-              margin-bottom: 1px;
+              margin-bottom: 2px;
               opacity: 0.92;
             ">✦ HAPPY ✦</div>
             <div style="
               font-family: 'Playfair Display', Georgia, serif;
-              font-size: 54px;
+              font-size: 56px;
               font-style: italic;
               font-weight: 700;
               line-height: 1;
@@ -399,12 +340,12 @@ function buildBirthdayCardA4Html(
             ">Birthday</div>
           ` : `
             <div style="
-              font-size: 16px;
+              font-size: 15px;
               font-weight: 800;
               letter-spacing: 3px;
               text-transform: uppercase;
               color: ${theme.subtextColor};
-              margin-bottom: 2px;
+              margin-bottom: 3px;
               opacity: 0.92;
             ">✦ જન્મદિવસની ✦</div>
             <div style="
@@ -417,41 +358,31 @@ function buildBirthdayCardA4Html(
           `}
         </div>
 
-        <!-- 3. Center Portrait Section (Guaranteed 100% Round Circle, Never Squashed or Stretched) -->
+        <!-- 3. Center Portrait Section: Grand Size (285px x 285px), Multi-tone Gold Bezel, 100% Circular -->
         <div style="
           position: relative;
           width: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 4px 0;
+          margin: 6px 0;
         ">
-          <!-- Left Classical Golden Victory Laurel Branch -->
-          <div style="position: absolute; left: 205px; pointer-events: none; z-index: 4;">
-            ${laurelBranch(false)}
-          </div>
-
-          <!-- Right Classical Golden Victory Laurel Branch -->
-          <div style="position: absolute; right: 205px; pointer-events: none; z-index: 4;">
-            ${laurelBranch(true)}
-          </div>
-
-          <!-- Central Portrait Photo (Strictly 236px x 236px, flex-shrink: 0, guaranteed circle) -->
+          <!-- Central Portrait Photo -->
           <div style="
             position: relative;
             z-index: 3;
-            width: 236px;
-            height: 236px;
-            min-width: 236px;
-            min-height: 236px;
-            max-width: 236px;
-            max-height: 236px;
+            width: 285px;
+            height: 285px;
+            min-width: 285px;
+            min-height: 285px;
+            max-width: 285px;
+            max-height: 285px;
             flex-shrink: 0;
             border-radius: 50%;
-            padding: 6px;
+            padding: 7px;
             box-sizing: border-box;
-            background: linear-gradient(135deg, #FFE8A3 0%, #D4AF37 35%, #FFF6D6 60%, #AA7C11 100%);
-            box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+            background: linear-gradient(135deg, #FFE8A3 0%, #D4AF37 40%, #FFF5D0 65%, #AA7C11 100%);
+            box-shadow: 0 14px 32px rgba(0,0,0,0.18);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -462,7 +393,7 @@ function buildBirthdayCardA4Html(
               border-radius: 50%;
               overflow: hidden;
               background: #ffffff;
-              border: 4px solid #ffffff;
+              border: 4.5px solid #ffffff;
               box-sizing: border-box;
               display: flex;
               align-items: center;
@@ -489,7 +420,7 @@ function buildBirthdayCardA4Html(
                   justify-content: center;
                   color: #64748B;
                 ">
-                  <span style="font-size: 80px; font-weight: 900; color: #D4AF37;">${studentInitial}</span>
+                  <span style="font-size: 96px; font-weight: 900; color: #D4AF37;">${studentInitial}</span>
                 </div>
               `}
             </div>
@@ -497,18 +428,18 @@ function buildBirthdayCardA4Html(
             <!-- Star Medallion at Bottom Apex -->
             <div style="
               position: absolute;
-              bottom: -6px;
+              bottom: -8px;
               background: linear-gradient(135deg, #FFE8A3 0%, #D4AF37 50%, #AA7C11 100%);
               color: #ffffff;
-              width: 28px;
-              height: 28px;
+              width: 32px;
+              height: 32px;
               border-radius: 50%;
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: 15px;
-              border: 2px solid #ffffff;
-              box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+              font-size: 17px;
+              border: 2.5px solid #ffffff;
+              box-shadow: 0 3px 8px rgba(0,0,0,0.22);
               z-index: 5;
             ">
               ★
@@ -516,48 +447,61 @@ function buildBirthdayCardA4Html(
           </div>
         </div>
 
-        <!-- 4. Person Name & Identity Badges -->
+        <!-- 4. Person Name & Identity Badges (Strict Mathematical Centering & Alignment) -->
         <div style="text-align: center; width: 100%; margin: 2px 0;">
           <h2 style="
             margin: 0;
-            font-size: 28px;
+            font-size: 29px;
             font-weight: 900;
             line-height: 1.2;
             color: ${theme.titleColor};
             letter-spacing: 0.5px;
+            text-transform: uppercase;
           ">${person.name}</h2>
 
-          <!-- Identity Badges -->
+          <!-- Identity Badges: Fixed height & line-height for exact vertical centering -->
           <div style="
-            margin-top: 6px;
+            margin-top: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
           ">
             <div style="
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              height: 32px;
+              line-height: 32px;
+              padding: 0 18px;
               background: ${theme.badgeBg};
               color: ${theme.badgeText};
               border: 1.5px solid #D4AF37;
-              border-radius: 9999px;
-              padding: 4px 16px;
+              border-radius: 16px;
               font-size: 13.5px;
               font-weight: 800;
               letter-spacing: 0.3px;
+              box-sizing: border-box;
               box-shadow: 0 2px 6px rgba(0,0,0,0.04);
             ">
               🎂 ${person.formattedDob}
             </div>
             ${person.standard ? `
               <div style="
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                height: 32px;
+                line-height: 32px;
+                padding: 0 18px;
                 background: ${theme.badgeBg};
                 color: ${theme.badgeText};
                 border: 1.5px solid #D4AF37;
-                border-radius: 9999px;
-                padding: 4px 16px;
+                border-radius: 16px;
                 font-size: 13.5px;
                 font-weight: 800;
+                box-sizing: border-box;
                 box-shadow: 0 2px 6px rgba(0,0,0,0.04);
               ">
                 🎓 ${lang === 'gu' ? `ધોરણ ${person.standard}${person.section ? `-${person.section}` : ''}` : `Class ${person.standard}`}
@@ -565,13 +509,19 @@ function buildBirthdayCardA4Html(
             ` : ''}
             ${person.designation ? `
               <div style="
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                height: 32px;
+                line-height: 32px;
+                padding: 0 18px;
                 background: ${theme.badgeBg};
                 color: ${theme.badgeText};
                 border: 1.5px solid #D4AF37;
-                border-radius: 9999px;
-                padding: 4px 16px;
+                border-radius: 16px;
                 font-size: 13.5px;
                 font-weight: 800;
+                box-sizing: border-box;
                 box-shadow: 0 2px 6px rgba(0,0,0,0.04);
               ">
                 💼 ${person.designation}
@@ -580,51 +530,58 @@ function buildBirthdayCardA4Html(
           </div>
         </div>
 
-        <!-- 5. Wish Message Plaque (Large, Bold Typography, Well-spaced) -->
+        <!-- 5. Wish Message Plaque (Sophisticated Ribbon, Professional Serif Typography) -->
         <div style="
           width: 100%;
-          max-width: 590px;
+          max-width: 620px;
           background: ${theme.wishBg || 'rgba(255, 255, 255, 0.94)'};
           border: 1.8px solid #D4AF37;
           border-radius: 18px;
-          padding: 14px 26px 16px 26px;
+          padding: 16px 32px 18px 32px;
           box-sizing: border-box;
           text-align: center;
           margin: 4px 0;
-          box-shadow: 0 8px 22px rgba(0,0,0,0.05);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.06);
         ">
-          <!-- Top Ornamental Ribbon Badge -->
+          <!-- Top Ornamental Ribbon Header -->
           <div style="
-            display: inline-block;
-            background: ${theme.badgeBg};
-            color: ${theme.badgeText};
-            border: 1px solid #D4AF37;
-            border-radius: 9999px;
-            padding: 3px 14px;
-            font-size: 11.5px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 10px;
           ">
-            ✨ ${lang === 'gu' ? 'જન્મદિવસ શુભકામના સંદેશ' : 'HEARTFELT BIRTHDAY WISHES'} ✨
+            <div style="width: 45px; height: 1.5px; background: linear-gradient(90deg, transparent, #D4AF37);"></div>
+            <span style="
+              font-size: 12px;
+              font-weight: 800;
+              letter-spacing: 2px;
+              text-transform: uppercase;
+              color: #9A6B0A;
+              line-height: 1;
+            ">✦ ${lang === 'gu' ? 'જન્મદિવસ શુભકામના સંદેશ' : 'HEARTFELT BIRTHDAY WISHES'} ✦</span>
+            <div style="width: 45px; height: 1.5px; background: linear-gradient(90deg, #D4AF37, transparent);"></div>
           </div>
 
+          <!-- Professional Wish Typography -->
           <p style="
             margin: 0;
-            font-size: ${lang === 'gu' ? '21px' : '19.5px'};
-            font-weight: 800;
-            line-height: 1.55;
+            font-family: ${lang === 'gu' ? GUJARATI_FONT_STACK : "'Merriweather', 'Playfair Display', Georgia, serif"};
+            font-size: ${lang === 'gu' ? '21px' : '20px'};
+            font-style: ${lang === 'gu' ? 'normal' : 'italic'};
+            font-weight: ${lang === 'gu' ? '700' : '500'};
+            line-height: 1.65;
             color: ${theme.textColor};
-            letter-spacing: 0.2px;
+            letter-spacing: 0.25px;
+            text-align: center;
           ">
-            <span style="color: #D4AF37; font-size: 26px; font-weight: 900; line-height: 0; vertical-align: -4px; margin-right: 4px;">❝</span>
+            <span style="font-family: Georgia, serif; font-size: 26px; color: #D4AF37; font-weight: 700; margin-right: 4px;">“</span>
             ${customWishText}
-            <span style="color: #D4AF37; font-size: 26px; font-weight: 900; line-height: 0; vertical-align: -4px; margin-left: 4px;">❞</span>
+            <span style="font-family: Georgia, serif; font-size: 26px; color: #D4AF37; font-weight: 700; margin-left: 4px;">”</span>
           </p>
         </div>
 
-        <!-- 6. Regards & School Family Blessing Footer (Comfortably clear of bottom border) -->
+        <!-- 6. Regards & School Family Blessing Footer -->
         <div style="
           width: 100%;
           text-align: center;
