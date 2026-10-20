@@ -26,6 +26,7 @@ import {
   downloadBirthdayCardPdf,
   printBirthdayCard,
   downloadBirthdayCardPng,
+  getBalloonBouquetDataUri,
 } from '../utils/birthdayPdfShareUtils';
 
 export interface CardColorTheme {
@@ -250,6 +251,22 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
   const [themeOffset, setThemeOffset] = useState(0);
   const currentTheme = BIRTHDAY_CARD_THEMES[(initialThemeIndex + themeOffset) % BIRTHDAY_CARD_THEMES.length];
 
+  const balloonLeftDataUri = useMemo(() => {
+    return getBalloonBouquetDataUri('left', {
+      primary: currentTheme.titleColor,
+      seal: currentTheme.sealBorder,
+      border: currentTheme.cardBorder,
+    });
+  }, [currentTheme]);
+
+  const balloonRightDataUri = useMemo(() => {
+    return getBalloonBouquetDataUri('right', {
+      primary: currentTheme.titleColor,
+      seal: currentTheme.sealBorder,
+      border: currentTheme.cardBorder,
+    });
+  }, [currentTheme]);
+
   // Sync state when selected person changes
   useEffect(() => {
     setPhotoPreview(person.customPhotoUrl || person.photoUrl || '');
@@ -339,6 +356,17 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
     }
     return `${displaySchoolName} Family`;
   }, [school.schoolName, displaySchoolName, lang]);
+
+  // Clean DOB string and standard to eliminate any duplicate prefixes
+  const cleanDob = useMemo(() => {
+    return (person.formattedDob || '')
+      .replace(/^(d\.?o\.?b\.?:?\s*|જન્મ\s*તારીખ:?\s*)+/gi, '')
+      .trim();
+  }, [person.formattedDob]);
+
+  const rawStandard = useMemo(() => {
+    return person.standard ? String(person.standard).replace(/^class\s*/i, '').trim() : '';
+  }, [person.standard]);
 
   // Download Individual Birthday Card as High-Quality A4 Print PDF
   const handleDownloadPdf = async () => {
@@ -688,83 +716,19 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
           <div className="absolute bottom-[8px] right-[8px] w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#D4AF37] rotate-45 pointer-events-none z-20" />
           <div className="absolute bottom-[8px] left-[8px] w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#D4AF37] rotate-45 pointer-events-none z-20" />
 
-          {/* Left Festive Balloon Bouquet */}
-          <div className="absolute top-[145px] sm:top-[160px] left-1 sm:left-2 pointer-events-none z-10 w-[55px] sm:w-[70px] h-[115px] sm:h-[135px] opacity-90">
-            <svg viewBox="0 0 140 270" fill="none" className="w-full h-full">
-              <defs>
-                <radialGradient id="balloonPrevPri_L" cx="35%" cy="30%" r="65%">
-                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
-                  <stop offset="25%" stopColor={currentTheme.badgeBg} />
-                  <stop offset="70%" stopColor={currentTheme.titleColor} />
-                  <stop offset="100%" stopColor={currentTheme.cardBorder} />
-                </radialGradient>
-                <radialGradient id="balloonPrevGold_L" cx="35%" cy="30%" r="65%">
-                  <stop offset="0%" stopColor="#FFF8E1" stopOpacity="0.95" />
-                  <stop offset="30%" stopColor="#FFE082" />
-                  <stop offset="70%" stopColor="#D4AF37" />
-                  <stop offset="100%" stopColor="#8C6D15" />
-                </radialGradient>
-                <radialGradient id="balloonPrevAcc_L" cx="35%" cy="30%" r="65%">
-                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
-                  <stop offset="30%" stopColor="#FFD1DC" />
-                  <stop offset="70%" stopColor="#E57373" />
-                  <stop offset="100%" stopColor="#B71C1C" />
-                </radialGradient>
-              </defs>
-              <path d="M 46 112 Q 40 160 70 205 Q 75 230 72 265" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.85" />
-              <path d="M 94 92 Q 100 150 72 205 Q 68 230 72 265" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.85" />
-              <path d="M 68 152 Q 62 185 70 205 Q 75 230 72 265" stroke="#AA7C11" strokeWidth="2.2" fill="none" opacity="0.9" />
-              <circle cx="71" cy="207" r="3.5" fill="#D4AF37" />
-              <ellipse cx="94" cy="56" rx="34" ry="42" fill="url(#balloonPrevGold_L)" />
-              <ellipse cx="84" cy="40" rx="9" ry="15" fill="#FFFFFF" fillOpacity="0.5" transform="rotate(-20 84 40)" />
-              <polygon points="90,98 98,98 94,103" fill="#8C6D15" />
-              <ellipse cx="46" cy="74" rx="32" ry="40" fill="url(#balloonPrevAcc_L)" />
-              <ellipse cx="36" cy="58" rx="8" ry="14" fill="#FFFFFF" fillOpacity="0.45" transform="rotate(-20 36 58)" />
-              <polygon points="42,114 50,114 46,119" fill="#B71C1C" />
-              <ellipse cx="68" cy="110" rx="36" ry="45" fill="url(#balloonPrevPri_L)" />
-              <ellipse cx="56" cy="92" rx="10" ry="16" fill="#FFFFFF" fillOpacity="0.55" transform="rotate(-20 56 92)" />
-              <polygon points="64,155 72,155 68,160" fill={currentTheme.cardBorder} />
-            </svg>
-          </div>
+          {/* Left Festive Balloon Bouquet (100% Guaranteed Image Render) */}
+          <img
+            src={balloonLeftDataUri}
+            alt="Left Balloons"
+            className="absolute top-[21%] sm:top-[22%] left-1 sm:left-2 pointer-events-none z-10 w-[62px] sm:w-[84px] h-auto opacity-95"
+          />
 
-          {/* Right Festive Balloon Bouquet */}
-          <div className="absolute top-[145px] sm:top-[160px] right-1 sm:right-2 pointer-events-none z-10 w-[55px] sm:w-[70px] h-[115px] sm:h-[135px] opacity-90 scale-x-[-1]">
-            <svg viewBox="0 0 140 270" fill="none" className="w-full h-full">
-              <defs>
-                <radialGradient id="balloonPrevPri_R" cx="35%" cy="30%" r="65%">
-                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
-                  <stop offset="25%" stopColor={currentTheme.badgeBg} />
-                  <stop offset="70%" stopColor={currentTheme.titleColor} />
-                  <stop offset="100%" stopColor={currentTheme.cardBorder} />
-                </radialGradient>
-                <radialGradient id="balloonPrevGold_R" cx="35%" cy="30%" r="65%">
-                  <stop offset="0%" stopColor="#FFF8E1" stopOpacity="0.95" />
-                  <stop offset="30%" stopColor="#FFE082" />
-                  <stop offset="70%" stopColor="#D4AF37" />
-                  <stop offset="100%" stopColor="#8C6D15" />
-                </radialGradient>
-                <radialGradient id="balloonPrevAcc_R" cx="35%" cy="30%" r="65%">
-                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
-                  <stop offset="30%" stopColor="#FFD1DC" />
-                  <stop offset="70%" stopColor="#E57373" />
-                  <stop offset="100%" stopColor="#B71C1C" />
-                </radialGradient>
-              </defs>
-              <path d="M 46 112 Q 40 160 70 205 Q 75 230 72 265" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.85" />
-              <path d="M 94 92 Q 100 150 72 205 Q 68 230 72 265" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.85" />
-              <path d="M 68 152 Q 62 185 70 205 Q 75 230 72 265" stroke="#AA7C11" strokeWidth="2.2" fill="none" opacity="0.9" />
-              <circle cx="71" cy="207" r="3.5" fill="#D4AF37" />
-              <ellipse cx="94" cy="56" rx="34" ry="42" fill="url(#balloonPrevGold_R)" />
-              <ellipse cx="84" cy="40" rx="9" ry="15" fill="#FFFFFF" fillOpacity="0.5" transform="rotate(-20 84 40)" />
-              <polygon points="90,98 98,98 94,103" fill="#8C6D15" />
-              <ellipse cx="46" cy="74" rx="32" ry="40" fill="url(#balloonPrevAcc_R)" />
-              <ellipse cx="36" cy="58" rx="8" ry="14" fill="#FFFFFF" fillOpacity="0.45" transform="rotate(-20 36 58)" />
-              <polygon points="42,114 50,114 46,119" fill="#B71C1C" />
-              <ellipse cx="68" cy="110" rx="36" ry="45" fill="url(#balloonPrevPri_R)" />
-              <ellipse cx="56" cy="92" rx="10" ry="16" fill="#FFFFFF" fillOpacity="0.55" transform="rotate(-20 56 92)" />
-              <polygon points="64,155 72,155 68,160" fill={currentTheme.cardBorder} />
-            </svg>
-          </div>
+          {/* Right Festive Balloon Bouquet (100% Guaranteed Image Render) */}
+          <img
+            src={balloonRightDataUri}
+            alt="Right Balloons"
+            className="absolute top-[21%] sm:top-[22%] right-1 sm:right-2 pointer-events-none z-10 w-[62px] sm:w-[84px] h-auto opacity-95"
+          />
 
           {/* Top Header: School Name & Insignia */}
           <div className="relative z-10 w-full text-center pt-1.5 px-3">
@@ -847,9 +811,9 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
           {/* Center Visual: Grand Proportional Round Portrait with Multi-layer Gold Rim */}
           <div className="relative z-10 flex items-center justify-center my-auto py-1">
             <div
-              className="relative w-[155px] h-[155px] sm:w-[185px] sm:h-[185px] aspect-square shrink-0 rounded-full p-1.5 sm:p-2 bg-gradient-to-tr from-[#FFE8A3] via-[#D4AF37] to-[#AA7C11] shadow-xl z-20 flex items-center justify-center"
+              className="relative w-[165px] h-[165px] sm:w-[195px] sm:h-[195px] aspect-square shrink-0 rounded-full p-1.5 sm:p-2 bg-gradient-to-tr from-[#FFE8A3] via-[#D4AF37] to-[#AA7C11] shadow-xl z-20 flex items-center justify-center"
             >
-              <div className="w-full h-full rounded-full overflow-hidden bg-white border-[2.5px] sm:border-[3.5px] border-white shadow-inner flex items-center justify-center">
+              <div className="w-full h-full rounded-full overflow-hidden bg-white border-[3px] sm:border-[4px] border-white shadow-inner flex items-center justify-center">
                 {photoPreview ? (
                   <img
                     src={photoPreview}
@@ -868,8 +832,8 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
                 )}
               </div>
 
-              {/* Star Medallion Badge */}
-              <div className="absolute -bottom-1.5 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-[#FFE8A3] via-[#D4AF37] to-[#AA7C11] text-white flex items-center justify-center text-[11px] sm:text-xs font-bold border-1.5 border-white shadow-xs z-30">
+              {/* Star Medallion Badge - Centered via CSS */}
+              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-[#FFE8A3] via-[#D4AF37] to-[#AA7C11] text-white flex items-center justify-center text-[11px] sm:text-xs font-bold border-1.5 border-white shadow-xs z-30">
                 ★
               </div>
             </div>
@@ -883,35 +847,40 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
                 letterSpacing: '0.01em',
                 color: currentTheme.titleColor,
               }}
-              className="text-[17px] sm:text-[20px] font-black leading-tight break-words max-w-full mx-auto text-center uppercase mb-1.5"
+              className="text-[17px] sm:text-[21px] font-black leading-tight break-words max-w-full mx-auto text-center uppercase mb-1.5"
             >
               {person.name}
             </h3>
 
             <div
               style={{ color: currentTheme.subtextColor }}
-              className="flex items-center justify-center gap-1.5 text-[10px] sm:text-[11.5px] font-extrabold opacity-90 flex-wrap text-center"
+              className="flex items-center justify-center gap-1.5 text-[10px] sm:text-[11.5px] font-extrabold flex-wrap text-center"
             >
-              <div className="inline-flex items-center justify-center py-1 sm:py-1.5 px-3 sm:px-3.5 rounded-full bg-white/80 dark:bg-white/10 border border-[#D4AF37] shadow-2xs leading-none">
-                <span className="mr-1 text-xs sm:text-sm leading-none inline-block">🎂</span>
-                <span className="text-[10px] sm:text-[11.5px] font-extrabold leading-none inline-block">
-                  {lang === 'gu' ? 'જન્મતારીખ: ' : 'D.O.B: '}{person.formattedDob}
+              {/* DOB Pill - Explicit Height & Centered */}
+              <div className="inline-flex items-center justify-center h-7 sm:h-8 px-3 sm:px-3.5 rounded-full bg-white/95 dark:bg-slate-900/80 border-[1.5px] border-[#D4AF37] shadow-2xs">
+                <span className="mr-1.5 text-xs sm:text-sm leading-none flex items-center justify-center">🎂</span>
+                <span className="text-[10px] sm:text-[11.5px] font-extrabold leading-none flex items-center justify-center text-slate-800 dark:text-slate-100">
+                  {lang === 'gu' ? `જન્મતારીખ: ${cleanDob}` : `D.O.B: ${cleanDob}`}
                 </span>
               </div>
-              {person.standard && (
-                <div className="inline-flex items-center justify-center py-1 sm:py-1.5 px-3 sm:px-3.5 rounded-full bg-white/80 dark:bg-white/10 border border-[#D4AF37] shadow-2xs leading-none">
-                  <span className="mr-1 text-xs sm:text-sm leading-none inline-block">🎓</span>
-                  <span className="text-[10px] sm:text-[11.5px] font-extrabold leading-none inline-block">
+
+              {/* Class Pill */}
+              {rawStandard && (
+                <div className="inline-flex items-center justify-center h-7 sm:h-8 px-3 sm:px-3.5 rounded-full bg-white/95 dark:bg-slate-900/80 border-[1.5px] border-[#D4AF37] shadow-2xs">
+                  <span className="mr-1.5 text-xs sm:text-sm leading-none flex items-center justify-center">🎓</span>
+                  <span className="text-[10px] sm:text-[11.5px] font-extrabold leading-none flex items-center justify-center text-slate-800 dark:text-slate-100">
                     {lang === 'gu'
-                      ? `ધોરણ ${person.standard}${person.section ? `-${person.section}` : ''}`
-                      : `Class ${person.standard}${person.section ? `-${person.section}` : ''}`}
+                      ? `ધોરણ ${rawStandard}${person.section ? `-${person.section}` : ''}`
+                      : `Class ${rawStandard}${person.section ? `-${person.section}` : ''}`}
                   </span>
                 </div>
               )}
+
+              {/* Designation Pill */}
               {person.designation && (
-                <div className="inline-flex items-center justify-center py-1 sm:py-1.5 px-3 sm:px-3.5 rounded-full bg-white/80 dark:bg-white/10 border border-[#D4AF37] shadow-2xs leading-none">
-                  <span className="mr-1 text-xs sm:text-sm leading-none inline-block">💼</span>
-                  <span className="text-[10px] sm:text-[11.5px] font-extrabold leading-none inline-block">
+                <div className="inline-flex items-center justify-center h-7 sm:h-8 px-3 sm:px-3.5 rounded-full bg-white/95 dark:bg-slate-900/80 border-[1.5px] border-[#D4AF37] shadow-2xs">
+                  <span className="mr-1.5 text-xs sm:text-sm leading-none flex items-center justify-center">💼</span>
+                  <span className="text-[10px] sm:text-[11.5px] font-extrabold leading-none flex items-center justify-center text-slate-800 dark:text-slate-100">
                     {person.designation}
                   </span>
                 </div>
@@ -923,31 +892,31 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
           <div className="relative z-10 w-full text-center px-1 sm:px-2 my-auto">
             <div
               style={{
-                background: currentTheme.wishBg || 'rgba(255, 255, 255, 0.94)',
+                background: currentTheme.wishBg || 'rgba(255, 255, 255, 0.95)',
                 borderColor: '#D4AF37',
               }}
-              className="p-2.5 sm:p-3 rounded-2xl border-[1.5px] shadow-xs max-w-full mx-auto"
+              className="p-3 sm:p-3.5 rounded-2xl border-[1.8px] shadow-sm max-w-full mx-auto"
             >
               {/* Ribbon Header with Centered Flourish */}
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <div className="w-6 sm:w-8 h-[1px] bg-gradient-to-r from-transparent to-[#D4AF37]" />
-                <span className="text-[9px] sm:text-[10px] font-black tracking-widest uppercase text-amber-800 dark:text-amber-300">
-                  ✦ {lang === 'gu' ? 'જન્મદિવસ શુભકામના સંદેશ' : 'BIRTHDAY WISHES'} ✦
+              <div className="flex items-center justify-center gap-2 mb-1.5">
+                <div className="w-6 sm:w-10 h-[1.5px] bg-gradient-to-r from-transparent to-[#D4AF37]" />
+                <span className="text-[9.5px] sm:text-[11px] font-black tracking-widest uppercase text-amber-800 dark:text-amber-300">
+                  ✦ {lang === 'gu' ? 'જન્મદિવસ શુભકામના સંદેશ' : 'HEARTFELT BIRTHDAY WISHES'} ✦
                 </span>
-                <div className="w-6 sm:w-8 h-[1px] bg-gradient-to-l from-transparent to-[#D4AF37]" />
+                <div className="w-6 sm:w-10 h-[1.5px] bg-gradient-to-l from-transparent to-[#D4AF37]" />
               </div>
 
               <p
                 style={{
                   fontFamily: lang === 'gu' ? "'Anek Gujarati', sans-serif" : "'Playfair Display', Georgia, serif",
-                  lineHeight: '1.45',
+                  lineHeight: '1.5',
                   color: currentTheme.textColor,
                 }}
-                className={`text-[12px] sm:text-[13.5px] ${lang === 'en' ? 'italic font-medium' : 'font-bold'} tracking-normal text-center`}
+                className={`text-[12.5px] sm:text-[14px] ${lang === 'en' ? 'italic font-medium' : 'font-bold'} tracking-normal text-center`}
               >
-                <span className="text-[#D4AF37] font-black mr-1 text-xs sm:text-sm not-italic">“</span>
+                <span className="text-[#D4AF37] font-black mr-1 text-sm sm:text-base not-italic">“</span>
                 {customWishText}
-                <span className="text-[#D4AF37] font-black ml-1 text-xs sm:text-sm not-italic">”</span>
+                <span className="text-[#D4AF37] font-black ml-1 text-sm sm:text-base not-italic">”</span>
               </p>
             </div>
           </div>
