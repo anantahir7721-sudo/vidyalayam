@@ -688,6 +688,84 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
           <div className="absolute bottom-[8px] right-[8px] w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#D4AF37] rotate-45 pointer-events-none z-20" />
           <div className="absolute bottom-[8px] left-[8px] w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#D4AF37] rotate-45 pointer-events-none z-20" />
 
+          {/* Left Festive Balloon Bouquet */}
+          <div className="absolute top-[145px] sm:top-[160px] left-1 sm:left-2 pointer-events-none z-10 w-[55px] sm:w-[70px] h-[115px] sm:h-[135px] opacity-90">
+            <svg viewBox="0 0 140 270" fill="none" className="w-full h-full">
+              <defs>
+                <radialGradient id="balloonPrevPri_L" cx="35%" cy="30%" r="65%">
+                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+                  <stop offset="25%" stopColor={currentTheme.badgeBg} />
+                  <stop offset="70%" stopColor={currentTheme.titleColor} />
+                  <stop offset="100%" stopColor={currentTheme.cardBorder} />
+                </radialGradient>
+                <radialGradient id="balloonPrevGold_L" cx="35%" cy="30%" r="65%">
+                  <stop offset="0%" stopColor="#FFF8E1" stopOpacity="0.95" />
+                  <stop offset="30%" stopColor="#FFE082" />
+                  <stop offset="70%" stopColor="#D4AF37" />
+                  <stop offset="100%" stopColor="#8C6D15" />
+                </radialGradient>
+                <radialGradient id="balloonPrevAcc_L" cx="35%" cy="30%" r="65%">
+                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+                  <stop offset="30%" stopColor="#FFD1DC" />
+                  <stop offset="70%" stopColor="#E57373" />
+                  <stop offset="100%" stopColor="#B71C1C" />
+                </radialGradient>
+              </defs>
+              <path d="M 46 112 Q 40 160 70 205 Q 75 230 72 265" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.85" />
+              <path d="M 94 92 Q 100 150 72 205 Q 68 230 72 265" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.85" />
+              <path d="M 68 152 Q 62 185 70 205 Q 75 230 72 265" stroke="#AA7C11" strokeWidth="2.2" fill="none" opacity="0.9" />
+              <circle cx="71" cy="207" r="3.5" fill="#D4AF37" />
+              <ellipse cx="94" cy="56" rx="34" ry="42" fill="url(#balloonPrevGold_L)" />
+              <ellipse cx="84" cy="40" rx="9" ry="15" fill="#FFFFFF" fillOpacity="0.5" transform="rotate(-20 84 40)" />
+              <polygon points="90,98 98,98 94,103" fill="#8C6D15" />
+              <ellipse cx="46" cy="74" rx="32" ry="40" fill="url(#balloonPrevAcc_L)" />
+              <ellipse cx="36" cy="58" rx="8" ry="14" fill="#FFFFFF" fillOpacity="0.45" transform="rotate(-20 36 58)" />
+              <polygon points="42,114 50,114 46,119" fill="#B71C1C" />
+              <ellipse cx="68" cy="110" rx="36" ry="45" fill="url(#balloonPrevPri_L)" />
+              <ellipse cx="56" cy="92" rx="10" ry="16" fill="#FFFFFF" fillOpacity="0.55" transform="rotate(-20 56 92)" />
+              <polygon points="64,155 72,155 68,160" fill={currentTheme.cardBorder} />
+            </svg>
+          </div>
+
+          {/* Right Festive Balloon Bouquet */}
+          <div className="absolute top-[145px] sm:top-[160px] right-1 sm:right-2 pointer-events-none z-10 w-[55px] sm:w-[70px] h-[115px] sm:h-[135px] opacity-90 scale-x-[-1]">
+            <svg viewBox="0 0 140 270" fill="none" className="w-full h-full">
+              <defs>
+                <radialGradient id="balloonPrevPri_R" cx="35%" cy="30%" r="65%">
+                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+                  <stop offset="25%" stopColor={currentTheme.badgeBg} />
+                  <stop offset="70%" stopColor={currentTheme.titleColor} />
+                  <stop offset="100%" stopColor={currentTheme.cardBorder} />
+                </radialGradient>
+                <radialGradient id="balloonPrevGold_R" cx="35%" cy="30%" r="65%">
+                  <stop offset="0%" stopColor="#FFF8E1" stopOpacity="0.95" />
+                  <stop offset="30%" stopColor="#FFE082" />
+                  <stop offset="70%" stopColor="#D4AF37" />
+                  <stop offset="100%" stopColor="#8C6D15" />
+                </radialGradient>
+                <radialGradient id="balloonPrevAcc_R" cx="35%" cy="30%" r="65%">
+                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+                  <stop offset="30%" stopColor="#FFD1DC" />
+                  <stop offset="70%" stopColor="#E57373" />
+                  <stop offset="100%" stopColor="#B71C1C" />
+                </radialGradient>
+              </defs>
+              <path d="M 46 112 Q 40 160 70 205 Q 75 230 72 265" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.85" />
+              <path d="M 94 92 Q 100 150 72 205 Q 68 230 72 265" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.85" />
+              <path d="M 68 152 Q 62 185 70 205 Q 75 230 72 265" stroke="#AA7C11" strokeWidth="2.2" fill="none" opacity="0.9" />
+              <circle cx="71" cy="207" r="3.5" fill="#D4AF37" />
+              <ellipse cx="94" cy="56" rx="34" ry="42" fill="url(#balloonPrevGold_R)" />
+              <ellipse cx="84" cy="40" rx="9" ry="15" fill="#FFFFFF" fillOpacity="0.5" transform="rotate(-20 84 40)" />
+              <polygon points="90,98 98,98 94,103" fill="#8C6D15" />
+              <ellipse cx="46" cy="74" rx="32" ry="40" fill="url(#balloonPrevAcc_R)" />
+              <ellipse cx="36" cy="58" rx="8" ry="14" fill="#FFFFFF" fillOpacity="0.45" transform="rotate(-20 36 58)" />
+              <polygon points="42,114 50,114 46,119" fill="#B71C1C" />
+              <ellipse cx="68" cy="110" rx="36" ry="45" fill="url(#balloonPrevPri_R)" />
+              <ellipse cx="56" cy="92" rx="10" ry="16" fill="#FFFFFF" fillOpacity="0.55" transform="rotate(-20 56 92)" />
+              <polygon points="64,155 72,155 68,160" fill={currentTheme.cardBorder} />
+            </svg>
+          </div>
+
           {/* Top Header: School Name & Insignia */}
           <div className="relative z-10 w-full text-center pt-1.5 px-3">
             {/* Top Royal Crest Insignia */}
@@ -797,37 +875,46 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
             </div>
           </div>
 
-          {/* Student / Staff Name & Details (Verified Centered Pills) */}
-          <div className="relative z-10 w-full text-center my-0.5 px-2">
+          {/* Student / Staff Name & Details (Verified Centered Badges) */}
+          <div className="relative z-10 w-full text-center my-1 px-2">
             <h3
               style={{
                 fontFamily: lang === 'gu' ? "'Anek Gujarati', Georgia, serif" : "'Playfair Display', Georgia, serif",
                 letterSpacing: '0.01em',
                 color: currentTheme.titleColor,
               }}
-              className="text-[17px] sm:text-[20px] font-black leading-tight break-words max-w-full mx-auto text-center uppercase"
+              className="text-[17px] sm:text-[20px] font-black leading-tight break-words max-w-full mx-auto text-center uppercase mb-1.5"
             >
               {person.name}
             </h3>
 
             <div
               style={{ color: currentTheme.subtextColor }}
-              className="flex items-center justify-center gap-1.5 text-[10px] sm:text-[11.5px] font-extrabold mt-1 opacity-90 flex-wrap text-center"
+              className="flex items-center justify-center gap-1.5 text-[10px] sm:text-[11.5px] font-extrabold opacity-90 flex-wrap text-center"
             >
-              <span className="inline-flex items-center justify-center h-6 sm:h-6.5 px-3 rounded-full bg-white/70 dark:bg-white/10 border border-[#D4AF37] shadow-2xs leading-none">
-                🎂 {person.formattedDob}
-              </span>
-              {person.standard && (
-                <span className="inline-flex items-center justify-center h-6 sm:h-6.5 px-3 rounded-full bg-white/70 dark:bg-white/10 border border-[#D4AF37] shadow-2xs leading-none">
-                  🎓 {lang === 'gu'
-                    ? `ધોરણ ${person.standard}${person.section ? `-${person.section}` : ''}`
-                    : `Class ${person.standard}${person.section ? `-${person.section}` : ''}`}
+              <div className="inline-flex items-center justify-center py-1 sm:py-1.5 px-3 sm:px-3.5 rounded-full bg-white/80 dark:bg-white/10 border border-[#D4AF37] shadow-2xs leading-none">
+                <span className="mr-1 text-xs sm:text-sm leading-none inline-block">🎂</span>
+                <span className="text-[10px] sm:text-[11.5px] font-extrabold leading-none inline-block">
+                  {lang === 'gu' ? 'જન્મતારીખ: ' : 'D.O.B: '}{person.formattedDob}
                 </span>
+              </div>
+              {person.standard && (
+                <div className="inline-flex items-center justify-center py-1 sm:py-1.5 px-3 sm:px-3.5 rounded-full bg-white/80 dark:bg-white/10 border border-[#D4AF37] shadow-2xs leading-none">
+                  <span className="mr-1 text-xs sm:text-sm leading-none inline-block">🎓</span>
+                  <span className="text-[10px] sm:text-[11.5px] font-extrabold leading-none inline-block">
+                    {lang === 'gu'
+                      ? `ધોરણ ${person.standard}${person.section ? `-${person.section}` : ''}`
+                      : `Class ${person.standard}${person.section ? `-${person.section}` : ''}`}
+                  </span>
+                </div>
               )}
               {person.designation && (
-                <span className="inline-flex items-center justify-center h-6 sm:h-6.5 px-3 rounded-full bg-white/70 dark:bg-white/10 border border-[#D4AF37] shadow-2xs leading-none">
-                  💼 {person.designation}
-                </span>
+                <div className="inline-flex items-center justify-center py-1 sm:py-1.5 px-3 sm:px-3.5 rounded-full bg-white/80 dark:bg-white/10 border border-[#D4AF37] shadow-2xs leading-none">
+                  <span className="mr-1 text-xs sm:text-sm leading-none inline-block">💼</span>
+                  <span className="text-[10px] sm:text-[11.5px] font-extrabold leading-none inline-block">
+                    {person.designation}
+                  </span>
+                </div>
               )}
             </div>
           </div>

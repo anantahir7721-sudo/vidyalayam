@@ -190,6 +190,85 @@ function buildBirthdayCardA4Html(
 
   const studentInitial = person.name ? person.name.charAt(0).toUpperCase() : '★';
 
+  // Symmetrical Festive Balloon Bouquet SVG for Left and Right sides
+  const renderBalloonBouquetSvg = (side: 'left' | 'right') => {
+    const isLeft = side === 'left';
+    return `
+      <div style="
+        position: absolute;
+        top: 275px;
+        ${isLeft ? 'left: 20px;' : 'right: 20px;'};
+        width: 140px;
+        height: 270px;
+        pointer-events: none;
+        z-index: 10;
+        ${isLeft ? '' : 'transform: scaleX(-1);'}
+      ">
+        <svg width="140" height="270" viewBox="0 0 140 270" fill="none">
+          <defs>
+            <!-- Balloon 1: Royal Theme Color Gradient -->
+            <radialGradient id="balloonGradPrimary_${side}" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+              <stop offset="25%" stop-color="${theme.badgeBg}" />
+              <stop offset="70%" stop-color="${theme.titleColor}" />
+              <stop offset="100%" stop-color="${theme.cardBorder}" />
+            </radialGradient>
+
+            <!-- Balloon 2: Metallic Gold Gradient -->
+            <radialGradient id="balloonGradGold_${side}" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#FFF8E1" stop-opacity="0.95" />
+              <stop offset="30%" stop-color="#FFE082" />
+              <stop offset="70%" stop-color="#D4AF37" />
+              <stop offset="100%" stop-color="#8C6D15" />
+            </radialGradient>
+
+            <!-- Balloon 3: Shimmer Warm Coral/Ruby Gradient -->
+            <radialGradient id="balloonGradAccent_${side}" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+              <stop offset="30%" stop-color="#FFD1DC" />
+              <stop offset="70%" stop-color="#E57373" />
+              <stop offset="100%" stop-color="#B71C1C" />
+            </radialGradient>
+          </defs>
+
+          <!-- Curving Ribbon Strings (Flowing downwards) -->
+          <path d="M 46 112 Q 40 160 70 205 Q 75 230 72 265" stroke="#D4AF37" stroke-width="1.6" fill="none" opacity="0.85" />
+          <path d="M 94 92 Q 100 150 72 205 Q 68 230 72 265" stroke="#D4AF37" stroke-width="1.6" fill="none" opacity="0.85" />
+          <path d="M 68 152 Q 62 185 70 205 Q 75 230 72 265" stroke="#AA7C11" stroke-width="1.8" fill="none" opacity="0.9" />
+          <!-- Ribbon Bow Knot -->
+          <circle cx="71" cy="207" r="3" fill="#D4AF37" />
+
+          <!-- Balloon 2 (Back Right, Metallic Gold) -->
+          <g>
+            <ellipse cx="94" cy="56" rx="34" ry="42" fill="url(#balloonGradGold_${side})" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.12))" />
+            <ellipse cx="84" cy="40" rx="9" ry="15" fill="#FFFFFF" fill-opacity="0.5" transform="rotate(-20 84 40)" />
+            <polygon points="90,98 98,98 94,103" fill="#8C6D15" />
+          </g>
+
+          <!-- Balloon 1 (Back Left, Warm Shimmer) -->
+          <g>
+            <ellipse cx="46" cy="74" rx="32" ry="40" fill="url(#balloonGradAccent_${side})" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.12))" />
+            <ellipse cx="36" cy="58" rx="8" ry="14" fill="#FFFFFF" fill-opacity="0.45" transform="rotate(-20 36 58)" />
+            <polygon points="42,114 50,114 46,119" fill="#B71C1C" />
+          </g>
+
+          <!-- Balloon 3 (Front Center, Royal Theme Primary) -->
+          <g>
+            <ellipse cx="68" cy="110" rx="36" ry="45" fill="url(#balloonGradPrimary_${side})" filter="drop-shadow(0 6px 14px rgba(0,0,0,0.18))" />
+            <ellipse cx="56" cy="92" rx="10" ry="16" fill="#FFFFFF" fill-opacity="0.55" transform="rotate(-20 56 92)" />
+            <polygon points="64,155 72,155 68,160" fill="${theme.cardBorder}" />
+          </g>
+
+          <!-- Festive Sparkles -->
+          <text x="18" y="32" font-size="12" fill="#D4AF37" opacity="0.85">✦</text>
+          <text x="110" y="24" font-size="15" fill="#D4AF37" opacity="0.9">★</text>
+          <text x="10" y="145" font-size="10" fill="#D4AF37" opacity="0.75">✦</text>
+          <text x="115" y="160" font-size="13" fill="#D4AF37" opacity="0.8">★</text>
+        </svg>
+      </div>
+    `;
+  };
+
   return `
     <div style="
       width: 794px;
@@ -244,11 +323,17 @@ function buildBirthdayCardA4Html(
         box-sizing: border-box;
       "></div>
 
-      <!-- 4 Symmetrical Pure CSS Royal Gold Corner Diamond Accents (Never Glitch in html2canvas) -->
+      <!-- 4 Symmetrical Pure CSS Royal Gold Corner Diamond Accents -->
       <div style="position: absolute; top: 21px; left: 21px; width: 10px; height: 10px; background: #D4AF37; transform: rotate(45deg); pointer-events: none; z-index: 10;"></div>
       <div style="position: absolute; top: 21px; right: 21px; width: 10px; height: 10px; background: #D4AF37; transform: rotate(45deg); pointer-events: none; z-index: 10;"></div>
       <div style="position: absolute; bottom: 21px; right: 21px; width: 10px; height: 10px; background: #D4AF37; transform: rotate(45deg); pointer-events: none; z-index: 10;"></div>
       <div style="position: absolute; bottom: 21px; left: 21px; width: 10px; height: 10px; background: #D4AF37; transform: rotate(45deg); pointer-events: none; z-index: 10;"></div>
+
+      <!-- Left Festive Balloon Bouquet -->
+      ${renderBalloonBouquetSvg('left')}
+
+      <!-- Right Festive Balloon Bouquet -->
+      ${renderBalloonBouquetSvg('right')}
 
       <!-- ========================================================================= -->
       <!-- INNER SAFE CONTENT CONTAINER (Strictly padded safely away from all borders) -->
@@ -448,20 +533,19 @@ function buildBirthdayCardA4Html(
         </div>
 
         <!-- 4. Person Name & Identity Badges (Strict Mathematical Centering & Alignment) -->
-        <div style="text-align: center; width: 100%; margin: 2px 0;">
+        <div style="text-align: center; width: 100%; margin: 12px 0 6px 0;">
           <h2 style="
-            margin: 0;
-            font-size: 29px;
+            margin: 0 0 10px 0;
+            font-size: 28px;
             font-weight: 900;
-            line-height: 1.2;
+            line-height: 1.25;
             color: ${theme.titleColor};
             letter-spacing: 0.5px;
             text-transform: uppercase;
           ">${person.name}</h2>
 
-          <!-- Identity Badges: Fixed height & line-height for exact vertical centering -->
+          <!-- Identity Badges: Natural equal padding & line-height: 1 for 100% exact vertical centering -->
           <div style="
-            margin-top: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -472,39 +556,32 @@ function buildBirthdayCardA4Html(
               display: inline-flex;
               align-items: center;
               justify-content: center;
-              height: 32px;
-              line-height: 32px;
-              padding: 0 18px;
+              padding: 6px 18px;
               background: ${theme.badgeBg};
               color: ${theme.badgeText};
               border: 1.5px solid #D4AF37;
-              border-radius: 16px;
-              font-size: 13.5px;
-              font-weight: 800;
-              letter-spacing: 0.3px;
-              box-sizing: border-box;
+              border-radius: 9999px;
               box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+              box-sizing: border-box;
             ">
-              🎂 ${person.formattedDob}
+              <span style="font-size: 14px; line-height: 1; margin-right: 6px; display: inline-block; vertical-align: middle;">🎂</span>
+              <span style="font-size: 13.5px; font-weight: 800; line-height: 1; letter-spacing: 0.3px; display: inline-block; vertical-align: middle;">${lang === 'gu' ? 'જન્મતારીખ: ' : 'D.O.B: '}${person.formattedDob}</span>
             </div>
             ${person.standard ? `
               <div style="
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                height: 32px;
-                line-height: 32px;
-                padding: 0 18px;
+                padding: 6px 18px;
                 background: ${theme.badgeBg};
                 color: ${theme.badgeText};
                 border: 1.5px solid #D4AF37;
-                border-radius: 16px;
-                font-size: 13.5px;
-                font-weight: 800;
-                box-sizing: border-box;
+                border-radius: 9999px;
                 box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+                box-sizing: border-box;
               ">
-                🎓 ${lang === 'gu' ? `ધોરણ ${person.standard}${person.section ? `-${person.section}` : ''}` : `Class ${person.standard}`}
+                <span style="font-size: 14px; line-height: 1; margin-right: 6px; display: inline-block; vertical-align: middle;">🎓</span>
+                <span style="font-size: 13.5px; font-weight: 800; line-height: 1; letter-spacing: 0.3px; display: inline-block; vertical-align: middle;">${lang === 'gu' ? `ધોરણ ${person.standard}${person.section ? `-${person.section}` : ''}` : `Class ${person.standard}`}</span>
               </div>
             ` : ''}
             ${person.designation ? `
@@ -512,19 +589,16 @@ function buildBirthdayCardA4Html(
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                height: 32px;
-                line-height: 32px;
-                padding: 0 18px;
+                padding: 6px 18px;
                 background: ${theme.badgeBg};
                 color: ${theme.badgeText};
                 border: 1.5px solid #D4AF37;
-                border-radius: 16px;
-                font-size: 13.5px;
-                font-weight: 800;
-                box-sizing: border-box;
+                border-radius: 9999px;
                 box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+                box-sizing: border-box;
               ">
-                💼 ${person.designation}
+                <span style="font-size: 14px; line-height: 1; margin-right: 6px; display: inline-block; vertical-align: middle;">💼</span>
+                <span style="font-size: 13.5px; font-weight: 800; line-height: 1; letter-spacing: 0.3px; display: inline-block; vertical-align: middle;">${person.designation}</span>
               </div>
             ` : ''}
           </div>
