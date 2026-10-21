@@ -51,6 +51,8 @@ import {
   Square,
   Check,
 } from 'lucide-react';
+import { apiFetch, isNativeApp } from '../utils/apiConfig';
+import { directExtractTimetable } from '../services/directGeminiService';
 
 interface ExamFileTabProps {
   school: School;
@@ -824,18 +826,74 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
             (typeof base64Data === 'string' && base64Data.startsWith('data:application/pdf'));
           const mime = isPdf ? 'application/pdf' : (file.type || 'image/jpeg');
 
-          const res = await fetch('/api/ai/extract-timetable', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              fileBase64: base64Data,
-              mimeType: mime,
-            }),
-          });
+          let json: any = null;
 
-          const json = await res.json();
-          if (!res.ok || !json.success) {
-            throw new Error(json.error || 'ટાઈમટેબલ સ્કેન કરવામાં નિષ્ફળતા.');
+          // 1. If running inside native mobile container, prioritize direct Gemini API
+          if (isNativeApp()) {
+            try {
+              const directRes = await directExtractTimetable({
+                fileBase64: base64Data,
+                mimeType: mime,
+              });
+              if (directRes && directRes.success && directRes.data) {
+                json = directRes;
+              }
+            } catch (dErr) {
+              console.warn('[AI Timetable] Native direct call note, trying server:', dErr);
+            }
+          }
+
+          // 2. Try server route via apiFetch if not resolved yet
+          if (!json) {
+            try {
+              const res = await apiFetch('/api/ai/extract-timetable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fileBase64: base64Data,
+                  mimeType: mime,
+                }),
+              }, 60000);
+
+              const resText = await res.text();
+              try {
+                json = JSON.parse(resText);
+              } catch (parseErr) {
+                console.warn('[AI Timetable] Server returned HTML/non-JSON:', parseErr);
+              }
+
+              if (!res.ok || !json?.success) {
+                // If server returned error or non-JSON, try direct Gemini fallback
+                const directRes = await directExtractTimetable({
+                  fileBase64: base64Data,
+                  mimeType: mime,
+                });
+                if (directRes && directRes.success && directRes.data) {
+                  json = directRes;
+                } else {
+                  throw new Error(json?.error || 'ટાઈમટેબલ સ્કેન કરવામાં નિષ્ફળતા.');
+                }
+              }
+            } catch (srvErr: any) {
+              // Direct fallback as safety net
+              try {
+                const directRes = await directExtractTimetable({
+                  fileBase64: base64Data,
+                  mimeType: mime,
+                });
+                if (directRes && directRes.success && directRes.data) {
+                  json = directRes;
+                } else {
+                  throw srvErr;
+                }
+              } catch {
+                throw new Error(srvErr.message || 'ટાઈમટેબલ સ્કેન કરવામાં ક્ષતિ આવી. કૃપા કરીને સ્પષ્ટ PDF/ફોટો પસંદ કરો.');
+              }
+            }
+          }
+
+          if (!json || !json.data) {
+            throw new Error('ટાઈમટેબલ સ્કેન કરવામાં નિષ્ફળતા.');
           }
 
           const data = json.data;
@@ -890,17 +948,56 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
     setAiSuccessMessage(null);
 
     try {
-      const res = await fetch('/api/ai/extract-timetable', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: timetableText,
-        }),
-      });
+      let json: any = null;
 
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'ટાઈમટેબલ સ્કેન કરવામાં નિષ્ફળતા.');
+      if (isNativeApp()) {
+        try {
+          const directRes = await directExtractTimetable({ text: timetableText });
+          if (directRes && directRes.success && directRes.data) {
+            json = directRes;
+          }
+        } catch (dErr) {
+          console.warn('[AI Timetable] Native direct text extract note:', dErr);
+        }
+      }
+
+      if (!json) {
+        try {
+          const res = await apiFetch('/api/ai/extract-timetable', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: timetableText,
+            }),
+          }, 45000);
+
+          const resText = await res.text();
+          try {
+            json = JSON.parse(resText);
+          } catch (parseErr) {
+            console.warn('[AI Timetable] Server text parse error:', parseErr);
+          }
+
+          if (!res.ok || !json?.success) {
+            const directRes = await directExtractTimetable({ text: timetableText });
+            if (directRes && directRes.success && directRes.data) {
+              json = directRes;
+            } else {
+              throw new Error(json?.error || 'ટાઈમટેબલ સ્કેન કરવામાં નિષ્ફળતા.');
+            }
+          }
+        } catch (srvErr: any) {
+          const directRes = await directExtractTimetable({ text: timetableText });
+          if (directRes && directRes.success && directRes.data) {
+            json = directRes;
+          } else {
+            throw srvErr;
+          }
+        }
+      }
+
+      if (!json || !json.data) {
+        throw new Error('ટાઈમટેબલ સ્કેન કરવામાં નિષ્ફળતા.');
       }
 
       const data = json.data;

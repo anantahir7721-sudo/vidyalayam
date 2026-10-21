@@ -449,3 +449,125 @@ export async function directGenerateSchoolNoticeBoard(params: {
   }
 }
 
+/**
+ * Direct Timetable Extraction for Mobile APK & Client Fallback
+ */
+export async function directExtractTimetable(params: {
+  text?: string;
+  fileBase64?: string;
+  mimeType?: string;
+}): Promise<{
+  success: boolean;
+  data: {
+    examType?: string;
+    examTitle?: string;
+    monthYear?: string;
+    entries: any[];
+  };
+  error?: string;
+}> {
+  const systemPrompt = `You are an expert Gujarati school examination timetable extractor.
+Analyze the provided examination timetable document, photo, PDF, or text.
+Identify:
+1. Exam Term Type ("first" for પ્રથમ સત્રાંત, "second" for દ્વિતીય/પ્રિલિમ, "annual" for વાર્ષિક/દ્વિતીય સત્રાંત).
+2. Exam Title in Gujarati (e.g. "પ્રથમ સત્રાંત પરીક્ષા - ૨૦૨૬").
+3. Month and Year in Gujarati (e.g. "ઓક્ટોબર- 2026").
+4. A list of scheduled exam papers (entries) with:
+   - "date": string in DD-MM-YYYY format (e.g. "06-04-2026" or "15-10-2026").
+   - "day": string in Gujarati (e.g. "સોમવાર", "મંગળવાર").
+   - "standard": class number string (e.g. "9", "10", "11", "12").
+   - "subject": subject name in Gujarati (e.g. "ગુજરાતી", "ગણિત", "વિજ્ઞાન", "સામાજિક વિજ્ઞાન", "અંગ્રેજી", "હિન્દી", "સંસ્કૃત").
+   - "time": time string (e.g. "11:00 થી 02:00").
+
+CRITICAL: Return strictly valid JSON matching this schema:
+{
+  "examType": "first" | "second" | "annual",
+  "examTitle": "string",
+  "monthYear": "string",
+  "entries": [
+    {
+      "date": "DD-MM-YYYY",
+      "day": "string",
+      "standard": "string",
+      "subject": "string",
+      "time": "string"
+    }
+  ]
+}`;
+
+  const parts: any[] = [];
+  let isPdf = false;
+
+  if (params.fileBase64) {
+    const cleanBase64 = params.fileBase64.replace(/^data:[^;]+;base64,/, '').replace(/[\r\n\s]+/g, '');
+    let mime = params.mimeType || 'image/jpeg';
+    if (cleanBase64.startsWith('JVBERi') || mime.toLowerCase().includes('pdf')) {
+      mime = 'application/pdf';
+      isPdf = true;
+    }
+    parts.push({
+      inlineData: {
+        mimeType: isPdf ? 'application/pdf' : mime,
+        data: cleanBase64,
+      },
+    });
+  }
+
+  const promptText = params.text
+    ? `Please extract the examination timetable from this content:\n\n${params.text}`
+    : 'Please extract the examination timetable, dates, classes, and subjects from the attached document/image.';
+
+  parts.push({ text: promptText });
+
+  const rawJson = await callGeminiRest(
+    [{ role: 'user', parts }],
+    systemPrompt,
+    0.1,
+    60000
+  );
+
+  let parsed: any = null;
+  const trimmed = (rawJson || '').trim();
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    const stripped = trimmed
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+    try {
+      parsed = JSON.parse(stripped);
+    } catch {
+      const firstBrace = stripped.indexOf('{');
+      const lastBrace = stripped.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        try {
+          parsed = JSON.parse(stripped.substring(firstBrace, lastBrace + 1));
+        } catch {
+          const sanitized = stripped
+            .substring(firstBrace, lastBrace + 1)
+            .replace(/,\s*([}\]])/g, '$1')
+            .replace(/[\u201C\u201D]/g, '"')
+            .replace(/[\u2018\u2019]/g, "'");
+          parsed = JSON.parse(sanitized);
+        }
+      }
+    }
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    parsed = { entries: [] };
+  }
+
+  const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
+  return {
+    success: true,
+    data: {
+      examType: parsed.examType || 'first',
+      examTitle: parsed.examTitle || '',
+      monthYear: parsed.monthYear || '',
+      entries,
+    },
+  };
+}
+
