@@ -20,6 +20,7 @@ import {
   printAllBlocksCombined,
   printSupervisionSheet,
   printAnswerSheetEvaluation,
+  assignContinuousSeatNumbers,
 } from '../utils/examFilePdfUtils';
 import {
   FileSpreadsheet,
@@ -195,8 +196,9 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
             )
           );
           if (!hasMock) {
-            setBlocks(parsed.blocks);
-            setExpandedBlockId(parsed.blocks[0]?.id || null);
+            const synchronized = assignContinuousSeatNumbers(parsed.blocks);
+            setBlocks(synchronized);
+            setExpandedBlockId(synchronized[0]?.id || null);
           } else {
             setBlocks([]);
           }
@@ -601,10 +603,24 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
       const selectedSet = new Set(sec.manualSelectedIds);
       const chosenStudents = stdStudents.filter((s) => selectedSet.has(s.id));
 
+      // Calculate how many students of this standard exist in blocks before this one
+      let prevCount = 0;
+      const sortedBlocks = [...blocks].sort((a, b) => (a.blockNumber || 0) - (b.blockNumber || 0));
+      for (const b of sortedBlocks) {
+        if (b.id !== editingBlockId && b.blockNumber < editorBlockNumber) {
+          b.sections?.forEach((s) => {
+            if (s.standard === sec.standard) {
+              prevCount += (s.students?.length || 0);
+            }
+          });
+        }
+      }
+
       const studentItems: BlockStudentItem[] = chosenStudents.map((s, idx) => ({
         id: s.id,
         studentName: s.studentName,
         rollNumber: s.rollNumber || String(idx + 1),
+        seatNumber: String(prevCount + idx + 1),
         standard: sec.standard,
         section: s.section,
       }));
@@ -614,7 +630,7 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
         students: studentItems,
       };
     });
-  }, [editorSections, studentsByStandard]);
+  }, [editorSections, studentsByStandard, blocks, editingBlockId, editorBlockNumber]);
 
   const editorTotalAllotted = useMemo(() => {
     return resolvedEditorSections.reduce((acc, s) => acc + s.students.length, 0);
@@ -647,7 +663,8 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
         }
         return b;
       });
-      setBlocks(updated);
+      const synchronized = assignContinuousSeatNumbers(updated);
+      setBlocks(synchronized);
     } else {
       // Create new block
       const newBlock: ExamBlock = {
@@ -658,7 +675,8 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
         sections: blockSections,
         totalAllotted: editorTotalAllotted,
       };
-      setBlocks([...blocks, newBlock]);
+      const synchronized = assignContinuousSeatNumbers([...blocks, newBlock]);
+      setBlocks(synchronized);
       setExpandedBlockId(newBlock.id);
     }
 
@@ -669,13 +687,14 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
   const handleRemoveBlock = (blockId: string) => {
     if (confirm('શું આપ આ બ્લોક કાઢી નાખવા માંગો છો?')) {
       const filtered = blocks.filter((b) => b.id !== blockId);
-      // Re-number blocks sequentially
+      // Re-number blocks sequentially and re-sequence seat numbers
       const renumbered = filtered.map((b, idx) => ({
         ...b,
         blockNumber: idx + 1,
         blockName: `બ્લોક નં. ${String(idx + 1).padStart(2, '0')}`,
       }));
-      setBlocks(renumbered);
+      const synchronized = assignContinuousSeatNumbers(renumbered);
+      setBlocks(synchronized);
     }
   };
 
@@ -799,8 +818,9 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
       return;
     }
 
-    setBlocks(generated);
-    setExpandedBlockId(generated[0]?.id || null);
+    const synchronized = assignContinuousSeatNumbers(generated);
+    setBlocks(synchronized);
+    setExpandedBlockId(synchronized[0]?.id || null);
     setShowAutoBlockModal(false);
   };
 
@@ -1527,36 +1547,49 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
                     {/* Expanded Students Details */}
                     {isExpanded && (
                       <div className="p-4 sm:p-5 bg-slate-50/50 dark:bg-black/20 space-y-4">
-                        {block.sections.map((sec, sIdx) => (
-                          <div key={sIdx} className="space-y-2">
-                            <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                              <span>
-                                📌 ધોરણ- {sec.standard} ({sec.students.length} વિદ્યાર્થીઓ)
-                              </span>
-                              <span className="text-[11px] text-slate-500">
-                                રોલ નં: {sec.students[0]?.rollNumber || '-'} થી {sec.students[sec.students.length - 1]?.rollNumber || '-'}
-                              </span>
-                            </div>
+                        {block.sections.map((sec, sIdx) => {
+                          const firstSeat = sec.students[0]?.seatNumber || '1';
+                          const lastSeat = sec.students[sec.students.length - 1]?.seatNumber || String(sec.students.length);
 
-                            <div className="max-h-60 overflow-y-auto border border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-slate-900/60 divide-y divide-slate-100 dark:divide-white/5 text-xs">
-                              {sec.students.map((st, stIdx) => (
-                                <div key={stIdx} className="px-3 py-2 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5">
-                                  <div className="flex items-center gap-2">
-                                    <span className="w-6 text-center font-bold text-slate-400">
-                                      {st.rollNumber}
-                                    </span>
-                                    <span className="font-semibold text-slate-800 dark:text-slate-200 uppercase">
-                                      {st.studentName}
-                                    </span>
+                          return (
+                            <div key={sIdx} className="space-y-2">
+                              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-white/5 p-2 rounded-xl border border-slate-200/80 dark:border-white/5">
+                                <span className="flex items-center gap-1.5">
+                                  <span>📌 ધોરણ- {sec.standard}</span>
+                                  <span className="text-slate-400 font-normal">({sec.students.length} વિદ્યાર્થીઓ)</span>
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-black text-xs border border-indigo-200 dark:border-indigo-800/40">
+                                  🎯 ક્રમિક બેઠક નં. {firstSeat} થી {lastSeat}
+                                </span>
+                              </div>
+
+                              <div className="max-h-60 overflow-y-auto border border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-slate-900/60 divide-y divide-slate-100 dark:divide-white/5 text-xs">
+                                {sec.students.map((st, stIdx) => (
+                                  <div key={stIdx} className="px-3 py-2 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5">
+                                    <div className="flex items-center gap-2.5">
+                                      <span className="min-w-14 px-1.5 py-0.5 text-center font-black rounded-md bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300">
+                                        #{st.seatNumber || (stIdx + 1)}
+                                      </span>
+                                      <span className="font-semibold text-slate-800 dark:text-slate-200 uppercase">
+                                        {st.studentName}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[11px]">
+                                      {st.rollNumber && (
+                                        <span className="text-slate-400">
+                                          રોલ: #{st.rollNumber}
+                                        </span>
+                                      )}
+                                      <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
+                                        બેઠક નં. {st.seatNumber || (stIdx + 1)}
+                                      </span>
+                                    </div>
                                   </div>
-                                  <span className="text-[10px] text-slate-400">
-                                    બેઠક: {st.rollNumber}
-                                  </span>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -2526,9 +2559,26 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
                           </select>
 
                           {/* Quick summary pill */}
-                          <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold">
+                            {/* Running continuous seat range preview */}
+                            <span className="px-2.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50 font-black">
+                              🎯 બેઠક નં. {(() => {
+                                let prevCount = 0;
+                                const sorted = [...blocks].sort((a, b) => (a.blockNumber || 0) - (b.blockNumber || 0));
+                                for (const b of sorted) {
+                                  if (b.id !== editingBlockId && b.blockNumber < editorBlockNumber) {
+                                    b.sections?.forEach((s) => {
+                                      if (s.standard === sec.standard) prevCount += (s.students?.length || 0);
+                                    });
+                                  }
+                                }
+                                const sStart = prevCount + 1;
+                                const sEnd = prevCount + sec.manualSelectedIds.length;
+                                return sec.manualSelectedIds.length > 0 ? `${sStart} થી ${sEnd}` : `${sStart}`;
+                              })()}
+                            </span>
                             <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
-                              ✓ બાકી ઉપલબ્ધ: {unassignedCount}
+                              ✓ બાકી: {unassignedCount}
                             </span>
                             {alreadyAssignedCount > 0 && (
                               <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
@@ -2806,13 +2856,21 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
                   <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200 block">
                     આ બ્લોકમાં કુલ ફાળવણી સારાંશ:
                   </span>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {resolvedEditorSections.map((s, idx) => (
-                      <span key={idx} className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-                        ધોરણ {s.standard}: {s.students.length} વિદ્યાર્થીઓ
-                        {idx < resolvedEditorSections.length - 1 ? ' • ' : ''}
-                      </span>
-                    ))}
+                  <div className="flex flex-wrap gap-2 mt-1.5">
+                    {resolvedEditorSections.map((s, idx) => {
+                      const firstSeat = s.students[0]?.seatNumber || '1';
+                      const lastSeat = s.students[s.students.length - 1]?.seatNumber || String(s.students.length);
+                      return (
+                        <span key={idx} className="text-xs font-bold text-indigo-800 dark:text-indigo-200 bg-white/80 dark:bg-white/10 px-2.5 py-1 rounded-lg border border-indigo-200/80 dark:border-white/5 flex items-center gap-1.5">
+                          <span>ધોરણ {s.standard}: {s.students.length} વિદ્યાર્થીઓ</span>
+                          {s.students.length > 0 && (
+                            <span className="text-indigo-600 dark:text-indigo-400 font-extrabold bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded">
+                              (બેઠક: {firstSeat} થી {lastSeat})
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
 

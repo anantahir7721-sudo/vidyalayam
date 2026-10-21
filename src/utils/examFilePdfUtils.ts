@@ -37,6 +37,55 @@ function getPageDimensions(size: 'a4' | 'legal'): PageDimensions {
 }
 
 /**
+ * Automatically assigns continuous exam seat numbers (બેઠક નંબર) per standard across blocks.
+ * For example:
+ * Block 1: Std 11 (14 students) -> Seat No. 1 to 14
+ *          Std 9  (13 students) -> Seat No. 1 to 13
+ * Block 2: Std 11 (14 students) -> Seat No. 15 to 28
+ *          Std 9  (13 students) -> Seat No. 14 to 26
+ */
+export function assignContinuousSeatNumbers(blocks: ExamBlock[]): ExamBlock[] {
+  if (!blocks || blocks.length === 0) return [];
+
+  // Sort blocks in ascending blockNumber order
+  const sortedBlocks = [...blocks].sort((a, b) => (a.blockNumber || 0) - (b.blockNumber || 0));
+
+  // Maintain running seat number counters for each standard
+  const standardCounters: Record<string, number> = {};
+
+  return sortedBlocks.map((block) => {
+    const updatedSections = (block.sections || []).map((sec) => {
+      const std = sec.standard || '9';
+      let currentSeat = standardCounters[std] || 1;
+
+      const updatedStudents = (sec.students || []).map((st) => {
+        const assignedSeat = String(currentSeat);
+        currentSeat++;
+        return {
+          ...st,
+          seatNumber: assignedSeat,
+        };
+      });
+
+      standardCounters[std] = currentSeat;
+
+      return {
+        ...sec,
+        students: updatedStudents,
+      };
+    });
+
+    const totalAllotted = updatedSections.reduce((acc, s) => acc + (s.students?.length || 0), 0);
+
+    return {
+      ...block,
+      sections: updatedSections,
+      totalAllotted,
+    };
+  });
+}
+
+/**
  * Builds printable HTML for a Single Exam Block Attendance & Seating sheet
  * Exact replica of Gujarat school block seating documents (aa_d40028df.pdf / bbb_44ec720b.pdf)
  */
@@ -61,7 +110,7 @@ export function buildBlockAttendanceSheetHtml(
             ${st.studentName}
           </td>
           <td style="padding: 4.5px 4px; text-align: center; font-weight: 800; font-size: 12px; border: 1.2px solid #000000;">
-            ${st.rollNumber}
+            ${st.seatNumber || st.rollNumber}
           </td>
           <td style="padding: 0; text-align: center; border: 1.2px solid #000000; width: 55px;">
             <table style="width: 100%; height: 100%; border-collapse: collapse;">

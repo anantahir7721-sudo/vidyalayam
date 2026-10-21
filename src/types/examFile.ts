@@ -40,7 +40,8 @@ export interface TimetableEntry {
 export interface BlockStudentItem {
   id: string;
   studentName: string;
-  rollNumber: string;
+  rollNumber: string; // વર્ગખંડ હાજરી નંબર (Class roll number)
+  seatNumber?: string; // પરીક્ષા બેઠક નંબર (Exam continuous seat number)
   standard: string;
   section?: string;
 }
