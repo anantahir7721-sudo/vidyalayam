@@ -424,7 +424,8 @@ export function buildAnswerSheetEvaluationHtml(
   const schoolSubtitle = [school.taluka, school.district].filter(Boolean).join(', ');
   const dims = getPageDimensions(pageSize);
 
-  const displayRows = [...rows];
+  const filteredRows = (standard && standard !== 'all') ? rows.filter(r => r.standard === standard) : rows;
+  const displayRows = [...filteredRows];
   while (displayRows.length < 11) {
     displayRows.push({
       id: `empty_${displayRows.length}`,
@@ -591,9 +592,12 @@ export async function downloadBlockAttendancePdf(
 
   const dims = getPageDimensions(pageSize);
   const container = document.createElement('div');
+  container.id = 'exam_file_pdf_render_container';
   container.style.position = 'fixed';
-  container.style.left = '-9999px';
+  container.style.left = '0';
   container.style.top = '0';
+  container.style.zIndex = '-9999';
+  container.style.pointerEvents = 'none';
   container.style.width = `${dims.widthPx}px`;
   container.style.background = '#ffffff';
   container.innerHTML = html;
@@ -604,7 +608,21 @@ export async function downloadBlockAttendancePdf(
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0,
       width: dims.widthPx,
+      windowWidth: dims.widthPx,
+      onclone: (clonedDoc: Document) => {
+        const el = clonedDoc.getElementById('exam_file_pdf_render_container');
+        if (el) {
+          el.style.position = 'absolute';
+          el.style.top = '0px';
+          el.style.left = '0px';
+          el.style.margin = '0px';
+        }
+      },
     });
 
     const pdf = new jsPDF({
@@ -651,9 +669,12 @@ export async function downloadAllBlocksCombinedPdf(
     const html = buildBlockAttendanceSheetHtml(school, block, examTitle, monthYear, pageSize, true);
 
     const container = document.createElement('div');
+    container.id = 'exam_file_pdf_render_container';
     container.style.position = 'fixed';
-    container.style.left = '-9999px';
+    container.style.left = '0';
     container.style.top = '0';
+    container.style.zIndex = '-9999';
+    container.style.pointerEvents = 'none';
     container.style.width = `${dims.widthPx}px`;
     container.style.background = '#ffffff';
     container.innerHTML = html;
@@ -664,7 +685,21 @@ export async function downloadAllBlocksCombinedPdf(
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
         width: dims.widthPx,
+        windowWidth: dims.widthPx,
+        onclone: (clonedDoc: Document) => {
+          const el = clonedDoc.getElementById('exam_file_pdf_render_container');
+          if (el) {
+            el.style.position = 'absolute';
+            el.style.top = '0px';
+            el.style.left = '0px';
+            el.style.margin = '0px';
+          }
+        },
       });
 
       if (i > 0) {
@@ -701,9 +736,12 @@ export async function downloadSupervisionSheetPdf(
 
   const dims = getPageDimensions(pageSize);
   const container = document.createElement('div');
+  container.id = 'exam_file_pdf_render_container';
   container.style.position = 'fixed';
-  container.style.left = '-9999px';
+  container.style.left = '0';
   container.style.top = '0';
+  container.style.zIndex = '-9999';
+  container.style.pointerEvents = 'none';
   container.style.width = `${dims.widthPx}px`;
   container.style.background = '#ffffff';
   container.innerHTML = html;
@@ -714,7 +752,21 @@ export async function downloadSupervisionSheetPdf(
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0,
       width: dims.widthPx,
+      windowWidth: dims.widthPx,
+      onclone: (clonedDoc: Document) => {
+        const el = clonedDoc.getElementById('exam_file_pdf_render_container');
+        if (el) {
+          el.style.position = 'absolute';
+          el.style.top = '0px';
+          el.style.left = '0px';
+          el.style.margin = '0px';
+        }
+      },
     });
 
     const pdf = new jsPDF({
@@ -754,9 +806,12 @@ export async function downloadAnswerSheetEvaluationPdf(
 
   const dims = getPageDimensions(pageSize);
   const container = document.createElement('div');
+  container.id = 'exam_file_pdf_render_container';
   container.style.position = 'fixed';
-  container.style.left = '-9999px';
+  container.style.left = '0';
   container.style.top = '0';
+  container.style.zIndex = '-9999';
+  container.style.pointerEvents = 'none';
   container.style.width = `${dims.widthPx}px`;
   container.style.background = '#ffffff';
   container.innerHTML = html;
@@ -767,7 +822,21 @@ export async function downloadAnswerSheetEvaluationPdf(
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0,
       width: dims.widthPx,
+      windowWidth: dims.widthPx,
+      onclone: (clonedDoc: Document) => {
+        const el = clonedDoc.getElementById('exam_file_pdf_render_container');
+        if (el) {
+          el.style.position = 'absolute';
+          el.style.top = '0px';
+          el.style.left = '0px';
+          el.style.margin = '0px';
+        }
+      },
     });
 
     const pdf = new jsPDF({

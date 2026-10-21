@@ -35,10 +35,9 @@ async function callGeminiRest(
   }
 
   const candidateModels = [
-    'gemini-3.8-flash',
-    'gemini-3.1-flash-lite',
     'gemini-2.5-flash',
-    'gemini-flash-latest',
+    'gemini-2.5-pro',
+    'gemini-1.5-flash',
   ];
   let lastError: any = null;
 
@@ -141,13 +140,18 @@ JSON Schema per question:
 }`;
 
   const parts: any[] = [];
+  let isPdf = false;
 
   if (params.fileBase64) {
-    const cleanBase64 = params.fileBase64.replace(/^data:[^;]+;base64,/, '');
-    const mime = params.mimeType || 'image/jpeg';
+    const cleanBase64 = params.fileBase64.replace(/^data:[^;]+;base64,/, '').replace(/[\r\n\s]+/g, '');
+    let mime = params.mimeType || 'image/jpeg';
+    if (cleanBase64.startsWith('JVBERi') || mime.toLowerCase().includes('pdf')) {
+      mime = 'application/pdf';
+      isPdf = true;
+    }
     parts.push({
       inlineData: {
-        mimeType: mime,
+        mimeType: isPdf ? 'application/pdf' : mime,
         data: cleanBase64,
       },
     });
@@ -168,21 +172,47 @@ JSON Schema per question:
 
   let rawList: any[] = [];
   try {
-    rawList = JSON.parse(rawJson);
-    if (!Array.isArray(rawList)) {
-      if ((rawList as any).questions && Array.isArray((rawList as any).questions)) {
-        rawList = (rawList as any).questions;
-      } else {
-        rawList = [rawList];
+    let parsed: any = null;
+    const trimmed = (rawJson || '').trim();
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      const stripped = trimmed
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+      try {
+        parsed = JSON.parse(stripped);
+      } catch {
+        const firstBracket = stripped.indexOf('[');
+        const lastBracket = stripped.lastIndexOf(']');
+        if (firstBracket !== -1 && lastBracket > firstBracket) {
+          const arrStr = stripped.substring(firstBracket, lastBracket + 1);
+          parsed = JSON.parse(arrStr);
+        } else {
+          const firstBrace = stripped.indexOf('{');
+          const lastBrace = stripped.lastIndexOf('}');
+          if (firstBrace !== -1 && lastBrace > firstBrace) {
+            parsed = JSON.parse(stripped.substring(firstBrace, lastBrace + 1));
+          }
+        }
       }
     }
-  } catch {
-    const match = rawJson.match(/\[[\s\S]*\]/);
-    if (match) {
-      rawList = JSON.parse(match[0]);
-    } else {
-      throw new Error('AI જવાબ યોગ્ય JSON ફોર્મેટમાં મળ્યો નથી.');
+
+    if (Array.isArray(parsed)) {
+      rawList = parsed;
+    } else if (parsed && typeof parsed === 'object') {
+      if (Array.isArray(parsed.questions)) {
+        rawList = parsed.questions;
+      } else if (Array.isArray(parsed.data)) {
+        rawList = parsed.data;
+      } else {
+        rawList = [parsed];
+      }
     }
+  } catch (err) {
+    console.warn('[DirectGemini] Error parsing raw JSON:', err);
+    throw new Error('AI જવાબ યોગ્ય JSON ફોર્મેટમાં મળ્યો નથી. કૃપા કરીને સ્પષ્ટ PDF/ફોટો પસંદ કરો.');
   }
 
   const normalizedQuestions: MCQQuestion[] = rawList.map((q: any, idx: number) => {

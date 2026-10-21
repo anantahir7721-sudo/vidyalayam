@@ -4,7 +4,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { initializeApp, getApps } from 'firebase/app';
 import {
@@ -2809,16 +2809,17 @@ Schema per question:
   "reviewNotes": string
 }`;
 
-      const contents: any[] = [];
+      let cleanBase64 = '';
+      let effectiveMime = mimeType || 'image/jpeg';
+      let isPdf = false;
 
       if (fileBase64) {
-        let cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
-        let fileMime = mimeType || 'image/jpeg';
-
-        // High-Speed Vision Optimization:
-        // Automatically compress large phone camera scans (> 350KB) to 1600px crisp JPEG.
-        // Drops latency from 20s down to ~2.5s while preserving 100% OCR text legibility!
-        if (!fileMime.includes('pdf')) {
+        cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '').replace(/[\r\n\s]+/g, '');
+        if (cleanBase64.startsWith('JVBERi') || String(effectiveMime).toLowerCase().includes('pdf') || String(fileBase64).startsWith('data:application/pdf')) {
+          isPdf = true;
+          effectiveMime = 'application/pdf';
+        } else {
+          // Compress large photos with sharp
           try {
             const rawBuffer = Buffer.from(cleanBase64, 'base64');
             if (rawBuffer.length > 350 * 1024) {
@@ -2827,16 +2828,19 @@ Schema per question:
                 .jpeg({ quality: 85, progressive: true })
                 .toBuffer();
               cleanBase64 = compressed.toString('base64');
-              fileMime = 'image/jpeg';
+              effectiveMime = 'image/jpeg';
             }
           } catch (sharpErr) {
             console.warn('[MCQ Extract] Sharp compression note, using original image:', sharpErr);
           }
         }
+      }
 
-        contents.push({
+      const parts: any[] = [];
+      if (cleanBase64) {
+        parts.push({
           inlineData: {
-            mimeType: fileMime,
+            mimeType: isPdf ? 'application/pdf' : effectiveMime,
             data: cleanBase64,
           },
         });
@@ -2846,15 +2850,14 @@ Schema per question:
         ? `Please extract all MCQs from this content:\n\n${text}`
         : 'Please extract all MCQ questions from this image/document.';
 
-      contents.push(userText);
+      parts.push({ text: userText });
+      const contents = [{ role: 'user', parts }];
 
-      // Model priority with robust fallbacks:
+      // Real, valid Gemini models with quota fallback:
       const candidateModels = [
-        'gemini-3.5-flash',
-        'gemini-3.6-flash',
         'gemini-3.8-flash',
-        'gemini-3.1-flash-lite',
         'gemini-flash-latest',
+        'gemini-3.1-flash-lite',
       ];
 
       // Execute across multi-key pool with automatic round-robin and rate-limit failover
@@ -3035,12 +3038,20 @@ Schema:
   ]
 }`;
 
-      const contents: any[] = [];
-      if (fileBase64) {
-        let cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
-        let fileMime = mimeType || 'image/jpeg';
+      let cleanBase64 = '';
+      let effectiveMime = mimeType || 'image/jpeg';
+      let isPdf = false;
 
-        if (!fileMime.includes('pdf')) {
+      if (fileBase64) {
+        cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '').replace(/[\r\n\s]+/g, '');
+        if (
+          cleanBase64.startsWith('JVBERi') ||
+          String(effectiveMime).toLowerCase().includes('pdf') ||
+          String(fileBase64).startsWith('data:application/pdf')
+        ) {
+          isPdf = true;
+          effectiveMime = 'application/pdf';
+        } else {
           try {
             const rawBuffer = Buffer.from(cleanBase64, 'base64');
             if (rawBuffer.length > 350 * 1024) {
@@ -3049,16 +3060,19 @@ Schema:
                 .jpeg({ quality: 85, progressive: true })
                 .toBuffer();
               cleanBase64 = compressed.toString('base64');
-              fileMime = 'image/jpeg';
+              effectiveMime = 'image/jpeg';
             }
           } catch (sharpErr) {
             console.warn('[Timetable Extract] Sharp compression note:', sharpErr);
           }
         }
+      }
 
-        contents.push({
+      const parts: any[] = [];
+      if (cleanBase64) {
+        parts.push({
           inlineData: {
-            mimeType: fileMime,
+            mimeType: isPdf ? 'application/pdf' : effectiveMime,
             data: cleanBase64,
           },
         });
@@ -3067,17 +3081,65 @@ Schema:
       const userText = text
         ? `Please extract the examination timetable from this text / document:\n\n${text}`
         : 'Please extract the examination timetable, dates, classes, and subjects from the attached image/document.';
-      contents.push(userText);
+      parts.push({ text: userText });
+
+      const contents = [{ role: 'user', parts }];
 
       const candidateModels = [
         'gemini-3.8-flash',
-        'gemini-3.5-flash',
-        'gemini-3.6-flash',
-        'gemini-3.1-flash-lite',
         'gemini-flash-latest',
+        'gemini-3.1-flash-lite',
       ];
 
-      const response = await geminiKeyPool.execute(async (ai) => {
+      const timetableSchema = {
+        type: Type.OBJECT,
+        properties: {
+          examType: {
+            type: Type.STRING,
+            description: '"first" | "second" | "annual"',
+          },
+          examTitle: {
+            type: Type.STRING,
+            description: 'Exam title in Gujarati',
+          },
+          monthYear: {
+            type: Type.STRING,
+            description: 'Month and year in Gujarati',
+          },
+          entries: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                date: {
+                  type: Type.STRING,
+                  description: 'Date string in DD-MM-YYYY format',
+                },
+                day: {
+                  type: Type.STRING,
+                  description: 'Day of week in Gujarati',
+                },
+                standard: {
+                  type: Type.STRING,
+                  description: 'Standard number string',
+                },
+                subject: {
+                  type: Type.STRING,
+                  description: 'Subject name in clean Gujarati',
+                },
+                time: {
+                  type: Type.STRING,
+                  description: 'Exam time string',
+                },
+              },
+              required: ['date', 'standard', 'subject'],
+            },
+          },
+        },
+        required: ['entries'],
+      };
+
+      const response = await geminiKeyPool.execute(async (ai, keyInfo) => {
         let lastErr: any = null;
         for (const modelName of candidateModels) {
           try {
@@ -3088,6 +3150,7 @@ Schema:
                 systemInstruction: systemPrompt,
                 temperature: 0.1,
                 responseMimeType: 'application/json',
+                responseSchema: timetableSchema,
               },
             });
             if (res && res.text) {
@@ -3096,7 +3159,8 @@ Schema:
           } catch (mErr: any) {
             lastErr = mErr;
             const errStr = String(mErr?.message || mErr || '');
-            if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED')) {
+            if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errStr.includes('quota')) {
+              console.log(`[Timetable Extract] Key #${keyInfo?.index ?? 0} model ${modelName} quota reached, checking next...`);
               throw mErr; // bubble up to trigger pool failover
             }
           }
@@ -3104,9 +3168,53 @@ Schema:
         throw lastErr || new Error('Timetable extraction failed on all models');
       });
 
-      const responseText = response.text || '';
-      const cleanJson = responseText.replace(/^```json/g, '').replace(/^```/g, '').replace(/```$/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
+      const responseText = (response.text || '').trim();
+      let parsed: any = null;
+
+      try {
+        parsed = JSON.parse(responseText);
+      } catch {
+        const stripped = responseText
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/i, '')
+          .trim();
+        try {
+          parsed = JSON.parse(stripped);
+        } catch {
+          const firstBrace = stripped.indexOf('{');
+          const lastBrace = stripped.lastIndexOf('}');
+          if (firstBrace !== -1 && lastBrace > firstBrace) {
+            const jsonSubstring = stripped.substring(firstBrace, lastBrace + 1);
+            try {
+              parsed = JSON.parse(jsonSubstring);
+            } catch {
+              const sanitized = jsonSubstring
+                .replace(/,\s*([}\]])/g, '$1')
+                .replace(/[\u201C\u201D]/g, '"')
+                .replace(/[\u2018\u2019]/g, "'");
+              parsed = JSON.parse(sanitized);
+            }
+          } else {
+            const firstBracket = stripped.indexOf('[');
+            const lastBracket = stripped.lastIndexOf(']');
+            if (firstBracket !== -1 && lastBracket > firstBracket) {
+              const arraySubstring = stripped.substring(firstBracket, lastBracket + 1);
+              parsed = { entries: JSON.parse(arraySubstring) };
+            }
+          }
+        }
+      }
+
+      if (!parsed || typeof parsed !== 'object') {
+        parsed = { entries: [] };
+      }
+
+      if (Array.isArray(parsed)) {
+        parsed = { entries: parsed };
+      }
+      if (!Array.isArray(parsed.entries)) {
+        parsed.entries = [];
+      }
 
       return res.json({
         success: true,

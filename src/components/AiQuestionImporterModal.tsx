@@ -30,10 +30,14 @@ interface AiQuestionImporterModalProps {
 
 // Client-side image compression for mobile camera photos
 async function optimizeImageForAi(file: File): Promise<{ base64: string; mimeType: string }> {
-  if (file.type === 'application/pdf') {
+  const isPdf =
+    file.name.toLowerCase().endsWith('.pdf') ||
+    (file.type && file.type.toLowerCase().includes('pdf'));
+
+  if (isPdf) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve({ base64: reader.result as string, mimeType: file.type });
+      reader.onload = () => resolve({ base64: reader.result as string, mimeType: 'application/pdf' });
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });

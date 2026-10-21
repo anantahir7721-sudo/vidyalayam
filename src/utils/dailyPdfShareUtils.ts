@@ -81,6 +81,45 @@ async function waitForFontsToRender(): Promise<void> {
   }
 }
 
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * Generates an SVG Data URI for small numeral/symbol badges.
+ * Rendering via an <img> tag completely bypasses html2canvas flexbox baseline &
+ * vertical-align bugs, ensuring 100% mathematical horizontal and vertical centering!
+ */
+export function createNumberBadgeDataUri(
+  text: string,
+  bgColor: string,
+  textColor = '#ffffff',
+  size = 24,
+  borderRadius = 6
+): string {
+  const safeText = escapeXml(text);
+  const half = size / 2;
+  const fontSize = Math.round(size * 0.48);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <rect x="0" y="0" width="${size}" height="${size}" rx="${borderRadius}" ry="${borderRadius}" fill="${bgColor}" />
+    <text x="${half}" y="${half}" text-anchor="middle" dominant-baseline="central" fill="${textColor}" font-family="'Anek Gujarati', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="${fontSize}" font-weight="800">${safeText}</text>
+  </svg>`;
+
+  try {
+    const encoded = encodeURIComponent(svg).replace(/%([0-9A-F]{2})/g, (_, p1) => {
+      return String.fromCharCode(parseInt(p1, 16));
+    });
+    return 'data:image/svg+xml;base64,' + btoa(encoded);
+  } catch {
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+}
+
 /**
  * Helper to download/share Blob securely on Web and Android APK
  */
@@ -150,21 +189,27 @@ export async function shareDailyNewsAsPdf(
         </div>
       </div>
 
-      <!-- Title & Date Strip -->
-      <div style="background: #9d512d; color: #ffffff; border-radius: 6px; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <div style="font-size: 13.5px; font-weight: 800; line-height: 1.3; font-family: ${GUJARATI_FONT_FAMILY};">
-          📰 આજના મુખ્ય ૧૦ સમાચાર (Daily News Bulletin)
-        </div>
-        <div style="font-size: 11.5px; font-weight: 700; background: rgba(0,0,0,0.22); padding: 3px 9px; border-radius: 4px; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
-          ${bulletin.editionDate} • સવારે ૫:૦૦ વાગ્યાની આવૃત્તિ
-        </div>
-      </div>
+      <!-- Title & Date Strip (Table layout ensures 100% mathematical vertical centering in html2canvas) -->
+      <table style="width: 100%; border-collapse: separate; border-spacing: 0; background: #9d512d; border-radius: 6px; margin-bottom: 8px;">
+        <tr>
+          <td style="padding: 7px 12px; vertical-align: middle; text-align: left;">
+            <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY}; margin: 0; padding: 0;">
+              📰 આજના મુખ્ય ૧૦ સમાચાર (Daily News Bulletin)
+            </div>
+          </td>
+          <td style="padding: 7px 12px; vertical-align: middle; text-align: right; white-space: nowrap; width: 1%;">
+            <span style="display: inline-block; font-size: 11px; font-weight: 700; color: #ffffff; background: rgba(0,0,0,0.25); padding: 3px 9px; border-radius: 4px; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
+              ${bulletin.editionDate} • સવારે ૫:૦૦ વાગ્યાની આવૃત્તિ
+            </span>
+          </td>
+        </tr>
+      </table>
 
       <!-- Morning Prayer Shloka / Suvichar -->
       ${
         bulletin.morningPrayerShloka
           ? `
-        <div style="background: #fdfaf6; border-left: 3.5px solid #9d512d; padding: 6px 10px; margin-bottom: 8px; border-radius: 4px; line-height: 1.35;">
+        <div style="background: #fdfaf6; border-left: 3.5px solid #9d512d; padding: 6px 10px; margin-bottom: 8px; border-radius: 4px; line-height: 1.35; box-sizing: border-box;">
           <span style="font-size: 10.5px; font-weight: 800; color: #9d512d; font-family: ${GUJARATI_FONT_FAMILY};">✨ પ્રાર્થના મંત્ર / સુવિચાર: </span>
           <span style="font-size: 11.5px; font-weight: 600; color: #334155; font-style: italic; font-family: ${GUJARATI_FONT_FAMILY};">
             ${bulletin.morningPrayerShloka}
@@ -180,16 +225,24 @@ export async function shareDailyNewsAsPdf(
           .slice(0, 10)
           .map((item, idx) => {
             return `
-            <div style="padding: 5px 10px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; min-height: 48px;">
-              <span style="font-size: 11px; font-weight: 800; background: #9d512d; color: #ffffff; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; flex-shrink: 0; line-height: 1; font-family: ${GUJARATI_FONT_FAMILY};">
-                ${toGujaratiDigits(idx + 1)}
-              </span>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 11px; font-weight: 700; color: #0f172a; line-height: 1.3; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
-                  ${item.location ? `<span style="color: #9d512d; font-weight: 800;">[📍 ${item.location}] </span>` : ''}${item.headline}
+            <div style="padding: 4px 10px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; display: table; width: 100%; min-height: 48px;">
+              <div style="display: table-row;">
+                <div style="display: table-cell; vertical-align: middle; width: 24px; padding-right: 10px;">
+                  <img
+                    src="${createNumberBadgeDataUri(toGujaratiDigits(idx + 1), '#9d512d', '#ffffff', 24, 6)}"
+                    width="24"
+                    height="24"
+                    style="width: 24px; height: 24px; display: block;"
+                    alt="${idx + 1}"
+                  />
                 </div>
-                <div style="font-size: 9.5px; color: #475569; line-height: 1.3; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
-                  ${item.summary}
+                <div style="display: table-cell; vertical-align: middle;">
+                  <div style="font-size: 11px; font-weight: 700; color: #0f172a; line-height: 1.3; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
+                    ${item.location ? `<span style="color: #9d512d; font-weight: 800;">[📍 ${item.location}] </span>` : ''}${item.headline}
+                  </div>
+                  <div style="font-size: 9.5px; color: #475569; line-height: 1.3; margin: 0; font-family: ${GUJARATI_FONT_FAMILY};">
+                    ${item.summary}
+                  </div>
                 </div>
               </div>
             </div>
@@ -336,18 +389,26 @@ export async function shareDailyJanvaJevuAsPdf(
         const idx = startIdx + i;
         const singleWordAnswer = cleanOneWord(q.answer);
         return `
-        <div style="padding: 5px 8px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 7px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; min-height: 39px;">
-          <span style="font-size: 10px; font-weight: 800; background: #1e293b; color: #ffffff; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 5px; flex-shrink: 0; line-height: 1; font-family: ${GUJARATI_FONT_FAMILY};">
-            ${toGujaratiDigits(idx + 1)}
-          </span>
-          <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 10.5px; font-weight: 700; color: #0f172a; line-height: 1.32; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
-              ${q.question}
+        <div style="padding: 4px 8px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 7px; box-sizing: border-box; display: table; width: 100%; min-height: 39px;">
+          <div style="display: table-row;">
+            <div style="display: table-cell; vertical-align: middle; width: 22px; padding-right: 8px;">
+              <img
+                src="${createNumberBadgeDataUri(toGujaratiDigits(idx + 1), '#1e293b', '#ffffff', 22, 5)}"
+                width="22"
+                height="22"
+                style="width: 22px; height: 22px; display: block;"
+                alt="${idx + 1}"
+              />
             </div>
-            <div>
-              <span style="display: inline-block; font-size: 9.5px; font-weight: 800; background: #dcfce7; color: #166534; padding: 1px 7px; border-radius: 3px; border: 1px solid #86efac; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY};">
-                જવાબ: ${singleWordAnswer}
-              </span>
+            <div style="display: table-cell; vertical-align: middle;">
+              <div style="font-size: 10.5px; font-weight: 700; color: #0f172a; line-height: 1.32; margin: 0 0 2px 0; font-family: ${GUJARATI_FONT_FAMILY};">
+                ${q.question}
+              </div>
+              <div>
+                <span style="display: inline-block; font-size: 9.5px; font-weight: 800; background: #dcfce7; color: #166534; padding: 1.5px 7px; border-radius: 3px; border: 1px solid #86efac; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY};">
+                  જવાબ: ${singleWordAnswer}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -369,18 +430,24 @@ export async function shareDailyJanvaJevuAsPdf(
         </div>
       </div>
 
-      <!-- Title & Date Strip -->
-      <div style="background: #1e293b; color: #ffffff; border-radius: 6px; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-left: 4px solid #f59c73;">
-        <div style="font-size: 13.5px; font-weight: 800; line-height: 1.3; font-family: ${GUJARATI_FONT_FAMILY};">
-          💡 આજનું જાણવા જેવું (૨૦ પ્રશ્નોત્તરી — એક શબ્દમાં જવાબ)
-        </div>
-        <div style="font-size: 11.5px; font-weight: 700; color: #f59c73; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
-          ${bulletin.editionDate} • બપોરે ૧:૦૦ વાગ્યાની આવૃત્તિ
-        </div>
-      </div>
+      <!-- Title & Date Strip (Table layout ensures 100% mathematical vertical centering in html2canvas) -->
+      <table style="width: 100%; border-collapse: separate; border-spacing: 0; background: #1e293b; color: #ffffff; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #f59c73;">
+        <tr>
+          <td style="padding: 7px 12px; vertical-align: middle; text-align: left;">
+            <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY}; margin: 0; padding: 0;">
+              💡 આજનું જાણવા જેવું (૨૦ પ્રશ્નોત્તરી — એક શબ્દમાં જવાબ)
+            </div>
+          </td>
+          <td style="padding: 7px 12px; vertical-align: middle; text-align: right; white-space: nowrap; width: 1%;">
+            <span style="display: inline-block; font-size: 11.5px; font-weight: 700; color: #f59c73; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
+              ${bulletin.editionDate} • બપોરે ૧:૦૦ વાગ્યાની આવૃત્તિ
+            </span>
+          </td>
+        </tr>
+      </table>
 
       <!-- Suvichar Strip -->
-      <div style="background: #fdfaf6; border-left: 3.5px solid #f59c73; padding: 6px 10px; margin-bottom: 8px; border-radius: 4px; line-height: 1.35;">
+      <div style="background: #fdfaf6; border-left: 3.5px solid #f59c73; padding: 6px 10px; margin-bottom: 8px; border-radius: 4px; line-height: 1.35; box-sizing: border-box;">
         <span style="font-size: 10.5px; font-weight: 800; color: #9d512d; font-family: ${GUJARATI_FONT_FAMILY};">✨ આજનો સુવિચાર: </span>
         <span style="font-size: 11px; font-weight: 600; color: #1e293b; font-family: ${GUJARATI_FONT_FAMILY};">
           "${suvicharText}"
@@ -570,15 +637,21 @@ export async function shareDailySuvicharAsPdf(
         </div>
       </div>
 
-      <!-- Title & Date Strip -->
-      <div style="background: linear-gradient(135deg, #9d512d 0%, #c05d2c 50%, #7e3618 100%); color: #ffffff; border-radius: 8px; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(157, 81, 45, 0.15);">
-        <div style="font-size: 15px; font-weight: 900; letter-spacing: 0.3px; font-family: ${GUJARATI_FONT_FAMILY}; display: flex; align-items: center; gap: 6px;">
-          <span>✨ આજનો સુવિચાર અને સંસ્કાર વાણી (Assembly Speech Script)</span>
-        </div>
-        <div style="font-size: 12px; font-weight: 800; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.25); padding: 3px 10px; border-radius: 5px;">
-          📅 ${bulletin.editionDate}
-        </div>
-      </div>
+      <!-- Title & Date Strip (Table layout ensures 100% mathematical vertical centering in html2canvas) -->
+      <table style="width: 100%; border-collapse: separate; border-spacing: 0; background: linear-gradient(135deg, #9d512d 0%, #c05d2c 50%, #7e3618 100%); color: #ffffff; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(157, 81, 45, 0.15);">
+        <tr>
+          <td style="padding: 8px 14px; vertical-align: middle; text-align: left;">
+            <div style="font-size: 15px; font-weight: 900; letter-spacing: 0.3px; color: #ffffff; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY};">
+              ✨ આજનો સુવિચાર અને સંસ્કાર વાણી (Assembly Speech Script)
+            </div>
+          </td>
+          <td style="padding: 8px 14px; vertical-align: middle; text-align: right; white-space: nowrap; width: 1%;">
+            <span style="display: inline-block; font-size: 12px; font-weight: 800; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.25); padding: 3px 10px; border-radius: 5px; color: #ffffff; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
+              📅 ${bulletin.editionDate}
+            </span>
+          </td>
+        </tr>
+      </table>
 
       <!-- Main Thought Card (Prominent & Inspiring) -->
       <div style="background: #fffcf9; border: 2px solid #f59c73; border-radius: 12px; padding: 12px 18px; text-align: center; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(245, 156, 115, 0.12); display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
@@ -599,24 +672,36 @@ export async function shareDailySuvicharAsPdf(
       </div>
 
       <!-- Assembly Guide Pill -->
-      <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 4.5px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #92400e; font-weight: 700;">
-        <span>🎙️ શાળા પ્રાર્થના સભા માર્ગદર્શિકા: શિક્ષક અથવા વિદ્યાર્થી દ્વારા ૨ થી ૩ મિનિટ વક્તવ્ય માટે તૈયાર સામગ્રી</span>
-        <span style="background: #fde047; color: #78350f; padding: 1px 7px; border-radius: 4px; font-weight: 800;">⏱️ સમય: ૨-૩ મિનિટ</span>
-      </div>
+      <table style="width: 100%; border-collapse: separate; border-spacing: 0; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; margin-bottom: 8px;">
+        <tr>
+          <td style="padding: 5px 12px; vertical-align: middle; text-align: left; font-size: 11px; color: #92400e; font-weight: 700; font-family: ${GUJARATI_FONT_FAMILY};">
+            🎙️ શાળા પ્રાર્થના સભા માર્ગદર્શિકા: શિક્ષક અથવા વિદ્યાર્થી દ્વારા ૨ થી ૩ મિનિટ વક્તવ્ય માટે તૈયાર સામગ્રી
+          </td>
+          <td style="padding: 5px 12px; vertical-align: middle; text-align: right; white-space: nowrap; width: 1%;">
+            <span style="display: inline-block; background: #fde047; color: #78350f; padding: 2px 7px; border-radius: 4px; font-weight: 800; font-size: 10.5px; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">⏱️ સમય: ૨-૩ મિનિટ</span>
+          </td>
+        </tr>
+      </table>
 
       <!-- Detailed Explanation & Example Section (Comfortably and Fully filling the Page) -->
       <div style="display: flex; flex-direction: column; gap: ${cardGap}; flex: 1; justify-content: center; margin-bottom: 8px;">
         
         <!-- Detailed Explanation (વિસ્તૃત સમજૂતી) -->
         <div style="background: #f8fbff; border: 1.5px solid #bfdbfe; border-left: 5px solid #2563eb; border-radius: 8px; padding: ${cardPadding}; flex: 1; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #dbeafe; padding-bottom: 3px;">
-            <div style="font-size: ${headingFontSize}; font-weight: 900; color: #1d4ed8; font-family: ${GUJARATI_FONT_FAMILY}; display: flex; align-items: center; gap: 6px;">
-              <span>📖 વિસ્તૃત સમજૂતી (Speech Explanation):</span>
-            </div>
-            <span style="font-size: 10.5px; font-weight: 800; background: #dbeafe; color: #1e40af; padding: 1px 7px; border-radius: 4px;">
-              વક્તવ્ય સમય: ~૧.૫ મિનિટ
-            </span>
-          </div>
+          <table style="width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 5px; border-bottom: 1px solid #dbeafe; padding-bottom: 3px;">
+            <tr>
+              <td style="vertical-align: middle; text-align: left;">
+                <div style="font-size: ${headingFontSize}; font-weight: 900; color: #1d4ed8; font-family: ${GUJARATI_FONT_FAMILY};">
+                  📖 વિસ્તૃત સમજૂતી (Speech Explanation):
+                </div>
+              </td>
+              <td style="vertical-align: middle; text-align: right; white-space: nowrap; width: 1%;">
+                <span style="display: inline-block; font-size: 10.5px; font-weight: 800; background: #dbeafe; color: #1e40af; padding: 2px 7px; border-radius: 4px; font-family: ${GUJARATI_FONT_FAMILY};">
+                  વક્તવ્ય સમય: ~૧.૫ મિનિટ
+                </span>
+              </td>
+            </tr>
+          </table>
           <div style="font-size: ${bodyFontSize}; color: #1e293b; line-height: ${bodyLineHeight}; font-weight: 500; text-align: justify; font-family: ${GUJARATI_FONT_FAMILY};">
             ${explanation}
           </div>
@@ -624,14 +709,20 @@ export async function shareDailySuvicharAsPdf(
 
         <!-- Real-Life Example & Inspiring Story (વ્યવહારિક ઉદાહરણ અને પ્રેરણા પ્રસંગ) -->
         <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-left: 5px solid #059669; border-radius: 8px; padding: ${cardPadding}; flex: 1; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #dcfce7; padding-bottom: 3px;">
-            <div style="font-size: ${headingFontSize}; font-weight: 900; color: #047857; font-family: ${GUJARATI_FONT_FAMILY}; display: flex; align-items: center; gap: 6px;">
-              <span>🌟 વ્યવહારિક ઉદાહરણ અને પ્રેરણા પ્રસંગ (Real-Life Example & Story):</span>
-            </div>
-            <span style="font-size: 10.5px; font-weight: 800; background: #dcfce7; color: #065f46; padding: 1px 7px; border-radius: 4px;">
-              વક્તવ્ય સમય: ~૧ થી ૧.૫ મિનિટ
-            </span>
-          </div>
+          <table style="width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 5px; border-bottom: 1px solid #dcfce7; padding-bottom: 3px;">
+            <tr>
+              <td style="vertical-align: middle; text-align: left;">
+                <div style="font-size: ${headingFontSize}; font-weight: 900; color: #047857; font-family: ${GUJARATI_FONT_FAMILY};">
+                  🌟 વ્યવહારિક ઉદાહરણ અને પ્રેરણા પ્રસંગ (Real-Life Example & Story):
+                </div>
+              </td>
+              <td style="vertical-align: middle; text-align: right; white-space: nowrap; width: 1%;">
+                <span style="display: inline-block; font-size: 10.5px; font-weight: 800; background: #dcfce7; color: #065f46; padding: 2px 7px; border-radius: 4px; font-family: ${GUJARATI_FONT_FAMILY};">
+                  વક્તવ્ય સમય: ~૧ થી ૧.૫ મિનિટ
+                </span>
+              </td>
+            </tr>
+          </table>
           <div style="font-size: ${bodyFontSize}; color: #1e293b; line-height: ${bodyLineHeight}; font-weight: 500; text-align: justify; font-family: ${GUJARATI_FONT_FAMILY};">
             ${example}
           </div>
@@ -662,18 +753,22 @@ export async function shareDailySuvicharAsPdf(
             : ''
         }
 
-        <!-- Moral Value Badge Banner -->
-        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 7px 14px; display: flex; align-items: center; justify-content: space-between;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 12.5px; font-weight: 900; color: #92400e;">🎯 આજનું પાયાનું સંસ્કાર મૂલ્ય:</span>
-            <span style="font-size: 13.5px; font-weight: 900; background: #fde047; color: #78350f; padding: 2px 12px; border-radius: 5px; font-family: ${GUJARATI_FONT_FAMILY}; border: 1px solid #facc15;">
-              ${moralValue}
-            </span>
-          </div>
-          <span style="font-size: 11px; color: #78350f; font-weight: 700; font-family: ${GUJARATI_FONT_FAMILY};">
-            વિદ્યાર્થીઓએ જીવનમાં ઉતારવા યોગ્ય પવિત્ર વિચાર
-          </span>
-        </div>
+        <!-- Moral Value Badge Banner (Table layout ensures 100% mathematical vertical centering in html2canvas) -->
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px;">
+          <tr>
+            <td style="padding: 7px 14px; vertical-align: middle; text-align: left;">
+              <span style="font-size: 12.5px; font-weight: 900; color: #92400e; font-family: ${GUJARATI_FONT_FAMILY};">🎯 આજનું પાયાનું સંસ્કાર મૂલ્ય: </span>
+              <span style="display: inline-block; font-size: 13.5px; font-weight: 900; background: #fde047; color: #78350f; padding: 2px 12px; border-radius: 5px; font-family: ${GUJARATI_FONT_FAMILY}; border: 1px solid #facc15; line-height: 1.25; vertical-align: middle;">
+                ${moralValue}
+              </span>
+            </td>
+            <td style="padding: 7px 14px; vertical-align: middle; text-align: right; white-space: nowrap; width: 1%;">
+              <span style="font-size: 11px; color: #78350f; font-weight: 700; font-family: ${GUJARATI_FONT_FAMILY};">
+                વિદ્યાર્થીઓએ જીવનમાં ઉતારવા યોગ્ય પવિત્ર વિચાર
+              </span>
+            </td>
+          </tr>
+        </table>
       </div>
 
       <!-- Footer Note -->
@@ -789,15 +884,25 @@ export async function shareDailyInterestingFactsAsPdf(
     .slice(0, 12)
     .map((fact) => `
       <div style="background:#f8fafc; border:1px solid #e2e8f0; border-left:4px solid #f59e0b; border-radius:8px; padding:6px 9px; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="background:#fef3c7; color:#92400e; font-size:8pt; font-weight:800; border-radius:4px; width:18px; height:18px; display:flex; align-items:center; justify-content:center; text-align:center; line-height:1; font-family:${GUJARATI_FONT_FAMILY};">
-              ${toGujaratiDigits(fact.factNumber)}
-            </span>
-            <span style="font-size:8.5pt; font-weight:800; color:#0f172a; line-height:1.25; font-family:${GUJARATI_FONT_FAMILY};">${fact.title}</span>
-          </div>
-          <span style="font-size:7pt; color:#64748b; font-weight:600; line-height:1.2; font-family:${GUJARATI_FONT_FAMILY};">${fact.category}</span>
-        </div>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:2px;">
+          <tr>
+            <td style="vertical-align:middle; width:20px; padding-right:5px;">
+              <img
+                src="${createNumberBadgeDataUri(toGujaratiDigits(fact.factNumber), '#fef3c7', '#92400e', 18, 4)}"
+                width="18"
+                height="18"
+                style="width:18px; height:18px; display:block;"
+                alt="${fact.factNumber}"
+              />
+            </td>
+            <td style="vertical-align:middle; text-align:left;">
+              <span style="font-size:8.5pt; font-weight:800; color:#0f172a; line-height:1.25; font-family:${GUJARATI_FONT_FAMILY};">${fact.title}</span>
+            </td>
+            <td style="vertical-align:middle; text-align:right; white-space:nowrap; width:1%;">
+              <span style="font-size:7pt; color:#64748b; font-weight:600; line-height:1.2; font-family:${GUJARATI_FONT_FAMILY};">${fact.category}</span>
+            </td>
+          </tr>
+        </table>
         <div style="font-size:7.5pt; color:#334155; line-height:1.32; margin-top:2px; font-family:${GUJARATI_FONT_FAMILY};">
           ${fact.fact}
         </div>
@@ -819,15 +924,21 @@ export async function shareDailyInterestingFactsAsPdf(
         </div>
       </div>
 
-      <!-- Title & Date Strip -->
-      <div style="background: #b45309; color: #ffffff; border-radius: 6px; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <div style="font-size: 13.5px; font-weight: 800; line-height: 1.3; font-family: ${GUJARATI_FONT_FAMILY};">
-          💡 આજનું જાણવા જેવું — ૧૨ રોમાંચક તથ્યો
-        </div>
-        <div style="font-size: 11.5px; font-weight: 700; background: rgba(0,0,0,0.22); padding: 3px 9px; border-radius: 4px; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
-          ${bulletin.editionDate} • બપોરે ૧:૦૦ વાગ્યાની આવૃત્તિ
-        </div>
-      </div>
+      <!-- Title & Date Strip (Table layout ensures 100% mathematical vertical centering in html2canvas) -->
+      <table style="width: 100%; border-collapse: separate; border-spacing: 0; background: #b45309; color: #ffffff; border-radius: 6px; margin-bottom: 8px;">
+        <tr>
+          <td style="padding: 7px 12px; vertical-align: middle; text-align: left;">
+            <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; line-height: 1.25; font-family: ${GUJARATI_FONT_FAMILY}; margin: 0; padding: 0;">
+              💡 આજનું જાણવા જેવું — ૧૨ રોમાંચક તથ્યો
+            </div>
+          </td>
+          <td style="padding: 7px 12px; vertical-align: middle; text-align: right; white-space: nowrap; width: 1%;">
+            <span style="display: inline-block; font-size: 11.5px; font-weight: 700; color: #ffffff; background: rgba(0,0,0,0.22); padding: 3px 9px; border-radius: 4px; line-height: 1.2; font-family: ${GUJARATI_FONT_FAMILY};">
+              ${bulletin.editionDate} • બપોરે ૧:૦૦ વાગ્યાની આવૃત્તિ
+            </span>
+          </td>
+        </tr>
+      </table>
 
       <!-- 12 Facts Grid: 2 Columns of 6, perfectly balanced -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px; flex: 1; align-content: space-between; margin-bottom: 4px;">
@@ -1012,10 +1123,18 @@ export async function sharePresentationAsPdf(
 
       <!-- Part 3: Main Detailed Presentation (~5 min speech) -->
       <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 9px 13px; margin-top: 5px; flex: 1; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
-        <div style="font-size: 12px; font-weight: 800; color: #047857; text-transform: uppercase; margin-bottom: 5px; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 3px; display: flex; justify-content: space-between; align-items: center; font-family: ${GUJARATI_FONT_FAMILY};">
-          <span>૩. વિષયની સંપૂર્ણ અને સરળ રજૂઆત (~૫ મિનિટ વક્તવ્ય)</span>
-          <span style="font-size: 9.5px; font-weight: 800; background: #dcfce7; color: #166534; padding: 1.5px 7px; border-radius: 4px;">સમય: ~૫ મિનિટ</span>
-        </div>
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 5px; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 3px;">
+          <tr>
+            <td style="vertical-align: middle; text-align: left; font-size: 12px; font-weight: 800; color: #047857; text-transform: uppercase; font-family: ${GUJARATI_FONT_FAMILY};">
+              ૩. વિષયની સંપૂર્ણ અને સરળ રજૂઆત (~૫ મિનિટ વક્તવ્ય)
+            </td>
+            <td style="vertical-align: middle; text-align: right; white-space: nowrap; width: 1%;">
+              <span style="display: inline-block; font-size: 9.5px; font-weight: 800; background: #dcfce7; color: #166534; padding: 2px 7px; border-radius: 4px; font-family: ${GUJARATI_FONT_FAMILY};">
+                સમય: ~૫ મિનિટ
+              </span>
+            </td>
+          </tr>
+        </table>
         ${
           p1
             ? `
