@@ -18,6 +18,7 @@ import { ParentMessagingManager } from './components/ParentMessagingManager';
 import { ReportsManager } from './components/ReportsManager';
 import { SchoolProfileManager } from './components/SchoolProfileManager';
 import { OnlineExamManager } from './components/OnlineExamManager';
+import { ExamFileTab } from './components/ExamFileTab';
 import { AdmissionManager } from './components/AdmissionManager';
 import { SchoolNoticeBoardTab } from './components/SchoolNoticeBoardTab';
 import { StudentPortal } from './components/StudentPortal';
@@ -939,6 +940,15 @@ export default function App() {
               onRefresh={loadSchoolData}
               onNavigateToResults={() => navigateToTab('results')}
               initialSubView="overview"
+            />
+          )}
+
+          {activeTab === 'exam_file' && (
+            <ExamFileTab
+              school={school}
+              students={students}
+              staff={staffList}
+              onBack={navigateBack}
             />
           )}
 

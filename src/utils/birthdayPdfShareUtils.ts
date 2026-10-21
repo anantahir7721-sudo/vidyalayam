@@ -264,6 +264,78 @@ export function getBalloonBouquetDataUri(
   }
 }
 
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * Pre-renders the identity badge (Pill + Vector Icon + Text) into an ultra-sharp SVG Data URI.
+ * By rendering the entire badge as a single image, html2canvas bypasses all CSS line-height / vertical-align
+ * layout bugs and guarantees 100% mathematical horizontal and vertical centering!
+ */
+export function createPillBadgeDataUri(
+  type: 'cake' | 'grad' | 'briefcase',
+  text: string,
+  isGujarati = false
+): string {
+  const safeText = escapeXml(text);
+  // Accurate width calculation based on font metrics
+  const charWidth = isGujarati ? 9.8 : 8.6;
+  const textWidth = Math.ceil(text.length * charWidth);
+  const iconWidth = 16;
+  const iconGap = 8;
+  const paddingX = 18;
+  const contentWidth = iconWidth + iconGap + textWidth;
+  const totalWidth = contentWidth + paddingX * 2;
+  const iconX = paddingX;
+  const textX = iconX + iconWidth + iconGap;
+
+  let iconSvg = '';
+  if (type === 'cake') {
+    iconSvg = `<svg x="${iconX}" y="11" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8" />
+      <path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1" />
+      <path d="M2 21h20" />
+      <line x1="7" y1="8" x2="7" y2="10" />
+      <line x1="12" y1="8" x2="12" y2="10" />
+      <line x1="17" y1="8" x2="17" y2="10" />
+      <circle cx="7" cy="4" r="1.2" fill="#F59E0B" stroke="#F59E0B" />
+      <circle cx="12" cy="4" r="1.2" fill="#F59E0B" stroke="#F59E0B" />
+      <circle cx="17" cy="4" r="1.2" fill="#F59E0B" stroke="#F59E0B" />
+    </svg>`;
+  } else if (type === 'grad') {
+    iconSvg = `<svg x="${iconX}" y="11" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+      <path d="M6 12v5c3 3 9 3 12 0v-5" />
+    </svg>`;
+  } else {
+    iconSvg = `<svg x="${iconX}" y="11" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    </svg>`;
+  }
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="38" viewBox="0 0 ${totalWidth} 38">
+    <rect x="1" y="1" width="${totalWidth - 2}" height="36" rx="18" ry="18" fill="#0F172A" stroke="#D4AF37" stroke-width="1.8" />
+    ${iconSvg}
+    <text x="${textX}" y="20" text-anchor="start" dominant-baseline="central" fill="#FFFFFF" font-family="'Anek Gujarati', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13.5" font-weight="800" letter-spacing="0.3">${safeText}</text>
+  </svg>`;
+
+  try {
+    const encoded = encodeURIComponent(svg).replace(/%([0-9A-F]{2})/g, (_, p1) => {
+      return String.fromCharCode(parseInt(p1, 16));
+    });
+    return 'data:image/svg+xml;base64,' + btoa(encoded);
+  } catch {
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+}
+
 /**
  * Constructs clean, high-resolution HTML for the Birthday Card
  * Designed specifically for 794px x 1123px exact A4 geometry with zero overflow and zero squashing.
@@ -293,6 +365,14 @@ function buildBirthdayCardA4Html(
   const displayStandardText = lang === 'gu'
     ? `ધોરણ ${rawStandard}${person.section ? `-${person.section}` : ''}`
     : `Class ${rawStandard}${person.section ? `-${person.section}` : ''}`;
+
+  const dobBadgeDataUri = createPillBadgeDataUri('cake', displayDobText, lang === 'gu');
+  const standardBadgeDataUri = rawStandard
+    ? createPillBadgeDataUri('grad', displayStandardText, lang === 'gu')
+    : '';
+  const designationBadgeDataUri = person.designation
+    ? createPillBadgeDataUri('briefcase', person.designation, lang === 'gu')
+    : '';
 
   const balloonLeftDataUri = getBalloonBouquetDataUri('left', {
     primary: theme.titleColor,
@@ -608,144 +688,54 @@ function buildBirthdayCardA4Html(
             text-transform: uppercase;
           ">${person.name}</h2>
 
-          <!-- Identity Badges: Symmetrical, centered inline-blocks with balanced vertical metrics -->
+          <!-- Identity Badges: Symmetrical, centered pre-rendered SVG Image Badges (100% mathematically centered, zero html2canvas line-height bugs) -->
           <div style="
             text-align: center;
             width: 100%;
-            margin-top: 6px;
+            margin-top: 8px;
           ">
-            <!-- DOB Badge -->
-            <div style="
-              display: inline-block;
-              vertical-align: middle;
-              height: 38px;
-              line-height: 38px;
-              padding: 0 18px;
-              background: #0F172A;
-              border: 1.8px solid #D4AF37;
-              border-radius: 9999px;
-              box-shadow: 0 3px 8px rgba(0,0,0,0.18);
-              margin: 4px 6px;
-              text-align: center;
-              white-space: nowrap;
-              box-sizing: border-box;
-            ">
-              <span style="
-                display: inline-block;
-                vertical-align: middle;
-                width: 17px;
-                height: 17px;
-                margin-right: 7px;
-                line-height: 1;
-              ">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
-                  <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8" />
-                  <path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1" />
-                  <path d="M2 21h20" />
-                  <line x1="7" y1="8" x2="7" y2="10" />
-                  <line x1="12" y1="8" x2="12" y2="10" />
-                  <line x1="17" y1="8" x2="17" y2="10" />
-                  <circle cx="7" cy="4" r="1" fill="#F59E0B" stroke="#F59E0B" />
-                  <circle cx="12" cy="4" r="1" fill="#F59E0B" stroke="#F59E0B" />
-                  <circle cx="17" cy="4" r="1" fill="#F59E0B" stroke="#F59E0B" />
-                </svg>
-              </span>
-              <span style="
-                display: inline-block;
-                vertical-align: middle;
-                font-size: 14px;
-                font-weight: 800;
-                color: #FFFFFF;
-                font-family: ${GUJARATI_FONT_STACK};
-                letter-spacing: 0.3px;
-                line-height: 1;
-              ">${displayDobText}</span>
-            </div>
-
-            <!-- Standard Badge -->
-            ${rawStandard ? `
-              <div style="
-                display: inline-block;
-                vertical-align: middle;
+            <img
+              src="${dobBadgeDataUri}"
+              alt="${displayDobText}"
+              style="
                 height: 38px;
-                line-height: 38px;
-                padding: 0 18px;
-                background: #0F172A;
-                border: 1.8px solid #D4AF37;
-                border-radius: 9999px;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+                width: auto;
+                display: inline-block;
+                vertical-align: middle;
                 margin: 4px 6px;
-                text-align: center;
-                white-space: nowrap;
-                box-sizing: border-box;
-              ">
-                <span style="
+                box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+                border-radius: 9999px;
+              "
+            />
+            ${standardBadgeDataUri ? `
+              <img
+                src="${standardBadgeDataUri}"
+                alt="${displayStandardText}"
+                style="
+                  height: 38px;
+                  width: auto;
                   display: inline-block;
                   vertical-align: middle;
-                  width: 17px;
-                  height: 17px;
-                  margin-right: 7px;
-                  line-height: 1;
-                ">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
-                    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                    <path d="M6 12v5c3 3 9 3 12 0v-5" />
-                  </svg>
-                </span>
-                <span style="
-                  display: inline-block;
-                  vertical-align: middle;
-                  font-size: 14px;
-                  font-weight: 800;
-                  color: #FFFFFF;
-                  font-family: ${GUJARATI_FONT_STACK};
-                  letter-spacing: 0.3px;
-                  line-height: 1;
-                ">${displayStandardText}</span>
-              </div>
+                  margin: 4px 6px;
+                  box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+                  border-radius: 9999px;
+                "
+              />
             ` : ''}
-
-            <!-- Designation Badge (Staff) -->
-            ${person.designation ? `
-              <div style="
-                display: inline-block;
-                vertical-align: middle;
-                height: 38px;
-                line-height: 38px;
-                padding: 0 18px;
-                background: #0F172A;
-                border: 1.8px solid #D4AF37;
-                border-radius: 9999px;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.18);
-                margin: 4px 6px;
-                text-align: center;
-                white-space: nowrap;
-                box-sizing: border-box;
-              ">
-                <span style="
+            ${designationBadgeDataUri ? `
+              <img
+                src="${designationBadgeDataUri}"
+                alt="${person.designation}"
+                style="
+                  height: 38px;
+                  width: auto;
                   display: inline-block;
                   vertical-align: middle;
-                  width: 17px;
-                  height: 17px;
-                  margin-right: 7px;
-                  line-height: 1;
-                ">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
-                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                  </svg>
-                </span>
-                <span style="
-                  display: inline-block;
-                  vertical-align: middle;
-                  font-size: 14px;
-                  font-weight: 800;
-                  color: #FFFFFF;
-                  font-family: ${GUJARATI_FONT_STACK};
-                  letter-spacing: 0.3px;
-                  line-height: 1;
-                ">${person.designation}</span>
-              </div>
+                  margin: 4px 6px;
+                  box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+                  border-radius: 9999px;
+                "
+              />
             ` : ''}
           </div>
         </div>

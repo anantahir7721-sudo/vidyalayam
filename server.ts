@@ -2971,9 +2971,152 @@ Schema per question:
         userFriendlyMsg = 'Google AI કન્ફિગરેશન ચકાસો. કૃપા કરીને ફરી પ્રયાસ કરો.';
       }
 
-        return res.status(500).json({
+      return res.status(500).json({
         error: userFriendlyMsg,
         rawMessage: 'RESOURCE_EXHAUSTED',
+      });
+    }
+  });
+
+  // =========================================================================
+  // API: AI Multimodal Exam Timetable Extractor (Gemini 3.8 Flash)
+  // Extracts exam schedule (Dates, Standards, Subjects) from images/PDFs/text
+  // =========================================================================
+  app.post('/api/ai/extract-timetable', async (req: Request, res: Response) => {
+    try {
+      if (geminiKeyPool.getKeyCount() === 0) {
+        return res.status(500).json({
+          error: 'Gemini API Key is not configured. Please set GEMINI_API_KEY.',
+        });
+      }
+
+      const { text, fileBase64, mimeType } = req.body;
+
+      if (!text && !fileBase64) {
+        return res.status(400).json({
+          error: 'કૃપા કરીને પરીક્ષા ટાઈમટેબલની PDF, ફોટો/ઈમેજ અથવા ટેક્સ્ટ આપો.',
+        });
+      }
+
+      const systemPrompt = `You are an expert Gujarati and bilingual educational examination timetable parser.
+Your task is to analyze the provided school exam timetable (image, PDF, document, or text) from a Gujarat secondary or higher secondary school (GSEB / શાળા પરીક્ષા સમયપત્રક).
+
+Extract the exam schedule accurately:
+1. Identify the exam type:
+   - "first": પ્રથમ સત્રાંત પરીક્ષા (First Term Exam / First Exam)
+   - "second": દ્વિતીય સત્રાંત પરીક્ષા / પ્રિલિમિનરી પરીક્ષા (Second / Preliminary Exam)
+   - "annual": વાર્ષિક પરીક્ષા (Annual Exam)
+2. Identify the exam title in Gujarati (e.g. "પ્રથમ સત્રાંત પરીક્ષા", "દ્વિતીય/પ્રિલિમ પરીક્ષા", or "વાર્ષિક પરીક્ષા").
+3. Identify the month and year in Gujarati (e.g. "ઓક્ટોબર- 2026", "એપ્રિલ- 2026", "જાન્યુઆરી- 2026").
+4. Extract each exam session row:
+   - date: Date string formatted as "DD-MM-YYYY" (e.g. "06-04-2026").
+   - day: Day of week in Gujarati if available (e.g. "સોમવાર", "મંગળવાર", "બુધવાર", "ગુરુવાર", "શુક્રવાર", "શનિવાર").
+   - standard: Standard number string (e.g. "9", "10", "11", "12"). If multiple standards share a date/subject, output separate entries for each standard!
+   - subject: Subject name in clean Gujarati (e.g. "ચિત્રકલા", "કોમ્પ્યુટર", "શારીરિક શિક્ષણ", "વિજ્ઞાન", "ગુજરાતી", "હિન્દી", "ગણિત", "સામાજિક વિજ્ઞાન", "અંગ્રેજી", "સંસ્કૃત", "નામાના મૂળતત્વો", "વાણિજ્ય વ્યવસ્થા", "અર્થશાસ્ત્ર", "આંકડાશાસ્ત્ર", "ભૌતિક વિજ્ઞાન", "રસાયણ વિજ્ઞાન", "જીવ વિજ્ઞાન").
+   - time: Exam time string if mentioned (e.g. "11:00 થી 02:00").
+
+CRITICAL RULES:
+- Output MUST be valid strictly parsable JSON object.
+- Sort entries chronologically by date and standard.
+
+Schema:
+{
+  "examType": "first" | "second" | "annual",
+  "examTitle": string,
+  "monthYear": string,
+  "entries": [
+    {
+      "date": string,
+      "day": string,
+      "standard": string,
+      "subject": string,
+      "time": string
+    }
+  ]
+}`;
+
+      const contents: any[] = [];
+      if (fileBase64) {
+        let cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
+        let fileMime = mimeType || 'image/jpeg';
+
+        if (!fileMime.includes('pdf')) {
+          try {
+            const rawBuffer = Buffer.from(cleanBase64, 'base64');
+            if (rawBuffer.length > 350 * 1024) {
+              const compressed = await sharp(rawBuffer)
+                .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+                .jpeg({ quality: 85, progressive: true })
+                .toBuffer();
+              cleanBase64 = compressed.toString('base64');
+              fileMime = 'image/jpeg';
+            }
+          } catch (sharpErr) {
+            console.warn('[Timetable Extract] Sharp compression note:', sharpErr);
+          }
+        }
+
+        contents.push({
+          inlineData: {
+            mimeType: fileMime,
+            data: cleanBase64,
+          },
+        });
+      }
+
+      const userText = text
+        ? `Please extract the examination timetable from this text / document:\n\n${text}`
+        : 'Please extract the examination timetable, dates, classes, and subjects from the attached image/document.';
+      contents.push(userText);
+
+      const candidateModels = [
+        'gemini-3.8-flash',
+        'gemini-3.5-flash',
+        'gemini-3.6-flash',
+        'gemini-3.1-flash-lite',
+        'gemini-flash-latest',
+      ];
+
+      const response = await geminiKeyPool.execute(async (ai) => {
+        let lastErr: any = null;
+        for (const modelName of candidateModels) {
+          try {
+            const res = await ai.models.generateContent({
+              model: modelName,
+              contents,
+              config: {
+                systemInstruction: systemPrompt,
+                temperature: 0.1,
+                responseMimeType: 'application/json',
+              },
+            });
+            if (res && res.text) {
+              return res;
+            }
+          } catch (mErr: any) {
+            lastErr = mErr;
+            const errStr = String(mErr?.message || mErr || '');
+            if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED')) {
+              throw mErr; // bubble up to trigger pool failover
+            }
+          }
+        }
+        throw lastErr || new Error('Timetable extraction failed on all models');
+      });
+
+      const responseText = response.text || '';
+      const cleanJson = responseText.replace(/^```json/g, '').replace(/^```/g, '').replace(/```$/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+
+      return res.json({
+        success: true,
+        data: parsed,
+      });
+    } catch (error: any) {
+      console.error('[AI Extract Timetable Error]:', error);
+      return res.status(500).json({
+        error: 'ટાઈમટેબલ સ્કેન કરવામાં ક્ષતિ આવી. કૃપા કરીને સ્પષ્ટ ફોટો અથવા લખાણ આપો.',
+        details: error?.message,
       });
     }
   });

@@ -11,9 +11,6 @@ import {
   Sparkles,
   Heart,
   Printer,
-  Cake,
-  GraduationCap,
-  Briefcase,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -30,6 +27,7 @@ import {
   printBirthdayCard,
   downloadBirthdayCardPng,
   getBalloonBouquetDataUri,
+  createPillBadgeDataUri,
 } from '../utils/birthdayPdfShareUtils';
 
 export interface CardColorTheme {
@@ -370,6 +368,28 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
   const rawStandard = useMemo(() => {
     return person.standard ? String(person.standard).replace(/^class\s*/i, '').trim() : '';
   }, [person.standard]);
+
+  const displayDobText = useMemo(() => {
+    return lang === 'gu' ? `જન્મ તારીખ: ${cleanDob}` : `D.O.B: ${cleanDob}`;
+  }, [lang, cleanDob]);
+
+  const displayStandardText = useMemo(() => {
+    return lang === 'gu'
+      ? `ધોરણ ${rawStandard}${person.section ? `-${person.section}` : ''}`
+      : `Class ${rawStandard}${person.section ? `-${person.section}` : ''}`;
+  }, [lang, rawStandard, person.section]);
+
+  const dobBadgeDataUri = useMemo(() => {
+    return createPillBadgeDataUri('cake', displayDobText, lang === 'gu');
+  }, [displayDobText, lang]);
+
+  const standardBadgeDataUri = useMemo(() => {
+    return rawStandard ? createPillBadgeDataUri('grad', displayStandardText, lang === 'gu') : '';
+  }, [rawStandard, displayStandardText, lang]);
+
+  const designationBadgeDataUri = useMemo(() => {
+    return person.designation ? createPillBadgeDataUri('briefcase', person.designation, lang === 'gu') : '';
+  }, [person.designation, lang]);
 
   // Download Individual Birthday Card as High-Quality A4 Print PDF
   const handleDownloadPdf = async () => {
@@ -855,35 +875,25 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({
               {person.name}
             </h3>
 
-            <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[10.5px] sm:text-[12px] font-extrabold flex-wrap text-center my-1">
-              {/* DOB Pill - Explicit Height & Centered */}
-              <div className="inline-flex items-center justify-center h-7 sm:h-8 px-3 sm:px-4 rounded-full bg-[#0F172A] border-[1.8px] border-[#D4AF37] shadow-sm">
-                <Cake className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1.5 text-amber-400 shrink-0" />
-                <span className="text-[10.5px] sm:text-[12px] font-extrabold leading-none flex items-center justify-center text-white font-['Anek_Gujarati']">
-                  {lang === 'gu' ? `જન્મતારીખ: ${cleanDob}` : `D.O.B: ${cleanDob}`}
-                </span>
-              </div>
-
-              {/* Class Pill */}
-              {rawStandard && (
-                <div className="inline-flex items-center justify-center h-7 sm:h-8 px-3 sm:px-4 rounded-full bg-[#0F172A] border-[1.8px] border-[#D4AF37] shadow-sm">
-                  <GraduationCap className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1.5 text-amber-400 shrink-0" />
-                  <span className="text-[10.5px] sm:text-[12px] font-extrabold leading-none flex items-center justify-center text-white font-['Anek_Gujarati']">
-                    {lang === 'gu'
-                      ? `ધોરણ ${rawStandard}${person.section ? `-${person.section}` : ''}`
-                      : `Class ${rawStandard}${person.section ? `-${person.section}` : ''}`}
-                  </span>
-                </div>
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap text-center my-1.5">
+              <img
+                src={dobBadgeDataUri}
+                alt={displayDobText}
+                className="h-7 sm:h-8 w-auto inline-block shadow-sm rounded-full pointer-events-none"
+              />
+              {standardBadgeDataUri && (
+                <img
+                  src={standardBadgeDataUri}
+                  alt={displayStandardText}
+                  className="h-7 sm:h-8 w-auto inline-block shadow-sm rounded-full pointer-events-none"
+                />
               )}
-
-              {/* Designation Pill */}
-              {person.designation && (
-                <div className="inline-flex items-center justify-center h-7 sm:h-8 px-3 sm:px-4 rounded-full bg-[#0F172A] border-[1.8px] border-[#D4AF37] shadow-sm">
-                  <Briefcase className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1.5 text-amber-400 shrink-0" />
-                  <span className="text-[10.5px] sm:text-[12px] font-extrabold leading-none flex items-center justify-center text-white font-['Anek_Gujarati']">
-                    {person.designation}
-                  </span>
-                </div>
+              {designationBadgeDataUri && (
+                <img
+                  src={designationBadgeDataUri}
+                  alt={person.designation}
+                  className="h-7 sm:h-8 w-auto inline-block shadow-sm rounded-full pointer-events-none"
+                />
               )}
             </div>
           </div>

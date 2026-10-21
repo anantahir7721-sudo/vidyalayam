@@ -30,6 +30,7 @@ import {
   Bell,
   Settings,
   Cake,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -47,6 +48,7 @@ export type ActiveTabType =
   | 'birthdays'
   | 'marks'
   | 'exams'
+  | 'exam_file'
   | 'online_exams'
   | 'results'
   | 'parent_messaging'
@@ -167,6 +169,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'staff', label: 'સ્ટાફ', icon: <UserCheck className="w-3.5 h-3.5" /> },
     { id: 'birthdays', label: '🎂 જન્મદિવસ', icon: <Cake className="w-3.5 h-3.5 text-pink-500" /> },
     { id: 'exams', label: 'પરીક્ષાઓ & કસોટી', icon: <BookOpen className="w-3.5 h-3.5" /> },
+    { id: 'exam_file', label: '📁 પરીક્ષા ફાઇલ', icon: <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-500" /> },
     { id: 'online_exams', label: '📝 ઓનલાઇન MCQ', icon: <FileText className="w-3.5 h-3.5 text-emerald-400" /> },
     { id: 'results', label: 'પરિણામ', icon: <Award className="w-3.5 h-3.5" /> },
     { id: 'parent_messaging', label: 'વાલી સંચાર', icon: <MessageSquare className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> },

@@ -318,6 +318,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       actionText: 'પરીક્ષાઓ & કસોટી',
     },
     {
+      id: 'exam_file' as ActiveTabType,
+      title: '📁 પરીક્ષા ફાઇલ & બ્લોક વ્યવસ્થા (Exam File & Blocks)',
+      desc: 'ખંડ નિરીક્ષણ પત્રક, બ્લોક વાઇઝ વિદ્યાર્થી બેઠક યાદી, ઉત્તરવહી પરીક્ષણ કાર્ય અને AI સમયપત્રક સ્કેનર (A4 / Legal PDF).',
+      icon: <FileSpreadsheet className="w-5 h-5 text-indigo-400" />,
+      badge: 'ખંડ નિરીક્ષણ & બ્લોક યાદી',
+      color: 'hover:border-indigo-500/40',
+      actionText: 'પરીક્ષા ફાઇલ ખોલો',
+    },
+    {
       id: 'online_exams' as ActiveTabType,
       title: '📝 ઓનલાઇન MCQ પરીક્ષા કેન્દ્ર (Online Exam Center)',
       desc: 'શાળાકીય અને એક્સ્ટ્રા MCQ પરીક્ષાઓ, ઓટો-ઇવેલ્યુએશન, AI પ્રશ્ન આયાત, પ્રશ્ન બેંક અને પરિણામ એનાલિટિક્સ.',
