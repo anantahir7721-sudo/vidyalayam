@@ -278,9 +278,9 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // JSON Body parser with high limit for image uploads
-  app.use(express.json({ limit: '25mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+  // JSON Body parser with high limit for document and image uploads
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
   // Enable CORS for web, PWA and native Android Capacitor APK
   app.use((req, res, next) => {

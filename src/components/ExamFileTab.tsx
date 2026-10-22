@@ -51,6 +51,7 @@ import {
   CheckSquare,
   Square,
   Check,
+  Camera,
 } from 'lucide-react';
 import { apiFetch, isNativeApp } from '../utils/apiConfig';
 import { directExtractTimetable } from '../services/directGeminiService';
@@ -70,6 +71,88 @@ interface SectionEditorConfig {
   count: number;
   manualSelectedIds: string[];
   onlyUnassignedFilter?: boolean;
+}
+
+/**
+ * Client-side file optimization for timetable uploads.
+ * Downscales camera photos to max 1600px width/height and 0.82 JPEG quality,
+ * shrinking 15-30MB smartphone photos to ~250-350KB so mobile uploads take 2-4s
+ * instead of timing out with "Failed to fetch".
+ * Validates PDF size and reads cleanly.
+ */
+async function optimizeTimetableFile(file: File): Promise<{ base64: string; mimeType: string }> {
+  const isPdf =
+    file.name.toLowerCase().endsWith('.pdf') ||
+    (file.type && file.type.toLowerCase().includes('pdf'));
+
+  if (isPdf) {
+    if (file.size > 15 * 1024 * 1024) {
+      throw new Error(
+        'PDF ફાઇલનું કદ 15MB કરતાં વધુ છે. કૃપા કરીને ટાઈમટેબલના પાનાનો સ્પષ્ટ ફોટો પાડીને અપલોડ કરો અથવા નાની PDF પસંદ કરો.'
+      );
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const raw = reader.result as string;
+        resolve({ base64: raw, mimeType: 'application/pdf' });
+      };
+      reader.onerror = () => reject(new Error('PDF ફાઇલ વાંચવામાં નિષ્ફળતા મળી.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Handle images (photos, JPEG, PNG, WEBP, HEIC)
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (!dataUrl) {
+        resolve({ base64: '', mimeType: file.type || 'image/jpeg' });
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        const maxDimension = 1600;
+        let { width, height } = img;
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve({ base64: dataUrl, mimeType: file.type || 'image/jpeg' });
+          return;
+        }
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        resolve({ base64: compressedDataUrl, mimeType: 'image/jpeg' });
+      };
+      img.onerror = () => {
+        resolve({ base64: dataUrl, mimeType: file.type || 'image/jpeg' });
+      };
+      img.src = dataUrl;
+    };
+    reader.onerror = () => {
+      resolve({ base64: '', mimeType: file.type || 'image/jpeg' });
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 export const ExamFileTab: React.FC<ExamFileTabProps> = ({
@@ -125,6 +208,7 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
   const [aiSuccessMessage, setAiSuccessMessage] = useState<string | null>(null);
   const [timetableText, setTimetableText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Storage Key for School Persistence
   const storageKey = `vidyalayam_exam_file_${school.id || 'default'}`;
@@ -836,123 +920,124 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
     setAiSuccessMessage(null);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
+      // 1. Client-side optimization: downscales phone camera photo from 15-30MB to ~250KB JPEG
+      const opt = await optimizeTimetableFile(file);
+      if (!opt.base64) {
+        throw new Error('ફાઇલ વાંચવામાં નિષ્ફળતા મળી.');
+      }
+
+      let json: any = null;
+
+      // Helper function to call backend with generous 120s mobile timeout
+      const callServerExtract = async () => {
+        const res = await apiFetch(
+          '/api/ai/extract-timetable',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileBase64: opt.base64,
+              mimeType: opt.mimeType,
+            }),
+          },
+          120000
+        );
+
+        const resText = await res.text();
+        let parsed: any = null;
         try {
-          const base64Data = reader.result as string;
-          const isPdf =
-            file.name.toLowerCase().endsWith('.pdf') ||
-            (file.type && file.type.includes('pdf')) ||
-            (typeof base64Data === 'string' && base64Data.startsWith('data:application/pdf'));
-          const mime = isPdf ? 'application/pdf' : (file.type || 'image/jpeg');
-
-          let json: any = null;
-
-          // 1. If running inside native mobile container, prioritize direct Gemini API
-          if (isNativeApp()) {
-            try {
-              const directRes = await directExtractTimetable({
-                fileBase64: base64Data,
-                mimeType: mime,
-              });
-              if (directRes && directRes.success && directRes.data) {
-                json = directRes;
-              }
-            } catch (dErr) {
-              console.warn('[AI Timetable] Native direct call note, trying server:', dErr);
-            }
-          }
-
-          // 2. Try server route via apiFetch if not resolved yet
-          if (!json) {
-            try {
-              const res = await apiFetch('/api/ai/extract-timetable', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  fileBase64: base64Data,
-                  mimeType: mime,
-                }),
-              }, 60000);
-
-              const resText = await res.text();
-              try {
-                json = JSON.parse(resText);
-              } catch (parseErr) {
-                console.warn('[AI Timetable] Server returned HTML/non-JSON:', parseErr);
-              }
-
-              if (!res.ok || !json?.success) {
-                // If server returned error or non-JSON, try direct Gemini fallback
-                const directRes = await directExtractTimetable({
-                  fileBase64: base64Data,
-                  mimeType: mime,
-                });
-                if (directRes && directRes.success && directRes.data) {
-                  json = directRes;
-                } else {
-                  throw new Error(json?.error || 'ટાઈમટેબલ સ્કેન કરવામાં નિષ્ફળતા.');
-                }
-              }
-            } catch (srvErr: any) {
-              // Direct fallback as safety net
-              try {
-                const directRes = await directExtractTimetable({
-                  fileBase64: base64Data,
-                  mimeType: mime,
-                });
-                if (directRes && directRes.success && directRes.data) {
-                  json = directRes;
-                } else {
-                  throw srvErr;
-                }
-              } catch {
-                throw new Error(srvErr.message || 'ટાઈમટેબલ સ્કેન કરવામાં ક્ષતિ આવી. કૃપા કરીને સ્પષ્ટ PDF/ફોટો પસંદ કરો.');
-              }
-            }
-          }
-
-          if (!json || !json.data) {
-            throw new Error('ટાઈમટેબલ સ્કેન કરવામાં નિષ્ફળતા.');
-          }
-
-          const data = json.data;
-          if (data.examType) setSelectedExamType(data.examType);
-          if (data.examTitle) setExamTitle(data.examTitle);
-          if (data.monthYear) setMonthYear(data.monthYear);
-
-          if (Array.isArray(data.entries) && data.entries.length > 0) {
-            const formattedEntries: TimetableEntry[] = data.entries.map((item: any, i: number) => ({
-              id: `tt_${Date.now()}_${i + 1}`,
-              date: item.date || '',
-              day: item.day || '',
-              standard: String(item.standard || '9'),
-              subject: item.subject || '',
-              time: item.time || '',
-            }));
-            setTimetable(formattedEntries);
-
-            // Automatically sync dates & subjects into Supervision & Evaluation!
-            syncSupervisionFromTimetable(formattedEntries);
-            syncEvaluationFromTimetable(formattedEntries);
-
-            setAiSuccessMessage(
-              `✨ AI દ્વારા ટાઈમટેબલ સફળતાપૂર્વક સ્કેન થયું (${formattedEntries.length} વિષયો/તારીખો)! ખંડ નિરીક્ષણ અને ઉત્તરવહી ચકાસણીમાં પરીક્ષાની તારીખો અને વિષયો આપોઆપ આવી ગયા છે.`
-            );
-          } else {
-            setAiSuccessMessage('ટાઈમટેબલની વિગતો મળી પરંતુ વિષયનું લિસ્ટ ખાલી છે.');
-          }
-        } catch (err: any) {
-          setAiError(err.message || 'ટાઈમટેબલ સ્કેન કરવામાં ક્ષતિ આવી.');
-        } finally {
-          setAiUploading(false);
-          if (fileInputRef.current) fileInputRef.current.value = '';
+          parsed = JSON.parse(resText);
+        } catch {
+          console.warn('[AI Timetable] Server response parsing note');
         }
+
+        if (!res.ok || !parsed?.success) {
+          throw new Error(parsed?.error || `સર્વર પ્રતિસાદ કોડ: ${res.status}`);
+        }
+        return parsed;
       };
-      reader.readAsDataURL(file);
+
+      // 2. Try server route with automatic retry for mobile connection blips
+      try {
+        json = await callServerExtract();
+      } catch (firstErr: any) {
+        console.warn('[AI Timetable] First attempt note, auto-retrying in 1.5s...', firstErr);
+        await new Promise((r) => setTimeout(r, 1500));
+        try {
+          json = await callServerExtract();
+        } catch (retryErr: any) {
+          console.warn('[AI Timetable] Server retry failed, attempting direct Gemini fallback:', retryErr);
+          // Try direct client-side Gemini fallback
+          try {
+            const directRes = await directExtractTimetable({
+              fileBase64: opt.base64,
+              mimeType: opt.mimeType,
+            });
+            if (directRes && directRes.success && directRes.data) {
+              json = directRes;
+            } else {
+              throw retryErr;
+            }
+          } catch (directErr: any) {
+            const rawMsg = String(retryErr?.message || retryErr || '');
+            if (
+              rawMsg.includes('Failed to fetch') ||
+              rawMsg.includes('NetworkError') ||
+              rawMsg.includes('abort') ||
+              rawMsg.includes('network')
+            ) {
+              throw new Error(
+                'નેટવર્ક જોડાણમાં વિલંબ થયો છે અથવા ઇન્ટરનેટ ધીમું છે. કૃપા કરીને ટાઈમટેબલના પેજનો સ્પષ્ટ ફોટો પાડીને ફરી પ્રયાસ કરો, અથવા નીચે આપેલા બોક્સમાં ટાઈમટેબલ લખાણ પેસ્ટ કરો.'
+              );
+            }
+            throw new Error(
+              retryErr?.message || 'ટાઈમટેબલ સ્કેન કરવામાં ક્ષતિ આવી. કૃપા કરીને સ્પષ્ટ PDF અથવા ફોટો પસંદ કરો.'
+            );
+          }
+        }
+      }
+
+      if (!json || !json.data) {
+        throw new Error('ટાઈમટેબલ સ્કેન કરવામાં નિષ્ફળતા.');
+      }
+
+      const data = json.data;
+      if (data.examType) setSelectedExamType(data.examType);
+      if (data.examTitle) setExamTitle(data.examTitle);
+      if (data.monthYear) setMonthYear(data.monthYear);
+
+      if (Array.isArray(data.entries) && data.entries.length > 0) {
+        const formattedEntries: TimetableEntry[] = data.entries.map((item: any, i: number) => ({
+          id: `tt_${Date.now()}_${i + 1}`,
+          date: item.date || '',
+          day: item.day || '',
+          standard: String(item.standard || '9'),
+          subject: item.subject || '',
+          time: item.time || '',
+        }));
+        setTimetable(formattedEntries);
+
+        // Automatically sync dates & subjects into Supervision & Evaluation!
+        syncSupervisionFromTimetable(formattedEntries);
+        syncEvaluationFromTimetable(formattedEntries);
+
+        setAiSuccessMessage(
+          `✨ AI દ્વારા ટાઈમટેબલ સફળતાપૂર્વક સ્કેન થયું (${formattedEntries.length} વિષયો/તારીખો)! ખંડ નિરીક્ષણ અને ઉત્તરવહી ચકાસણીમાં પરીક્ષાની તારીખો અને વિષયો આપોઆપ આવી ગયા છે.`
+        );
+      } else {
+        setAiSuccessMessage('ટાઈમટેબલ સ્કેન થયું પરંતુ કોઈ વિષય એન્ટ્રી મળી શકી નહીં.');
+      }
     } catch (err: any) {
-      setAiError(err.message || 'ફાઇલ વાંચવામાં નિષ્ફળતા.');
+      const msg = String(err?.message || err || '');
+      const friendlyMsg =
+        msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('abort')
+          ? 'નેટવર્ક જોડાણમાં વિલંબ થયો છે અથવા ઇન્ટરનેટ ધીમું છે. કૃપા કરીને ફરી પ્રયાસ કરો અથવા નીચે આપેલા બોક્સમાં ટાઈમટેબલ લખાણ પેસ્ટ કરીને સ્કેન કરો.'
+          : msg;
+      setAiError(friendlyMsg);
+    } finally {
       setAiUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
   };
 
@@ -970,48 +1055,58 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
     try {
       let json: any = null;
 
-      if (isNativeApp()) {
-        try {
-          const directRes = await directExtractTimetable({ text: timetableText });
-          if (directRes && directRes.success && directRes.data) {
-            json = directRes;
-          }
-        } catch (dErr) {
-          console.warn('[AI Timetable] Native direct text extract note:', dErr);
-        }
-      }
-
-      if (!json) {
-        try {
-          const res = await apiFetch('/api/ai/extract-timetable', {
+      const callServerText = async () => {
+        const res = await apiFetch(
+          '/api/ai/extract-timetable',
+          {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               text: timetableText,
             }),
-          }, 45000);
+          },
+          90000
+        );
 
-          const resText = await res.text();
+        const resText = await res.text();
+        let parsed: any = null;
+        try {
+          parsed = JSON.parse(resText);
+        } catch {}
+
+        if (!res.ok || !parsed?.success) {
+          throw new Error(parsed?.error || `સર્વર પ્રતિસાદ કોડ: ${res.status}`);
+        }
+        return parsed;
+      };
+
+      try {
+        json = await callServerText();
+      } catch (firstErr: any) {
+        console.warn('[AI Timetable Text] First attempt note, auto-retrying...', firstErr);
+        await new Promise((r) => setTimeout(r, 1500));
+        try {
+          json = await callServerText();
+        } catch (retryErr: any) {
           try {
-            json = JSON.parse(resText);
-          } catch (parseErr) {
-            console.warn('[AI Timetable] Server text parse error:', parseErr);
-          }
-
-          if (!res.ok || !json?.success) {
             const directRes = await directExtractTimetable({ text: timetableText });
             if (directRes && directRes.success && directRes.data) {
               json = directRes;
             } else {
-              throw new Error(json?.error || 'ટાઈમટેબલ સ્કેન કરવામાં નિષ્ફળતા.');
+              throw retryErr;
             }
-          }
-        } catch (srvErr: any) {
-          const directRes = await directExtractTimetable({ text: timetableText });
-          if (directRes && directRes.success && directRes.data) {
-            json = directRes;
-          } else {
-            throw srvErr;
+          } catch (directErr: any) {
+            const rawMsg = String(retryErr?.message || retryErr || '');
+            if (
+              rawMsg.includes('Failed to fetch') ||
+              rawMsg.includes('NetworkError') ||
+              rawMsg.includes('abort')
+            ) {
+              throw new Error(
+                'નેટવર્ક જોડાણમાં વિલંબ થયો છે. કૃપા કરીને થોડી સેકન્ડ પછી ફરી પ્રયાસ કરો.'
+              );
+            }
+            throw new Error(retryErr?.message || 'લખાણમાંથી ટાઈમટેબલ સ્કેન કરવામાં ક્ષતિ આવી.');
           }
         }
       }
@@ -1045,7 +1140,12 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
         );
       }
     } catch (err: any) {
-      setAiError(err.message || 'લખાણમાંથી ટાઈમટેબલ સ્કેન કરવામાં ક્ષતિ આવી.');
+      const msg = String(err?.message || err || '');
+      const friendlyMsg =
+        msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('abort')
+          ? 'નેટવર્ક જોડાણમાં વિલંબ થયો છે. કૃપા કરીને થોડી સેકન્ડ પછી ફરી પ્રયાસ કરો.'
+          : msg;
+      setAiError(friendlyMsg);
     } finally {
       setAiUploading(false);
     }
@@ -1308,6 +1408,16 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
         ref={fileInputRef}
         type="file"
         accept="image/*,application/pdf"
+        onChange={handleUploadTimetableFile}
+        className="hidden"
+      />
+
+      {/* Hidden input for direct camera capture on mobile */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
         onChange={handleUploadTimetableFile}
         className="hidden"
       />
@@ -2205,19 +2315,41 @@ export const ExamFileTab: React.FC<ExamFileTabProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={aiUploading}
-                  className={`px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm shadow-purple-600/20 cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm shadow-purple-600/20 cursor-pointer ${
                     aiUploading ? 'opacity-50 pointer-events-none' : ''
                   }`}
+                  title="PDF અથવા ગેલેરીમાંથી ફોટો પસંદ કરો"
                 >
                   <Upload className="w-4 h-4" />
-                  <span>{aiUploading ? 'સ્કેન થઈ રહ્યું છે...' : 'ટાઈમટેબલ PDF / ફોટો અપલોડ કરો'}</span>
+                  <span>{aiUploading ? 'સ્કેન થઈ રહ્યું છે...' : 'PDF / ફાઇલ અપલોડ'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={aiUploading}
+                  className={`px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm shadow-indigo-600/20 cursor-pointer ${
+                    aiUploading ? 'opacity-50 pointer-events-none' : ''
+                  }`}
+                  title="મોબાઈલ કેમેરાથી સીધો ફોટો પાડો"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>કેમેરાથી ફોટો પાડો</span>
                 </button>
               </div>
+            </div>
+
+            {/* Quick Mobile Tip */}
+            <div className="mt-3 pt-3 border-t border-purple-200/60 dark:border-purple-800/30 text-[11px] text-purple-800 dark:text-purple-300 flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+              <span>
+                💡 <strong>ઓટો-ઓપ્ટિમાઇઝેશન સક્રિય:</strong> આપ કેમેરાથી પાડેલો ફોટો આપોઆપ નાની સાઇઝમાં કન્વર્ટ થાય છે, જેથી 4G/5G પર પણ માત્ર ૨ થી ૫ સેકન્ડમાં સ્કેન થઈ જશે.
+              </span>
             </div>
 
             {/* Error Message */}
