@@ -22,6 +22,7 @@ export interface School {
   contactPhone?: string;
   establishedYear?: string;
   logoUrl?: string;
+  academicYear?: string; // e.g. '૨૦૨૬–૨૭' or '2026-2027'
   password?: string; // Stored securely for school credentials
   temporaryPassword?: string; // Admin-issued temporary password
   mustResetPassword?: boolean; // Set to true when temporary password is issued
@@ -232,6 +233,7 @@ export interface Student {
   grNumber?: string; // GR No. (Searchable, unique school register no.)
   section?: string; // Section (વર્ગ / સેક્શન દા.ત. A, B, C)
   division?: string; // Legacy alias for section
+  stream?: 'general' | 'science' | string; // સામાન્ય / વિજ્ઞાન પ્રવાહ
   rollNumber?: string; // Roll No.
   dob?: string; // Date of Birth (જન્મ તારીખ)
   doa?: string; // Date of Admission (પ્રવેશ તારીખ)

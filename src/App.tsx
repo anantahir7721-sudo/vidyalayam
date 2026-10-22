@@ -14,6 +14,7 @@ import { IdCardsManager } from './components/IdCardsManager';
 import { CertificatesManager } from './components/CertificatesManager';
 import { ExamsManager } from './components/ExamsManager';
 import { ResultsManager } from './components/ResultsManager';
+import { Class9ResultManager } from './components/Class9ResultManager';
 import { ParentMessagingManager } from './components/ParentMessagingManager';
 import { ReportsManager } from './components/ReportsManager';
 import { SchoolProfileManager } from './components/SchoolProfileManager';
@@ -213,6 +214,7 @@ export default function App() {
   const [marks, setMarks] = useState<MarkRecord[]>([]);
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
+  const [resultsViewMode, setResultsViewMode] = useState<'class9' | 'general'>('class9');
 
   // Active Navigation Tab History Stack with LocalStorage persistence to survive network reloads
   const [tabHistory, setTabHistory] = useState<ActiveTabType[]>(() => {
@@ -873,16 +875,6 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'notice_board' && (
-            <SchoolNoticeBoardTab
-              schoolName={school.schoolName}
-              diseCode={school.diseCode}
-              district={school.district}
-              taluka={(school as any).taluka}
-              onBack={navigateBack}
-            />
-          )}
-
           {activeTab === 'students' && (
             <StudentsManager
               school={school}
@@ -961,13 +953,41 @@ export default function App() {
           )}
 
           {activeTab === 'results' && (
-            <ResultsManager
-              school={school}
-              students={students}
-              marks={marks}
-              onBack={navigateBack}
-              onNavigateToMarks={() => navigateToTab('exams')}
-            />
+            resultsViewMode === 'class9' ? (
+              <Class9ResultManager
+                school={school}
+                students={students}
+                marks={marks}
+                onBack={navigateBack}
+                onRefresh={loadSchoolData}
+                onSwitchToGeneralResults={() => setResultsViewMode('general')}
+              />
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-amber-900 dark:text-amber-200">
+                      ✨ ધોરણ ૯ માટે વિશેષ GSEB પરિણામ સિસ્ટમ (700/1000 ગુણ, 200→100 રૂપાંતરણ, આંતરિક 20 ગુણ બ્રેકડાઉન) ઉપલબ્ધ છે.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setResultsViewMode('class9')}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#C45A2D] text-white font-bold hover:bg-[#a84a22] transition-all cursor-pointer shadow-xs"
+                  >
+                    ધોરણ ૯ Result Tab
+                  </button>
+                </div>
+                <ResultsManager
+                  school={school}
+                  students={students}
+                  marks={marks}
+                  onBack={navigateBack}
+                  onRefresh={loadSchoolData}
+                  initialView="gazette"
+                />
+              </div>
+            )
           )}
 
           {activeTab === 'parent_messaging' && (

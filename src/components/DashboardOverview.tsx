@@ -262,16 +262,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   }, [students, staffList]);
 
   // Unified modules (No duplicates: Ekam Kasoti & Term Exams unified under 'exams')
+  // Core modules
   const modules = [
-    {
-      id: 'notice_board' as ActiveTabType,
-      title: '📢 ડિજિટલ શાળા નોટિસ બોર્ડ (Official Notice Board)',
-      desc: 'સરકારી પરિપત્રો, DEO આદેશો, વિજ્ઞાન મેળો, સ્કોલરશિપ, રમતગમત સ્પર્ધાઓ અને તારીખવાર સત્તાવાર સૂચના ફલક.',
-      icon: <Bell className="w-5 h-5 text-amber-500" />,
-      badge: 'સત્તાવાર પરિપત્રો & આદેશો',
-      color: 'hover:border-amber-500/40',
-      actionText: 'નોટિસ બોર્ડ જુઓ',
-    },
     {
       id: 'students' as ActiveTabType,
       title: 'વિદ્યાર્થી સંચાલન (Students)',
@@ -280,6 +272,24 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       badge: `${students.length} વિદ્યાર્થી`,
       color: 'hover:border-blue-500/40',
       actionText: 'વિદ્યાર્થીઓ જુઓ',
+    },
+    {
+      id: 'results' as ActiveTabType,
+      title: '📊 પરિણામ અને ગુણપત્રક કેન્દ્ર (Results & Marks - Std 9 to 12)',
+      desc: 'ધોરણ ૯ થી ૧૨ માટે પ્રથમ, દ્વિતીય, એકમ કસોટી, આંતરિક અને પ્રાયોગિક ગુણ એન્ટ્રી, એક્સેલ જેવી ઓટો ગણતરી, સિદ્ધિ/કૃપા ગુણ અને વાર્ષિક પરિણામ પત્રકો.',
+      icon: <FileSpreadsheet className="w-5 h-5 text-amber-500" />,
+      badge: 'ધોરણ ૯–૧૨ Excel પદ્ધતિ',
+      color: 'hover:border-amber-500/40',
+      actionText: 'પરિણામ કેન્દ્ર ખોલો',
+    },
+    {
+      id: 'exam_file' as ActiveTabType,
+      title: '📁 પરીક્ષા ફાઇલ & બ્લોક વ્યવસ્થા (Exam File & Blocks)',
+      desc: 'ખંડ નિરીક્ષણ પત્રક, બ્લોક વાઇઝ વિદ્યાર્થી બેઠક યાદી, ઉત્તરવહી પરીક્ષણ કાર્ય અને AI સમયપત્રક સ્કેનર (A4 / Legal PDF).',
+      icon: <FileSpreadsheet className="w-5 h-5 text-indigo-400" />,
+      badge: 'ખંડ નિરીક્ષણ & બ્લોક યાદી',
+      color: 'hover:border-indigo-500/40',
+      actionText: 'પરીક્ષા ફાઇલ ખોલો',
     },
     {
       id: 'admissions' as ActiveTabType,
@@ -309,24 +319,6 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       actionText: 'બર્થડે કાર્ડ જુઓ',
     },
     {
-      id: 'exams' as ActiveTabType,
-      title: 'પરીક્ષાઓ અને એકમ કસોટી (Exams Center)',
-      desc: 'એકમ કસોટી – ૧ (૨૫ ગુણ પ્રશ્નવાર), પ્રથમ સત્રાંત (૫૦), દ્વિતીય સત્રાંત (૫૦) અને વાર્ષિક પરીક્ષા (૮૦) ગુણાંકન.',
-      icon: <GraduationCap className="w-5 h-5 text-emerald-400" />,
-      badge: '૪ સત્તાવાર કસોટીઓ',
-      color: 'hover:border-emerald-500/40',
-      actionText: 'પરીક્ષાઓ & કસોટી',
-    },
-    {
-      id: 'exam_file' as ActiveTabType,
-      title: '📁 પરીક્ષા ફાઇલ & બ્લોક વ્યવસ્થા (Exam File & Blocks)',
-      desc: 'ખંડ નિરીક્ષણ પત્રક, બ્લોક વાઇઝ વિદ્યાર્થી બેઠક યાદી, ઉત્તરવહી પરીક્ષણ કાર્ય અને AI સમયપત્રક સ્કેનર (A4 / Legal PDF).',
-      icon: <FileSpreadsheet className="w-5 h-5 text-indigo-400" />,
-      badge: 'ખંડ નિરીક્ષણ & બ્લોક યાદી',
-      color: 'hover:border-indigo-500/40',
-      actionText: 'પરીક્ષા ફાઇલ ખોલો',
-    },
-    {
       id: 'online_exams' as ActiveTabType,
       title: '📝 ઓનલાઇન MCQ પરીક્ષા કેન્દ્ર (Online Exam Center)',
       desc: 'શાળાકીય અને એક્સ્ટ્રા MCQ પરીક્ષાઓ, ઓટો-ઇવેલ્યુએશન, AI પ્રશ્ન આયાત, પ્રશ્ન બેંક અને પરિણામ એનાલિટિક્સ.',
@@ -334,15 +326,6 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       badge: 'MCQs & AI Importer',
       color: 'hover:border-teal-500/40',
       actionText: 'ઓનલાઇન કસોટી',
-    },
-    {
-      id: 'results' as ActiveTabType,
-      title: 'વાર્ષિક પરિણામ અને પ્રગતિ પત્રક (Results)',
-      desc: 'GSEB પરિપત્ર મુજબ પરિણામ ગેઝેટ, સિદ્ધિ ગુણ (#), કૃપા ગુણ (*) ના નિયમો અને સત્તાવાર A4 પ્રગતિ પત્રક.',
-      icon: <FileSpreadsheet className="w-5 h-5 text-rose-400" />,
-      badge: 'GSEB નિયમો & ગેઝેટ',
-      color: 'hover:border-rose-500/40',
-      actionText: 'પરિણામ ગેઝેટ',
     },
     {
       id: 'parent_messaging' as ActiveTabType,
@@ -1042,111 +1025,6 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <Presentation className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
               <span>🎤 વિદ્યાર્થી પ્રેઝન્ટેશન & સ્ક્રિપ્ટ</span>
             </button>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          OFFICIAL SCHOOL NOTICE BOARD SECTION: શાળા નોટિસ બોર્ડ & સત્તાવાર પરિપત્રો
-          Fully separated from Prarthana Sabha Assembly
-          ========================================================================= */}
-      <section className="glass-panel p-5 sm:p-6 rounded-3xl border-2 border-amber-500/30 dark:border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent relative overflow-hidden shadow-xl space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-lg shrink-0">
-              <Bell className="w-6 h-6 animate-bounce" />
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                <span>📢 શાળા નોટિસ બોર્ડ</span>
-                <span className="text-xs font-normal text-slate-500 dark:text-slate-400 font-sans hidden sm:inline">
-                  (School Notice Board)
-                </span>
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                પરિપત્રો, બોર્ડ સૂચનાઓ, વિજ્ઞાન મેળો, શિષ્યવૃત્તિ અને શૈક્ષણિક જાહેરાતો
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onNavigate('notice_board')}
-            className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:scale-105 shrink-0"
-          >
-            <span>સંપૂર્ણ નોટિસ બોર્ડ ખોલો</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Live Teaser Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-          <div
-            onClick={() => onNavigate('notice_board')}
-            className="p-3.5 rounded-2xl bg-white/90 dark:bg-[#121921]/90 border border-amber-200/80 dark:border-white/10 hover:border-amber-400 transition-all cursor-pointer shadow-xs space-y-1.5"
-          >
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-extrabold text-emerald-700 dark:text-emerald-400">🔬 વિજ્ઞાન મેળો</span>
-              <span className="text-slate-500 font-semibold">તાલુકા કક્ષા</span>
-            </div>
-            <div className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">
-              બાળ વૈજ્ઞાનિક પ્રદર્શન અને ગણિત-વિજ્ઞાન મેળો
-            </div>
-            <div className="text-[10px] text-slate-500 flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-amber-600" />
-              <span>આગામી સપ્તાહ • BRC ભવન</span>
-            </div>
-          </div>
-
-          <div
-            onClick={() => onNavigate('notice_board')}
-            className="p-3.5 rounded-2xl bg-white/90 dark:bg-[#121921]/90 border border-blue-200/80 dark:border-white/10 hover:border-blue-400 transition-all cursor-pointer shadow-xs space-y-1.5"
-          >
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-extrabold text-blue-700 dark:text-blue-400">🏛️ DEO કચેરી</span>
-              <span className="text-slate-500 font-semibold">જિલ્લા કક્ષા</span>
-            </div>
-            <div className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">
-              શાળાઓની આકસ્મિક મુલાકાત & ગુણોત્સવ સમીક્ષા
-            </div>
-            <div className="text-[10px] text-slate-500 flex items-center gap-1">
-              <FileText className="w-3 h-3 text-blue-600" />
-              <span>પરિપત્ર ક્ર: DEO/૨૦૨૬/૯૪૧</span>
-            </div>
-          </div>
-
-          <div
-            onClick={() => onNavigate('notice_board')}
-            className="p-3.5 rounded-2xl bg-white/90 dark:bg-[#121921]/90 border border-purple-200/80 dark:border-white/10 hover:border-purple-400 transition-all cursor-pointer shadow-xs space-y-1.5"
-          >
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-extrabold text-purple-700 dark:text-purple-400">🎓 શિષ્યવૃત્તિ</span>
-              <span className="text-rose-600 font-bold">મુદત નજીક</span>
-            </div>
-            <div className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">
-              ડિજિટલ ગુજરાત પ્રી & પોસ્ટ મેટ્રિક સ્કોલરશિપ
-            </div>
-            <div className="text-[10px] text-slate-500 flex items-center gap-1">
-              <Clock className="w-3 h-3 text-purple-600" />
-              <span>છેલ્લી તારીખ: ૩૧ ઓક્ટોબર ૨૦૨૬</span>
-            </div>
-          </div>
-
-          <div
-            onClick={() => onNavigate('notice_board')}
-            className="p-3.5 rounded-2xl bg-white/90 dark:bg-[#121921]/90 border border-orange-200/80 dark:border-white/10 hover:border-orange-400 transition-all cursor-pointer shadow-xs space-y-1.5"
-          >
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-extrabold text-orange-700 dark:text-orange-400">🏆 ખેલ મહાકુંભ ૨.૦</span>
-              <span className="text-slate-500 font-semibold">રમતગમત</span>
-            </div>
-            <div className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">
-              તાલુકા કક્ષાની સ્પર્ધાઓનું ઓનલાઇન રજીસ્ટ્રેશન
-            </div>
-            <div className="text-[10px] text-slate-500 flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-orange-600" />
-              <span>અંડર ૧૪, ૧૭ અને ૧૯ ભાઈઓ/બહેનો</span>
-            </div>
           </div>
         </div>
       </section>

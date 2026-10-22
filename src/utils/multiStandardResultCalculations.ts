@@ -1,0 +1,372 @@
+import { Student, MarkRecord } from '../types';
+import {
+  Class9SubjectDef,
+  CLASS_9_MAIN_SUBJECTS,
+  CLASS_9_ADDITIONAL_SUBJECTS,
+  ALL_CLASS_9_SUBJECTS,
+  StudentResultClass9,
+  computeClass9StudentResult,
+  calculateGsebGrade,
+} from './class9ResultCalculations';
+
+export type StandardKey = '9' | '10' | '11' | '12';
+export type StreamKey = 'general' | 'science';
+
+export interface StandardTabDef {
+  id: StandardKey;
+  labelGu: string;
+  labelEn: string;
+  hasStreams: boolean;
+}
+
+export const STANDARD_TABS: StandardTabDef[] = [
+  { id: '9', labelGu: 'ધોરણ ૯ (Class 9)', labelEn: 'Class 9', hasStreams: false },
+  { id: '10', labelGu: 'ધોરણ ૧૦ (Class 10 - Board)', labelEn: 'Class 10 (Board)', hasStreams: false },
+  { id: '11', labelGu: 'ધોરણ ૧૧ (Class 11)', labelEn: 'Class 11', hasStreams: true },
+  { id: '12', labelGu: 'ધોરણ ૧૨ (Class 12 - Board)', labelEn: 'Class 12 (Board)', hasStreams: true },
+];
+
+// Class 10 GSEB Subjects
+export const CLASS_10_SUBJECTS: Class9SubjectDef[] = [
+  { id: 'gujarati', code: '01', nameGu: 'ગુજરાતી (પ્રથમ ભાષા)', nameEn: 'Gujarati (FL)', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'maths_basic', code: '18', nameGu: 'ગણિત (બેઝિક / સ્ટાન્ડર્ડ)', nameEn: 'Mathematics (Basic/Std)', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'science', code: '11', nameGu: 'વિજ્ઞાન અને ટેકનોલોજી', nameEn: 'Science & Tech', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'social_science', code: '10', nameGu: 'સામાજિક વિજ્ઞાન', nameEn: 'Social Science', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'english', code: '16', nameGu: 'અંગ્રેજી (દ્વિતીય ભાષા)', nameEn: 'English (SL)', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'hindi_sanskrit', code: '14', nameGu: 'હિન્દી / સંસ્કૃત', nameEn: 'Hindi / Sanskrit', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'pe_computer', code: '40', nameGu: 'શારીરિક શિક્ષણ / કમ્પ્યુટર', nameEn: 'P.E. / Computer', isMainSubject: true, hasFirstSecondExam: true },
+];
+
+// Class 11 General Stream Subjects (Commerce / Arts)
+export const CLASS_11_GENERAL_SUBJECTS: Class9SubjectDef[] = [
+  { id: 'accounts', code: '154', nameGu: 'નામાના મૂળતત્વો (Accounts)', nameEn: 'Elements of Accounts', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'ba', code: '153', nameGu: 'વાણિજ્ય વ્યવસ્થા અને સંચાલન (B.A.)', nameEn: 'Org. of Commerce', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'economics', code: '022', nameGu: 'અર્થશાસ્ત્ર (Economics)', nameEn: 'Economics', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'statistics', code: '135', nameGu: 'આંકડાશાસ્ત્ર (Statistics)', nameEn: 'Statistics', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'gujarati', code: '001', nameGu: 'ગુજરાતી (પ્રથમ ભાષા)', nameEn: 'Gujarati', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'english', code: '013', nameGu: 'અંગ્રેજી (દ્વિતીય ભાષા)', nameEn: 'English', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'spcc_computer', code: '337', nameGu: 'એસ.પી. અને સી.સી. / કમ્પ્યુટર', nameEn: 'S.P. & C.C. / Comp', isMainSubject: true, hasFirstSecondExam: true },
+];
+
+// Class 11 Science Stream Subjects
+export const CLASS_11_SCIENCE_SUBJECTS: Class9SubjectDef[] = [
+  { id: 'physics', code: '054', nameGu: 'ભૌતિકવિજ્ઞાન (Physics)', nameEn: 'Physics', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'chemistry', code: '052', nameGu: 'રસાયણવિજ્ઞાન (Chemistry)', nameEn: 'Chemistry', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'biology_maths', code: '056', nameGu: 'જીવવિજ્ઞાન / ગણિત', nameEn: 'Biology / Maths', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'english', code: '013', nameGu: 'અંગ્રેજી (દ્વિતીય ભાષા)', nameEn: 'English', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'gujarati_sanskrit', code: '001', nameGu: 'ગુજરાતી / સંસ્કૃત', nameEn: 'Gujarati / Sanskrit', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'computer_studies', code: '331', nameGu: 'કમ્પ્યુટર અધ્યયન (Computer)', nameEn: 'Computer Studies', isMainSubject: true, hasFirstSecondExam: true },
+];
+
+// Class 12 General Stream Subjects
+export const CLASS_12_GENERAL_SUBJECTS: Class9SubjectDef[] = [
+  { id: 'accounts', code: '154', nameGu: 'નામાના મૂળતત્વો (Accounts)', nameEn: 'Elements of Accounts', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'ba', code: '153', nameGu: 'વાણિજ્ય વ્યવસ્થા અને સંચાલન (B.A.)', nameEn: 'Org. of Commerce', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'economics', code: '022', nameGu: 'અર્થશાસ્ત્ર (Economics)', nameEn: 'Economics', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'statistics', code: '135', nameGu: 'આંકડાશાસ્ત્ર (Statistics)', nameEn: 'Statistics', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'gujarati', code: '001', nameGu: 'ગુજરાતી (પ્રથમ ભાષા)', nameEn: 'Gujarati', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'english', code: '013', nameGu: 'અંગ્રેજી (દ્વિતીય ભાષા)', nameEn: 'English', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'spcc_computer', code: '337', nameGu: 'એસ.પી. અને સી.સી. / કમ્પ્યુટર', nameEn: 'S.P. & C.C. / Comp', isMainSubject: true, hasFirstSecondExam: true },
+];
+
+// Class 12 Science Stream Subjects
+export const CLASS_12_SCIENCE_SUBJECTS: Class9SubjectDef[] = [
+  { id: 'physics', code: '054', nameGu: 'ભૌતિકવિજ્ઞાન (Physics)', nameEn: 'Physics', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'chemistry', code: '052', nameGu: 'રસાયણવિજ્ઞાન (Chemistry)', nameEn: 'Chemistry', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'biology_maths', code: '056', nameGu: 'જીવવિજ્ઞાન / ગણિત', nameEn: 'Biology / Maths', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'english', code: '013', nameGu: 'અંગ્રેજી (દ્વિતીય ભાષા)', nameEn: 'English', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'computer_studies', code: '331', nameGu: 'કમ્પ્યુટર અધ્યયન (Computer)', nameEn: 'Computer Studies', isMainSubject: true, hasFirstSecondExam: true },
+];
+
+/**
+ * Returns subjects for any chosen standard and stream
+ */
+export function getSubjectsForStandard(
+  standard: StandardKey,
+  stream: StreamKey = 'general',
+  format9: '700' | '1000' = '700'
+): Class9SubjectDef[] {
+  if (standard === '9') {
+    return format9 === '1000' ? ALL_CLASS_9_SUBJECTS : CLASS_9_MAIN_SUBJECTS;
+  }
+  if (standard === '10') {
+    return CLASS_10_SUBJECTS;
+  }
+  if (standard === '11') {
+    return stream === 'science' ? CLASS_11_SCIENCE_SUBJECTS : CLASS_11_GENERAL_SUBJECTS;
+  }
+  if (standard === '12') {
+    return stream === 'science' ? CLASS_12_SCIENCE_SUBJECTS : CLASS_12_GENERAL_SUBJECTS;
+  }
+  return CLASS_9_MAIN_SUBJECTS;
+}
+
+export interface StandardExamConfig {
+  id: string;
+  nameGu: string;
+  nameEn: string;
+  maxMarksPerSubject: number;
+  descriptionGu: string;
+}
+
+/**
+ * Returns exam configurations for any standard
+ */
+export function getExamsForStandard(standard: StandardKey): StandardExamConfig[] {
+  if (standard === '9') {
+    return [
+      { id: 'first_exam', nameGu: 'પ્રથમ પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, descriptionGu: '૭ મુખ્ય વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+      { id: 'second_exam', nameGu: 'દ્વિતીય પરીક્ષા', nameEn: 'Second Exam', maxMarksPerSubject: 50, descriptionGu: '૭ મુખ્ય વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+      { id: 'periodic_test_1', nameGu: 'સામાયિક કસોટી ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, descriptionGu: '૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
+      { id: 'periodic_test_2', nameGu: 'સામાયિક કસોટી ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, descriptionGu: '૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
+      { id: 'internal_assessment', nameGu: 'આંતરિક ગુણ (૨૦)', nameEn: 'Internal (20M)', maxMarksPerSubject: 20, descriptionGu: 'કસોટી ૧ (૫) + કસોટી ૨ (૫) + સજ્જતા (૫) + નોટબુક (૫)' },
+      { id: 'annual_exam', nameGu: 'વાર્ષિક પરીક્ષા', nameEn: 'Annual Exam', maxMarksPerSubject: 80, descriptionGu: 'વાર્ષિક પરીક્ષા થિયરી • ૮૦ ગુણ' },
+      { id: 'final_marksheet', nameGu: 'વાર્ષિક ગુણપત્રક (૨૦૦→૧૦૦)', nameEn: 'Final Marksheet', maxMarksPerSubject: 100, descriptionGu: 'પ્રથમ (૫૦) + દ્વિતીય (૫૦) + વાર્ષિક (૮૦) + આંતરિક (૨૦) = ૨૦૦ / ૨' },
+      { id: 'annual_result_700', nameGu: 'વાર્ષિક પરિણામ (૭૦૦)', nameEn: 'Annual 700M', maxMarksPerSubject: 100, descriptionGu: '૭ મુખ્ય વિષયો • મહત્તમ ૭૦૦ ગુણ' },
+      { id: 'annual_result_1000', nameGu: 'વાર્ષિક પરિણામ (૧૦૦૦)', nameEn: 'Annual 1000M', maxMarksPerSubject: 100, descriptionGu: '૧૦ વિષયો (૭ મુખ્ય + ૩ વધારાના) • મહત્તમ ૧૦૦૦ ગુણ' },
+    ];
+  }
+
+  if (standard === '10') {
+    return [
+      { id: 'first_exam', nameGu: 'પ્રથમ સત્રાંત પરીક્ષા', nameEn: 'First Terminal', maxMarksPerSubject: 50, descriptionGu: 'પ્રથમ સત્રાંત પરીક્ષા • ૫૦ ગુણ' },
+      { id: 'second_exam', nameGu: 'પ્રિલિમિનરી પરીક્ષા', nameEn: 'Preliminary Exam', maxMarksPerSubject: 80, descriptionGu: 'દ્વિતીય / પ્રિલિમિનરી પરીક્ષા • ૮૦ ગુણ' },
+      { id: 'periodic_test_1', nameGu: 'એકમ કસોટી - ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૧ • ૨૫ ગુણ' },
+      { id: 'periodic_test_2', nameGu: 'એકમ કસોટી - ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૨ • ૨૫ ગુણ' },
+      { id: 'internal_assessment', nameGu: 'શાળા આંતરિક ગુણ (૨૦)', nameEn: 'Internal Assessment', maxMarksPerSubject: 20, descriptionGu: 'બોર્ડ માટે શાળા આંતરિક મૂલ્યાંકન • ૨૦ ગુણ' },
+      { id: 'annual_exam', nameGu: 'વાર્ષિક / બોર્ડ ગુણ (૮૦)', nameEn: 'Board Exam (80M)', maxMarksPerSubject: 80, descriptionGu: 'વાર્ષિક થિયરી • ૮૦ ગુણ' },
+      { id: 'annual_result_700', nameGu: 'આખરી વાર્ષિક પરિણામ (૧૦૦ ગુણ પદ્ધતિ)', nameEn: 'Annual Result (100M)', maxMarksPerSubject: 100, descriptionGu: 'વિષય દીઠ ૧૦૦ ગુણ પદ્ધતિ • કુલ ૭૦૦ ગુણ' },
+    ];
+  }
+
+  if (standard === '11') {
+    return [
+      { id: 'first_exam', nameGu: 'પ્રથમ સત્રાંત પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, descriptionGu: 'પ્રથમ સત્રાંત પરીક્ષા • ૫૦ ગુણ' },
+      { id: 'second_exam', nameGu: 'દ્વિતીય સત્રાંત પરીક્ષા', nameEn: 'Second Exam', maxMarksPerSubject: 50, descriptionGu: 'દ્વિતીય સત્રાંત પરીક્ષા • ૫૦ ગુણ' },
+      { id: 'periodic_test_1', nameGu: 'એકમ કસોટી - ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૧ • ૨૫ ગુણ' },
+      { id: 'periodic_test_2', nameGu: 'એકમ કસોટી - ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૨ • ૨૫ ગુણ' },
+      { id: 'internal_assessment', nameGu: 'આંતરિક / પ્રાયોગિક ગુણ', nameEn: 'Internal/Practical', maxMarksPerSubject: 20, descriptionGu: 'આંતરિક મૂલ્યાંકન • ૨૦ ગુણ' },
+      { id: 'annual_exam', nameGu: 'વાર્ષિક પરીક્ષા', nameEn: 'Annual Exam', maxMarksPerSubject: 80, descriptionGu: 'વાર્ષિક પરીક્ષા • ૮૦ ગુણ' },
+      { id: 'annual_result_700', nameGu: 'વાર્ષિક પરિણામ પત્રક (૧૦૦ ગુણ)', nameEn: 'Annual Result', maxMarksPerSubject: 100, descriptionGu: 'વાર્ષિક આખરી પરિણામ પત્રક' },
+    ];
+  }
+
+  // Standard 12
+  return [
+    { id: 'first_exam', nameGu: 'પ્રથમ સત્રાંત પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, descriptionGu: 'પ્રથમ સત્રાંત પરીક્ષા • ૫૦ ગુણ' },
+    { id: 'second_exam', nameGu: 'પ્રિલિમિનરી પરીક્ષા', nameEn: 'Preliminary Exam', maxMarksPerSubject: 100, descriptionGu: 'પ્રિલિમિનરી પરીક્ષા • ૧૦૦ ગુણ' },
+    { id: 'periodic_test_1', nameGu: 'એકમ કસોટી - ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૧ • ૨૫ ગુણ' },
+    { id: 'periodic_test_2', nameGu: 'એકમ કસોટી - ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૨ • ૨૫ ગુણ' },
+    { id: 'internal_assessment', nameGu: 'શાળા આંતરિક ગુણ (૨૦)', nameEn: 'Internal Assessment', maxMarksPerSubject: 20, descriptionGu: 'બોર્ડ આંતરિક ગુણ • ૨૦ ગુણ' },
+    { id: 'annual_result_700', nameGu: 'વાર્ષિક પરિણામ પત્રક (૧૦૦ ગુણ)', nameEn: 'Annual Result', maxMarksPerSubject: 100, descriptionGu: 'વાર્ષિક આખરી પરિણામ પત્રક' },
+  ];
+}
+
+/**
+ * Extracts a numeric mark from records
+ */
+function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches: (examType: string) => boolean): number | null {
+  const found = records.find((m) => {
+    const sId = (m.subjectId || '').toLowerCase();
+    const sName = (m.subjectName || '').toLowerCase();
+    const subMatch = sId === subjectId.toLowerCase() || sId.includes(subjectId.toLowerCase()) || sName.includes(subjectId.toLowerCase());
+    return subMatch && examMatches((m.examType || '').toLowerCase());
+  });
+  if (!found) return null;
+  if (found.overallGrade === 'AB') return 0;
+  return found.totalObtained !== undefined ? found.totalObtained : null;
+}
+
+/**
+ * Computes full Annual Result for any standard (9, 10, 11, 12)
+ */
+export function computeMultiStandardStudentResult(
+  student: Student,
+  studentMarks: MarkRecord[],
+  standard: StandardKey,
+  stream: StreamKey = 'general',
+  format9: '700' | '1000' = '700',
+  manualGraceOverrides?: Record<string, { siddhi?: number; krupa?: number }>
+): StudentResultClass9 {
+  if (standard === '9') {
+    return computeClass9StudentResult(student, studentMarks, format9, manualGraceOverrides);
+  }
+
+  const subjects = getSubjectsForStandard(standard, stream);
+  const totalMax = subjects.length * 100;
+
+  const rawScores: any[] = [];
+
+  for (const subj of subjects) {
+    const first50 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('first') || t.includes('pratham') || t.includes('પ્રથમ'));
+    const second50 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('second') || t.includes('dwitiya') || t.includes('દ્વિતીય') || t.includes('prelim') || t.includes('પ્રિલિમ'));
+    const pt1_raw = extractMarkValue(studentMarks, subj.id, (t) => t.includes('periodic_1') || t.includes('pt1') || t.includes('એકમ_1') || t.includes('એકમ કસોટી ૧') || t.includes('એકમ કસોટી - ૧'));
+    const pt2_raw = extractMarkValue(studentMarks, subj.id, (t) => t.includes('periodic_2') || t.includes('pt2') || t.includes('એકમ_2') || t.includes('એકમ કસોટી ૨') || t.includes('એકમ કસોટી - ૨'));
+    const internal20 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('internal') || t.includes('આંતરિક'));
+    const annual80 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('annual') || t.includes('varshik') || t.includes('વાર્ષિક') || t.includes('board') || t.includes('બોર્ડ'));
+
+    // Check if direct 100 mark exists
+    const direct100 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('100') || t.includes('પરિણામ') || t.includes('result'));
+
+    let converted100: number | null = null;
+    let combined200: number | null = null;
+
+    if (direct100 !== null) {
+      converted100 = direct100;
+    } else if (annual80 !== null && first50 !== null && second50 !== null && internal20 !== null) {
+      combined200 = first50 + second50 + annual80 + internal20;
+      converted100 = Math.round((combined200 / 2) * 10) / 10;
+    } else if (annual80 !== null && internal20 !== null) {
+      converted100 = annual80 + internal20;
+    } else if (annual80 !== null) {
+      converted100 = annual80;
+    } else if (second50 !== null) {
+      converted100 = second50;
+    } else if (first50 !== null) {
+      converted100 = first50 * 2;
+    }
+
+    const hasUnenteredMarks = converted100 === null;
+
+    rawScores.push({
+      subject: subj,
+      first50,
+      second50,
+      pt1_raw,
+      pt1_conv: pt1_raw !== null ? Math.round((pt1_raw / 5) * 10) / 10 : null,
+      pt2_raw,
+      pt2_conv: pt2_raw !== null ? Math.round((pt2_raw / 5) * 10) / 10 : null,
+      competency: null,
+      notebook: null,
+      internal20,
+      annual80,
+      combined200,
+      converted100,
+      hasUnenteredMarks,
+    });
+  }
+
+  // Grace marks calculation
+  const studentOverrides = manualGraceOverrides?.[student.id] || {};
+  let totalSiddhiUsed = 0;
+  let totalKrupaUsed = 0;
+
+  const scoresWithGrace = rawScores.map((item) => {
+    const rawVal = item.converted100 !== null ? item.converted100 : 0;
+    const subjId = item.subject.id;
+    const manualSiddhi = studentOverrides[subjId]?.siddhi;
+    const manualKrupa = studentOverrides[subjId]?.krupa;
+
+    let siddhi = 0;
+    let krupa = 0;
+
+    if (manualSiddhi !== undefined) {
+      siddhi = Math.max(0, manualSiddhi);
+    }
+    if (manualKrupa !== undefined) {
+      krupa = Math.max(0, manualKrupa);
+    }
+
+    totalSiddhiUsed += siddhi;
+    totalKrupaUsed += krupa;
+
+    const finalMarksWithGrace = item.converted100 !== null ? Math.min(100, rawVal + siddhi + krupa) : null;
+    const effectiveMark = finalMarksWithGrace !== null ? finalMarksWithGrace : 0;
+    const grade = item.converted100 !== null ? calculateGsebGrade(effectiveMark, 100) : '-';
+    const isPassed = effectiveMark >= 33;
+    const isEligibleForPromotion = effectiveMark >= 25;
+
+    return {
+      ...item,
+      siddhiGiven: siddhi,
+      krupaGiven: krupa,
+      finalMarksWithGrace,
+      grade,
+      isPassed,
+      isEligibleForPromotion,
+    };
+  });
+
+  const totalObtained = scoresWithGrace.reduce((acc, curr) => acc + (curr.finalMarksWithGrace || 0), 0);
+  const percentage = totalMax > 0 ? Math.round((totalObtained / totalMax) * 100 * 10) / 10 : 0;
+  const overallGrade = calculateGsebGrade(percentage, 100);
+
+  const hasIncompleteMarks = scoresWithGrace.some((s) => s.hasUnenteredMarks);
+  const anySubjectFailed = scoresWithGrace.some((s) => !s.isPassed);
+  const isEligibleForPromotion = scoresWithGrace.every((s) => s.isEligibleForPromotion);
+
+  let overallResult: 'PASS' | 'PASS_WITH_SIDDHI' | 'PASS_WITH_KRUPA' | 'NEEDS_IMPROVEMENT' = 'PASS';
+  let overallResultGu = 'ઉત્તીર્ણ (Pass)';
+
+  if (anySubjectFailed) {
+    overallResult = 'NEEDS_IMPROVEMENT';
+    overallResultGu = isEligibleForPromotion ? 'સુધારણા જરૂરી (Needs Improvement)' : 'અપાત્ર (Not Eligible - <25 Marks)';
+  } else if (totalKrupaUsed > 0) {
+    overallResult = 'PASS_WITH_KRUPA';
+    overallResultGu = 'કૃપા ગુણ સાથે ઉત્તીર્ણ (*)';
+  } else if (totalSiddhiUsed > 0) {
+    overallResult = 'PASS_WITH_SIDDHI';
+    overallResultGu = 'સિદ્ધિ ગુણ સાથે ઉત્તીર્ણ (#)';
+  }
+
+  const isEligibleForRank = (overallResult === 'PASS' || overallResult === 'PASS_WITH_SIDDHI') && isEligibleForPromotion;
+
+  return {
+    student,
+    rollNumber: student.rollNumber || '',
+    grNumber: student.grNumber || '',
+    section: student.section || student.division || 'A',
+    format: format9,
+    scores: scoresWithGrace,
+    totalObtained,
+    totalMax,
+    percentage,
+    overallGrade,
+    overallResult,
+    overallResultGu,
+    isEligibleForPromotion,
+    isEligibleForRank,
+    siddhiPoolEarned: Math.max(0, Math.min(15, Math.floor(percentage - 33))),
+    totalSiddhiUsed,
+    totalKrupaUsed,
+    hasIncompleteMarks,
+  };
+}
+
+/**
+ * Computes all students results for a standard and computes ranks
+ */
+export function computeMultiStandardAllResults(
+  students: Student[],
+  marks: MarkRecord[],
+  standard: StandardKey,
+  stream: StreamKey = 'general',
+  format9: '700' | '1000' = '700',
+  manualGraceOverrides?: Record<string, Record<string, { siddhi?: number; krupa?: number }>>
+): StudentResultClass9[] {
+  const unranked = students.map((s) => {
+    const sMarks = marks.filter((m) => m.studentId === s.id);
+    const overrides = manualGraceOverrides?.[s.id];
+    return computeMultiStandardStudentResult(s, sMarks, standard, stream, format9, overrides ? { [s.id]: overrides } : undefined);
+  });
+
+  // Calculate tie-aware ranks based on totalObtained descending
+  const sortedEligible = [...unranked]
+    .filter((r) => r.isEligibleForRank && !r.hasIncompleteMarks)
+    .sort((a, b) => b.totalObtained - a.totalObtained);
+
+  const rankMap = new Map<string, number>();
+  let currentRank = 1;
+
+  for (let i = 0; i < sortedEligible.length; i++) {
+    if (i > 0 && sortedEligible[i].totalObtained < sortedEligible[i - 1].totalObtained) {
+      currentRank = i + 1;
+    }
+    rankMap.set(sortedEligible[i].student.id, currentRank);
+  }
+
+  return unranked.map((r) => ({
+    ...r,
+    rank: rankMap.get(r.student.id),
+  }));
+}

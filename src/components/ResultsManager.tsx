@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { School, Student, MarkRecord, AllowedStandard } from '../types';
 import * as XLSX from 'xlsx';
 import {
@@ -14,6 +14,7 @@ import {
   Search,
   Users,
   Download,
+  Upload,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -22,13 +23,26 @@ import {
   Percent,
   Send,
   MessageSquare,
+  Save,
+  Loader2,
+  RefreshCw,
+  Calculator,
+  Info,
 } from 'lucide-react';
 import {
   calculateClassResults,
   CalculatedStudentResult,
   getSubjectsForStandard,
   getExamsForStandard,
+  STANDARD_OPTIONS,
+  StandardOption,
+  SubjectDef,
+  ExamDef,
+  generateExcelMarksheetWorkbook,
+  normalizeStandardAndStream,
+  calculateGsebGrade,
 } from '../utils/resultFormulaUtils';
+import { saveBatchExamMarks } from '../services/firestoreService';
 import { printHtmlDocument } from '../utils/printAndPdfUtils';
 import { SendExamResultModal } from './SendExamResultModal';
 
@@ -37,7 +51,25 @@ interface ResultsManagerProps {
   students: Student[];
   marks: MarkRecord[];
   onBack: () => void;
+  onRefresh?: () => void;
   onNavigateToMarks?: () => void;
+  initialView?: 'gazette' | 'marks_entry' | 'progress_card';
+}
+
+interface StudentMarksRowState {
+  student: Student;
+  pratham: string;
+  dwitiya: string;
+  ekam1: string;
+  ekam2: string;
+  practical: string;
+  internal: string;
+  varshik: string;
+  // Computed values
+  total100: number;
+  grade: string;
+  status: 'PASS' | 'GRACE' | 'FAIL';
+  isDirty: boolean;
 }
 
 export const ResultsManager: React.FC<ResultsManagerProps> = ({
@@ -45,15 +77,417 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
   students,
   marks,
   onBack,
+  onRefresh,
   onNavigateToMarks,
+  initialView = 'gazette',
 }) => {
-  const [selectedStandard, setSelectedStandard] = useState<AllowedStandard>('9');
-  const [viewMode, setViewMode] = useState<'gazette' | 'progress_card'>('gazette');
+  const [selectedStandard, setSelectedStandard] = useState<string>('9');
+  const [viewMode, setViewMode] = useState<'gazette' | 'marks_entry' | 'progress_card'>(initialView);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PASS' | 'PASS_WITH_SIDDHI' | 'PASS_WITH_KRUPA' | 'FAIL'>('ALL');
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [sendResultModalOpen, setSendResultModalOpen] = useState(false);
+
+  // Marks Entry state
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
+  const [marksGrid, setMarksGrid] = useState<Record<string, StudentMarksRowState>>({});
+  const [isSavingMarks, setIsSavingMarks] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [importStatusMsg, setImportStatusMsg] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Normalized Standard & Stream details
+  const currentStdInfo = useMemo(() => {
+    return normalizeStandardAndStream(selectedStandard);
+  }, [selectedStandard]);
+
+  // Current Subjects and Exams for the selected standard/stream
+  const subjects = useMemo(() => {
+    return getSubjectsForStandard(selectedStandard);
+  }, [selectedStandard]);
+
+  const exams = useMemo(() => {
+    return getExamsForStandard(selectedStandard);
+  }, [selectedStandard]);
+
+  // Default subject when subjects list changes
+  useEffect(() => {
+    if (subjects.length > 0 && (!selectedSubjectId || !subjects.some((s) => s.id === selectedSubjectId))) {
+      setSelectedSubjectId(subjects[0].id);
+    }
+  }, [subjects, selectedSubjectId]);
+
+  const activeSubject = useMemo(() => {
+    return subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
+  }, [subjects, selectedSubjectId]);
+
+  // Students belonging to the selected standard
+  const standardStudents = useMemo(() => {
+    return students.filter((s) => {
+      const sNorm = normalizeStandardAndStream(s.standard);
+      return sNorm.baseStd === currentStdInfo.baseStd;
+    }).sort((a, b) => {
+      const rA = parseInt(a.rollNumber || '9999', 10);
+      const rB = parseInt(b.rollNumber || '9999', 10);
+      return rA - rB;
+    });
+  }, [students, currentStdInfo.baseStd]);
+
+  // Helper to compute a student's row in the Excel marks grid
+  const computeRowTotals = (
+    prathamStr: string,
+    dwitiyaStr: string,
+    ekam1Str: string,
+    ekam2Str: string,
+    practicalStr: string,
+    internalStr: string,
+    varshikStr: string
+  ) => {
+    const parseVal = (str: string) => {
+      if (!str || str.trim().toUpperCase() === 'AB') return 0;
+      const n = parseFloat(str.trim());
+      return isNaN(n) ? 0 : n;
+    };
+
+    const p = parseVal(prathamStr);
+    const d = parseVal(dwitiyaStr);
+    const e1 = parseVal(ekam1Str);
+    const e2 = parseVal(ekam2Str);
+    const prac = parseVal(practicalStr);
+    const v = parseVal(varshikStr);
+    let intVal = parseVal(internalStr);
+
+    // If internal is empty but unit tests are filled
+    if (!internalStr && (ekam1Str || ekam2Str)) {
+      intVal = Math.round(((e1 + e2) / 50) * 20);
+    }
+
+    let total100 = 0;
+    if (currentStdInfo.stream === 'science' && currentStdInfo.baseStd === '11') {
+      // 10% + 10% + 20% (prac) + 10% (int) + 50% (annual)
+      const pW = (p / 50) * 10;
+      const dW = (d / 50) * 10;
+      const pracW = (prac / 50) * 20;
+      const intW = (intVal / 20) * 10;
+      const vW = (v / 80) * 50;
+      total100 = Math.round(pW + dW + pracW + intW + vW);
+    } else if (currentStdInfo.stream === 'science' && currentStdInfo.baseStd === '12') {
+      // 10% + 25% (prac) + 50% (prelim) + 15% (int)
+      const pW = (p / 50) * 10;
+      const pracW = (prac / 50) * 25;
+      const prelW = (d / 100) * 50;
+      const intW = (intVal / 20) * 15;
+      total100 = Math.round(pW + pracW + prelW + intW);
+    } else if (currentStdInfo.baseStd === '10' || currentStdInfo.baseStd === '12') {
+      // 10% + 70% (prelim) + 20% (int)
+      const pW = (p / 50) * 10;
+      const maxPrel = currentStdInfo.baseStd === '12' ? 100 : 80;
+      const prelW = (d / maxPrel) * 70;
+      total100 = Math.round(pW + prelW + intVal);
+    } else {
+      // Std 9 & 11 General: 10% + 10% + 60% + 20%
+      const pW = (p / 50) * 10;
+      const dW = (d / 50) * 10;
+      const vW = (v / 80) * 60;
+      total100 = Math.round(pW + dW + vW + intVal);
+    }
+
+    const grade = calculateGsebGrade(total100, 100);
+    const status: 'PASS' | 'GRACE' | 'FAIL' =
+      total100 >= 33 ? 'PASS' : total100 >= 25 ? 'GRACE' : 'FAIL';
+
+    return { total100, grade, status };
+  };
+
+  // Populate Excel Marks Grid from stored Firestore marks when Subject or Standard changes
+  useEffect(() => {
+    if (!activeSubject) return;
+
+    const initialMap: Record<string, StudentMarksRowState> = {};
+
+    standardStudents.forEach((student) => {
+      const studentMarks = marks.filter((m) => {
+        if (m.studentId !== student.id) return false;
+        const matchesSubject =
+          (m.subjectId && m.subjectId.toLowerCase() === activeSubject.id.toLowerCase()) ||
+          (m.subjectName && m.subjectName.toLowerCase().includes(activeSubject.nameGu.toLowerCase()));
+        return matchesSubject;
+      });
+
+      const getVal = (examTypeKey: string): string => {
+        const found = studentMarks.find((m) => {
+          const ex = (m.examType || '').toLowerCase();
+          if (examTypeKey === 'pratham') return ex.includes('pratham') || ex.includes('પ્રથમ') || ex.includes('first');
+          if (examTypeKey === 'dwitiya' || examTypeKey === 'prelim') {
+            return ex.includes('dwitiya') || ex.includes('દ્વિતીય') || ex.includes('second') || ex.includes('prelim') || ex.includes('પ્રિલિમ');
+          }
+          if (examTypeKey === 'ekam_1') return ex.includes('એકમ') && ex.includes('1') || ex.includes('unit test 1');
+          if (examTypeKey === 'ekam_2') return ex.includes('એકમ') && ex.includes('2') || ex.includes('unit test 2');
+          if (examTypeKey === 'practical') return ex.includes('practical') || ex.includes('પ્રાયોગિક');
+          if (examTypeKey === 'internal') return ex.includes('internal') || ex.includes('આંતરિક');
+          if (examTypeKey === 'varshik') return ex.includes('varshik') || ex.includes('વાર્ષિક') || ex.includes('annual');
+          return false;
+        });
+        if (!found) return '';
+        if (found.overallGrade === 'AB') return 'AB';
+        return found.totalObtained !== undefined ? String(found.totalObtained) : '';
+      };
+
+      const pStr = getVal('pratham');
+      const dStr = getVal(currentStdInfo.baseStd === '10' || currentStdInfo.baseStd === '12' ? 'prelim' : 'dwitiya');
+      const e1Str = getVal('ekam_1');
+      const e2Str = getVal('ekam_2');
+      const pracStr = getVal('practical');
+      const intStr = getVal('internal');
+      const vStr = getVal('varshik');
+
+      const { total100, grade, status } = computeRowTotals(pStr, dStr, e1Str, e2Str, pracStr, intStr, vStr);
+
+      initialMap[student.id] = {
+        student,
+        pratham: pStr,
+        dwitiya: dStr,
+        ekam1: e1Str,
+        ekam2: e2Str,
+        practical: pracStr,
+        internal: intStr,
+        varshik: vStr,
+        total100,
+        grade,
+        status,
+        isDirty: false,
+      };
+    });
+
+    setMarksGrid(initialMap);
+    setSaveSuccessMsg(null);
+  }, [activeSubject?.id, selectedStandard, standardStudents, marks]);
+
+  // Handle cell input in Excel Grid
+  const handleCellChange = (studentId: string, field: keyof StudentMarksRowState, value: string) => {
+    setMarksGrid((prev) => {
+      const current = prev[studentId];
+      if (!current) return prev;
+
+      const updated = { ...current, [field]: value, isDirty: true };
+      const { total100, grade, status } = computeRowTotals(
+        field === 'pratham' ? value : updated.pratham,
+        field === 'dwitiya' ? value : updated.dwitiya,
+        field === 'ekam1' ? value : updated.ekam1,
+        field === 'ekam2' ? value : updated.ekam2,
+        field === 'practical' ? value : updated.practical,
+        field === 'internal' ? value : updated.internal,
+        field === 'varshik' ? value : updated.varshik
+      );
+
+      updated.total100 = total100;
+      updated.grade = grade;
+      updated.status = status;
+
+      return { ...prev, [studentId]: updated };
+    });
+  };
+
+  // Batch Save all marks to Firestore
+  const handleSaveMarks = async () => {
+    if (!activeSubject) return;
+    setIsSavingMarks(true);
+    setSaveSuccessMsg(null);
+
+    try {
+      const recordsToSave: any[] = [];
+      const academicYear = '૨૦૨૬–૨૭';
+
+      Object.values(marksGrid).forEach((row) => {
+        const { student, pratham, dwitiya, ekam1, ekam2, practical, internal, varshik } = row;
+
+        const addRecord = (examId: string, examType: string, val: string, maxM: number) => {
+          if (!val || val.trim() === '') return;
+          const isAb = val.trim().toUpperCase() === 'AB';
+          const obtained = isAb ? 0 : parseFloat(val.trim()) || 0;
+
+          recordsToSave.push({
+            studentId: student.id,
+            studentName: student.studentName,
+            grNumber: student.grNumber || '',
+            rollNumber: student.rollNumber || '',
+            standard: currentStdInfo.baseStd,
+            division: student.section || student.division || 'A',
+            examId,
+            examType,
+            academicYear,
+            subjectId: activeSubject.id,
+            subjectName: activeSubject.nameGu,
+            totalObtained: obtained,
+            totalMax: maxM,
+            percentage: isAb ? 0 : Math.round((obtained / maxM) * 100),
+            overallGrade: isAb ? 'AB' : calculateGsebGrade(obtained, maxM),
+          });
+        };
+
+        addRecord('pratham', 'પ્રથમ પરીક્ષા', pratham, 50);
+        addRecord(
+          currentStdInfo.baseStd === '10' || currentStdInfo.baseStd === '12' ? 'prelim' : 'dwitiya',
+          currentStdInfo.baseStd === '10' || currentStdInfo.baseStd === '12' ? 'પ્રિલિમિનરી પરીક્ષા' : 'દ્વિતીય પરીક્ષા',
+          dwitiya,
+          currentStdInfo.baseStd === '12' ? 100 : currentStdInfo.baseStd === '10' ? 80 : 50
+        );
+        addRecord('ekam_1', 'એકમ કસોટી - ૧', ekam1, 25);
+        addRecord('ekam_2', 'એકમ કસોટી - ૨', ekam2, 25);
+        if (activeSubject.hasPractical) {
+          addRecord('practical', 'પ્રાયોગિક પરીક્ષા', practical, 50);
+        }
+        addRecord('internal', 'આંતરિક મૂલ્યાંકન', internal, 20);
+        addRecord('varshik', 'વાર્ષિક પરીક્ષા', varshik, 80);
+      });
+
+      if (recordsToSave.length > 0) {
+        await saveBatchExamMarks(school.id, recordsToSave);
+      }
+
+      // Mark clean
+      setMarksGrid((prev) => {
+        const clean: Record<string, StudentMarksRowState> = {};
+        Object.entries(prev).forEach(([k, v]) => {
+          clean[k] = { ...v, isDirty: false };
+        });
+        return clean;
+      });
+
+      setSaveSuccessMsg(`સફળતાપૂર્વક ${recordsToSave.length} ગુણ રેકોર્ડ્સ ડેટાબેઝમાં સાચવી લેવામાં આવ્યા છે!`);
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('Error saving marks batch:', err);
+      alert('ગુણ સેવ કરવામાં ભૂલ થઈ. કૃપા કરીને પુનઃ પ્રયત્ન કરો.');
+    } finally {
+      setIsSavingMarks(false);
+    }
+  };
+
+  // Download Excel Template for active Subject
+  const handleDownloadExcelTemplate = () => {
+    if (!activeSubject) return;
+    const wb = generateExcelMarksheetWorkbook(standardStudents, selectedStandard, activeSubject, school.schoolName);
+    const fileName = `${school.schoolName}_ધોરણ_${selectedStandard}_${activeSubject.nameGu.replace(/[\s/\\?%*:|"<>]/g, '_')}_Marksheet.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
+  // Import Excel File (.xlsx)
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        if (rows.length < 4) {
+          alert('એક્સેલ ફાઈલ ખાલી છે અથવા યોગ્ય ફોર્મેટમાં નથી.');
+          return;
+        }
+
+        // Find header row (usually contains 'Roll' or 'રોલ' or 'નામ' or 'Student')
+        let headerRowIdx = -1;
+        for (let i = 0; i < Math.min(10, rows.length); i++) {
+          const rowText = (rows[i] || []).join(' ').toLowerCase();
+          if (rowText.includes('roll') || rowText.includes('નામ') || rowText.includes('gr') || rowText.includes('વિદ્યાર્થી')) {
+            headerRowIdx = i;
+            break;
+          }
+        }
+
+        if (headerRowIdx === -1) {
+          alert('એક્સેલ શીટમાં વિદ્યાર્થી રોલ નંબર કે નામની હેડર લાઈન ઓળખી શકાઈ નથી.');
+          return;
+        }
+
+        const headers = rows[headerRowIdx].map((h: any) => String(h || '').trim().toLowerCase());
+        const rollIdx = headers.findIndex((h) => h.includes('roll') || h.includes('રોલ'));
+        const grIdx = headers.findIndex((h) => h.includes('gr') || h.includes('જી.આર') || h.includes('જીઆર'));
+        const nameIdx = headers.findIndex((h) => h.includes('name') || h.includes('નામ'));
+
+        // Identify exam columns
+        const prathamIdx = headers.findIndex((h) => h.includes('પ્રથમ') || h.includes('first'));
+        const dwitiyaIdx = headers.findIndex((h) => h.includes('દ્વિતીય') || h.includes('second') || h.includes('prelim') || h.includes('પ્રિલિમ'));
+        const ekam1Idx = headers.findIndex((h) => (h.includes('એકમ') && h.includes('1')) || h.includes('unit 1') || h.includes('unit test 1'));
+        const ekam2Idx = headers.findIndex((h) => (h.includes('એકમ') && h.includes('2')) || h.includes('unit 2') || h.includes('unit test 2'));
+        const practicalIdx = headers.findIndex((h) => h.includes('practical') || h.includes('પ્રાયોગિક'));
+        const internalIdx = headers.findIndex((h) => h.includes('આંતરિક') || h.includes('internal'));
+        const varshikIdx = headers.findIndex((h) => h.includes('વાર્ષિક') || h.includes('annual'));
+
+        let matchedCount = 0;
+
+        setMarksGrid((prev) => {
+          const next = { ...prev };
+
+          for (let r = headerRowIdx + 1; r < rows.length; r++) {
+            const rowData = rows[r];
+            if (!rowData || rowData.length === 0) continue;
+
+            const rollVal = rollIdx !== -1 ? String(rowData[rollIdx] || '').trim() : '';
+            const grVal = grIdx !== -1 ? String(rowData[grIdx] || '').trim().toLowerCase() : '';
+            const nameVal = nameIdx !== -1 ? String(rowData[nameIdx] || '').trim().toLowerCase() : '';
+
+            // Match student in class
+            const targetStudent = standardStudents.find((st) => {
+              if (rollVal && st.rollNumber && st.rollNumber.trim() === rollVal) return true;
+              if (grVal && st.grNumber && st.grNumber.trim().toLowerCase() === grVal) return true;
+              if (nameVal && st.studentName && st.studentName.trim().toLowerCase().includes(nameVal)) return true;
+              return false;
+            });
+
+            if (targetStudent && next[targetStudent.id]) {
+              matchedCount++;
+              const cur = next[targetStudent.id];
+
+              const p = prathamIdx !== -1 && rowData[prathamIdx] !== undefined ? String(rowData[prathamIdx]) : cur.pratham;
+              const d = dwitiyaIdx !== -1 && rowData[dwitiyaIdx] !== undefined ? String(rowData[dwitiyaIdx]) : cur.dwitiya;
+              const e1 = ekam1Idx !== -1 && rowData[ekam1Idx] !== undefined ? String(rowData[ekam1Idx]) : cur.ekam1;
+              const e2 = ekam2Idx !== -1 && rowData[ekam2Idx] !== undefined ? String(rowData[ekam2Idx]) : cur.ekam2;
+              const prac = practicalIdx !== -1 && rowData[practicalIdx] !== undefined ? String(rowData[practicalIdx]) : cur.practical;
+              const intVal = internalIdx !== -1 && rowData[internalIdx] !== undefined ? String(rowData[internalIdx]) : cur.internal;
+              const v = varshikIdx !== -1 && rowData[varshikIdx] !== undefined ? String(rowData[varshikIdx]) : cur.varshik;
+
+              const { total100, grade, status } = computeRowTotals(p, d, e1, e2, prac, intVal, v);
+
+              next[targetStudent.id] = {
+                ...cur,
+                pratham: p,
+                dwitiya: d,
+                ekam1: e1,
+                ekam2: e2,
+                practical: prac,
+                internal: intVal,
+                varshik: v,
+                total100,
+                grade,
+                status,
+                isDirty: true,
+              };
+            }
+          }
+
+          return next;
+        });
+
+        setImportStatusMsg(`એક્સેલ ફાઈલમાંથી ${matchedCount} વિદ્યાર્થીઓના ગુણ સફળતાપૂર્વક લોડ કરવામાં આવ્યા છે! ચકાસીને 'બધા ગુણ સેવ કરો' બટન પર ક્લિક કરો.`);
+      } catch (err) {
+        console.error('Error importing Excel:', err);
+        alert('એક્સેલ ફાઈલ વાંચવામાં ક્ષતિ થઈ. ખાતરી કરો કે ફાઈલ .xlsx ફોર્મેટમાં છે.');
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
 
   // 1. Calculate Results using the exact GSEB Formula Engine
   const classResults = useMemo(() => {
@@ -79,18 +513,10 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
         if (!matchesName && !matchesRoll && !matchesGr) return false;
       }
       // Status filter
-      if (statusFilter === 'PASS') {
-        return res.resultStatus === 'PASS';
-      }
-      if (statusFilter === 'PASS_WITH_SIDDHI') {
-        return res.resultStatus === 'PASS_WITH_SIDDHI';
-      }
-      if (statusFilter === 'PASS_WITH_KRUPA') {
-        return res.resultStatus === 'PASS_WITH_KRUPA';
-      }
-      if (statusFilter === 'FAIL') {
-        return res.resultStatus === 'NEEDS_IMPROVEMENT';
-      }
+      if (statusFilter === 'PASS') return res.resultStatus === 'PASS';
+      if (statusFilter === 'PASS_WITH_SIDDHI') return res.resultStatus === 'PASS_WITH_SIDDHI';
+      if (statusFilter === 'PASS_WITH_KRUPA') return res.resultStatus === 'PASS_WITH_KRUPA';
+      if (statusFilter === 'FAIL') return res.resultStatus === 'NEEDS_IMPROVEMENT';
       return true;
     });
   }, [classResults, searchQuery, statusFilter]);
@@ -126,8 +552,6 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
     return counts;
   }, [classResults]);
 
-  const subjects = useMemo(() => getSubjectsForStandard(selectedStandard), [selectedStandard]);
-
   // Format subject score display: e.g. "28+5#" or "27+6*" or "27+3#+3*" or "54"
   const formatSubjectScoreDisplay = (sc: any) => {
     let text = `${sc.total100}`;
@@ -143,7 +567,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
     return text;
   };
 
-  // 2. Export Master Result Gazette to Excel
+  // Export Master Result Gazette to Excel
   const handleExportGazetteExcel = () => {
     if (classResults.length === 0) {
       alert('ધોરણ ' + selectedStandard + ' માટે કોઈ પરિણામ ઉપલબ્ધ નથી.');
@@ -160,7 +584,6 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
         'વર્ગ': res.student.section || res.student.division || 'A',
       };
 
-      // Add each subject's converted annual total & grade
       res.subjectScores.forEach((sc) => {
         const key = sc.subjectNameGu.split(' ')[0] + ' (100M)';
         rowData[key] = formatSubjectScoreDisplay(sc);
@@ -182,20 +605,23 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `Std_${selectedStandard}_Gazette`);
-
-    const filename = `${school.schoolName.replace(/[\s/\\?%*:|"<>]/g, '_')}_Std_${selectedStandard}_Result_Gazette.xlsx`;
-    XLSX.writeFile(wb, filename);
+    XLSX.writeFile(wb, `${school.schoolName}_ધોરણ_${selectedStandard}_વાર્ષિક_ગેઝેટ.xlsx`);
   };
 
-  // 3. Print Class Gazette (A4 Landscape)
+  // Print Gazette
   const handlePrintGazette = () => {
-    const tableRows = classResults
+    if (classResults.length === 0) {
+      alert('પ્રિન્ટ કરવા માટે કોઈ પરિણામ ઉપલબ્ધ નથી.');
+      return;
+    }
+
+    const rowsHtml = classResults
       .map(
         (r, idx) => `
         <tr>
           <td style="border: 1px solid #000; padding: 4px; text-align: center;">${r.student.rollNumber || idx + 1}</td>
-          <td style="border: 1px solid #000; padding: 4px; text-align: center; font-family: monospace;">${r.student.grNumber || '-'}</td>
-          <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: left; white-space: nowrap;">${r.student.studentName}</td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: center;">${r.student.grNumber || '-'}</td>
+          <td style="border: 1px solid #000; padding: 4px; text-align: left; font-weight: bold;">${r.student.studentName}</td>
           ${r.subjectScores
             .map(
               (s) => `
@@ -240,166 +666,56 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
       <head>
         <meta charset="UTF-8">
         <title>${school.schoolName} - ધોરણ ${selectedStandard} સંકલિત પરિણામ પત્રક (Gazette)</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
-          @page {
-            size: A4 landscape;
-            margin: 8mm 10mm;
-          }
+          @page { size: A4 landscape; margin: 8mm 10mm; }
           * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body {
-            font-family: 'Anek Gujarati', system-ui, sans-serif;
-            color: #000;
-            background: #fff;
-            margin: 0;
-            padding: 5px;
-          }
-          .header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 6px;
-            margin-bottom: 8px;
-          }
-          .school-header-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 2px;
-          }
-          .school-logo-img {
-            width: 40px;
-            height: 40px;
-            object-fit: contain;
-            border-radius: 4px;
-          }
-          .school-name {
-            font-size: 16pt;
-            font-weight: 800;
-            margin: 0;
-            text-transform: uppercase;
-          }
-          .sub-header {
-            font-size: 9.5pt;
-            margin-top: 2px;
-          }
-          .title-badge {
-            display: inline-block;
-            background: #000;
-            color: #fff;
-            font-size: 11pt;
-            font-weight: 800;
-            padding: 2px 14px;
-            border-radius: 4px;
-            margin-top: 4px;
-          }
-          .summary-strip {
-            display: flex;
-            justify-content: space-between;
-            font-size: 8.5pt;
-            font-weight: bold;
-            background: #f1f5f9;
-            border: 1px solid #000;
-            padding: 4px 8px;
-            margin-bottom: 8px;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 8.5pt;
-          }
-          th {
-            border: 1px solid #000;
-            background-color: #e2e8f0;
-            padding: 4px;
-            text-align: center;
-            font-weight: 800;
-          }
-          .notes-strip {
-            margin-top: 8px;
-            font-size: 8pt;
-            color: #333;
-            border: 1px dashed #777;
-            padding: 4px 8px;
-          }
-          .signatures {
-            margin-top: 30px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 9.5pt;
-            font-weight: bold;
-            padding: 0 40px;
-          }
-          .sig-line {
-            border-top: 1px dashed #000;
-            padding-top: 4px;
-            width: 150px;
-            text-align: center;
-          }
+          body { font-family: 'Anek Gujarati', system-ui, sans-serif; color: #000; background: #fff; margin: 0; padding: 5px; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px; }
+          .school-name { font-size: 16pt; font-weight: 800; margin: 0; text-transform: uppercase; }
+          .sub-header { font-size: 9.5pt; margin-top: 2px; }
+          .title-badge { display: inline-block; background: #000; color: #fff; font-size: 11pt; font-weight: 800; padding: 2px 14px; border-radius: 4px; margin-top: 4px; }
+          .summary-strip { display: flex; justify-content: space-between; font-size: 8.5pt; font-weight: bold; background: #f1f5f9; border: 1px solid #000; padding: 4px 8px; margin-bottom: 8px; }
+          table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+          th { border: 1px solid #000; background-color: #e2e8f0; padding: 4px; text-align: center; font-weight: 800; }
+          .signatures { margin-top: 30px; display: flex; justify-content: space-between; font-size: 9.5pt; font-weight: bold; padding: 0 40px; }
+          .sig-line { border-top: 1px dashed #000; padding-top: 4px; width: 150px; text-align: center; }
         </style>
       </head>
       <body>
         <div class="header">
-          <div class="school-header-row">
-            ${school.logoUrl ? `<img src="${school.logoUrl}" alt="School Logo" class="school-logo-img" />` : ''}
-            <h1 class="school-name">${school.schoolName}</h1>
-          </div>
+          <h1 class="school-name">${school.schoolName}</h1>
           <div class="sub-header">
             ${school.village ? school.village + ', ' : ''}${school.taluka ? school.taluka + ', ' : ''}${school.district} • DISE કોડ: <strong>${school.diseCode}</strong>
           </div>
-          <div class="title-badge">
-            વાર્ષિક સંકલિત પરિણામ પત્રક (ANNUAL RESULT GAZETTE) • ધોરણ: ${selectedStandard} • શૈક્ષણિક વર્ષ ૨૦૨૬–૨૭
-          </div>
+          <div class="title-badge">વાર્ષિક સંકલિત પરિણામ પત્રક (ANNUAL RESULT GAZETTE) • ધોરણ ${selectedStandard} • વર્ષ ૨૦૨૬–૨૭</div>
         </div>
-
         <div class="summary-strip">
-          <span>કુલ વિદ્યાર્થી: <strong>${stats.total}</strong></span>
-          <span>સીધા ઉત્તીર્ણ: <strong>${stats.directPassCount}</strong></span>
-          <span>સિદ્ધિ ગુણ (#): <strong>${stats.siddhiCount}</strong></span>
-          <span>કૃપા ગુણ (*): <strong>${stats.krupaCount}</strong></span>
-          <span>સુધારણા જરૂરી: <strong>${stats.failCount}</strong></span>
-          <span>પરિણામ ટકા: <strong>${stats.passPct}%</strong></span>
-          <span>વર્ગ સરેરાશ: <strong>${stats.avgPct}%</strong></span>
-          <span>સર્વોચ્ચ ગુણ: <strong>${stats.highestPct}%</strong></span>
+          <span>કુલ વિદ્યાર્થીઓ: ${stats.total}</span>
+          <span>સીધા ઉત્તીર્ણ: ${stats.directPassCount}</span>
+          <span>સિદ્ધિ ગુણ (#): ${stats.siddhiCount}</span>
+          <span>કૃપા ગુણ (*): ${stats.krupaCount}</span>
+          <span>સુધારણા જરૂરી: ${stats.failCount}</span>
+          <span>પરિણામ ટકાવારી: ${stats.passPct}%</span>
         </div>
-
         <table>
           <thead>
             <tr>
               <th style="width: 35px;">રોલ</th>
-              <th style="width: 60px;">G.R. નં</th>
+              <th style="width: 65px;">G.R. નં</th>
               <th style="text-align: left;">વિદ્યાર્થીનું નામ</th>
-              ${subjects
-                .map(
-                  (s) => `
-                <th style="min-width: 55px;">
-                  <div>${s.nameGu.split(' ')[0]}</div>
-                  <div style="font-size: 7.5pt; font-weight: normal;">(૧૦૦ ગુણ)</div>
-                </th>
-              `
-                )
-                .join('')}
+              ${subjects.map((sub) => `<th>${sub.nameGu.split(' ')[0]}<br><span style="font-weight:normal; font-size:7.5pt;">(૧૦૦)</span></th>`).join('')}
               <th style="width: 65px;">કુલ ગુણ</th>
               <th style="width: 45px;">ટકા</th>
-              <th style="width: 40px;">ગ્રેડ</th>
-              <th style="width: 75px;">પરિણામ</th>
-              <th style="width: 35px;">ક્રમ</th>
+              <th style="width: 45px;">ગ્રેડ</th>
+              <th style="width: 85px;">પરિણામ</th>
+              <th style="width: 45px;">ક્રમ</th>
             </tr>
           </thead>
           <tbody>
-            ${tableRows}
+            ${rowsHtml}
           </tbody>
         </table>
-
-        <div class="notes-strip">
-          <strong>GSEB પરિણામ નોંધ:</strong> 
-          • <strong># (સિદ્ધિ ગુણ):</strong> એકંદરે ૩૩% થી વધુ ગુણ મેળવનારને ૩૩% થી ઉપરના દરેક ૧% દીઠ ૧ ગુણ (મહત્તમ ૧૫ ગુણ) - રેન્ક માટે પાત્ર.
-          • <strong>* (કૃપા ગુણ):</strong> આચાર્યશ્રી દ્વારા વધુમાં વધુ ૧૦ ગુણની મર્યાદામાં કૃપા ગુણ - રેન્ક માટે અપાત્ર.
-          • લઘુત્તમ શરત: જે વિષયમાં ૨૫% કે વધુ ગુણ હોય તેમાં જ સિદ્ધિ/કૃપા ગુણ આપેલા છે. સિદ્ધિ/કૃપા ગુણ કુલ મેળવેલ ગુણમાં ઉમેરાતા નથી.
-        </div>
-
         <div class="signatures">
           <div class="sig-line">વર્ગ શિક્ષકની સહી</div>
           <div class="sig-line">પરીક્ષા પ્રમુખશ્રીની સહી</div>
@@ -409,65 +725,34 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
       </html>
     `;
 
-    printHtmlDocument(html, `${school.schoolName.replace(/[\s/\\?%*:|"<>]/g, '_')}_Std_${selectedStandard}_Result_Gazette`);
+    printHtmlDocument(html, `${school.schoolName}_Std_${selectedStandard}_Gazette`);
   };
 
-  // 4. Print Individual Student Progress Card (A4 Portrait)
-  const handlePrintStudentCard = (targetResult?: CalculatedStudentResult) => {
-    const res = targetResult || activeStudentResult;
+  // Print Individual Student Progress Card
+  const handlePrintStudentCard = (studentResult?: CalculatedStudentResult) => {
+    const res = studentResult || activeStudentResult;
     if (!res) {
-      alert('કૃપા કરીને વિદ્યાર્થી પસંદ કરો.');
+      alert('કોઈ વિદ્યાર્થી પસંદ થયેલ નથી.');
       return;
     }
 
     const marksRows = res.subjectScores
-      .map((sc, idx) => {
-        let displayTotal = `${sc.total100}`;
-        if (sc.siddhiMarksGiven > 0 && sc.krupaMarksGiven > 0) {
-          displayTotal = `${sc.total100} + <span style="color:#047857;">${sc.siddhiMarksGiven}#</span> + <span style="color:#b45309;">${sc.krupaMarksGiven}*</span> = 33`;
-        } else if (sc.siddhiMarksGiven > 0) {
-          displayTotal = `${sc.total100} + <span style="color:#047857;">${sc.siddhiMarksGiven}#</span> = 33`;
-        } else if (sc.krupaMarksGiven > 0) {
-          displayTotal = `${sc.total100} + <span style="color:#b45309;">${sc.krupaMarksGiven}*</span> = 33`;
-        }
-
-        return `
+      .map(
+        (sc, idx) => `
         <tr>
-          <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
-          <td style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: left;">
-            ${sc.subjectNameGu}
-            <div style="font-size: 8pt; color: #555; font-weight: normal;">${sc.subjectNameEn}</div>
+          <td style="border: 1px solid #000; padding: 5px; text-align: center;">${idx + 1}</td>
+          <td style="border: 1px solid #000; padding: 5px; font-weight: bold;">${sc.subjectNameGu}</td>
+          <td style="border: 1px solid #000; padding: 5px; text-align: center;">${sc.prathamRaw !== null ? sc.prathamRaw : '-'}</td>
+          <td style="border: 1px solid #000; padding: 5px; text-align: center;">${sc.dwitiyaRaw !== null ? sc.dwitiyaRaw : '-'}</td>
+          <td style="border: 1px solid #000; padding: 5px; text-align: center;">${sc.varshikRaw !== null ? sc.varshikRaw : '-'}</td>
+          <td style="border: 1px solid #000; padding: 5px; text-align: center;">${sc.internalRaw !== null ? sc.internalRaw : '-'}</td>
+          <td style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; font-size: 10pt;">
+            ${formatSubjectScoreDisplay(sc)}
           </td>
-          <!-- 1. Pratham 50M -> 10M -->
-          <td style="border: 1px solid #000; padding: 6px; text-align: center;">
-            ${sc.prathamAbsent ? 'AB' : sc.prathamRaw !== null ? sc.prathamRaw : '-'}
-            <div style="font-size: 8pt; color: #1e3a8a; font-weight: bold;">(${sc.prathamWeighted})</div>
-          </td>
-          <!-- 2. Dwitiya 50M -> 10M -->
-          <td style="border: 1px solid #000; padding: 6px; text-align: center;">
-            ${sc.dwitiyaAbsent ? 'AB' : sc.dwitiyaRaw !== null ? sc.dwitiyaRaw : '-'}
-            <div style="font-size: 8pt; color: #1e3a8a; font-weight: bold;">(${sc.dwitiyaWeighted})</div>
-          </td>
-          <!-- 3. Varshik 80M -> 60M -->
-          <td style="border: 1px solid #000; padding: 6px; text-align: center;">
-            ${sc.varshikAbsent ? 'AB' : sc.varshikRaw !== null ? sc.varshikRaw : '-'}
-            <div style="font-size: 8pt; color: #1e3a8a; font-weight: bold;">(${sc.varshikWeighted})</div>
-          </td>
-          <!-- 4. Internal 20M -->
-          <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold;">
-            ${sc.internalAbsent ? 'AB' : sc.internalRaw !== null ? sc.internalRaw : '-'}
-          </td>
-          <!-- 5. Total 100M -->
-          <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: 800; font-size: 11pt; background: #f8fafc;">
-            ${displayTotal}
-          </td>
-          <!-- 6. Grade -->
-          <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: 800;">
-            ${sc.grade}
-          </td>
+          <td style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold;">${sc.grade}</td>
         </tr>
-      `;
-      })
+      `
+      )
       .join('');
 
     const html = `
@@ -475,262 +760,73 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
       <html lang="gu">
       <head>
         <meta charset="UTF-8">
-        <title>${school.schoolName} - પ્રગતિ પત્રક (${res.student.studentName})</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <title>${res.student.studentName} - ધોરણ ${selectedStandard} પ્રગતિ પત્રક</title>
         <link href="https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
-          @page {
-            size: A4 portrait;
-            margin: 10mm 12mm;
-          }
+          @page { size: A4 portrait; margin: 10mm; }
           * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body {
-            font-family: 'Anek Gujarati', system-ui, sans-serif;
-            color: #0f172a;
-            background: #fff;
-            margin: 0;
-            padding: 8px;
-          }
-          .border-frame {
-            border: 2px solid #000;
-            border-radius: 6px;
-            padding: 16px 18px;
-            min-height: 98%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-          }
-          .header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
-          }
-          .school-header-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 2px;
-          }
-          .school-logo-img {
-            width: 46px;
-            height: 46px;
-            object-fit: contain;
-            border-radius: 4px;
-          }
-          .school-title {
-            font-size: 19pt;
-            font-weight: 800;
-            margin: 0;
-            color: #1e3a8a;
-            text-transform: uppercase;
-          }
-          .school-meta {
-            font-size: 10pt;
-            color: #334155;
-            margin-top: 2px;
-          }
-          .card-badge {
-            display: inline-block;
-            background: #1e3a8a;
-            color: white;
-            font-size: 12pt;
-            font-weight: 800;
-            padding: 3px 20px;
-            border-radius: 5px;
-            margin-top: 6px;
-          }
-          .student-meta-box {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px 10px;
-            background: #f8fafc;
-            border: 1.5px solid #000;
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-bottom: 12px;
-            font-size: 9.5pt;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9pt;
-            margin-bottom: 10px;
-          }
-          th {
-            border: 1px solid #000;
-            background-color: #f1f5f9;
-            padding: 5px;
-            font-weight: 800;
-            text-align: center;
-          }
-          .summary-card {
-            border: 2px solid #000;
-            background: #f8fafc;
-            border-radius: 6px;
-            padding: 10px 14px;
-            margin-top: 8px;
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            text-align: center;
-          }
-          .sum-val {
-            font-size: 13pt;
-            font-weight: 800;
-            color: #1e3a8a;
-            margin-top: 2px;
-          }
-          .sum-lbl {
-            font-size: 8.5pt;
-            color: #475569;
-            font-weight: bold;
-          }
-          .grading-scale-info {
-            margin-top: 8px;
-            border: 1px dashed #64748b;
-            padding: 5px 8px;
-            border-radius: 5px;
-            font-size: 7.5pt;
-            color: #334155;
-            display: flex;
-            justify-content: space-between;
-          }
-          .signatures {
-            margin-top: 35px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 9.5pt;
-            font-weight: 700;
-            padding: 0 15px;
-          }
-          .sig-line {
-            border-top: 1.5px dashed #000;
-            padding-top: 5px;
-            width: 160px;
-            text-align: center;
-          }
+          body { font-family: 'Anek Gujarati', system-ui, sans-serif; color: #000; background: #fff; margin: 0; padding: 5px; }
+          .border-frame { border: 3px double #000; padding: 15px; min-height: 98vh; display: flex; flex-direction: column; justify-content: space-between; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
+          .school-title { font-size: 18pt; font-weight: 800; margin: 0; text-transform: uppercase; }
+          .card-badge { display: inline-block; background: #000; color: #fff; font-size: 11pt; font-weight: bold; padding: 3px 16px; border-radius: 4px; margin-top: 6px; }
+          .student-meta-box { border: 1.5px solid #000; padding: 8px 12px; margin-bottom: 14px; font-size: 9.5pt; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; background: #fafafa; }
+          table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 14px; }
+          th { border: 1px solid #000; background-color: #f1f5f9; padding: 6px; text-align: center; font-weight: 800; }
+          .summary-card { border: 1.5px solid #000; padding: 8px 12px; margin-bottom: 14px; display: flex; justify-content: space-around; background: #f8fafc; text-align: center; }
+          .sum-lbl { font-size: 8pt; color: #555; font-weight: bold; }
+          .sum-val { font-size: 13pt; font-weight: 800; margin-top: 2px; }
+          .signatures { margin-top: 35px; display: flex; justify-content: space-between; font-size: 9.5pt; font-weight: 700; padding: 0 15px; }
+          .sig-line { border-top: 1.5px dashed #000; padding-top: 5px; width: 160px; text-align: center; }
         </style>
       </head>
       <body>
         <div class="border-frame">
           <div>
-            <!-- School Header -->
             <div class="header">
-              <div class="school-header-row">
-                ${school.logoUrl ? `<img src="${school.logoUrl}" alt="School Logo" class="school-logo-img" />` : ''}
-                <h1 class="school-title">${school.schoolName}</h1>
+              <h1 class="school-title">${school.schoolName}</h1>
+              <div style="font-size: 9.5pt; margin-top: 2px;">
+                ${school.village ? school.village + ', ' : ''}${school.taluka ? school.taluka + ', ' : ''}${school.district} • DISE: <strong>${school.diseCode}</strong>
               </div>
-              <div class="school-meta">
-                ${school.village ? school.village + ', ' : ''}${school.taluka ? school.taluka + ', ' : ''}${school.district} • DISE કોડ: <strong>${school.diseCode}</strong>
-              </div>
-              <div class="card-badge">
-                વાર્ષિક પ્રગતિ પત્રક (ANNUAL PROGRESS REPORT) • ધોરણ ${selectedStandard} • શૈક્ષણિક વર્ષ ૨૦૨૬–૨૭
-              </div>
+              <div class="card-badge">વાર્ષિક પ્રગતિ પત્રક (ANNUAL PROGRESS REPORT) • ધોરણ ${selectedStandard} • વર્ષ ૨૦૨૬–૨૭</div>
             </div>
-
-            <!-- Student Master Details -->
             <div class="student-meta-box">
               <div>G.R. નંબર: <strong>${res.student.grNumber || '-'}</strong></div>
               <div>રોલ નંબર: <strong>${res.student.rollNumber || '-'}</strong></div>
               <div>ધોરણ & વર્ગ: <strong>${selectedStandard} (${res.student.section || res.student.division || 'A'})</strong></div>
-              <div style="grid-column: span 2;">વિદ્યાર્થીનું નામ: <strong>${res.student.studentName}</strong></div>
-              <div>જન્મ તારીખ: <strong>${res.student.dob || '-'}</strong></div>
+              <div>વિદ્યાર્થીનું નામ: <strong>${res.student.studentName}</strong></div>
             </div>
-
-            <!-- Marks Matrix Table -->
             <table>
               <thead>
                 <tr>
                   <th style="width: 35px;">ક્રમ</th>
                   <th style="text-align: left;">વિષયનું નામ</th>
-                  <th style="width: 85px;">
-                    પ્રથમ કસોટી
-                    <div style="font-size: 7pt; font-weight: normal;">(૫૦ → ૧૦)</div>
-                  </th>
-                  <th style="width: 85px;">
-                    દ્વિતીય કસોટી
-                    <div style="font-size: 7pt; font-weight: normal;">(૫૦ → ૧૦)</div>
-                  </th>
-                  <th style="width: 85px;">
-                    વાર્ષિક કસોટી
-                    <div style="font-size: 7pt; font-weight: normal;">(૮૦ → ૬૦)</div>
-                  </th>
-                  <th style="width: 75px;">
-                    આંતરિક
-                    <div style="font-size: 7pt; font-weight: normal;">(૨૦ માંથી)</div>
-                  </th>
-                  <th style="width: 100px;">
-                    કુલ ગુણ
-                    <div style="font-size: 7pt; font-weight: normal;">(૧૦૦ માંથી)</div>
-                  </th>
-                  <th style="width: 55px;">ગ્રેડ</th>
+                  <th>પ્રથમ (૫૦)</th>
+                  <th>દ્વિતીય (૫૦)</th>
+                  <th>વાર્ષિક (૮૦)</th>
+                  <th>આંતરિક (૨૦)</th>
+                  <th>કુલ (૧૦૦)</th>
+                  <th>ગ્રેડ</th>
                 </tr>
               </thead>
               <tbody>
                 ${marksRows}
               </tbody>
             </table>
-
-            <!-- Summary Results Card -->
             <div class="summary-card">
-              <div>
-                <div class="sum-lbl">કુલ મેળવેલ ગુણ</div>
-                <div class="sum-val">${res.totalObtained} / ${res.totalMax}</div>
-              </div>
-              <div>
-                <div class="sum-lbl">ટકાવારી (Percentage)</div>
-                <div class="sum-val">${res.percentage}%</div>
-              </div>
-              <div>
-                <div class="sum-lbl">એકંદર ગ્રેડ (Grade)</div>
-                <div class="sum-val">${res.overallGrade}</div>
-              </div>
-              <div>
-                <div class="sum-lbl">પરિણામ સ્થિતિ</div>
-                <div class="sum-val" style="color: ${
-                  res.resultStatus === 'PASS'
-                    ? '#047857'
-                    : res.resultStatus === 'PASS_WITH_SIDDHI'
-                    ? '#059669'
-                    : res.resultStatus === 'PASS_WITH_KRUPA'
-                    ? '#b45309'
-                    : '#b91c1c'
-                }; font-size: 10pt;">
-                  ${
-                    res.resultStatus === 'PASS'
-                      ? 'ઉત્તીર્ણ'
-                      : res.resultStatus === 'PASS_WITH_SIDDHI'
-                      ? `સિદ્ધિ (${res.totalSiddhiGiven}#)`
-                      : res.resultStatus === 'PASS_WITH_KRUPA'
-                      ? `કૃપા (${res.totalKrupaGiven}*)`
-                      : 'સુધારણા જરૂરી'
-                  }
-                </div>
-              </div>
-              <div>
-                <div class="sum-lbl">વર્ગમાં ક્રમાંક (Rank)</div>
-                <div class="sum-val">${res.rankInClass ? `#${res.rankInClass}` : '-'}</div>
-              </div>
-            </div>
-
-            <!-- Grade scale reference & Notes -->
-            <div class="grading-scale-info">
-              <span><strong>ગ્રેડ સ્કેલ:</strong> 91-100: A1 | 81-90: A2 | 71-80: B1 | 61-70: B2 | 51-60: C1 | 41-50: C2 | 33-40: D | 21-32: E1 (સુધારણા)</span>
-              <span># = સિદ્ધિ ગુણ (રેન્ક પાત્ર) | * = કૃપા ગુણ (આચાર્ય ક્વોટા)</span>
+              <div><div class="sum-lbl">કુલ મેળવેલ ગુણ</div><div class="sum-val">${res.totalObtained} / ${res.totalMax}</div></div>
+              <div><div class="sum-lbl">ટકાવારી (%)</div><div class="sum-val">${res.percentage}%</div></div>
+              <div><div class="sum-lbl">ગ્રેડ</div><div class="sum-val">${res.overallGrade}</div></div>
+              <div><div class="sum-lbl">સ્થિતિ</div><div class="sum-val" style="color: ${res.resultStatus === 'PASS' ? '#047857' : '#b91c1c'};">${res.resultStatusGu}</div></div>
+              <div><div class="sum-lbl">વર્ગમાં ક્રમ</div><div class="sum-val">${res.rankInClass ? `#${res.rankInClass}` : '-'}</div></div>
             </div>
           </div>
-
-          <!-- Signatures -->
           <div class="signatures">
             <div class="sig-line">વર્ગ શિક્ષકની સહી</div>
             <div class="sig-line">પરીક્ષા પ્રમુખશ્રીની સહી</div>
             <div class="sig-line">આચાર્યશ્રીની સહી અને સિક્કો</div>
           </div>
         </div>
-
       </body>
       </html>
     `;
@@ -741,6 +837,15 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Hidden File Input for Excel Import */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImportExcel}
+        accept=".xlsx, .xls, .csv"
+        className="hidden"
+      />
+
       {/* Top Banner */}
       <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-6 shadow-xl relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
@@ -756,46 +861,52 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#FBE9DF] dark:bg-[#9d512d]/25 text-[#C45A2D] dark:text-[#f59c73] border border-[#C45A2D]/30 dark:border-[#9d512d]/40 mb-2">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>ઓટોમેટેડ રિઝલ્ટ કેલ્ક્યુલેટર • GSEB વાર્ષિક પરિણામ ફોર્મ્યુલા</span>
+                <span>ઓટોમેટેડ પરિણામ કેન્દ્ર • ધોરણ ૯ થી ૧૨ • એક્સેલ ગણતરી & શીટ સુવિધા</span>
               </div>
               <h2 className="text-2xl font-black text-slate-900 dark:text-[#e4ded6] tracking-tight">
-                વાર્ષિક પરિણામ અને પ્રગતિ પત્રક કેન્દ્ર
+                વાર્ષિક પરિણામ અને ગુણપત્રક કેન્દ્ર
               </h2>
               <p className="text-xs text-slate-600 dark:text-[#a99f91] mt-1 max-w-2xl leading-relaxed">
-                પ્રથમ (10%), દ્વિતીય (10%), વાર્ષિક (60%) અને આંતરિક (20%) ગુણભાર મુજબ 100 ગુણમાં રૂપાંતર. ગુજરાત બોર્ડના સત્તાવાર નિયમો મુજબ સિદ્ધિ ગુણ (#) અને આચાર્યશ્રી કૃપા ગુણ (*) ની સચોટ ગણતરી.
+                પ્રથમ કસોટી, દ્વિતીય/પ્રિલિમ, એકમ કસોટી, પ્રાયોગિક અને આંતરિક ગુણની એક્સેલ જેવી સરળ એન્ટ્રી. વાર્ષિક ૧૦૦ ગુણમાં ઓટોમેટેડ રૂપાંતરણ, GSEB સિદ્ધિ (#) અને કૃપા (*) ગુણ સાથે ગેઝેટ અને પ્રગતિ પત્રક.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <button
               onClick={() => setShowRulesModal(true)}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-white border-amber-500/30 hover:border-amber-500 transition-all cursor-pointer"
             >
               <HelpCircle className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-              <span>સિદ્ધિ/કૃપા ગુણના નિયમો</span>
+              <span>ફોર્મ્યુલા & શું આપવું?</span>
             </button>
-
-            {/* Standard Selector */}
-            <div className="flex items-center gap-2">
-              {(['9', '10', '11'] as AllowedStandard[]).map((std) => (
-                <button
-                  key={std}
-                  onClick={() => {
-                    setSelectedStandard(std);
-                    setSelectedStudentId('');
-                  }}
-                  className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                    selectedStandard === std
-                      ? 'btn-terracotta text-white shadow-lg shadow-[#C45A2D]/30 scale-105'
-                      : 'glass-card text-slate-600 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white border border-[#E2E8F0] dark:border-white/10'
-                  }`}
-                >
-                  ધોરણ {std}
-                </button>
-              ))}
-            </div>
           </div>
+        </div>
+
+        {/* Standard Selector Pills (Std 9, 10, 11 General, 11 Science, 12 General, 12 Science) */}
+        <div className="mt-5 pt-4 border-t border-slate-200 dark:border-white/10 flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-xs font-bold text-slate-600 dark:text-[#a99f91] shrink-0 mr-1">
+            ધોરણ પસંદ કરો:
+          </span>
+          {STANDARD_OPTIONS.map((opt) => {
+            const isSelected = selectedStandard === opt.id;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => {
+                  setSelectedStandard(opt.id);
+                  setSelectedStudentId('');
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+                  isSelected
+                    ? 'btn-terracotta text-white shadow-lg shadow-[#C45A2D]/30 scale-105'
+                    : 'glass-card text-slate-700 dark:text-[#a99f91] hover:text-slate-900 dark:hover:text-white border border-[#E2E8F0] dark:border-white/10'
+                }`}
+              >
+                {opt.nameGu}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -871,72 +982,116 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
 
       {/* View Switcher & Action Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        {/* Toggle between Gazette and Individual Progress Card */}
-        <div className="flex gap-2 p-1 rounded-2xl bg-white dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 shadow-sm">
+        {/* 3-Way Mode Switcher: Gazette | Excel Marks Entry | Progress Card */}
+        <div className="flex gap-1.5 p-1 rounded-2xl bg-white dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 shadow-sm overflow-x-auto">
           <button
             onClick={() => setViewMode('gazette')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               viewMode === 'gazette'
                 ? 'btn-terracotta text-white shadow'
                 : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>સંકલિત પરિણામ ગેઝેટ (Class Gazette)</span>
+            <span>વાર્ષિક પરિણામ ગેઝેટ</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode('marks_entry')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+              viewMode === 'marks_entry'
+                ? 'btn-terracotta text-white shadow'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
+            }`}
+          >
+            <Calculator className="w-3.5 h-3.5" />
+            <span>📝 એક્સેલ ગુણ એન્ટ્રી શીટ</span>
           </button>
 
           <button
             onClick={() => setViewMode('progress_card')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               viewMode === 'progress_card'
                 ? 'btn-terracotta text-white shadow'
                 : 'text-slate-600 hover:text-slate-900 dark:text-[#a99f91] dark:hover:text-white'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>વ્યક્તિગત પ્રગતિ પત્રક (Progress Card)</span>
+            <span>વિદ્યાર્થી પ્રગતિ પત્રક</span>
           </button>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2.5">
+        {/* Action Buttons based on View */}
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => setSendResultModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition-all cursor-pointer"
             title="વાલીઓને વ્યક્તિગત પરીક્ષા પરિણામ WhatsApp / SMS દ્વારા મોકલો"
           >
             <Send className="w-3.5 h-3.5" />
             <span>વાલીઓને પરિણામ મોકલો 🚀</span>
           </button>
 
-          {onNavigateToMarks && (
-            <button
-              onClick={onNavigateToMarks}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-xs font-bold text-[#C45A2D] dark:text-[#f59c73] hover:text-[#A8481F] dark:hover:text-white transition-all cursor-pointer border-[#C45A2D]/30 dark:border-[#9d512d]/40"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>ગુણ દાખલ કરો (Mark Entry)</span>
-            </button>
+          {viewMode === 'marks_entry' && (
+            <>
+              <button
+                onClick={handleDownloadExcelTemplate}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-white transition-all cursor-pointer border border-[#E2E8F0] dark:border-white/10"
+                title="વિદ્યાર્થીઓના નામ અને રોલ નંબર સાથે એક્સેલ શીટ ડાઉનલોડ કરો"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>ટેમ્પલેટ ડાઉનલોડ (.xlsx)</span>
+              </button>
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card text-xs font-bold text-blue-700 dark:text-blue-400 hover:text-blue-800 dark:hover:text-white transition-all cursor-pointer border border-[#E2E8F0] dark:border-white/10"
+                title="તમારી શાળાની એક્સેલ ફાઈલ અપલોડ કરો"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>એક્સેલ અપલોડ કરો</span>
+              </button>
+
+              <button
+                onClick={handleSaveMarks}
+                disabled={isSavingMarks}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl btn-terracotta text-white text-xs font-bold shadow-lg transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isSavingMarks ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>સેવ થઈ રહ્યું છે...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>બધા ગુણ સેવ કરો 💾</span>
+                  </>
+                )}
+              </button>
+            </>
           )}
 
-          {viewMode === 'gazette' ? (
+          {viewMode === 'gazette' && (
             <>
               <button
                 onClick={handleExportGazetteExcel}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-white transition-all cursor-pointer border border-[#E2E8F0] dark:border-white/10"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-white transition-all cursor-pointer border border-[#E2E8F0] dark:border-white/10"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>એક્સેલ ડાઉનલોડ (.xlsx)</span>
+                <span>ગેઝેટ એક્સેલ (.xlsx)</span>
               </button>
               <button
                 onClick={handlePrintGazette}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl btn-terracotta text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl btn-terracotta text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>ગેઝેટ પ્રિન્ટ કરો (A4 Landscape)</span>
+                <span>ગેઝેટ પ્રિન્ટ (A4 Landscape)</span>
               </button>
             </>
-          ) : (
+          )}
+
+          {viewMode === 'progress_card' && (
             <button
               onClick={() => handlePrintStudentCard()}
               className="inline-flex items-center gap-2 px-5 py-2 rounded-xl btn-terracotta text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
@@ -948,7 +1103,282 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
         </div>
       </div>
 
-      {/* VIEW 1: GAZETTE (Class Master Marksheet Matrix) */}
+      {/* Success / Status Messages */}
+      {saveSuccessMsg && (
+        <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center justify-between animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>{saveSuccessMsg}</span>
+          </div>
+          <button onClick={() => setSaveSuccessMsg(null)} className="text-emerald-700 dark:text-emerald-400 hover:underline">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {importStatusMsg && (
+        <div className="p-3 rounded-2xl bg-blue-500/15 border border-blue-500/30 text-blue-800 dark:text-blue-300 text-xs font-semibold flex items-center justify-between animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span>{importStatusMsg}</span>
+          </div>
+          <button onClick={() => setImportStatusMsg(null)} className="text-blue-700 dark:text-blue-400 hover:underline">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* VIEW 1: EXCEL-LIKE MARKS ENTRY GRID */}
+      {viewMode === 'marks_entry' && (
+        <div className="glass-card rounded-2xl border border-[#E2E8F0] dark:border-white/10 overflow-hidden shadow-2xl space-y-0">
+          {/* Controls Strip: Subject Selector & Helper */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-b border-[#E2E8F0] dark:border-white/10 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-slate-700 dark:text-[#a99f91]">વિષય પસંદ કરો:</span>
+              <select
+                value={selectedSubjectId}
+                onChange={(e) => setSelectedSubjectId(e.target.value)}
+                className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D]"
+              >
+                {subjects.map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.nameGu} {sub.hasPractical ? '(થિયરી + પ્રાયોગિક)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span>
+                <strong>{activeSubject?.nameGu}</strong> ના ગુણ એન્ટ્રી શીટ ({standardStudents.length} વિદ્યાર્થીઓ)
+              </span>
+            </div>
+          </div>
+
+          {/* Excel Instructions strip */}
+          <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-center justify-between">
+            <span>
+              💡 <strong>એક્સેલ સુવિધા:</strong> કોઈપણ ખાનામાં સીધા ગુણ લખો (ગેરહાજર માટે <strong>AB</strong>). ૧૦૦ માંથી કુલ ગણતરી આપોઆપ થઈ જશે. ફેરફાર પૂર્ણ કરી ઉપરનું <strong>'બધા ગુણ સેવ કરો'</strong> બટન દબાવો.
+            </span>
+            <span className="text-[10px] font-mono opacity-80">Tab / Enter = Next Field</span>
+          </div>
+
+          {/* Interactive Spreadsheet Table */}
+          <div className="overflow-x-auto mobile-table-scroll max-h-[640px] overflow-y-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-[#a99f91] sticky top-0 z-10 shadow-xs border-b border-slate-200 dark:border-slate-800">
+                <tr>
+                  <th className="py-3 px-3 text-center w-12 font-bold">રોલ</th>
+                  <th className="py-3 px-3 w-20 font-bold">G.R. નં</th>
+                  <th className="py-3 px-4 min-w-[150px] font-bold text-slate-900 dark:text-white">વિદ્યાર્થીનું નામ</th>
+                  <th className="py-3 px-2 text-center w-24 font-bold bg-blue-50/60 dark:bg-blue-950/20">
+                    <div>પ્રથમ કસોટી</div>
+                    <div className="text-[10px] text-slate-500 font-normal">(૫૦ માંથી)</div>
+                  </th>
+                  <th className="py-3 px-2 text-center w-24 font-bold bg-blue-50/60 dark:bg-blue-950/20">
+                    <div>{currentStdInfo.baseStd === '10' || currentStdInfo.baseStd === '12' ? 'પ્રિલિમ' : 'દ્વિતીય કસોટી'}</div>
+                    <div className="text-[10px] text-slate-500 font-normal">
+                      ({currentStdInfo.baseStd === '12' ? '૧૦૦' : currentStdInfo.baseStd === '10' ? '૮૦' : '૫૦'} માંથી)
+                    </div>
+                  </th>
+                  <th className="py-3 px-2 text-center w-20 font-bold bg-amber-50/60 dark:bg-amber-950/20">
+                    <div>એકમ ૧</div>
+                    <div className="text-[10px] text-slate-500 font-normal">(૨૫ માંથી)</div>
+                  </th>
+                  <th className="py-3 px-2 text-center w-20 font-bold bg-amber-50/60 dark:bg-amber-950/20">
+                    <div>એકમ ૨</div>
+                    <div className="text-[10px] text-slate-500 font-normal">(૨૫ માંથી)</div>
+                  </th>
+                  {activeSubject?.hasPractical && (
+                    <th className="py-3 px-2 text-center w-24 font-bold bg-teal-50/60 dark:bg-teal-950/20">
+                      <div>પ્રાયોગિક</div>
+                      <div className="text-[10px] text-slate-500 font-normal">(૫૦ માંથી)</div>
+                    </th>
+                  )}
+                  <th className="py-3 px-2 text-center w-20 font-bold bg-purple-50/60 dark:bg-purple-950/20">
+                    <div>આંતરિક</div>
+                    <div className="text-[10px] text-slate-500 font-normal">(૨૦ માંથી)</div>
+                  </th>
+                  {(currentStdInfo.baseStd === '9' || currentStdInfo.baseStd === '11') && (
+                    <th className="py-3 px-2 text-center w-24 font-bold bg-emerald-50/60 dark:bg-emerald-950/20">
+                      <div>વાર્ષિક પરીક્ષા</div>
+                      <div className="text-[10px] text-slate-500 font-normal">(૮૦ માંથી)</div>
+                    </th>
+                  )}
+                  <th className="py-3 px-3 text-center w-24 font-black bg-slate-200/80 dark:bg-slate-800 text-slate-900 dark:text-white">
+                    <div>રૂપાંતરિત કુલ</div>
+                    <div className="text-[10px] text-slate-600 dark:text-slate-400 font-normal">(૧૦૦ માંથી)</div>
+                  </th>
+                  <th className="py-3 px-2 text-center w-14 font-bold">ગ્રેડ</th>
+                  <th className="py-3 px-3 text-center w-20 font-bold">સ્થિતિ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-white/5 font-mono">
+                {standardStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan={13} className="py-12 text-center text-slate-500 dark:text-slate-400 font-sans">
+                      આ ધોરણમાં હજુ કોઈ વિદ્યાર્થી દાખલ થયેલ નથી.
+                    </td>
+                  </tr>
+                ) : (
+                  standardStudents.map((st, idx) => {
+                    const row = marksGrid[st.id] || {
+                      student: st,
+                      pratham: '',
+                      dwitiya: '',
+                      ekam1: '',
+                      ekam2: '',
+                      practical: '',
+                      internal: '',
+                      varshik: '',
+                      total100: 0,
+                      grade: '-',
+                      status: 'FAIL',
+                      isDirty: false,
+                    };
+
+                    return (
+                      <tr
+                        key={st.id}
+                        className={`hover:bg-slate-50/80 dark:hover:bg-white/5 transition-colors ${
+                          row.isDirty ? 'bg-amber-500/5 dark:bg-amber-500/10' : ''
+                        }`}
+                      >
+                        <td className="py-2 px-3 text-center font-bold text-slate-800 dark:text-slate-200 font-sans">
+                          {st.rollNumber || idx + 1}
+                        </td>
+                        <td className="py-2 px-3 text-[#9d512d] dark:text-[#f59c73] text-[11px]">
+                          {st.grNumber || '-'}
+                        </td>
+                        <td className="py-2 px-4 font-bold text-slate-900 dark:text-white font-sans truncate max-w-[180px]">
+                          {st.studentName}
+                        </td>
+
+                        {/* First Exam Input */}
+                        <td className="py-1.5 px-1.5 text-center bg-blue-50/20 dark:bg-blue-950/10">
+                          <input
+                            type="text"
+                            value={row.pratham}
+                            onChange={(e) => handleCellChange(st.id, 'pratham', e.target.value)}
+                            placeholder="0-50"
+                            className="w-16 py-1 px-1.5 rounded-lg text-center text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D]"
+                          />
+                        </td>
+
+                        {/* Second / Prelim Exam Input */}
+                        <td className="py-1.5 px-1.5 text-center bg-blue-50/20 dark:bg-blue-950/10">
+                          <input
+                            type="text"
+                            value={row.dwitiya}
+                            onChange={(e) => handleCellChange(st.id, 'dwitiya', e.target.value)}
+                            placeholder={currentStdInfo.baseStd === '12' ? '0-100' : currentStdInfo.baseStd === '10' ? '0-80' : '0-50'}
+                            className="w-16 py-1 px-1.5 rounded-lg text-center text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D]"
+                          />
+                        </td>
+
+                        {/* Ekam 1 Input */}
+                        <td className="py-1.5 px-1.5 text-center bg-amber-50/20 dark:bg-amber-950/10">
+                          <input
+                            type="text"
+                            value={row.ekam1}
+                            onChange={(e) => handleCellChange(st.id, 'ekam1', e.target.value)}
+                            placeholder="0-25"
+                            className="w-14 py-1 px-1.5 rounded-lg text-center text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D]"
+                          />
+                        </td>
+
+                        {/* Ekam 2 Input */}
+                        <td className="py-1.5 px-1.5 text-center bg-amber-50/20 dark:bg-amber-950/10">
+                          <input
+                            type="text"
+                            value={row.ekam2}
+                            onChange={(e) => handleCellChange(st.id, 'ekam2', e.target.value)}
+                            placeholder="0-25"
+                            className="w-14 py-1 px-1.5 rounded-lg text-center text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D]"
+                          />
+                        </td>
+
+                        {/* Practical Input if applicable */}
+                        {activeSubject?.hasPractical && (
+                          <td className="py-1.5 px-1.5 text-center bg-teal-50/20 dark:bg-teal-950/10">
+                            <input
+                              type="text"
+                              value={row.practical}
+                              onChange={(e) => handleCellChange(st.id, 'practical', e.target.value)}
+                              placeholder="0-50"
+                              className="w-16 py-1 px-1.5 rounded-lg text-center text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D]"
+                            />
+                          </td>
+                        )}
+
+                        {/* Internal Input */}
+                        <td className="py-1.5 px-1.5 text-center bg-purple-50/20 dark:bg-purple-950/10">
+                          <input
+                            type="text"
+                            value={row.internal}
+                            onChange={(e) => handleCellChange(st.id, 'internal', e.target.value)}
+                            placeholder="0-20"
+                            className="w-14 py-1 px-1.5 rounded-lg text-center text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D]"
+                          />
+                        </td>
+
+                        {/* Annual Exam Input for Std 9 & 11 */}
+                        {(currentStdInfo.baseStd === '9' || currentStdInfo.baseStd === '11') && (
+                          <td className="py-1.5 px-1.5 text-center bg-emerald-50/20 dark:bg-emerald-950/10">
+                            <input
+                              type="text"
+                              value={row.varshik}
+                              onChange={(e) => handleCellChange(st.id, 'varshik', e.target.value)}
+                              placeholder="0-80"
+                              className="w-16 py-1 px-1.5 rounded-lg text-center text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D]"
+                            />
+                          </td>
+                        )}
+
+                        {/* Converted Total 100 */}
+                        <td className="py-2 px-3 text-center font-black text-sm text-slate-900 dark:text-white bg-slate-200/50 dark:bg-slate-800/50">
+                          {row.total100}
+                        </td>
+
+                        {/* Grade */}
+                        <td className="py-2 px-2 text-center font-bold text-xs">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[11px] ${
+                              row.grade.startsWith('A')
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+                                : row.grade.startsWith('B')
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300'
+                                : row.grade.startsWith('C') || row.grade === 'D'
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                                : 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-red-300'
+                            }`}
+                          >
+                            {row.grade}
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-2 px-3 text-center font-sans">
+                          {row.status === 'PASS' ? (
+                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">ઉત્તીર્ણ</span>
+                          ) : row.status === 'GRACE' ? (
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400" title="સિદ્ધિ/કૃપા ગુણ પાત્ર">ગ્રેસ પાત્ર</span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-red-600 dark:text-red-400">પુનઃપરીક્ષા</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 2: GAZETTE (Class Master Marksheet Matrix) */}
       {viewMode === 'gazette' && (
         <div className="glass-card rounded-2xl border border-[#E2E8F0] dark:border-white/10 overflow-hidden shadow-2xl">
           {/* Table Search & Filter Bar */}
@@ -1022,12 +1452,6 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             </div>
           </div>
 
-          {/* Mobile Horizontal Scroll Tip */}
-          <div className="sm:hidden px-3.5 py-2 bg-slate-100 dark:bg-slate-950/90 text-[11px] text-[#9d512d] dark:text-[#f59c73] flex items-center justify-between border-b border-slate-200 dark:border-white/5">
-            <span className="font-semibold">📱 મોબાઇલ ટિપ: વિષયવાર ગુણ અને પરિણામ જોવા ડાબે-જમણે સ્ક્રોલ કરો</span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">↔️ Swipe</span>
-          </div>
-
           {/* Master Table */}
           <div className="overflow-x-auto mobile-table-scroll max-h-[620px] overflow-y-auto">
             <table className="w-full text-left text-xs border-collapse">
@@ -1069,7 +1493,6 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                       <td className="py-2.5 px-4 font-bold text-slate-900 dark:text-white">
                         {r.student.studentName}
                       </td>
-                      {/* Each Subject Marks */}
                       {r.subjectScores.map((sc) => (
                         <td key={sc.subjectId} className="py-2 px-3 text-center">
                           <div className="font-extrabold text-sm text-slate-900 dark:text-white">
@@ -1095,17 +1518,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                               </span>
                             )}
                           </div>
-                          <div
-                            className={`text-[10px] font-bold ${
-                              sc.grade.startsWith('A')
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : sc.grade.startsWith('B')
-                                ? 'text-blue-600 dark:text-blue-400'
-                                : sc.grade.startsWith('C') || sc.grade === 'D'
-                                ? 'text-amber-600 dark:text-amber-400'
-                                : 'text-red-600 dark:text-red-400'
-                            }`}
-                          >
+                          <div className="text-[10px] font-bold text-slate-500">
                             {sc.grade}
                           </div>
                         </td>
@@ -1127,11 +1540,11 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                             ઉત્તીર્ણ
                           </span>
                         ) : r.resultStatus === 'PASS_WITH_SIDDHI' ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-teal-100 text-teal-800 border border-teal-300 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30" title="સિદ્ધિ ગુણ (રેન્ક પાત્ર)">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-teal-100 text-teal-800 border border-teal-300 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30">
                             સિદ્ધિ ({r.totalSiddhiGiven}#)
                           </span>
                         ) : r.resultStatus === 'PASS_WITH_KRUPA' ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30" title="કૃપા ગુણ (આચાર્ય ક્વોટા)">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30">
                             કૃપા ({r.totalKrupaGiven}*)
                           </span>
                         ) : (
@@ -1149,7 +1562,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                             setSelectedStudentId(r.student.id);
                             setViewMode('progress_card');
                           }}
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-[#9d512d] text-slate-700 hover:text-white dark:bg-slate-800 dark:hover:bg-[#9d512d] dark:text-slate-300 dark:hover:text-white transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                           title="પ્રગતિ પત્રક જુઓ"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -1161,242 +1574,122 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
               </tbody>
             </table>
           </div>
-
-          {/* Quick Legend at bottom of table */}
-          <div className="p-3 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between text-[11px] text-slate-600 dark:text-slate-400">
-            <div className="flex items-center gap-4 flex-wrap">
-              <span><strong>સંકેતો:</strong></span>
-              <span className="text-teal-700 dark:text-teal-400 font-bold"># = સિદ્ધિ ગુણ (33% થી ઉપરના ટકા દીઠ 1M, મહત્તમ 15M - રેન્ક પાત્ર)</span>
-              <span className="text-amber-700 dark:text-amber-400 font-bold">* = કૃપા ગુણ (આચાર્યશ્રી ક્વોટા મહત્તમ 10M - રેન્ક અપાતો નથી)</span>
-              <span className="text-slate-700 dark:text-slate-300">નિયમ: વિષયમાં લઘુત્તમ 25% ગુણ હોવા જરૂરી</span>
-            </div>
-            <span>કુલ ગુણમાં સિદ્ધિ/કૃપા ગુણ ઉમેરાતા નથી</span>
-          </div>
         </div>
       )}
 
-      {/* VIEW 2: INDIVIDUAL STUDENT PROGRESS REPORT CARD */}
+      {/* VIEW 3: INDIVIDUAL STUDENT PROGRESS CARD */}
       {viewMode === 'progress_card' && activeStudentResult && (
-        <div className="space-y-4">
-          {/* Student Selector Carousel Bar */}
+        <div className="space-y-6">
           <div className="glass-card rounded-2xl border border-[#E2E8F0] dark:border-white/10 p-4 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-slate-700 dark:text-[#a99f91]">વિદ્યાર્થી પસંદ કરો:</span>
               <select
                 value={activeStudentResult.student.id}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
-                className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D] dark:focus:border-[#f59c73]"
+                className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#C45A2D]"
               >
                 {classResults.map((r) => (
                   <option key={r.student.id} value={r.student.id}>
-                    Roll {r.student.rollNumber || '-'} • {r.student.studentName} (GR: {r.student.grNumber || '-'})
+                    Roll {r.student.rollNumber || '-'} • {r.student.studentName} ({r.percentage}%)
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  const currIdx = classResults.findIndex((r) => r.student.id === activeStudentResult.student.id);
-                  if (currIdx > 0) {
-                    setSelectedStudentId(classResults[currIdx - 1].student.id);
-                  }
-                }}
-                disabled={classResults.findIndex((r) => r.student.id === activeStudentResult.student.id) === 0}
-                className="p-2 rounded-xl glass-card text-slate-700 dark:text-white hover:text-[#C45A2D] dark:hover:text-[#f59c73] transition-colors cursor-pointer disabled:opacity-40 border border-[#E2E8F0] dark:border-white/10"
-                title="પાછલો વિદ્યાર્થી"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => {
-                  const currIdx = classResults.findIndex((r) => r.student.id === activeStudentResult.student.id);
-                  if (currIdx < classResults.length - 1) {
-                    setSelectedStudentId(classResults[currIdx + 1].student.id);
-                  }
-                }}
-                disabled={classResults.findIndex((r) => r.student.id === activeStudentResult.student.id) === classResults.length - 1}
-                className="p-2 rounded-xl glass-card text-slate-700 dark:text-white hover:text-[#C45A2D] dark:hover:text-[#f59c73] transition-colors cursor-pointer disabled:opacity-40 border border-[#E2E8F0] dark:border-white/10"
-                title="આગલો વિદ્યાર્થી"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              onClick={() => handlePrintStudentCard(activeStudentResult)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl btn-terracotta text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>પ્રગતિ પત્રક પ્રિન્ટ (A4)</span>
+            </button>
           </div>
 
-          {/* Realistic Official Report Card Preview */}
-          <div className="max-w-4xl mx-auto bg-white text-slate-900 p-8 rounded-2xl shadow-2xl border-2 border-slate-900 space-y-6">
-            {/* School Header */}
-            <div className="text-center border-b-2 border-slate-900 pb-4">
-              <h1 className="text-2xl font-black text-blue-900 tracking-wide uppercase">
-                {school.schoolName}
-              </h1>
-              <div className="text-xs text-slate-600 mt-1 font-semibold">
-                {school.village ? `${school.village}, ` : ''}{school.taluka ? `${school.taluka}, ` : ''}{school.district} • શાળા DISE કોડ: <strong>{school.diseCode}</strong>
+          {/* Printable Card Preview Frame */}
+          <div className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-300 shadow-xl max-w-4xl mx-auto">
+            <div className="text-center border-b-2 border-slate-900 pb-4 mb-6">
+              <h2 className="text-xl sm:text-2xl font-black uppercase text-slate-900">{school.schoolName}</h2>
+              <p className="text-xs text-slate-600 mt-1">
+                {school.village ? school.village + ', ' : ''}{school.taluka ? school.taluka + ', ' : ''}{school.district} • DISE કોડ: <strong>{school.diseCode}</strong>
+              </p>
+              <span className="inline-block mt-3 px-4 py-1 rounded bg-slate-900 text-white text-xs font-black tracking-wide">
+                વાર્ષિક પ્રગતિ પત્રક • ધોરણ {selectedStandard} • વર્ષ ૨૦૨૬–૨૭
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs mb-6 font-medium">
+              <div>
+                <span className="text-slate-500 block text-[10px]">વિદ્યાર્થીનું નામ:</span>
+                <span className="font-bold text-slate-900 text-sm">{activeStudentResult.student.studentName}</span>
               </div>
-              <div className="inline-block mt-2 px-5 py-1 rounded bg-blue-900 text-white font-extrabold text-sm tracking-wide">
-                વાર્ષિક પ્રગતિ પત્રક (ANNUAL PROGRESS REPORT) • ધોરણ {selectedStandard} • શૈક્ષણિક વર્ષ ૨૦૨૬–૨૭
+              <div>
+                <span className="text-slate-500 block text-[10px]">G.R. નંબર:</span>
+                <span className="font-bold text-slate-900">{activeStudentResult.student.grNumber || '-'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">રોલ નંબર:</span>
+                <span className="font-bold text-slate-900">{activeStudentResult.student.rollNumber || '-'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">ધોરણ & વર્ગ:</span>
+                <span className="font-bold text-slate-900">{selectedStandard} ({activeStudentResult.student.section || 'A'})</span>
               </div>
             </div>
 
-            {/* Student Metadata Box */}
-            <div className="grid grid-cols-3 gap-3 bg-slate-50 border border-slate-900 p-3.5 rounded-lg text-xs font-semibold">
-              <div>
-                G.R. નંબર: <strong className="text-blue-900 font-mono text-sm">{activeStudentResult.student.grNumber || '-'}</strong>
-              </div>
-              <div>
-                રોલ નંબર: <strong className="text-blue-900 font-bold text-sm">{activeStudentResult.student.rollNumber || '-'}</strong>
-              </div>
-              <div>
-                ધોરણ & વર્ગ: <strong>{selectedStandard} ({activeStudentResult.student.section || activeStudentResult.student.division || 'A'})</strong>
-              </div>
-              <div className="col-span-2">
-                વિદ્યાર્થીનું નામ: <strong className="text-sm font-black text-slate-900">{activeStudentResult.student.studentName}</strong>
-              </div>
-              <div>
-                જન્મ તારીખ: <strong>{activeStudentResult.student.dob || '-'}</strong>
-              </div>
-            </div>
-
-            {/* Detailed 4-Component Examination Table */}
-            <div className="overflow-x-auto border border-slate-900 rounded-lg">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-900 border-b border-slate-900">
-                    <th className="py-2.5 px-3 border-r border-slate-900 w-10 text-center">ક્રમ</th>
-                    <th className="py-2.5 px-3 border-r border-slate-900">વિષયનું નામ</th>
-                    <th className="py-2.5 px-2 border-r border-slate-900 text-center w-24">
-                      પ્રથમ પરીક્ષા
-                      <div className="text-[10px] text-slate-500 font-normal">(૫૦ માંથી → ૧૦)</div>
-                    </th>
-                    <th className="py-2.5 px-2 border-r border-slate-900 text-center w-24">
-                      દ્વિતીય પરીક્ષા
-                      <div className="text-[10px] text-slate-500 font-normal">(૫૦ માંથી → ૧૦)</div>
-                    </th>
-                    <th className="py-2.5 px-2 border-r border-slate-900 text-center w-24">
-                      વાર્ષિક પરીક્ષા
-                      <div className="text-[10px] text-slate-500 font-normal">(૮૦ માંથી → ૬૦)</div>
-                    </th>
-                    <th className="py-2.5 px-2 border-r border-slate-900 text-center w-20">
-                      આંતરિક
-                      <div className="text-[10px] text-slate-500 font-normal">(૨૦ માંથી)</div>
-                    </th>
-                    <th className="py-2.5 px-2 border-r border-slate-900 text-center w-28 bg-blue-50 font-black">
-                      કુલ ગુણ
-                      <div className="text-[10px] text-blue-900 font-normal">(૧૦૦ માંથી)</div>
-                    </th>
-                    <th className="py-2.5 px-2 text-center w-16 font-bold">ગ્રેડ</th>
+            <table className="w-full text-left text-xs border-collapse border border-slate-300 mb-6">
+              <thead className="bg-slate-100 text-slate-800 text-center font-bold">
+                <tr>
+                  <th className="border border-slate-300 py-2 px-2 w-10">ક્રમ</th>
+                  <th className="border border-slate-300 py-2 px-3 text-left">વિષય</th>
+                  <th className="border border-slate-300 py-2 px-2">પ્રથમ (૫૦)</th>
+                  <th className="border border-slate-300 py-2 px-2">દ્વિતીય (૫૦)</th>
+                  <th className="border border-slate-300 py-2 px-2">વાર્ષિક (૮૦)</th>
+                  <th className="border border-slate-300 py-2 px-2">આંતરિક (૨૦)</th>
+                  <th className="border border-slate-300 py-2 px-3">કુલ (૧૦૦)</th>
+                  <th className="border border-slate-300 py-2 px-2">ગ્રેડ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeStudentResult.subjectScores.map((sc, idx) => (
+                  <tr key={sc.subjectId} className="text-center hover:bg-slate-50">
+                    <td className="border border-slate-300 py-2 px-2">{idx + 1}</td>
+                    <td className="border border-slate-300 py-2 px-3 text-left font-bold">{sc.subjectNameGu}</td>
+                    <td className="border border-slate-300 py-2 px-2">{sc.prathamRaw !== null ? sc.prathamRaw : '-'}</td>
+                    <td className="border border-slate-300 py-2 px-2">{sc.dwitiyaRaw !== null ? sc.dwitiyaRaw : '-'}</td>
+                    <td className="border border-slate-300 py-2 px-2">{sc.varshikRaw !== null ? sc.varshikRaw : '-'}</td>
+                    <td className="border border-slate-300 py-2 px-2">{sc.internalRaw !== null ? sc.internalRaw : '-'}</td>
+                    <td className="border border-slate-300 py-2 px-3 font-black text-sm">
+                      {formatSubjectScoreDisplay(sc)}
+                    </td>
+                    <td className="border border-slate-300 py-2 px-2 font-bold">{sc.grade}</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-300">
-                  {activeStudentResult.subjectScores.map((sc, idx) => (
-                    <tr key={sc.subjectId} className="hover:bg-slate-50">
-                      <td className="py-2 px-3 border-r border-slate-300 text-center font-bold">{idx + 1}</td>
-                      <td className="py-2 px-3 border-r border-slate-300 font-bold">
-                        {sc.subjectNameGu}
-                        <div className="text-[10px] text-slate-500 font-normal">{sc.subjectNameEn}</div>
-                      </td>
-                      <td className="py-2 px-2 border-r border-slate-300 text-center">
-                        {sc.prathamAbsent ? 'AB' : sc.prathamRaw !== null ? sc.prathamRaw : '-'}
-                        <div className="text-[10px] text-blue-900 font-bold">({sc.prathamWeighted})</div>
-                      </td>
-                      <td className="py-2 px-2 border-r border-slate-300 text-center">
-                        {sc.dwitiyaAbsent ? 'AB' : sc.dwitiyaRaw !== null ? sc.dwitiyaRaw : '-'}
-                        <div className="text-[10px] text-blue-900 font-bold">({sc.dwitiyaWeighted})</div>
-                      </td>
-                      <td className="py-2 px-2 border-r border-slate-300 text-center">
-                        {sc.varshikAbsent ? 'AB' : sc.varshikRaw !== null ? sc.varshikRaw : '-'}
-                        <div className="text-[10px] text-blue-900 font-bold">({sc.varshikWeighted})</div>
-                      </td>
-                      <td className="py-2 px-2 border-r border-slate-300 text-center font-bold">
-                        {sc.internalAbsent ? 'AB' : sc.internalRaw !== null ? sc.internalRaw : '-'}
-                      </td>
-                      <td className="py-2 px-2 border-r border-slate-300 text-center font-black text-sm bg-blue-50/50">
-                        {sc.siddhiMarksGiven > 0 && sc.krupaMarksGiven > 0 ? (
-                          <span>
-                            {sc.total100} + <span className="text-teal-700 font-bold">{sc.siddhiMarksGiven}#</span> + <span className="text-amber-700 font-bold">{sc.krupaMarksGiven}*</span> = 33
-                          </span>
-                        ) : sc.siddhiMarksGiven > 0 ? (
-                          <span>
-                            {sc.total100} + <span className="text-teal-700 font-bold">{sc.siddhiMarksGiven}#</span> = 33
-                          </span>
-                        ) : sc.krupaMarksGiven > 0 ? (
-                          <span>
-                            {sc.total100} + <span className="text-amber-700 font-bold">{sc.krupaMarksGiven}*</span> = 33
-                          </span>
-                        ) : (
-                          <span className={sc.needsReExam ? 'text-red-700' : ''}>{sc.total100}</span>
-                        )}
-                      </td>
-                      <td className="py-2 px-2 text-center font-black text-xs text-blue-900">{sc.grade}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
 
-            {/* Results Summary Box */}
-            <div className="grid grid-cols-5 gap-3 border-2 border-slate-900 p-4 rounded-lg bg-slate-50 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-4 rounded-xl bg-slate-100 border border-slate-300 text-center mb-8">
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-500">કુલ મેળવેલ ગુણ</div>
-                <div className="text-xl font-black text-blue-900 mt-0.5">
-                  {activeStudentResult.totalObtained} / {activeStudentResult.totalMax}
-                </div>
+                <div className="text-[10px] text-slate-500 font-bold">કુલ ગુણ</div>
+                <div className="text-lg font-black text-slate-900 mt-0.5">{activeStudentResult.totalObtained} / {activeStudentResult.totalMax}</div>
               </div>
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-500">ટકાવારી (%)</div>
-                <div className="text-xl font-black text-blue-900 mt-0.5">
-                  {activeStudentResult.percentage}%
-                </div>
+                <div className="text-[10px] text-slate-500 font-bold">ટકાવારી</div>
+                <div className="text-lg font-black text-[#9d512d] mt-0.5">{activeStudentResult.percentage}%</div>
               </div>
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-500">એકંદર ગ્રેડ</div>
-                <div className="text-xl font-black text-blue-900 mt-0.5">
-                  {activeStudentResult.overallGrade}
-                </div>
+                <div className="text-[10px] text-slate-500 font-bold">એકંદર ગ્રેડ</div>
+                <div className="text-lg font-black text-slate-900 mt-0.5">{activeStudentResult.overallGrade}</div>
               </div>
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-500">પરિણામ સ્થિતિ</div>
-                <div
-                  className={`text-xs font-black mt-1 ${
-                    activeStudentResult.resultStatus === 'PASS'
-                      ? 'text-emerald-700'
-                      : activeStudentResult.resultStatus === 'PASS_WITH_SIDDHI'
-                      ? 'text-teal-700'
-                      : activeStudentResult.resultStatus === 'PASS_WITH_KRUPA'
-                      ? 'text-amber-700'
-                      : 'text-red-700'
-                  }`}
-                >
-                  {activeStudentResult.resultStatusGu}
-                </div>
+                <div className="text-[10px] text-slate-500 font-bold">સ્થિતિ</div>
+                <div className="text-xs font-black text-emerald-700 mt-1">{activeStudentResult.resultStatusGu}</div>
               </div>
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-500">વર્ગમાં ક્રમાંક</div>
-                <div className="text-xl font-black text-slate-900 mt-0.5">
-                  {activeStudentResult.rankInClass ? `#${activeStudentResult.rankInClass}` : '-'}
-                </div>
+                <div className="text-[10px] text-slate-500 font-bold">વર્ગમાં ક્રમ</div>
+                <div className="text-lg font-black text-slate-900 mt-0.5">{activeStudentResult.rankInClass ? `#${activeStudentResult.rankInClass}` : '-'}</div>
               </div>
             </div>
 
-            {/* Notes & Grade scale */}
-            <div className="border border-dashed border-slate-400 p-2.5 rounded text-[11px] text-slate-600 space-y-1">
-              <div className="flex justify-between">
-                <span><strong>ગ્રેડ માપદંડ:</strong> 91-100: A1 | 81-90: A2 | 71-80: B1 | 61-70: B2 | 51-60: C1 | 41-50: C2 | 33-40: D | 21-32: E1</span>
-                <span><strong>પાસ ગુણ:</strong> ૩૩%</span>
-              </div>
-              <div className="text-[10px] text-slate-500">
-                • <strong># (સિદ્ધિ ગુણ):</strong> એકંદરે ૩૩% ઉપરના ટકા દીઠ ૧ ગુણ (મહત્તમ ૧૫ ગુણ) • રેન્ક પાત્ર.
-                <br />
-                • <strong>* (કૃપા ગુણ):</strong> આચાર્યશ્રી દ્વારા વધુમાં વધુ ૧૦ ગુણ સુધી • રેન્ક અપાતો નથી.
-                <br />
-                • શરત: જે વિષયમાં ઓછામાં ઓછા ૨૫% ગુણ મેળવેલ હોય તેમાં જ સિદ્ધિ/કૃપા ગુણ મળવાપાત્ર છે.
-              </div>
-            </div>
-
-            {/* Signatures */}
             <div className="pt-8 flex justify-between items-center text-xs font-bold text-slate-800 px-6">
               <div className="border-t-2 border-dashed border-slate-700 pt-1.5 w-36 text-center">
                 વર્ગ શિક્ષકની સહી
@@ -1412,18 +1705,18 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
         </div>
       )}
 
-      {/* GSEB Official Rules Modal */}
+      {/* Rules & What to Provide Modal */}
       {showRulesModal && (
         <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/20 rounded-3xl max-w-2xl w-full p-6 text-slate-800 dark:text-white space-y-5 shadow-2xl animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/20 rounded-3xl max-w-3xl w-full p-6 text-slate-800 dark:text-white space-y-5 shadow-2xl animate-in fade-in">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                   <Award className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-slate-900 dark:text-white">GSEB પરિણામ, સિદ્ધિ અને કૃપા ગુણના નિયમો</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">ગુજરાત માધ્યમિક અને ઉચ્ચતર માધ્યમિક શિક્ષણ બોર્ડ (ધોરણ ૯ અને ૧૧)</p>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">ધોરણ ૯ થી ૧૨ પરિણામ ફોર્મ્યુલા & એક્સેલ માર્ગદર્શન</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">GSEB સત્તાવાર નિયમો અને તમારી એક્સેલ ફાઈલ સેટિંગ્સ</p>
                 </div>
               </div>
               <button
@@ -1434,43 +1727,64 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
               </button>
             </div>
 
-            <div className="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300 max-h-[460px] overflow-y-auto pr-2">
+            <div className="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300 max-h-[500px] overflow-y-auto pr-2">
+              {/* Highlighted section answering what to provide */}
+              <div className="bg-[#FBE9DF] dark:bg-[#9d512d]/20 p-4 rounded-2xl border border-[#C45A2D]/40 text-slate-900 dark:text-white">
+                <h4 className="font-extrabold text-[#C45A2D] dark:text-[#f59c73] text-sm mb-2 flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4" />
+                  તમારે આ માટે શું આપવું/પૂરૂ પાડવું જોઈએ? (What should you provide?)
+                </h4>
+                <p className="mb-2.5 leading-normal">
+                  અમારી સિસ્ટમમાં ધોરણ ૯, ૧૦, ૧૧ (સામાન્ય/વિજ્ઞાન) અને ૧૨ (સામાન્ય/વિજ્ઞાન) ના તમામ ગુજરાત બોર્ડ ફોર્મ્યુલા તૈયાર છે. તમારી શાળાની ચોક્કસ જરૂરિયાત મુજબ નીચેની વિગતો શેર કરી શકો છો:
+                </p>
+                <div className="space-y-2">
+                  <div className="p-2.5 bg-white/70 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-white/10">
+                    <strong>૧. તમારી એક્સેલ ફાઈલ (.xlsx અથવા સ્ક્રીનશોટ):</strong>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                      તમે હાલમાં જે એક્સેલ શીટ વાપરો છો તેની કોપી અથવા કૉલમના નામો (દા.ત. Roll, Name, Pratham, Dwitiya, Ekam 1, Ekam 2, Internal, Annual).
+                    </p>
+                  </div>
+                  <div className="p-2.5 bg-white/70 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-white/10">
+                    <strong>૨. ગુણભાર અને ગણતરી પદ્ધતિ (Weightage Formula):</strong>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                      જો તમારી શાળામાં ૧૦% + ૧૦% + ૬૦% + ૨૦% થી અલગ ટકાવારી કે એકમ કસોટીની એવરેજ ગણવામાં આવતી હોય તો તે ફોર્મ્યુલા.
+                    </p>
+                  </div>
+                  <div className="p-2.5 bg-white/70 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-white/10">
+                    <strong>૩. ધોરણ ૧૧ & ૧૨ ના વિષયો (Subjects & Streams):</strong>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                      તમારી શાળામાં કોમર્સ, આર્ટ્સ કે સાયન્સમાં જે વૈકલ્પિક વિષયો (દા.ત. કમ્પ્યુટર, એસ.પી., મનોવિજ્ઞાન) ચાલતા હોય તેની યાદી.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Standard-wise formula breakdown */}
               <div className="bg-slate-50 dark:bg-slate-800/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                <h4 className="font-bold text-[#9d512d] dark:text-[#f59c73] text-sm mb-1.5">૧. વાર્ષિક પરિણામ ગુણભાર (Weightage Formula)</h4>
+                <h4 className="font-bold text-[#9d512d] dark:text-[#f59c73] text-sm mb-1.5">ધોરણ ૯ અને ૧૧ (સામાન્ય પ્રવાહ) ફોર્મ્યુલા</h4>
                 <ul className="list-disc list-inside space-y-1 text-slate-700 dark:text-slate-300">
-                  <li><strong>પ્રથમ સત્રાંત પરીક્ષા (૫૦ ગુણ):</strong> ૧૦% ગુણભાર (મેળવેલ ગુણ / ૫)</li>
-                  <li><strong>દ્વિતીય સત્રાંત પરીક્ષા (૫૦ ગુણ):</strong> ૧૦% ગુણભાર (મેળવેલ ગુણ / ૫)</li>
-                  <li><strong>વાર્ષિક પરીક્ષા (૮૦ ગુણ):</strong> ૬૦% ગુણભાર (મેળવેલ ગુણ / ૮૦ × ૬૦)</li>
-                  <li><strong>આંતરિક મૂલ્યાંકન (૨૦ ગુણ):</strong> ૨૦% ગુણભાર (મેળવેલ ગુણ સીધા ઉમેરાય)</li>
-                  <li><strong>વાર્ષિક કુલ ગુણ:</strong> ૧૦ + ૧૦ + ૬૦ + ૨૦ = ૧૦૦ ગુણ</li>
+                  <li><strong>પ્રથમ પરીક્ષા (૫૦ ગુણ):</strong> ૧૦% ગુણભાર (ગુણ / ૫)</li>
+                  <li><strong>દ્વિતીય પરીક્ષા (૫૦ ગુણ):</strong> ૧૦% ગુણભાર (ગુણ / ૫)</li>
+                  <li><strong>વાર્ષિક પરીક્ષા (૮૦ ગુણ):</strong> ૬૦% ગુણભાર (ગુણ / ૮૦ × ૬૦)</li>
+                  <li><strong>આંતરિક મૂલ્યાંકન (૨૦ ગુણ):</strong> ૨૦% ગુણભાર (એકમ કસોટી ૧ & ૨ અથવા સીધા ગુણ)</li>
+                  <li><strong>વાર્ષિક કુલ:</strong> ૧૦ + ૧૦ + ૬૦ + ૨૦ = ૧૦૦ ગુણ</li>
                 </ul>
               </div>
 
               <div className="bg-teal-50 dark:bg-teal-950/40 p-3.5 rounded-xl border border-teal-200 dark:border-teal-500/30">
-                <h4 className="font-bold text-teal-800 dark:text-teal-300 text-sm mb-1.5">૨. સિદ્ધિ ગુણ (Siddhi Marks - #) ના નિયમો</h4>
+                <h4 className="font-bold text-teal-800 dark:text-teal-300 text-sm mb-1.5">ધોરણ ૧૧ અને ૧૨ (વિજ્ઞાન પ્રવાહ) ફોર્મ્યુલા</h4>
                 <ul className="list-disc list-inside space-y-1 text-teal-900 dark:text-teal-100">
-                  <li>જો વિદ્યાર્થીને એકંદરે ૩૩% થી વધુ ગુણ મળ્યા હોય, તો ૩૩% થી ઉપરના <strong>દરેક ટકા દીઠ ૧ ગુણ</strong>, વધુમાં વધુ <strong>૧૫ ગુણની મર્યાદામાં</strong> સિદ્ધિ ગુણ મળે છે.</li>
-                  <li>સૂત્ર: <code className="bg-teal-100 dark:bg-black/40 px-1.5 py-0.5 rounded text-teal-800 dark:text-teal-300 font-mono">Siddhi Pool = Min(15, Floor(Overall Percentage - 33))</code></li>
-                  <li><strong>રેન્ક પાત્રતા:</strong> સિદ્ધિ ગુણ મેળવનાર વિદ્યાર્થીઓ વર્ગમાં <strong>રેન્ક (Rank) મેળવવા માટે પાત્ર ગણાય છે</strong>.</li>
-                  <li>સિદ્ધિ ગુણ પરિણામ પત્રકમાં <strong>#</strong> ચિહ્ન સાથે અલગથી દર્શાવાય છે.</li>
+                  <li>ભૌતિકવિજ્ઞાન, રસાયણવિજ્ઞાન, જીવવિજ્ઞાનમાં <strong>૫૦ ગુણ થિયરી + ૫૦ ગુણ પ્રાયોગિક (Practical)</strong>.</li>
+                  <li>પ્રાયોગિક ગુણ વાર્ષિક પરિણામમાં ૨૦% થી ૨૫% ગુણભાર તરીકે ગણાય છે.</li>
                 </ul>
               </div>
 
               <div className="bg-amber-50 dark:bg-amber-950/40 p-3.5 rounded-xl border border-amber-200 dark:border-amber-500/30">
-                <h4 className="font-bold text-amber-800 dark:text-amber-300 text-sm mb-1.5">૩. કૃપા ગુણ (Grace Marks - *) ના નિયમો</h4>
+                <h4 className="font-bold text-amber-800 dark:text-amber-300 text-sm mb-1.5">સિદ્ધિ (#) અને કૃપા (*) ગુણ</h4>
                 <ul className="list-disc list-inside space-y-1 text-amber-900 dark:text-amber-100">
-                  <li>સિદ્ધિ ગુણ વાપર્યા પછી પણ જો વિદ્યાર્થી કોઈ વિષયમાં નાપાસ થતો હોય, તો આચાર્યશ્રી દ્વારા <strong>કુલ ૧૦ ગુણની મર્યાદામાં</strong> કૃપા ગુણ આપી શકાય છે.</li>
-                  <li><strong>રેન્ક અપાત્રતા:</strong> કૃપા ગુણ મેળવનાર વિદ્યાર્થીઓ વર્ગમાં <strong>રેન્ક (Rank) મેળવવા માટે પાત્ર રહેતા નથી</strong> (રેન્ક સ્થાને '-' દર્શાવાય છે).</li>
-                  <li>કૃપા ગુણ પરિણામ પત્રકમાં <strong>*</strong> ચિહ્ન સાથે અલગથી દર્શાવાય છે.</li>
-                </ul>
-              </div>
-
-              <div className="bg-rose-50 dark:bg-red-950/40 p-3.5 rounded-xl border border-rose-200 dark:border-red-500/30">
-                <h4 className="font-bold text-rose-800 dark:text-red-300 text-sm mb-1.5">૪. ૨૫% લઘુત્તમ શરત અને પુનઃપરીક્ષા (Re-examination)</h4>
-                <ul className="list-disc list-inside space-y-1 text-rose-900 dark:text-red-100">
-                  <li>સિદ્ધિ ગુણ કે કૃપા ગુણ મેળવવા માટે વિદ્યાર્થીએ સંબંધિત વિષયમાં <strong>ઓછામાં ઓછા ૨૫% ગુણ (૨૫ ગુણ)</strong> મેળવેલા હોવા જરૂરી છે. ૨૫ થી ઓછા ગુણ હોય તો સિદ્ધિ કે કૃપા ગુણ આપી શકાતા નથી.</li>
-                  <li>સિદ્ધિ અને કૃપા ગુણ બંને વિદ્યાર્થીના કુલ ગુણના સરવાળામાં ઉમેરાતા નથી.</li>
-                  <li>ગ્રેસિંગ પછી પણ પાસ ન થનાર વિદ્યાર્થીએ શાળા કક્ષાએ પુનઃપરીક્ષા (પૂરક પરીક્ષા) આપવાની રહેશે.</li>
+                  <li><strong>સિદ્ધિ ગુણ (#):</strong> ૩૩% થી ઉપરના દરેક ટકા દીઠ ૧ ગુણ (મહત્તમ ૧૫ ગુણ). રેન્ક માટે પાત્ર.</li>
+                  <li><strong>કૃપા ગુણ (*):</strong> આચાર્યશ્રી દ્વારા કુલ ૧૦ ગુણ સુધી. રેન્ક માટે અપાત્ર.</li>
+                  <li><strong>૨૫% શરત:</strong> જે વિષયમાં ઓછામાં ઓછા ૨૫ ગુણ હોય તેમાં જ સિદ્ધિ કે કૃપા ગુણ આપી શકાય.</li>
                 </ul>
               </div>
             </div>
@@ -1486,6 +1800,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           </div>
         </div>
       )}
+
       {/* Send Exam Result to Parents Modal */}
       {sendResultModalOpen && (
         <SendExamResultModal
@@ -1494,7 +1809,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           school={school}
           students={students}
           marks={marks}
-          initialStandard={selectedStandard}
+          initialStandard={currentStdInfo.baseStd}
         />
       )}
     </div>

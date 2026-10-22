@@ -163,20 +163,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const mainTabs: { id: ActiveTabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'ડેશબોર્ડ', icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
-    { id: 'notice_board', label: '📢 નોટિસ બોર્ડ', icon: <Bell className="w-3.5 h-3.5 text-amber-500" /> },
     { id: 'students', label: 'વિદ્યાર્થીઓ', icon: <Users className="w-3.5 h-3.5" /> },
-    { id: 'admissions', label: 'નવા પ્રવેશ', icon: <UserPlus className="w-3.5 h-3.5 text-blue-500" /> },
+    { id: 'results', label: '📊 પરિણામ (Results)', icon: <Award className="w-3.5 h-3.5 text-amber-500" /> },
     { id: 'staff', label: 'સ્ટાફ', icon: <UserCheck className="w-3.5 h-3.5" /> },
-    { id: 'birthdays', label: '🎂 જન્મદિવસ', icon: <Cake className="w-3.5 h-3.5 text-pink-500" /> },
-    { id: 'exams', label: 'પરીક્ષાઓ & કસોટી', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'exam_file', label: '📁 પરીક્ષા ફાઇલ', icon: <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-500" /> },
+    { id: 'admissions', label: 'નવા પ્રવેશ', icon: <UserPlus className="w-3.5 h-3.5 text-blue-500" /> },
+    { id: 'birthdays', label: '🎂 જન્મદિવસ', icon: <Cake className="w-3.5 h-3.5 text-pink-500" /> },
     { id: 'online_exams', label: '📝 ઓનલાઇન MCQ', icon: <FileText className="w-3.5 h-3.5 text-emerald-400" /> },
-    { id: 'results', label: 'પરિણામ', icon: <Award className="w-3.5 h-3.5" /> },
     { id: 'parent_messaging', label: 'વાલી સંચાર', icon: <MessageSquare className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> },
     { id: 'idcards', label: 'ID Cards', icon: <CreditCard className="w-3.5 h-3.5" /> },
   ];
 
   const moreTabs: { id: ActiveTabType; label: string; icon: React.ReactNode }[] = [
+    { id: 'exams', label: 'પરીક્ષાઓ & કસોટી', icon: <ClipboardList className="w-3.5 h-3.5 text-orange-500" /> },
     { id: 'certificates', label: 'બોનાફાઈડ / પ્રમાણપત્ર', icon: <FileText className="w-3.5 h-3.5" /> },
     { id: 'reports', label: 'શાળા અહેવાલો / Excel', icon: <BarChart3 className="w-3.5 h-3.5" /> },
     { id: 'profile', label: 'શાળા પ્રોફાઇલ', icon: <Building className="w-3.5 h-3.5" /> },
@@ -823,17 +822,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <button
-            onClick={() => handleSelectTab('exams')}
+            onClick={() => handleSelectTab('results')}
             className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition-all cursor-pointer ${
-              activeTab === 'exams'
+              activeTab === 'results'
                 ? 'bg-[#FBE9DF] text-[#C45A2D] dark:bg-[#9d512d] dark:text-white font-bold shadow-xs'
                 : 'text-[#64748B] hover:text-[#0F172A] dark:text-[#a99f91] dark:hover:text-white font-medium'
             }`}
           >
-            <div className={`p-1 rounded-xl ${activeTab === 'exams' ? 'text-[#C45A2D] dark:text-white' : 'bg-transparent'}`}>
-              <ClipboardList className="w-4 h-4" />
+            <div className={`p-1 rounded-xl ${activeTab === 'results' ? 'text-[#C45A2D] dark:text-white' : 'bg-transparent'}`}>
+              <Award className="w-4 h-4 text-amber-500" />
             </div>
-            <span className="text-[10px]">પરીક્ષા</span>
+            <span className="text-[10px]">પરિણામ</span>
           </button>
 
           <button
