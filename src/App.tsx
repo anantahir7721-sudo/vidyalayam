@@ -21,6 +21,7 @@ import { SchoolProfileManager } from './components/SchoolProfileManager';
 import { OnlineExamManager } from './components/OnlineExamManager';
 import { ExamFileTab } from './components/ExamFileTab';
 import { AdmissionManager } from './components/AdmissionManager';
+import { OutwardLetterManager } from './components/OutwardLetterManager';
 import { SchoolNoticeBoardTab } from './components/SchoolNoticeBoardTab';
 import { StudentPortal } from './components/StudentPortal';
 import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
@@ -1013,6 +1014,13 @@ export default function App() {
             <CertificatesManager
               school={school}
               students={students}
+              onBack={navigateBack}
+            />
+          )}
+
+          {activeTab === 'outward_letters' && (
+            <OutwardLetterManager
+              school={school}
               onBack={navigateBack}
             />
           )}

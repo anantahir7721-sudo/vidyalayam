@@ -35,6 +35,7 @@ import {
   Bell,
   Cake,
   PartyPopper,
+  Send,
 } from 'lucide-react';
 import { ActiveTabType } from './Navbar';
 import { VidyalayamLogo } from './VidyalayamLogo';
@@ -353,6 +354,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       badge: 'સત્તાવાર દસ્તાવેજ',
       color: 'hover:border-indigo-500/40',
       actionText: 'પ્રમાણપત્ર કાઢો',
+    },
+    {
+      id: 'outward_letters' as ActiveTabType,
+      title: '✉️ જાવક પત્ર & લેટરહેડ (Outward Letters)',
+      desc: 'A4 PNG લેટરહેડ અને આચાર્યની સહી (With/Without Sign) સાથે સત્તાવાર જાવક પત્ર બનાવો અને રજિસ્ટર હિસ્ટ્રી સાચવો.',
+      icon: <Send className="w-5 h-5 text-blue-500" />,
+      badge: 'Letterhead & Sign PDF',
+      color: 'hover:border-blue-500/40',
+      actionText: 'જાવક પત્ર લખો',
     },
     {
       id: 'reports' as ActiveTabType,

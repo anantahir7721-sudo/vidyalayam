@@ -545,6 +545,39 @@ export interface AppNotification {
   metadata?: Record<string, any>;
 }
 
+// Outward Letter (જાવક પત્ર) Interfaces
+export interface OutwardLetterSettings {
+  letterheadUrl?: string; // Base64 data URL or uploaded image URL of A4 PNG letterhead
+  topMarginMm?: number; // Distance in mm from top of A4 to start letter text (default ~48mm for pre-printed letterhead)
+  bottomMarginMm?: number; // Distance in mm from bottom of A4 for footer (default ~25mm)
+  leftMarginMm?: number; // Left margin in mm (default 20mm)
+  rightMarginMm?: number; // Right margin in mm (default 20mm)
+  principalSignUrl?: string; // Base64 or URL of transparent signature image
+  principalName?: string; // Name of principal / signatory
+  principalDesignation?: string; // Designation e.g. "આચાર્યશ્રી"
+  stampUrl?: string; // Optional school stamp image
+  outwardPrefix?: string; // Prefix e.g. "શાળા/જાવક" or "સર્વ/જાવક"
+  currentOutwardNumber?: number; // Auto increment counter
+}
+
+export interface OutwardLetter {
+  id: string; // Unique doc ID
+  schoolId: string;
+  outwardNumber: string; // જાવક નંબર (e.g. "શાળા/જાવક/૨૦૨૬-૨૭/૧૨૫")
+  letterDate: string; // તારીખ (YYYY-MM-DD or DD/MM/YYYY)
+  recipientName: string; // પ્રતિ / મેળવનાર (e.g. "જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી")
+  recipientAddress?: string; // સરનામું / તાલુકો / જિલ્લો
+  subject: string; // વિષય
+  reference?: string; // સંદર્ભ (optional)
+  content: string; // પત્રનું મુખ્ય લખાણ (Body text / paragraphs)
+  copyTo?: string[]; // નકલ રવાના (optional)
+  signatoryName?: string; // સહી કરનારનું નામ
+  signatoryDesignation?: string; // સહી કરનારનો હોદ્દો
+  includeSignByDefault?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 declare global {
   interface Window {
     AndroidBridge?: NativeAndroidBridge;

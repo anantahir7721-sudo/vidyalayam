@@ -31,6 +31,7 @@ import {
   Settings,
   Cake,
   FileSpreadsheet,
+  Send,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -54,6 +55,7 @@ export type ActiveTabType =
   | 'parent_messaging'
   | 'idcards'
   | 'certificates'
+  | 'outward_letters'
   | 'reports'
   | 'profile'
   | 'subjects'
@@ -175,6 +177,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   const moreTabs: { id: ActiveTabType; label: string; icon: React.ReactNode }[] = [
+    { id: 'outward_letters', label: '✉️ જાવક પત્ર (Outward Letter)', icon: <Send className="w-3.5 h-3.5 text-blue-500" /> },
     { id: 'exams', label: 'પરીક્ષાઓ & કસોટી', icon: <ClipboardList className="w-3.5 h-3.5 text-orange-500" /> },
     { id: 'certificates', label: 'બોનાફાઈડ / પ્રમાણપત્ર', icon: <FileText className="w-3.5 h-3.5" /> },
     { id: 'reports', label: 'શાળા અહેવાલો / Excel', icon: <BarChart3 className="w-3.5 h-3.5" /> },

@@ -161,6 +161,11 @@ service cloud.firestore {
         allow read, write, delete: if true;
       }
 
+      // Subcollection: Outward Letters (જાવક પત્રો)
+      match /outward_letters/{letterId} {
+        allow read, write, delete: if isSchoolOwner(schoolId) || isAdmin();
+      }
+
       // All other school-specific subcollections
       match /{allChildren=**} {
         allow read: if isSchoolOwner(schoolId) || isAdmin();
