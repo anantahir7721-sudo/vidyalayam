@@ -553,10 +553,13 @@ export interface OutwardLetterSettings {
   leftMarginMm?: number; // Left margin in mm (default 20mm)
   rightMarginMm?: number; // Right margin in mm (default 20mm)
   principalSignUrl?: string; // Base64 or URL of transparent signature image
+  principalSignWidthMm?: number; // Width of sign in mm on A4 (e.g. 20mm to 80mm, default 38mm)
   principalName?: string; // Name of principal / signatory
   principalDesignation?: string; // Designation e.g. "આચાર્યશ્રી"
   stampUrl?: string; // Optional school stamp image
-  outwardPrefix?: string; // Prefix e.g. "શાળા/જાવક" or "સર્વ/જાવક"
+  outwardPrefix?: string; // Prefix e.g. "સ.હા.લા/૨૦૨૬/" or "શાળા/જાવક/૨૦૨૬-૨૭/"
+  outwardStartingNumber?: number; // Starting sequence counter (default 1)
+  outwardPadDigits?: number; // Padding digits (default 3 for 001 / ૦૦૧)
   currentOutwardNumber?: number; // Auto increment counter
 }
 

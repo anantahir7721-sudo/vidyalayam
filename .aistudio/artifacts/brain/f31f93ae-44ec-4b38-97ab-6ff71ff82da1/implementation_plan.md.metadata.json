@@ -1,6 +1,6 @@
 {
-  "summary":  "Restructured the 'પ્રતિ' (Recipient) block in Outward Letter module into 3 separate lines according to official Gujarati administrative standards:\n1. પ્રતિ,\n2. [હોદ્દેદારશ્રી] (દા.ત. જિલ્લા શિક્ષણાધિકારીશ્રી,)\n3. [કચેરીનું નામ] (દા.ત. જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી)\n4. [સરનામું] (દા.ત. જિલ્લા સેવા સદન, ભુજ - કચ્છ.)\nUpdated data types, presets, form fields, print HTML generator, A4 modal preview, mini-preview, and register list.",
-  "updatedAt":  "2026-10-23T16:05:51.773144657Z",
+  "summary":  "Implemented Outward Number custom prefix and smart 3-digit auto-increment (e.g. સ.હા.લા/૨૦૨૬/૦૦૧ -> ૦૦૨), Principal's Signature Size adjusting options (slider and presets with A4 sheet preview), and fixed the full A4 Sheet preview layout on mobile screens with responsive auto-fit scaling.",
+  "updatedAt":  "2026-10-23T16:53:43.716555890Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

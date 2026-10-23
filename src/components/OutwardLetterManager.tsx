@@ -34,6 +34,11 @@ import {
   X,
   MoveVertical,
   Check,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Minimize2,
+  Hash,
 } from 'lucide-react';
 
 interface OutwardLetterManagerProps {
@@ -139,18 +144,27 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<'register' | 'new_letter' | 'settings'>('register');
 
+  // Utility to convert Gujarati digits to English for robust math/parsing
+  const toEnglishDigits = (str: string): string => {
+    const gujarati = ['૦', '૧', '૨', '૩', '૪', '૫', '૬', '૭', '૮', '૯'];
+    return String(str || '').replace(/[૦-૯]/g, (d) => String(gujarati.indexOf(d)));
+  };
+
   // Letters state
   const [letters, setLetters] = useState<OutwardLetter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Settings state (Letterhead, Sign, Margins)
+  // Settings state (Letterhead, Sign, Margins, Prefix & Auto-Numbering)
   const [settings, setSettings] = useState<OutwardLetterSettings>({
     topMarginMm: 62, // Defaults calibrated for standard official letterheads
     bottomMarginMm: 32, // Defaults calibrated to clear standard footers
     leftMarginMm: 22,
     rightMarginMm: 22,
-    outwardPrefix: 'શાળા/જાવક',
+    outwardPrefix: 'સ.હા.લા/૨૦૨૬/', // Configurable prefix e.g. "સ.હા.લા/૨૦૨૬/"
+    outwardStartingNumber: 1, // Start counter
+    outwardPadDigits: 3, // 3-digit pad: ૦૦૧, ૦૦૨
+    principalSignWidthMm: 38, // Default signature width on A4 (in mm)
     principalDesignation: 'આચાર્યશ્રી',
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -184,6 +198,9 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   const [previewWithSign, setPreviewWithSign] = useState<boolean>(true);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const letterA4Ref = useRef<HTMLDivElement>(null);
+  const modalBodyRef = useRef<HTMLDivElement>(null);
+  const [previewScaleMode, setPreviewScaleMode] = useState<'fit' | 'actual'>('fit');
+  const [computedPreviewScale, setComputedPreviewScale] = useState<number>(0.5);
 
   // Digital Signature Canvas State
   const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -206,6 +223,10 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
           bottomMarginMm: saved.bottomMarginMm ?? 32,
           leftMarginMm: saved.leftMarginMm ?? 22,
           rightMarginMm: saved.rightMarginMm ?? 22,
+          outwardPrefix: saved.outwardPrefix || prev.outwardPrefix || 'સ.હા.લા/૨૦૨૬/',
+          outwardStartingNumber: saved.outwardStartingNumber ?? 1,
+          outwardPadDigits: saved.outwardPadDigits ?? 3,
+          principalSignWidthMm: saved.principalSignWidthMm ?? 38,
           principalName: saved.principalName || school.principalName || '',
           principalDesignation: saved.principalDesignation || 'આચાર્યશ્રી',
         }));
@@ -226,13 +247,73 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     };
   }, [school?.id]);
 
-  // Next Auto Outward Number Generator
-  const generateNextOutwardNumber = useCallback(() => {
-    const prefix = settings.outwardPrefix || 'શાળા/જાવક';
-    const year = school.academicYear || '૨૦૨૬-૨૭';
-    const nextSeq = letters.length + 1;
-    return `${prefix}/${year}/${nextSeq}`;
-  }, [settings.outwardPrefix, school.academicYear, letters.length]);
+  // Next Auto Outward Number Generator with Smart Prefix & Zero Padding
+  const generateNextOutwardNumber = useCallback((customPrefix?: string, customPad?: number, customStart?: number) => {
+    const rawPrefix = (customPrefix !== undefined ? customPrefix : (settings.outwardPrefix || 'સ.હા.લા/૨૦૨૬/')).trim();
+    // Normalize prefix: if it doesn't end with '/' or '-', append '/'
+    const prefix = rawPrefix.endsWith('/') || rawPrefix.endsWith('-') ? rawPrefix : `${rawPrefix}/`;
+    
+    const padDigits = customPad !== undefined ? customPad : (settings.outwardPadDigits ?? 3);
+    const startNum = customStart !== undefined ? customStart : (settings.outwardStartingNumber ?? 1);
+    
+    // Scan saved letters to find highest sequence number with this prefix
+    let maxSequence = startNum - 1;
+    const engPrefix = toEnglishDigits(prefix).toLowerCase();
+    
+    letters.forEach((item) => {
+      const engOutward = toEnglishDigits(item.outwardNumber || '').toLowerCase().trim();
+      if (engOutward.startsWith(engPrefix)) {
+        const suffix = engOutward.slice(engPrefix.length).trim();
+        const match = suffix.match(/^(\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxSequence) {
+            maxSequence = num;
+          }
+        }
+      } else {
+        // Fallback: check if the number ends with digits
+        const match = engOutward.match(/(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxSequence) {
+            maxSequence = num;
+          }
+        }
+      }
+    });
+    
+    const nextSeq = Math.max(startNum, maxSequence + 1);
+    const padded = String(nextSeq).padStart(padDigits, '0');
+    const gujaratiPadded = toGujaratiDigits(padded);
+    
+    return `${prefix}${gujaratiPadded}`;
+  }, [settings.outwardPrefix, settings.outwardPadDigits, settings.outwardStartingNumber, letters]);
+
+  // Calculate Responsive A4 Scale for Modal Preview so entire page fits on screen without horizontal scroll
+  useEffect(() => {
+    if (!previewLetter) return;
+    const calculateScale = () => {
+      if (!modalBodyRef.current) return;
+      const containerWidth = modalBodyRef.current.clientWidth;
+      if (previewScaleMode === 'actual') {
+        setComputedPreviewScale(1);
+        return;
+      }
+      // Target A4 width is 794px. Usable width is containerWidth - padding (approx 24px)
+      const usableWidth = Math.max(260, containerWidth - 28);
+      const scale = Math.min(1, usableWidth / 794);
+      setComputedPreviewScale(scale);
+    };
+
+    calculateScale();
+    const timer = setTimeout(calculateScale, 80);
+    window.addEventListener('resize', calculateScale);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', calculateScale);
+    };
+  }, [previewLetter, previewScaleMode]);
 
   // Switch to New Letter tab
   const handleStartNewLetter = () => {
@@ -562,8 +643,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       ? `
         <div style="text-align: center; display: inline-block; min-width: 200px;">
           <p style="margin: 0 0 4px 0; font-weight: 700; font-size: 13.5px; color: #0f172a;">લિ. આપનો વિશ્વાસુ,</p>
-          <div style="height: 52px; display: flex; align-items: center; justify-content: center; margin: 4px 0;">
-            <img src="${settings.principalSignUrl}" style="max-height: 50px; max-width: 160px; object-fit: contain;" />
+          <div style="min-height: 46px; display: flex; align-items: center; justify-content: center; margin: 4px 0;">
+            <img src="${settings.principalSignUrl}" style="width: ${settings.principalSignWidthMm ?? 38}mm; max-height: 30mm; object-fit: contain; margin: 0 auto;" />
           </div>
           <p style="margin: 4px 0 0 0; font-weight: 800; font-size: 14.5px; color: #0f172a;">(${letter.signatoryName || settings.principalName || school.principalName || ''})</p>
           <p style="margin: 2px 0 0 0; font-size: 12.5px; color: #334155; font-weight: 600;">${letter.signatoryDesignation || 'આચાર્યશ્રી'}</p>
@@ -787,12 +868,27 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       }
 
       const element = letterA4Ref.current;
-      const canvas = await html2canvas(element, {
-        scale: 3, // Ultra crisp resolution
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-      });
+      // Temporarily reset transform for unscaled crisp capture
+      const originalTransform = element.style.transform;
+      const originalTransformOrigin = element.style.transformOrigin;
+      element.style.transform = 'none';
+      element.style.transformOrigin = 'top left';
+
+      let canvas: HTMLCanvasElement;
+      try {
+        canvas = await html2canvas(element, {
+          scale: 2.5, // Crisp 300 DPI equivalent
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: 794,
+          windowHeight: 1123,
+        });
+      } finally {
+        // Always restore transform
+        element.style.transform = originalTransform;
+        element.style.transformOrigin = originalTransformOrigin;
+      }
 
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
       const pdf = new jsPDF({
@@ -1139,25 +1235,48 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
               {/* Grid 1: Outward Number & Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-black text-slate-700 dark:text-slate-300 block mb-1.5">
-                    ૧. જાવક નંબર (Outward Number) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-black text-slate-700 dark:text-slate-300">
+                      ૧. જાવક નંબર (Outward Number) *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('settings')}
+                      className="text-[11px] text-[#C45A2D] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                      title="જાવક પ્રીફિક્સ સેટિંગ્સ બદલવા અહીં ક્લિક કરો"
+                    >
+                      <Settings className="w-3 h-3" />
+                      <span>પ્રીફિક્સ સેટિંગ્સ</span>
+                    </button>
+                  </div>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={outwardNumber}
                       onChange={(e) => setOutwardNumber(e.target.value)}
-                      placeholder="દા.ત. શાળા/જાવક/૨૦૨૬-૨૭/૧૨૫"
+                      placeholder="દા.ત. સ.હા.લા/૨૦૨૬/૦૦૧"
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#C45A2D]/50"
                     />
                     <button
                       type="button"
                       onClick={() => setOutwardNumber(generateNextOutwardNumber())}
-                      className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold whitespace-nowrap cursor-pointer"
-                      title="ઓટો-જનરેટ નંબર"
+                      className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold whitespace-nowrap cursor-pointer shadow-xs flex items-center gap-1"
+                      title="આગામી નંબર ઓટો-જનરેટ કરો"
                     >
-                      ઓટો
+                      <RefreshCw className="w-3 h-3 text-[#C45A2D]" />
+                      <span>ઓટો</span>
                     </button>
+                  </div>
+                  <div className="flex items-center justify-between mt-1 text-[10.5px] text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <span>પ્રીફિક્સ:</span>
+                      <strong className="text-slate-800 dark:text-slate-200 font-mono font-bold">
+                        {settings.outwardPrefix || 'સ.હા.લા/૨૦૨૬/'}
+                      </strong>
+                    </span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                      (સેવ થયા પછી ક્રમ આપોઆપ +૧ વધશે)
+                    </span>
                   </div>
                 </div>
 
@@ -1612,7 +1731,22 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                       </div>
                     </div>
                     <div className="text-right text-[8px] font-bold text-slate-800">
-                      લિ. આપનો વિશ્વાસુ, આચાર્યશ્રી
+                      <div>લિ. આપનો વિશ્વાસુ,</div>
+                      {settings.principalSignUrl && (
+                        <div className="py-0.5 flex justify-end">
+                          <img
+                            src={settings.principalSignUrl}
+                            alt="Sign on A4"
+                            style={{
+                              width: `${Math.round(((settings.principalSignWidthMm ?? 38) / 210) * 100)}%`,
+                              maxWidth: '85px',
+                              maxHeight: '26px',
+                              objectFit: 'contain',
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div>{settings.principalName || school.principalName || 'આચાર્યશ્રી'}</div>
                     </div>
                   </div>
 
@@ -1826,39 +1960,247 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                     </div>
                   </div>
 
-                  {/* Current Active Signature Preview */}
+                  {/* Current Active Signature & Size Controls */}
                   {settings.principalSignUrl && (
-                    <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={settings.principalSignUrl}
-                          alt="Signature Preview"
-                          className="h-8 max-w-[120px] object-contain bg-white rounded border p-0.5"
-                        />
-                        <span className="text-[10px] font-bold text-purple-900 dark:text-purple-300">
-                          સક્રિય ડિજિટલ સહી
-                        </span>
+                    <div className="space-y-3 pt-1 border-t border-slate-200 dark:border-slate-700">
+                      <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={settings.principalSignUrl}
+                            alt="Signature Preview"
+                            className="h-8 max-w-[120px] object-contain bg-white rounded border p-0.5"
+                          />
+                          <span className="text-[11px] font-bold text-purple-900 dark:text-purple-300">
+                            સક્રિય ડિજિટલ સહી
+                          </span>
+                        </div>
+                        <Check className="w-4 h-4 text-purple-600" />
                       </div>
-                      <Check className="w-4 h-4 text-purple-600" />
+
+                      {/* Signature Size Adjuster on A4 Page */}
+                      <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                            <PenTool className="w-3.5 h-3.5 text-purple-600" />
+                            <span>A4 પેજ પર સહીની સાઇઝ (Sign Size on A4)</span>
+                          </label>
+                          <span className="font-mono font-black text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded-md">
+                            {settings.principalSignWidthMm ?? 38} mm
+                          </span>
+                        </div>
+
+                        {/* Size Range Slider */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-slate-400">નાની</span>
+                          <input
+                            type="range"
+                            min="20"
+                            max="75"
+                            step="1"
+                            value={settings.principalSignWidthMm ?? 38}
+                            onChange={(e) =>
+                              setSettings((p) => ({
+                                ...p,
+                                principalSignWidthMm: Number(e.target.value),
+                              }))
+                            }
+                            className="flex-1 accent-purple-600 cursor-pointer"
+                          />
+                          <span className="text-[10px] font-bold text-slate-400">મોટી</span>
+                        </div>
+
+                        {/* Quick Presets for Signature Size */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {[
+                            { label: 'નાની', mm: 26 },
+                            { label: 'સામાન્ય', mm: 38 },
+                            { label: 'મોટી', mm: 50 },
+                            { label: 'વિશેષ મોટી', mm: 62 },
+                          ].map((item) => (
+                            <button
+                              key={item.mm}
+                              type="button"
+                              onClick={() =>
+                                setSettings((p) => ({ ...p, principalSignWidthMm: item.mm }))
+                              }
+                              className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                                (settings.principalSignWidthMm ?? 38) === item.mm
+                                  ? 'bg-purple-600 text-white shadow-xs'
+                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              {item.label} ({item.mm}mm)
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Real-time A4 Sign Placement Visual Box */}
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-purple-200 dark:border-purple-800/60 text-center font-['Anek_Gujarati']">
+                          <div className="text-[10px] text-slate-500 mb-1 font-bold">
+                            A4 પૃષ્ઠ પર સહી કેવી દેખાશે (Live A4 Sign Preview):
+                          </div>
+                          <div className="bg-white border rounded-lg p-3 max-w-[240px] mx-auto shadow-xs text-right">
+                            <div className="text-[11px] font-bold text-slate-800">લિ. આપનો વિશ્વાસુ,</div>
+                            <div className="py-1 flex justify-end items-center min-h-[44px]">
+                              <img
+                                src={settings.principalSignUrl}
+                                alt="Signature Preview"
+                                style={{
+                                  width: `${settings.principalSignWidthMm ?? 38}mm`,
+                                  maxHeight: '32mm',
+                                  objectFit: 'contain',
+                                }}
+                                className="transition-all duration-150"
+                              />
+                            </div>
+                            <div className="font-black text-xs text-slate-950">
+                              ({settings.principalName || school.principalName || 'આચાર્યશ્રીનું નામ'})
+                            </div>
+                            <div className="text-[10.5px] text-slate-600 font-semibold">
+                              {settings.principalDesignation || 'આચાર્યશ્રી'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
-                  {/* Signatory Name */}
+                  {/* Signatory Name & Designation */}
                   <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">આચાર્યશ્રીનું નામ</label>
+                      <input
+                        type="text"
+                        value={settings.principalName || ''}
+                        onChange={(e) => setSettings((p) => ({ ...p, principalName: e.target.value }))}
+                        placeholder="આચાર્યશ્રીનું નામ"
+                        className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">હોદ્દો</label>
+                      <input
+                        type="text"
+                        value={settings.principalDesignation || 'આચાર્યશ્રી'}
+                        onChange={(e) => setSettings((p) => ({ ...p, principalDesignation: e.target.value }))}
+                        placeholder="હોદ્દો"
+                        className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Outward Number Prefix & Auto-Increment Settings */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Hash className="w-4 h-4 text-[#C45A2D]" />
+                      <span>જાવક નંબર પ્રીફિક્સ & ઓટો નંબરિંગ (Outward Prefix)</span>
+                    </h3>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    અહીં આપની શાળાનો કાયમી પ્રીફિક્સ સેટ કરો. દા.ત. જો તમે <strong>સ.હા.લા/૨૦૨૬/</strong> સેટ કરશો, તો પ્રથમ પત્રમાં આપોઆપ <strong>સ.હા.લા/૨૦૨૬/૦૦૧</strong> આવશે અને સેવ કર્યા બાદ આગામી પત્રમાં <strong>૦૦૨</strong>, <strong>૦૦૩</strong> ઓટોમેટિક વધશે.
+                  </p>
+
+                  <div>
+                    <label className="text-xs font-black text-slate-700 dark:text-slate-300 block mb-1">
+                      જાવક પ્રીફિક્સ (Outward Prefix) *
+                    </label>
                     <input
                       type="text"
-                      value={settings.principalName || ''}
-                      onChange={(e) => setSettings((p) => ({ ...p, principalName: e.target.value }))}
-                      placeholder="આચાર્યશ્રીનું નામ"
-                      className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold"
+                      value={settings.outwardPrefix || ''}
+                      onChange={(e) => setSettings((p) => ({ ...p, outwardPrefix: e.target.value }))}
+                      placeholder="દા.ત. સ.હા.લા/૨૦૨૬/ અથવા શાળા/જાવક/૨૦૨૬-૨૭/"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold font-mono text-slate-900 dark:text-white focus:ring-2 focus:ring-[#C45A2D]/50"
                     />
-                    <input
-                      type="text"
-                      value={settings.principalDesignation || 'આચાર્યશ્રી'}
-                      onChange={(e) => setSettings((p) => ({ ...p, principalDesignation: e.target.value }))}
-                      placeholder="હોદ્દો"
-                      className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold"
-                    />
+
+                    {/* Quick Preset Buttons */}
+                    <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                      <span className="text-[10px] text-slate-400 font-bold">ઝડપી પસંદગી:</span>
+                      <button
+                        type="button"
+                        onClick={() => setSettings((p) => ({ ...p, outwardPrefix: 'સ.હા.લા/૨૦૨૬/' }))}
+                        className="px-2 py-0.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-[#C45A2D] text-[10.5px] font-bold border border-orange-200 cursor-pointer"
+                      >
+                        સ.હા.લા/૨૦૨૬/
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSettings((p) => ({ ...p, outwardPrefix: 'શાળા/જાવક/૨૦૨૬-૨૭/' }))}
+                        className="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10.5px] font-bold cursor-pointer"
+                      >
+                        શાળા/જાવક/૨૦૨૬-૨૭/
+                      </button>
+                      {school.schoolName && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const short = school.schoolName.substring(0, 8).replace(/[\s\.\-]+/g, '') + '/૨૦૨૬/';
+                            setSettings((p) => ({ ...p, outwardPrefix: short }));
+                          }}
+                          className="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10.5px] font-bold cursor-pointer"
+                        >
+                          શાળા શોર્ટ નામ/૨૦૨૬/
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Starting Sequence Number & Padding */}
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="text-[10.5px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
+                        શરૂઆતનો ક્રમાંક
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={settings.outwardStartingNumber ?? 1}
+                        onChange={(e) =>
+                          setSettings((p) => ({
+                            ...p,
+                            outwardStartingNumber: Math.max(1, Number(e.target.value)),
+                          }))
+                        }
+                        className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold text-center"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10.5px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
+                        અંકોની સંખ્યા (Padding)
+                      </label>
+                      <select
+                        value={settings.outwardPadDigits ?? 3}
+                        onChange={(e) =>
+                          setSettings((p) => ({
+                            ...p,
+                            outwardPadDigits: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full px-2 py-1.5 rounded-lg border text-xs font-bold bg-white dark:bg-slate-800"
+                      >
+                        <option value={3}>૩ અંક (૦૦૧, ૦૦૨) - ભલામણ કરેલ</option>
+                        <option value={2}>૨ અંક (૦૧, ૦૨)</option>
+                        <option value={1}>૧ અંક (૧, ૨, ૩)</option>
+                        <option value={4}>૪ અંક (૦૦૦૧, ૦૦૦૨)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Live Next Generated Number Preview */}
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10.5px] text-emerald-800 dark:text-emerald-300 font-bold block">
+                        આગામી પત્રમાં ઓટો જનરેટ થનાર નંબર:
+                      </span>
+                      <span className="text-sm font-black font-mono text-emerald-900 dark:text-emerald-200">
+                        {generateNextOutwardNumber(settings.outwardPrefix, settings.outwardPadDigits, settings.outwardStartingNumber)}
+                      </span>
+                    </div>
+                    <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-md">
+                      લાઈવ પ્રિવ્યુ
+                    </span>
                   </div>
                 </div>
 
@@ -1866,9 +2208,10 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   type="button"
                   onClick={handleSaveSettings}
                   disabled={isSavingSettings}
-                  className="w-full py-3 rounded-2xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-black shadow-lg cursor-pointer transition-all"
+                  className="w-full py-3 rounded-2xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-black shadow-lg cursor-pointer transition-all flex items-center justify-center gap-2"
                 >
-                  સેટિંગ્સ સેવ કરો (Save Settings)
+                  <Check className="w-4 h-4" />
+                  <span>{isSavingSettings ? 'સેવ થઈ રહ્યું છે...' : 'સેટિંગ્સ સેવ કરો (Save Settings)'}</span>
                 </button>
               </div>
             </div>
@@ -1880,215 +2223,305 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
           FULL-SCREEN A4 LETTER PREVIEW & INSTANT PDF EXPORT MODAL
           ========================================================================= */}
       {previewLetter && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3 sm:p-5 backdrop-blur-sm overflow-y-auto font-['Anek_Gujarati']">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm overflow-y-auto font-['Anek_Gujarati']">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl max-w-4xl w-full max-h-[96vh] flex flex-col shadow-2xl animate-in fade-in overflow-hidden">
             {/* Modal Top Bar */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 shrink-0">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 shrink-0 flex-wrap gap-2">
+              <div className="flex items-center gap-2.5">
                 <FileText className="w-5 h-5 text-[#C45A2D]" />
                 <div>
-                  <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
                     જાવક પત્ર A4 પ્રિવ્યુ & PDF ડાઉનલોડ
                   </h3>
-                  <p className="text-[11px] font-mono text-slate-500">
+                  <p className="text-[10px] sm:text-[11px] font-mono text-slate-500">
                     નંબર: {previewLetter.outwardNumber} • Anek Gujarati
                   </p>
                 </div>
               </div>
 
               {/* Mode Switch Toggle: With Sign vs Without Sign */}
-              <div className="flex items-center gap-1 p-1 bg-white dark:bg-slate-900 rounded-2xl border text-xs font-bold">
+              <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 p-0.5 sm:p-1 bg-white dark:bg-slate-900 rounded-xl border text-[11px] sm:text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewWithSign(true)}
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                      previewWithSign
+                        ? 'bg-emerald-600 text-white shadow-xs font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    ✅ સહી સાથે
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewWithSign(false)}
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                      !previewWithSign
+                        ? 'bg-slate-800 text-white shadow-xs font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    ⚪ સહી વગર
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setPreviewWithSign(true)}
-                  className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                    previewWithSign
-                      ? 'bg-emerald-600 text-white shadow-xs font-black'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                  }`}
+                  onClick={() => setPreviewLetter(null)}
+                  className="p-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 cursor-pointer"
+                  title="બંધ કરો (Close)"
                 >
-                  ✅ સહી સાથે (With Sign)
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* View Mode & Zoom Toolbar */}
+            <div className="px-3 sm:px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between flex-wrap gap-2 text-xs shrink-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-slate-500 text-[11px]">પ્રિવ્યુ:</span>
+                <button
+                  type="button"
+                  onClick={() => setPreviewScaleMode('fit')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                    previewScaleMode === 'fit'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                  title="આખું A4 પેજ સ્ક્રીન પર ફિટ કરો"
+                >
+                  <Minimize2 className="w-3 h-3" />
+                  <span>📱 આખું પેજ (Fit Screen)</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPreviewWithSign(false)}
-                  className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                    !previewWithSign
-                      ? 'bg-slate-800 text-white shadow-xs font-black'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  onClick={() => setPreviewScaleMode('actual')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                    previewScaleMode === 'actual'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                   }`}
+                  title="૧૦૦% અસલ માપ"
                 >
-                  ⚪ સહી વગર (Without Sign)
+                  <Maximize2 className="w-3 h-3" />
+                  <span>🔍 ૧૦૦% માપ</span>
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setPreviewLetter(null)}
-                className="p-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="text-[10.5px] font-mono text-slate-500 flex items-center gap-1">
+                  <span>સ્કેલ:</span>
+                  <strong className="text-slate-800 dark:text-slate-200 font-bold">
+                    {Math.round(computedPreviewScale * 100)}%
+                  </strong>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewScaleMode('actual');
+                    setComputedPreviewScale((p) => Math.min(1.5, p + 0.1));
+                  }}
+                  className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
+                  title="ઝૂમ ઇન"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewScaleMode('actual');
+                    setComputedPreviewScale((p) => Math.max(0.3, p - 0.1));
+                  }}
+                  className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
+                  title="ઝૂમ આઉટ"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            {/* Modal Body: High Resolution A4 Letter Viewer */}
-            <div className="p-4 sm:p-6 overflow-y-auto bg-slate-100 dark:bg-slate-950 flex justify-center">
-              {/* Actual Printable A4 Sheet Ref for html2canvas */}
+            {/* Modal Body: Responsive Scaled A4 Letter Viewer */}
+            <div
+              ref={modalBodyRef}
+              className="p-2 sm:p-4 overflow-auto bg-slate-200/90 dark:bg-slate-950 flex flex-col items-center justify-start min-h-[420px] max-h-[72vh]"
+            >
+              {/* Scaled Envelope Box (Holds exact scaled dimensions for perfect layout) */}
               <div
-                ref={letterA4Ref}
                 style={{
-                  width: '210mm',
-                  minHeight: '297mm',
-                  paddingTop: settings.letterheadUrl ? `${settings.topMarginMm ?? 62}mm` : '22mm',
-                  paddingBottom: `${settings.bottomMarginMm ?? 32}mm`,
-                  paddingLeft: `${settings.leftMarginMm ?? 22}mm`,
-                  paddingRight: `${settings.rightMarginMm ?? 22}mm`,
-                  fontFamily: "'Anek Gujarati', sans-serif",
+                  width: `${Math.round(794 * computedPreviewScale)}px`,
+                  height: `${Math.round(1123 * computedPreviewScale)}px`,
+                  position: 'relative',
+                  flexShrink: 0,
+                  transition: 'width 0.15s ease, height 0.15s ease',
                 }}
-                className="relative bg-white text-slate-900 shadow-2xl flex flex-col justify-between select-text border border-slate-300"
+                className="shadow-2xl rounded-sm my-auto bg-white"
               >
-                {/* Letterhead Background Image if uploaded */}
-                {settings.letterheadUrl && (
-                  <img
-                    src={settings.letterheadUrl}
-                    alt="Letterhead"
-                    className="absolute inset-0 w-[210mm] h-[297mm] object-fill pointer-events-none z-0"
-                  />
-                )}
-
-                {/* Top Section */}
-                <div className="relative z-10 space-y-5">
-                  {/* Fallback Auto Letterhead if no custom image */}
-                  {!settings.letterheadUrl && (
-                    <div className="text-center border-b-2 border-slate-900 pb-3 mb-4">
-                      <h1 className="text-2xl font-black uppercase text-slate-950 tracking-tight">
-                        {school.schoolName}
-                      </h1>
-                      <p className="text-xs text-slate-600 mt-1">
-                        ${school.village ? school.village + ', ' : ''}${school.taluka ? school.taluka + ', ' : ''}${school.district} • DISE કોડ: <strong>${school.diseCode}</strong>
-                      </p>
-                    </div>
+                {/* Actual Printable 794px x 1123px A4 Document Sheet with CSS Transform */}
+                <div
+                  ref={letterA4Ref}
+                  style={{
+                    width: '794px',
+                    height: '1123px',
+                    transform: `scale(${computedPreviewScale})`,
+                    transformOrigin: 'top left',
+                    paddingTop: settings.letterheadUrl ? `${settings.topMarginMm ?? 62}mm` : '22mm',
+                    paddingBottom: `${settings.bottomMarginMm ?? 32}mm`,
+                    paddingLeft: `${settings.leftMarginMm ?? 22}mm`,
+                    paddingRight: `${settings.rightMarginMm ?? 22}mm`,
+                    fontFamily: "'Anek Gujarati', sans-serif",
+                    backgroundColor: '#ffffff',
+                  }}
+                  className="absolute top-0 left-0 text-slate-900 flex flex-col justify-between select-text border border-slate-300 overflow-hidden"
+                >
+                  {/* Letterhead Background Image if uploaded */}
+                  {settings.letterheadUrl && (
+                    <img
+                      src={settings.letterheadUrl}
+                      alt="Letterhead"
+                      className="absolute inset-0 w-[794px] h-[1123px] object-fill pointer-events-none z-0"
+                    />
                   )}
 
-                  {/* Outward No & Date Row */}
-                  <div className="flex items-center justify-between font-bold text-[13.5px] border-b border-slate-200 pb-2">
-                    <div>
-                      <span className="text-slate-500">જાવક ક્રમાંક: </span>
-                      <strong className="text-slate-950 font-mono text-[14px]">
-                        {useGujaratiDigitsInDate ? toGujaratiDigits(previewLetter.outwardNumber) : previewLetter.outwardNumber}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">તારીખ: </span>
-                      <strong className="text-slate-950 text-[14px]">
-                        {formatDateDisplay(previewLetter.letterDate, useGujaratiDigitsInDate)}
-                      </strong>
-                    </div>
-                  </div>
-
-                  {/* Recipient */}
-                  <div className="text-[14px] leading-relaxed">
-                    <div className="font-extrabold text-slate-950 mb-0.5">પ્રતિ,</div>
-                    <div className="font-black text-[15px] text-slate-950">
-                      {previewLetter.recipientDesignation || previewLetter.recipientName}
-                    </div>
-                    {previewLetter.recipientOffice && (
-                      <div className="font-bold text-[14px] text-slate-900">
-                        {previewLetter.recipientOffice}
+                  {/* Top Section */}
+                  <div className="relative z-10 space-y-4">
+                    {/* Fallback Auto Letterhead if no custom image */}
+                    {!settings.letterheadUrl && (
+                      <div className="text-center border-b-2 border-slate-900 pb-3 mb-3">
+                        <h1 className="text-2xl font-black uppercase text-slate-950 tracking-tight">
+                          {school.schoolName}
+                        </h1>
+                        <p className="text-xs text-slate-600 mt-1">
+                          ${school.village ? school.village + ', ' : ''}${school.taluka ? school.taluka + ', ' : ''}${school.district} • DISE કોડ: <strong>${school.diseCode}</strong>
+                        </p>
                       </div>
                     )}
-                    {previewLetter.recipientAddress && (
-                      <div className="text-slate-700 text-xs mt-0.5">
-                        {previewLetter.recipientAddress}
-                      </div>
-                    )}
-                  </div>
 
-                  {/* Subject Banner */}
-                  <div className="p-3 bg-slate-50 border-l-4 border-slate-950 rounded-sm leading-snug">
-                    <div className="font-black text-[14.5px] text-slate-950">
-                      વિષય: {previewLetter.subject}
+                    {/* Outward No & Date Row */}
+                    <div className="flex items-center justify-between font-bold text-[13.5px] border-b border-slate-200 pb-2">
+                      <div>
+                        <span className="text-slate-500">જાવક ક્રમાંક: </span>
+                        <strong className="text-slate-950 font-mono text-[14px]">
+                          {useGujaratiDigitsInDate ? toGujaratiDigits(previewLetter.outwardNumber) : previewLetter.outwardNumber}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">તારીખ: </span>
+                        <strong className="text-slate-950 text-[14px]">
+                          {formatDateDisplay(previewLetter.letterDate, useGujaratiDigitsInDate)}
+                        </strong>
+                      </div>
                     </div>
-                    {previewLetter.reference && (
-                      <div className="text-[12.5px] font-semibold text-slate-600 mt-1">
-                        સંદર્ભ: {previewLetter.reference}
+
+                    {/* Recipient Block (૩ સ્તરીય) */}
+                    <div className="text-[14px] leading-relaxed">
+                      <div className="font-extrabold text-slate-950 mb-0.5">પ્રતિ,</div>
+                      <div className="font-black text-[15px] text-slate-950">
+                        {previewLetter.recipientDesignation || previewLetter.recipientName}
                       </div>
-                    )}
-                  </div>
-
-                  {/* Salutation */}
-                  <div className="font-black text-[14px] text-slate-950">
-                    માનનીય સાહેબશ્રી,
-                  </div>
-
-                  {/* Main Content */}
-                  <div className="space-y-3.5 text-[14px] leading-[1.85] text-justify text-slate-800">
-                    {previewLetter.content.split('\n\n').map((paragraph, i) => (
-                      <p key={i} className="indent-10 font-medium">
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bottom Section: Signatory & Copy To */}
-                <div className="relative z-10 pt-4 mt-4">
-                  {/* Signatory Box */}
-                  <div className="flex justify-end">
-                    <div className="text-center min-w-[210px] space-y-1">
-                      <div className="font-bold text-[13px] text-slate-800">લિ. આપનો વિશ્વાસુ,</div>
-
-                      {previewWithSign ? (
-                        settings.principalSignUrl ? (
-                          <div className="py-1">
-                            <img
-                              src={settings.principalSignUrl}
-                              alt="Signature"
-                              className="h-12 max-w-[160px] mx-auto object-contain"
-                            />
-                          </div>
-                        ) : (
-                          <div className="h-12 flex items-center justify-center text-[10px] text-slate-400 italic">
-                            (ડિજિટલ સહી સેટ કરેલ નથી)
-                          </div>
-                        )
-                      ) : (
-                        <div className="h-14" /> /* Blank space for physical pen signature */
+                      {previewLetter.recipientOffice && (
+                        <div className="font-bold text-[14px] text-slate-900">
+                          {previewLetter.recipientOffice}
+                        </div>
                       )}
+                      {previewLetter.recipientAddress && (
+                        <div className="text-slate-700 text-xs mt-0.5">
+                          {previewLetter.recipientAddress}
+                        </div>
+                      )}
+                    </div>
 
+                    {/* Subject Banner */}
+                    <div className="p-3 bg-slate-50 border-l-4 border-slate-950 rounded-sm leading-snug">
                       <div className="font-black text-[14.5px] text-slate-950">
-                        {previewWithSign ? `(${previewLetter.signatoryName || school.principalName})` : `(${previewLetter.signatoryName || school.principalName})`}
+                        વિષય: {previewLetter.subject}
                       </div>
-                      <div className="text-[12px] text-slate-700 font-semibold">
-                        {previewLetter.signatoryDesignation || 'આચાર્યશ્રી'}
-                      </div>
-                      <div className="text-[11px] text-slate-500 font-medium">
-                        {school.schoolName}
-                      </div>
+                      {previewLetter.reference && (
+                        <div className="text-[12.5px] font-semibold text-slate-600 mt-1">
+                          સંદર્ભ: {previewLetter.reference}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Salutation */}
+                    <div className="font-black text-[14px] text-slate-950">
+                      માનનીય સાહેબશ્રી,
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="space-y-3.5 text-[14px] leading-[1.85] text-justify text-slate-800">
+                      {previewLetter.content.split('\n\n').map((paragraph, i) => (
+                        <p key={i} className="indent-10 font-medium">
+                          {paragraph}
+                        </p>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Copy to list */}
-                  {previewLetter.copyTo && previewLetter.copyTo.length > 0 && (
-                    <div className="mt-5 pt-2.5 border-t border-dashed border-slate-300 text-xs text-slate-700">
-                      <div className="font-extrabold text-[12px] text-slate-900 mb-1">નકલ સવિનય રવાના:</div>
-                      <ol className="list-decimal pl-5 space-y-0.5 font-medium text-[12px]">
-                        {previewLetter.copyTo.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ol>
+                  {/* Bottom Section: Signatory & Copy To */}
+                  <div className="relative z-10 pt-4 mt-4">
+                    {/* Signatory Box */}
+                    <div className="flex justify-end">
+                      <div className="text-center min-w-[210px] space-y-1">
+                        <div className="font-bold text-[13px] text-slate-800">લિ. આપનો વિશ્વાસુ,</div>
+
+                        {previewWithSign ? (
+                          settings.principalSignUrl ? (
+                            <div className="py-1 flex justify-center items-center min-h-[46px]">
+                              <img
+                                src={settings.principalSignUrl}
+                                alt="Signature"
+                                style={{
+                                  width: `${settings.principalSignWidthMm ?? 38}mm`,
+                                  maxHeight: '30mm',
+                                  objectFit: 'contain',
+                                }}
+                                className="mx-auto"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-12 flex items-center justify-center text-[10px] text-slate-400 italic">
+                              (ડિજિટલ સહી સેટ કરેલ નથી)
+                            </div>
+                          )
+                        ) : (
+                          <div className="h-12" /> /* Blank space for physical pen signature */
+                        )}
+
+                        <div className="font-black text-[14.5px] text-slate-950">
+                          {`(${previewLetter.signatoryName || school.principalName || ''})`}
+                        </div>
+                        <div className="text-[12px] text-slate-700 font-semibold">
+                          {previewLetter.signatoryDesignation || 'આચાર્યશ્રી'}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium">
+                          {school.schoolName}
+                        </div>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Copy to list */}
+                    {previewLetter.copyTo && previewLetter.copyTo.length > 0 && (
+                      <div className="mt-5 pt-2.5 border-t border-dashed border-slate-300 text-xs text-slate-700">
+                        <div className="font-extrabold text-[12px] text-slate-900 mb-1">નકલ સવિનય રવાના:</div>
+                        <ol className="list-decimal pl-5 space-y-0.5 font-medium text-[12px]">
+                          {previewLetter.copyTo.map((item, idx) => (
+                            <li key={idx}>{item}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Modal Bottom Export Actions */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between shrink-0 flex-wrap gap-3">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <span>પરિમાણ: A4 • ફોન્ટ: <strong>Anek Gujarati</strong> •</span>
+            <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between shrink-0 flex-wrap gap-2.5">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                <span>A4 • Anek Gujarati •</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {previewWithSign ? 'સહી સાથે (With Sign)' : 'સહી વગર (Without Sign)'}
+                  {previewWithSign ? 'સહી સાથે' : 'સહી વગર'}
                 </span>
               </div>
 
@@ -2097,7 +2530,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => handlePrint(previewLetter, previewWithSign)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer transition-all"
+                  className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer transition-all"
                 >
                   <Printer className="w-4 h-4" />
                   <span>પ્રિન્ટ / Save as PDF</span>
@@ -2108,7 +2541,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   type="button"
                   onClick={() => handleDownloadPdf(previewLetter, previewWithSign)}
                   disabled={isGeneratingPdf}
-                  className="px-5 py-2.5 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-[#C45A2D]/25 cursor-pointer transition-all disabled:opacity-50"
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-[#C45A2D]/25 cursor-pointer transition-all disabled:opacity-50"
                 >
                   <Download className="w-4 h-4" />
                   <span>{isGeneratingPdf ? 'PDF બની રહ્યું છે...' : 'PDF ડાઉનલોડ કરો'}</span>
