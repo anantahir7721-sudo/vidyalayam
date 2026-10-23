@@ -160,7 +160,6 @@ export function getExamsForStandard(standard: StandardKey): StandardExamConfig[]
       { id: 'internal_assessment', nameGu: 'આંતરિક ગુણ (૨૦)', nameEn: 'Internal (20M)', maxMarksPerSubject: 20, totalExamMax: 200, descriptionGu: 'મુખ્ય: ૫+૫+૫+૫ | પ્રાયોગિક: ૧૦+૧૦ • કુલ ૨૦ ગુણ' },
       { id: 'periodic_test_1', nameGu: 'સામાયિક કસોટી ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: '૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
       { id: 'periodic_test_2', nameGu: 'સામાયિક કસોટી ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: '૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
-      { id: 'annual_result', nameGu: 'વાર્ષિક પરિણામ (૭૦૦/૧૦૦૦)', nameEn: 'Annual Result', maxMarksPerSubject: 100, totalExamMax: 700, descriptionGu: 'વાર્ષિક આખરી પરિણામ • ૧૦૦ ગુણ પદ્ધતિ' },
     ];
   }
 
@@ -363,7 +362,8 @@ export function computeMultiStandardStudentResult(
       converted100 = direct100;
     } else if (annual80 !== null && first50 !== null && second50 !== null && internal20 !== null) {
       combined200 = first50 + second50 + annual80 + internal20;
-      converted100 = Math.round((combined200 / 2) * 10) / 10;
+      // Round figure rule: combined / 2 (e.g. 15.4 -> 15, 15.5 -> 16; 32.4 -> 32, 32.5 -> 33)
+      converted100 = Math.round(combined200 / 2);
     } else if (annual80 !== null && internal20 !== null) {
       converted100 = annual80 + internal20;
     } else if (annual80 !== null) {

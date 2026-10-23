@@ -163,7 +163,8 @@ export function calculateInternalTotal(
   const filled = parts.filter((p) => p !== null) as number[];
   if (filled.length === 0) return { total: null, isComplete: false };
   const sum = filled.reduce((acc, v) => acc + v, 0);
-  const roundedSum = Math.round(sum * 10) / 10;
+  // Round figure rule: 15.4 -> 15, 15.5 -> 16
+  const roundedSum = Math.round(sum);
   return {
     total: Math.min(20, roundedSum),
     isComplete: filled.length === 4,
@@ -174,6 +175,7 @@ export function calculateInternalTotal(
  * Calculates Final Converted Mark out of 100 for a Main Subject:
  * Combined marks = First Exam (50) + Second Exam (50) + Annual Exam (80) + Internal Marks (20) = 200
  * Converted marks out of 100 = Combined marks / 2
+ * Round figure rule: 32.4 -> 32, 32.5 -> 33
  */
 export function calculateMainSubjectFinal100(
   first50: number | null,
@@ -193,12 +195,13 @@ export function calculateMainSubjectFinal100(
   const i = internal20 ?? 0;
 
   const combined = f + s + a + i;
-  const converted = Math.round((combined / 2) * 10) / 10;
+  // Round figure rule: combined / 2 (x.4 -> x, x.5 -> x + 1)
+  const converted = Math.round(combined / 2);
   const isComplete = isFilled(first50) && isFilled(second50) && isFilled(annual80) && isFilled(internal20);
 
   return {
-    combined200: Math.round(combined * 10) / 10,
-    converted100: Math.round(converted),
+    combined200: Math.round(combined),
+    converted100: Math.min(100, converted),
     isComplete,
   };
 }
@@ -451,16 +454,19 @@ export function computeClass9StudentResult(
     });
   }
 
-  // Calculate raw aggregate across main subjects to determine Siddhi Pool
+  // Calculate raw aggregate across 7 main subjects to determine Siddhi Pool
+  // Formula: (Sum of 7 main subjects marks out of 100 / 7) - 33
+  // Example: 389 / 7 = 55.57 -> 55.6 - 33 = 22.6 -> max 15
+  // If avg <= 33: e.g. 32 - 33 = -1 -> 0 siddhi gun
   const mainScores = rawScores.filter((r) => r.subject.isMainSubject);
   const rawMainSum = mainScores.reduce((sum, r) => sum + (r.converted100 ?? 0), 0);
-  const rawMainMax = mainScores.length * 100;
-  const rawMainPct = rawMainMax > 0 ? (rawMainSum / rawMainMax) * 100 : 0;
+  const mainSubjectCount = mainScores.length || 7;
+  const avgMain = rawMainSum / mainSubjectCount;
 
-  // GSEB Siddhi Pool: 1 mark per % above 33%, max 15 marks
   let siddhiPool = 0;
-  if (rawMainPct > 33) {
-    siddhiPool = Math.min(15, Math.floor(rawMainPct - 33));
+  if (avgMain > 33) {
+    const diff = avgMain - 33;
+    siddhiPool = Math.min(15, Math.max(0, Math.round(diff)));
   }
   const siddhiPoolEarned = siddhiPool;
 

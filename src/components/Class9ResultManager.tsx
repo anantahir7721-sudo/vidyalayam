@@ -319,9 +319,9 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     });
   }, [activeStandardStudents, selectedSection]);
 
-  // Active exam list for Marks Entry
+  // Active exam list for Marks Entry (Excludes direct 100-mark annual_result as 100 is auto-computed from 200/2)
   const marksEntryExams = useMemo(() => {
-    return getMultiExams(selectedStandard);
+    return getMultiExams(selectedStandard).filter((e) => e.id !== 'annual_result' && e.id !== 'final_marksheet');
   }, [selectedStandard]);
 
   // Subjects to display in Marks Entry table (subject-wise columns for the chosen exam)
@@ -618,7 +618,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
             if ((vPrac !== undefined && vPrac !== '') || (vSkill !== undefined && vSkill !== '')) {
               const n1 = parseFloat(vPrac || '0') || 0;
               const n2 = parseFloat(vSkill || '0') || 0;
-              const tot20 = Math.min(20, Math.round((n1 + n2) * 10) / 10);
+              const tot20 = Math.min(20, Math.round(n1 + n2));
               recordsToSave.push({
                 studentId: student.id,
                 studentName: student.studentName,
@@ -696,7 +696,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               const n2 = parseFloat(vPt2 || '0') || 0;
               const n3 = parseFloat(vComp || '0') || 0;
               const n4 = parseFloat(vNote || '0') || 0;
-              const tot20 = Math.min(20, Math.round((n1 + n2 + n3 + n4) * 10) / 10);
+              const tot20 = Math.min(20, Math.round(n1 + n2 + n3 + n4));
               recordsToSave.push({
                 studentId: student.id,
                 studentName: student.studentName,
@@ -783,15 +783,35 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   }, [allResults]);
 
   // Handle Single Subject Grace Change (Siddhi or Krupa)
+  // Enforces GSEB rule: student has an overall pool (max 15 for siddhi, max 10 for krupa), not per-subject limits.
   const handleGraceChange = (studentId: string, subjectId: string, field: 'siddhi' | 'krupa', rawVal: string) => {
     const trimmed = rawVal.trim();
     const num = trimmed === '' ? 0 : parseInt(trimmed, 10);
     if (isNaN(num) || num < 0) return;
 
+    // Determine overall pool limit for this student
+    const student = activeStandardStudents.find((s) => s.id === studentId);
+    let studentMaxPool = field === 'siddhi' ? 15 : 10;
+    if (student && field === 'siddhi') {
+      const rawRes = computeClass9StudentResult(student, marks, '700', {});
+      studentMaxPool = rawRes.siddhiPoolEarned; // strictly capped at 15
+    }
+
     setManualGraceOverrides((prev) => {
       const studentMap = { ...(prev[studentId] || {}) };
+      // Calculate how many marks of this field are already allocated to OTHER subjects
+      let otherSubjectsSum = 0;
+      Object.entries(studentMap).forEach(([sid, g]) => {
+        if (sid !== subjectId) {
+          otherSubjectsSum += (field === 'siddhi' ? g.siddhi : g.krupa) || 0;
+        }
+      });
+
+      const maxForThisSubject = Math.max(0, studentMaxPool - otherSubjectsSum);
+      const validNum = Math.min(maxForThisSubject, num);
+
       const currentSubj = { ...(studentMap[subjectId] || {}) };
-      currentSubj[field] = num;
+      currentSubj[field] = validNum;
       studentMap[subjectId] = currentSubj;
       const next = { ...prev, [studentId]: studentMap };
       try {
@@ -2027,7 +2047,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                               const nPrac = vPrac.toUpperCase() === 'AB' ? 0 : parseFloat(vPrac) || 0;
                               const nSkill = vSkill.toUpperCase() === 'AB' ? 0 : parseFloat(vSkill) || 0;
                               const hasAny = vPrac !== '' || vSkill !== '';
-                              const tot20 = hasAny ? Math.min(20, Math.round((nPrac + nSkill) * 10) / 10) : null;
+                              const tot20 = hasAny ? Math.min(20, Math.round(nPrac + nSkill)) : null;
 
                               return (
                                 <tr key={student.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
@@ -2101,7 +2121,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                             const n4 = vNote.toUpperCase() === 'AB' ? 0 : parseFloat(vNote) || 0;
 
                             const hasAny = effPt1 !== null || effPt2 !== null || vComp !== '' || vNote !== '';
-                            const tot20 = hasAny ? Math.min(20, Math.round((n1 + n2 + n3 + n4) * 10) / 10) : null;
+                            const tot20 = hasAny ? Math.min(20, Math.round(n1 + n2 + n3 + n4)) : null;
 
                             return (
                               <tr key={student.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
@@ -2378,7 +2398,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                     const vSkill = gridInputs[kSkill] || '';
                     const n1 = vPrac.toUpperCase() === 'AB' ? 0 : parseFloat(vPrac) || 0;
                     const n2 = vSkill.toUpperCase() === 'AB' ? 0 : parseFloat(vSkill) || 0;
-                    const tot20 = vPrac !== '' || vSkill !== '' ? Math.min(20, n1 + n2) : null;
+                    const tot20 = vPrac !== '' || vSkill !== '' ? Math.min(20, Math.round(n1 + n2)) : null;
 
                     return (
                       <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800/40 space-y-3">
@@ -2437,7 +2457,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                   const n3 = vComp.toUpperCase() === 'AB' ? 0 : parseFloat(vComp) || 0;
                   const n4 = vNote.toUpperCase() === 'AB' ? 0 : parseFloat(vNote) || 0;
                   const hasAny = effPt1 !== null || effPt2 !== null || vComp !== '' || vNote !== '';
-                  const tot20 = hasAny ? Math.min(20, Math.round((n1 + n2 + n3 + n4) * 10) / 10) : null;
+                  const tot20 = hasAny ? Math.min(20, Math.round(n1 + n2 + n3 + n4)) : null;
 
                   return (
                     <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-3">
@@ -3335,15 +3355,15 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                             </th>
                             <th className="py-3 px-2 w-28 bg-teal-500/10 text-teal-900 dark:text-teal-200">
                               <div>મળવાપાત્ર સિદ્ધિ</div>
-                              <div className="text-[10px] font-normal text-teal-700">પૂલ: {siddhiPool}</div>
+                              <div className="text-[10px] font-normal text-teal-700">વિદ્યાર્થી પૂલ: {siddhiPool}/૧૫</div>
                             </th>
                             <th className="py-3 px-2 w-28 bg-indigo-500/10 text-indigo-900 dark:text-indigo-200">
                               <div>આપેલ સિદ્ધિ ગુણ (#)</div>
-                              <div className="text-[10px] font-normal text-indigo-700">એન્ટ્રી બોક્સ</div>
+                              <div className="text-[10px] font-normal text-indigo-700">બાકી પૂલ: {remainingSiddhi}</div>
                             </th>
                             <th className="py-3 px-2 w-28 bg-amber-500/10 text-amber-900 dark:text-amber-200">
                               <div>આપેલ કૃપા ગુણ (*)</div>
-                              <div className="text-[10px] font-normal text-amber-700">મહત્તમ ૧૦</div>
+                              <div className="text-[10px] font-normal text-amber-700">બાકી: {remainingKrupa}/૧૦</div>
                             </th>
                             <th className="py-3 px-2 w-28 bg-emerald-500/10 font-black text-emerald-950 dark:text-emerald-200">
                               <div>કુલ ગુણ</div>
@@ -3387,7 +3407,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                   <input
                                     type="number"
                                     min="0"
-                                    max={siddhiPool}
+                                    max={Math.max(0, siddhiPool - (awardedSiddhiTotal - siddhiVal))}
                                     value={siddhiVal > 0 ? siddhiVal : ''}
                                     placeholder="0"
                                     disabled={hasUnder25 || isSubjectUnder25}
@@ -3405,7 +3425,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                   <input
                                     type="number"
                                     min="0"
-                                    max="10"
+                                    max={Math.max(0, 10 - (awardedKrupaTotal - krupaVal))}
                                     value={krupaVal > 0 ? krupaVal : ''}
                                     placeholder="0"
                                     disabled={isSubjectUnder25}
@@ -3558,23 +3578,30 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               <button onClick={() => setRulesModalOpen(false)} className="p-1 rounded-lg hover:bg-slate-100">✕</button>
             </div>
 
-            <div className="space-y-3 text-xs leading-relaxed max-h-[400px] overflow-y-auto pr-2">
+            <div className="space-y-3 text-xs leading-relaxed max-h-[420px] overflow-y-auto pr-2">
               <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border space-y-1">
-                <h4 className="font-black text-slate-900 dark:text-white">૧. પ્રથમ & દ્વિતીય પરીક્ષા વિષયો (૬ વિષયો)</h4>
+                <h4 className="font-black text-slate-900 dark:text-white">૧. ૨૦૦ → ૧૦૦ રૂપાંતરણ & રાઉન્ડ ફિગર નિયમ</h4>
                 <p className="text-slate-600 dark:text-slate-400">
-                  ગુજરાતી, ગણિત, વિજ્ઞાન, સામાજિક વિજ્ઞાન, અંગ્રેજી, હિન્દી/સંસ્કૃત. વિષય દીઠ ૫૦ ગુણ, કુલ ૩૦૦ ગુણ. લઘુત્તમ પાસિંગ ૧૭ ગુણ (૩૩%).
+                  પ્રથમ (૫૦) + દ્વિતીય (૫૦) + વાર્ષિક (૮૦) + આંતરિક (૨૦) = ૨૦૦ / ૨ = ૧૦૦ ગુણ ઓટોમેટિક ગણાય છે. આંતરિક (૨૦) તથા ૧૦૦ ના રૂપાંતરણમાં રાઉન્ડ ફિગર નિયમ મુજબ .૪ સુધી નીચલો પૂર્ણાંક (દા.ત. ૧૫.૪ → ૧૫) અને .૫ કે તેથી વધુ હોય તો ઉપલો પૂર્ણાંક (દા.ત. ૧૫.૫ → ૧૬) ગણાય છે.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-teal-500/10 border border-teal-500/20 space-y-1">
+                <h4 className="font-black text-teal-900 dark:text-teal-200">૨. સિદ્ધિ ગુણ પૂલ ફોર્મ્યુલા (વિદ્યાર્થી કુલ મહત્તમ ૧૫ ગુણ)</h4>
+                <p className="text-teal-800 dark:text-teal-300">
+                  ફોર્મ્યુલા: <strong>(મુખ્ય ૭ વિષયોના ૧૦૦ માંથી કુલ ગુણ / ૭) - ૩૩</strong>. જો વિદ્યાર્થીના ૭ વિષયના ગુણ ૩૮૯ હોય તો ૩૮૯/૭ = ૫૫.૬ - ૩૩ = ૨૨.૬, જે મહત્તમ ૧૫ ગુણ પૂલ ગણાય. દરેક વિષયના અલગ સિદ્ધિ ગુણ નથી, સમગ્ર વિદ્યાર્થીનો કુલ ૧૫ ગુણનો પૂલ નાપાસ વિષયોમાં વહેંચી શકાય છે.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-1">
+                <h4 className="font-black text-amber-900 dark:text-amber-200">૩. કૃપા ગુણ (વિદ્યાર્થી કુલ મહત્તમ ૧૦ ગુણ)</h4>
+                <p className="text-amber-800 dark:text-amber-300">
+                  નિયમાનુસાર વિદ્યાર્થીને પાસ થવા માટે કુલ મહત્તમ ૧૦ કૃપા ગુણ મળવાપાત્ર છે. નોંધ: કોઈ વિષયમાં ૨૫ થી ઓછા ગુણ હોય તો નિયમ મુજબ ગ્રેસ મળવાપાત્ર નથી.
                 </p>
               </div>
 
               <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border space-y-1">
-                <h4 className="font-black text-slate-900 dark:text-white">૨. ૨૦૦ → ૧૦૦ રૂપાંતરણ (વાર્ષિક)</h4>
-                <p className="text-slate-600 dark:text-slate-400">
-                  પ્રથમ (૫૦) + દ્વિતીય (૫૦) + વાર્ષિક (૮૦) + આંતરિક (૨૦) = ૨૦૦ / ૨ = ૧૦૦ ગુણ.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border space-y-1">
-                <h4 className="font-black text-slate-900 dark:text-white">૩. GSEB ગ્રેડિંગ સ્કેલ</h4>
+                <h4 className="font-black text-slate-900 dark:text-white">૪. GSEB ગ્રેડિંગ સ્કેલ</h4>
                 <p className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
                   A1 (91-100) • A2 (81-90) • B1 (71-80) • B2 (61-70) • C1 (51-60) • C2 (41-50) • D (33-40) • E1 (21-32) • E2 (0-20)
                 </p>
