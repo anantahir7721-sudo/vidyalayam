@@ -82,14 +82,54 @@ const LETTER_TEMPLATES = [
 
 // Quick Recipient Presets for Gujarat Education Department
 const RECIPIENT_PRESETS = [
-  { name: 'માનનીય જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી', address: 'જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી' },
-  { name: 'માનનીય જિલ્લા પ્રાથમિક શિક્ષણાધિકારીશ્રીની કચેરી (DPEO)', address: 'જિલ્લા પંચાયત શિક્ષણ શાખા' },
-  { name: 'તાલુકા પ્રાથમિક શિક્ષણાધિકારીશ્રીની કચેરી (TPEO)', address: 'તાલુકા પંચાયત કચેરી' },
-  { name: 'BRC કો-ઓર્ડિનેટરશ્રી, બ્લોક રિસોર્સ સેન્ટર', address: 'તાલુકા શિક્ષણ ભવન' },
-  { name: 'CRC કો-ઓર્ડિનેટરશ્રી, ક્લસ્ટર રિસોર્સ સેન્ટર', address: 'શાળા સંકુલ ક્લસ્ટર' },
-  { name: 'મામલતદારશ્રીની કચેરી (જનસેવા કેન્દ્ર)', address: 'તાલુકા સેવાસદન' },
-  { name: 'માનનીય સરપંચશ્રી / તલાટી કમ મંત્રીશ્રી', address: 'ગ્રામ પંચાયત કચેરી' },
-  { name: 'વાલીશ્રી / વાલી મંડળ', address: 'વિદ્યાર્થી વાલી સંપર્ક' },
+  {
+    label: 'જિલ્લા શિક્ષણાધિકારીશ્રી (DEO)',
+    designation: 'જિલ્લા શિક્ષણાધિકારીશ્રી,',
+    office: 'જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી',
+    address: 'જિલ્લા સેવા સદન, ભુજ - કચ્છ.',
+  },
+  {
+    label: 'જિલ્લા પ્રાથમિક શિક્ષણાધિકારીશ્રી (DPEO)',
+    designation: 'જિલ્લા પ્રાથમિક શિક્ષણાધિકારીશ્રી,',
+    office: 'જિલ્લા પંચાયત શિક્ષણ શાખા',
+    address: 'જિલ્લા પંચાયત ભવન, ભુજ - કચ્છ.',
+  },
+  {
+    label: 'તાલુકા પ્રાથમિક શિક્ષણાધિકારીશ્રી (TPEO)',
+    designation: 'તાલુકા પ્રાથમિક શિક્ષણાધિકારીશ્રી,',
+    office: 'તાલુકા પંચાયત કચેરી',
+    address: 'તાલુકા પંચાયત શિક્ષણ શાખા.',
+  },
+  {
+    label: 'બ્લોક રિસોર્સ કો-ઓર્ડિનેટરશ્રી (BRC)',
+    designation: 'બ્લોક રિસોર્સ કો-ઓર્ડિનેટરશ્રી,',
+    office: 'બ્લોક રિસોર્સ સેન્ટર (BRC ભવન)',
+    address: 'તાલુકા શિક્ષણ કેન્દ્ર.',
+  },
+  {
+    label: 'ક્લસ્ટર રિસોર્સ કો-ઓર્ડિનેટરશ્રી (CRC)',
+    designation: 'ક્લસ્ટર રિસોર્સ કો-ઓર્ડિનેટરશ્રી,',
+    office: 'ક્લસ્ટર રિસોર્સ સેન્ટર (CRC)',
+    address: 'શાળા સંકુલ ક્લસ્ટર.',
+  },
+  {
+    label: 'મામલતદારશ્રી',
+    designation: 'મામલતદારશ્રી,',
+    office: 'મામલતદારશ્રીની કચેરી',
+    address: 'તાલુકા સેવાસદન / જનસેવા કેન્દ્ર.',
+  },
+  {
+    label: 'સરપંચશ્રી / તલાટી કમ મંત્રીશ્રી',
+    designation: 'સરપંચશ્રી / તલાટી કમ મંત્રીશ્રી,',
+    office: 'ગ્રામ પંચાયત કચેરી',
+    address: 'ગ્રામ પંચાયત ભવન.',
+  },
+  {
+    label: 'વાલીશ્રી / વાલી મંડળ',
+    designation: 'વાલીશ્રી,',
+    office: 'વાલી મંડળ સમિતિ',
+    address: 'વિદ્યાર્થી વાલી સંપર્ક.',
+  },
 ];
 
 export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
@@ -127,7 +167,9 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     return `${yyyy}-${mm}-${dd}`;
   });
   const [useGujaratiDigitsInDate, setUseGujaratiDigitsInDate] = useState(true);
-  const [recipientName, setRecipientName] = useState('');
+  // Structured Recipient fields: 1. હોદ્દેદારશ્રી, 2. કચેરી, 3. સરનામું
+  const [recipientDesignation, setRecipientDesignation] = useState('જિલ્લા શિક્ષણાધિકારીશ્રી,');
+  const [recipientOffice, setRecipientOffice] = useState('જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી');
   const [recipientAddress, setRecipientAddress] = useState('');
   const [subject, setSubject] = useState('');
   const [reference, setReference] = useState('');
@@ -196,7 +238,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   const handleStartNewLetter = () => {
     setEditingLetterId(null);
     setOutwardNumber(generateNextOutwardNumber());
-    setRecipientName('');
+    setRecipientDesignation('જિલ્લા શિક્ષણાધિકારીશ્રી,');
+    setRecipientOffice('જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી');
     setRecipientAddress('');
     setSubject(LETTER_TEMPLATES[0].subject);
     setReference('');
@@ -212,7 +255,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     setEditingLetterId(item.id);
     setOutwardNumber(item.outwardNumber);
     setLetterDate(item.letterDate);
-    setRecipientName(item.recipientName);
+    setRecipientDesignation(item.recipientDesignation || item.recipientName || '');
+    setRecipientOffice(item.recipientOffice || '');
     setRecipientAddress(item.recipientAddress || '');
     setSubject(item.subject);
     setReference(item.reference || '');
@@ -227,7 +271,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   const handleDuplicateLetter = (item: OutwardLetter) => {
     setEditingLetterId(null);
     setOutwardNumber(generateNextOutwardNumber());
-    setRecipientName(item.recipientName);
+    setRecipientDesignation(item.recipientDesignation || item.recipientName || '');
+    setRecipientOffice(item.recipientOffice || '');
     setRecipientAddress(item.recipientAddress || '');
     setSubject(item.subject);
     setReference(item.reference || '');
@@ -275,8 +320,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       alert('કૃપા કરીને જાવક નંબર દાખલ કરો.');
       return null;
     }
-    if (!recipientName.trim()) {
-      alert('કૃપા કરીને પ્રતિ (મેળવનાર) ની વિગત દાખલ કરો.');
+    if (!recipientDesignation.trim() && !recipientOffice.trim()) {
+      alert('કૃપા કરીને પ્રતિ (હોદ્દેદારશ્રી અથવા કચેરી) ની વિગત દાખલ કરો.');
       return null;
     }
     if (!subject.trim()) {
@@ -289,12 +334,18 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     }
 
     const docId = editingLetterId || `out_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const effDesignation = recipientDesignation.trim();
+    const effOffice = recipientOffice.trim();
+    const compositeName = [effDesignation, effOffice].filter(Boolean).join(' ');
+
     const newDoc: OutwardLetter = {
       id: docId,
       schoolId: school.id,
       outwardNumber: outwardNumber.trim(),
       letterDate,
-      recipientName: recipientName.trim(),
+      recipientDesignation: effDesignation || undefined,
+      recipientOffice: effOffice || undefined,
+      recipientName: compositeName || effDesignation || effOffice || 'મેળવનારશ્રી',
       recipientAddress: recipientAddress.trim() || undefined,
       subject: subject.trim(),
       reference: reference.trim() || undefined,
@@ -605,21 +656,27 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
           .recipient-block {
             margin-bottom: 20px;
             font-size: 14px;
-            line-height: 1.6;
+            line-height: 1.5;
           }
           .recipient-block .to-label {
             font-weight: 800;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             color: #0f172a;
           }
-          .recipient-block .to-name {
+          .recipient-block .to-designation {
             font-weight: 800;
-            font-size: 15px;
+            font-size: 14.5px;
             color: #0f172a;
+          }
+          .recipient-block .to-office {
+            font-weight: 700;
+            font-size: 14px;
+            color: #1e293b;
           }
           .recipient-block .to-address {
             color: #334155;
             font-weight: 500;
+            font-size: 13.5px;
           }
           .subject-container {
             margin-bottom: 20px;
@@ -679,7 +736,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
               <div class="recipient-block">
                 <div class="to-label">પ્રતિ,</div>
-                <div class="to-name">${letter.recipientName}</div>
+                <div class="to-designation">${letter.recipientDesignation || letter.recipientName}</div>
+                ${letter.recipientOffice ? `<div class="to-office">${letter.recipientOffice}</div>` : ''}
                 ${letter.recipientAddress ? `<div class="to-address">${letter.recipientAddress}</div>` : ''}
               </div>
 
@@ -763,7 +821,11 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
         const q = searchQuery.toLowerCase().trim();
         const mNum = l.outwardNumber.toLowerCase().includes(q);
         const mSub = l.subject.toLowerCase().includes(q);
-        const mRec = l.recipientName.toLowerCase().includes(q);
+        const mRec =
+          (l.recipientName || '').toLowerCase().includes(q) ||
+          (l.recipientDesignation || '').toLowerCase().includes(q) ||
+          (l.recipientOffice || '').toLowerCase().includes(q) ||
+          (l.recipientAddress || '').toLowerCase().includes(q);
         const mDate = l.letterDate.includes(q);
         if (!mNum && !mSub && !mRec && !mDate) return false;
       }
@@ -926,8 +988,15 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                         <td className="py-3 px-3 text-center font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
                           {formatDateDisplay(l.letterDate, false)}
                         </td>
-                        <td className="py-3 px-3 font-bold text-slate-900 dark:text-white">
-                          <div className="line-clamp-1">{l.recipientName}</div>
+                        <td className="py-3 px-3 text-slate-900 dark:text-white">
+                          <div className="font-bold text-xs line-clamp-1">
+                            {l.recipientDesignation || l.recipientName}
+                          </div>
+                          {l.recipientOffice && (
+                            <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium line-clamp-1">
+                              {l.recipientOffice}
+                            </div>
+                          )}
                           {l.recipientAddress && (
                             <div className="text-[10px] text-slate-400 font-normal line-clamp-1">
                               {l.recipientAddress}
@@ -1116,49 +1185,75 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                 </div>
               </div>
 
-              {/* Grid 2: Recipient Information */}
+              {/* Grid 2: Recipient Information (૩ સ્તરીય: ૧. હોદ્દેદારશ્રી, ૨. કચેરીનું નામ, ૩. સરનામું) */}
               <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <label className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                    <span>૩. પ્રતિ (To / મેળવનાર વિગત) *</span>
-                  </label>
+                  <div>
+                    <label className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <span>૩. પ્રતિ (To / મેળવનાર વિગત) *</span>
+                    </label>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      ક્રમ: પ્રતિ, → (૧) હોદ્દેદારશ્રી, → (૨) કચેરીનું નામ → (૩) સરનામું
+                    </p>
+                  </div>
                   {/* Recipient Quick Presets Dropdown */}
                   <select
                     onChange={(e) => {
-                      const found = RECIPIENT_PRESETS.find((p) => p.name === e.target.value);
+                      const found = RECIPIENT_PRESETS.find((p) => p.label === e.target.value);
                       if (found) {
-                        setRecipientName(found.name);
+                        setRecipientDesignation(found.designation);
+                        setRecipientOffice(found.office);
                         setRecipientAddress(found.address);
                       }
                     }}
-                    className="text-[11px] font-bold px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
+                    className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer shadow-xs"
                   >
                     <option value="">ઝડપી કચેરી પસંદ કરો (Presets)...</option>
                     {RECIPIENT_PRESETS.map((p, idx) => (
-                      <option key={idx} value={p.name}>
-                        {p.name}
+                      <option key={idx} value={p.label}>
+                        {p.label}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
                   <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 block mb-1">
+                      (૧) હોદ્દેદારશ્રી (Designation) *
+                    </label>
                     <input
                       type="text"
-                      value={recipientName}
-                      onChange={(e) => setRecipientName(e.target.value)}
-                      placeholder="દા.ત. માનનીય જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white"
+                      value={recipientDesignation}
+                      onChange={(e) => setRecipientDesignation(e.target.value)}
+                      placeholder="દા.ત. જિલ્લા શિક્ષણાધિકારીશ્રી,"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#C45A2D]/50"
                     />
                   </div>
+
                   <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 block mb-1">
+                      (૨) કચેરીનું નામ (Office / Department)
+                    </label>
+                    <input
+                      type="text"
+                      value={recipientOffice}
+                      onChange={(e) => setRecipientOffice(e.target.value)}
+                      placeholder="દા.ત. જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#C45A2D]/50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 block mb-1">
+                      (૩) સરનામું / સ્થળ (Address / City)
+                    </label>
                     <input
                       type="text"
                       value={recipientAddress}
                       onChange={(e) => setRecipientAddress(e.target.value)}
-                      placeholder="સરનામું / તાલુકો / જિલ્લો (વૈકલ્પિક)"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                      placeholder="દા.ત. જિલ્લા સેવા સદન, ભુજ - કચ્છ."
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-[#C45A2D]/50"
                     />
                   </div>
                 </div>
@@ -1341,9 +1436,21 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   <span>તા: {formatDateDisplay(letterDate, useGujaratiDigitsInDate)}</span>
                 </div>
 
-                <div className="mt-1">
-                  <span className="font-bold">પ્રતિ,</span>
-                  <div className="font-black text-slate-950">{recipientName || '(મેળવનારનું નામ)'}</div>
+                <div className="mt-1 space-y-0.5">
+                  <div className="font-bold text-[10px] text-slate-800">પ્રતિ,</div>
+                  <div className="font-black text-slate-950 text-[11px] leading-tight">
+                    {recipientDesignation || '(હોદ્દેદારશ્રી)'}
+                  </div>
+                  {recipientOffice && (
+                    <div className="font-semibold text-slate-800 text-[10px] leading-tight">
+                      {recipientOffice}
+                    </div>
+                  )}
+                  {recipientAddress && (
+                    <div className="text-slate-600 text-[9.5px] leading-tight">
+                      {recipientAddress}
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-1.5 bg-slate-50 rounded border text-[10px] font-bold">
@@ -1882,9 +1989,18 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   {/* Recipient */}
                   <div className="text-[14px] leading-relaxed">
                     <div className="font-extrabold text-slate-950 mb-0.5">પ્રતિ,</div>
-                    <div className="font-black text-[15px] text-slate-950">{previewLetter.recipientName}</div>
+                    <div className="font-black text-[15px] text-slate-950">
+                      {previewLetter.recipientDesignation || previewLetter.recipientName}
+                    </div>
+                    {previewLetter.recipientOffice && (
+                      <div className="font-bold text-[14px] text-slate-900">
+                        {previewLetter.recipientOffice}
+                      </div>
+                    )}
                     {previewLetter.recipientAddress && (
-                      <div className="text-slate-700 text-xs mt-0.5">{previewLetter.recipientAddress}</div>
+                      <div className="text-slate-700 text-xs mt-0.5">
+                        {previewLetter.recipientAddress}
+                      </div>
                     )}
                   </div>
 

@@ -565,8 +565,10 @@ export interface OutwardLetter {
   schoolId: string;
   outwardNumber: string; // જાવક નંબર (e.g. "શાળા/જાવક/૨૦૨૬-૨૭/૧૨૫")
   letterDate: string; // તારીખ (YYYY-MM-DD or DD/MM/YYYY)
-  recipientName: string; // પ્રતિ / મેળવનાર (e.g. "જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી")
-  recipientAddress?: string; // સરનામું / તાલુકો / જિલ્લો
+  recipientDesignation?: string; // હોદ્દેદારશ્રી (દા.ત. "જિલ્લા શિક્ષણાધિકારીશ્રી,")
+  recipientOffice?: string; // કચેરી (દા.ત. "જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી,")
+  recipientAddress?: string; // સરનામું (દા.ત. "બહુમાળી ભવન, ભુજ - કચ્છ.")
+  recipientName: string; // મેળવનાર પ્રાથમિક નામ / હોદ્દો (દા.ત. "જિલ્લા શિક્ષણાધિકારીશ્રી,")
   subject: string; // વિષય
   reference?: string; // સંદર્ભ (optional)
   content: string; // પત્રનું મુખ્ય લખાણ (Body text / paragraphs)

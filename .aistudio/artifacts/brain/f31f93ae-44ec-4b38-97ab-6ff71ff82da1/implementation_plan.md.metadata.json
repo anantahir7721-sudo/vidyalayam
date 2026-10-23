@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for the dedicated Class 9 Result Tab in Vidyalayam. Covers complete exam configurations (First Exam, Second Exam, Periodic Tests 1 & 2, Internal Assessment 20M breakdown, Annual Exam 80M, Final Marksheet 200/2, and Annual Results in both 700M and 1000M formats), responsive spreadsheet grid with sticky student names, automatic GSEB Siddhi & Krupa calculations with manual override, comprehensive result register, and printable A4 marksheet cards.",
-  "updatedAt":  "2026-10-22T15:32:05.719000515Z",
+  "summary":  "Restructured the 'પ્રતિ' (Recipient) block in Outward Letter module into 3 separate lines according to official Gujarati administrative standards:\n1. પ્રતિ,\n2. [હોદ્દેદારશ્રી] (દા.ત. જિલ્લા શિક્ષણાધિકારીશ્રી,)\n3. [કચેરીનું નામ] (દા.ત. જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી)\n4. [સરનામું] (દા.ત. જિલ્લા સેવા સદન, ભુજ - કચ્છ.)\nUpdated data types, presets, form fields, print HTML generator, A4 modal preview, mini-preview, and register list.",
+  "updatedAt":  "2026-10-23T16:05:51.773144657Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
