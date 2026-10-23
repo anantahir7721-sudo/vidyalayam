@@ -1854,10 +1854,11 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                   <table className="w-full text-left border-collapse text-xs">
                     <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 sticky top-0 z-20 shadow-xs font-bold">
                       <tr>
-                        <th rowSpan={2} className="py-2.5 px-2 border border-slate-300 dark:border-slate-700 w-14 text-center sticky left-0 z-30 bg-slate-100 dark:bg-slate-800">
-                          રોલ
+                        <th rowSpan={2} className="py-2 px-1 border border-slate-300 dark:border-slate-700 w-11 sm:w-14 text-center sticky left-0 z-30 bg-slate-100 dark:bg-slate-800 text-[10px] sm:text-xs font-bold">
+                          <div>બેઠક</div>
+                          <div className="text-[9px] font-normal opacity-70">નંબર</div>
                         </th>
-                        <th rowSpan={2} className="py-2.5 px-3 border border-slate-300 dark:border-slate-700 sticky left-14 z-30 bg-slate-100 dark:bg-slate-800 min-w-[140px] sm:min-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]">
+                        <th rowSpan={2} className="py-2 px-1.5 border border-slate-300 dark:border-slate-700 sticky left-11 sm:left-14 z-30 bg-slate-100 dark:bg-slate-800 w-24 sm:w-40 min-w-[92px] max-w-[105px] sm:max-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] text-left text-[10px] sm:text-xs font-bold">
                           વિદ્યાર્થીનું નામ
                         </th>
                         {CLASS_9_PRAYOGIK_SUBJECTS.map((sub) => (
@@ -1875,32 +1876,31 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                       <tr>
                         {CLASS_9_PRAYOGIK_SUBJECTS.map((sub) => (
                           <React.Fragment key={sub.id}>
-                            <th className="py-1 px-1 border border-slate-300 dark:border-slate-700 text-center min-w-[70px] bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200">
+                            <th className="py-1 px-1 border border-slate-300 dark:border-slate-700 text-center min-w-[65px] bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 text-[10px]">
                               થિયરી (૪૦)
                             </th>
-                            <th className="py-1 px-1 border border-slate-300 dark:border-slate-700 text-center min-w-[70px] bg-teal-50 dark:bg-teal-900/30 text-teal-900 dark:text-teal-200">
+                            <th className="py-1 px-1 border border-slate-300 dark:border-slate-700 text-center min-w-[65px] bg-teal-50 dark:bg-teal-900/30 text-teal-900 dark:text-teal-200 text-[10px]">
                               પ્રાયોગિક (૪૦)
                             </th>
-                            <th className="py-1 px-1 border border-slate-300 dark:border-slate-700 text-center min-w-[55px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-200 font-black">
+                            <th className="py-1 px-1 border border-slate-300 dark:border-slate-700 text-center min-w-[50px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-200 font-black text-[10px]">
                               કુલ (૮૦)
                             </th>
                           </React.Fragment>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                      {filteredStudents.map((student, idx) => {
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-[10px] sm:text-xs">
+                      {filteredStudents.map((student) => {
                         let totalRowObtained = 0;
                         let anyMarksEntered = false;
 
                         return (
                           <tr key={student.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
-                            <td className="py-2 px-2 text-center font-bold text-slate-900 dark:text-white sticky left-0 z-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                              {student.rollNumber || idx + 1}
+                            <td className="py-1.5 px-1 text-center font-mono font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-11 sm:w-14 text-[10px] sm:text-xs">
+                              {getSeatNumber(student.id, student.rollNumber)}
                             </td>
-                            <td className="py-2 px-3 font-bold text-slate-900 dark:text-white sticky left-14 z-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] truncate">
-                              <div>{student.studentName}</div>
-                              <div className="text-[10px] text-slate-400 font-mono">GR: {student.grNumber || '-'}</div>
+                            <td className="py-1.5 px-1.5 font-bold text-slate-900 dark:text-white sticky left-11 sm:left-14 z-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] text-[10px] sm:text-xs leading-tight whitespace-normal break-words w-24 sm:w-40 min-w-[92px] max-w-[105px] sm:max-w-[180px]">
+                              {student.studentName}
                             </td>
 
                             {CLASS_9_PRAYOGIK_SUBJECTS.map((sub) => {
@@ -1973,50 +1973,51 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                       <table className="w-full text-left border-collapse text-xs">
                         <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 sticky top-0 z-20 shadow-xs font-bold">
                           <tr>
-                            <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 w-14 text-center sticky left-0 z-30 bg-slate-100 dark:bg-slate-800">
-                              રોલ
+                            <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 w-11 sm:w-14 text-center sticky left-0 z-30 bg-slate-100 dark:bg-slate-800 text-[10px] sm:text-xs font-bold">
+                              <div>બેઠક</div>
+                              <div className="text-[9px] font-normal opacity-70">નંબર</div>
                             </th>
-                            <th className="py-3 px-3 border-b border-slate-300 dark:border-slate-700 sticky left-14 z-30 bg-slate-100 dark:bg-slate-800 min-w-[140px] sm:min-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]">
+                            <th className="py-2 px-1.5 border-b border-slate-300 dark:border-slate-700 sticky left-11 sm:left-14 z-30 bg-slate-100 dark:bg-slate-800 w-24 sm:w-40 min-w-[92px] max-w-[105px] sm:max-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] text-left text-[10px] sm:text-xs font-bold">
                               વિદ્યાર્થીનું નામ
                             </th>
 
                             {activeSub.isPrayogik ? (
                               <>
-                                <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 text-center min-w-[120px] bg-teal-500/10 text-teal-900 dark:text-teal-200 font-black">
-                                  પ્રાયોગિક કાર્ય / પ્રોજેક્ટ (૧૦)
+                                <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center min-w-[80px] bg-teal-500/10 text-teal-900 dark:text-teal-200 font-black text-[10px] sm:text-xs">
+                                  પ્રાયોગિક (૧૦)
                                 </th>
-                                <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 text-center min-w-[120px] bg-teal-500/10 text-teal-900 dark:text-teal-200 font-black">
-                                  સાતત્યપૂર્ણ કૌશલ્ય (૧૦)
+                                <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center min-w-[80px] bg-teal-500/10 text-teal-900 dark:text-teal-200 font-black text-[10px] sm:text-xs">
+                                  કૌશલ્ય (૧૦)
                                 </th>
                               </>
                             ) : (
                                 <>
-                                <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 text-center min-w-[110px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black">
-                                  <div>સામાયિક કસોટી ૧ (૫)</div>
-                                  <div className="text-[10px] font-normal text-amber-700 dark:text-amber-300">૨૫ માંથી ઓટો</div>
+                                <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center min-w-[75px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black text-[10px]">
+                                  <div>કસોટી ૧ (૫)</div>
+                                  <div className="text-[9px] font-normal text-amber-700 dark:text-amber-300">૨૫ થી ઓટો</div>
                                 </th>
-                                <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 text-center min-w-[110px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black">
-                                  <div>સામાયિક કસોટી ૨ (૫)</div>
-                                  <div className="text-[10px] font-normal text-amber-700 dark:text-amber-300">૨૫ માંથી ઓટો</div>
+                                <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center min-w-[75px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black text-[10px]">
+                                  <div>કસોટી ૨ (૫)</div>
+                                  <div className="text-[9px] font-normal text-amber-700 dark:text-amber-300">૨૫ થી ઓટો</div>
                                 </th>
-                                <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 text-center min-w-[95px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black">
-                                  <div>વિષયગત સજ્જતા (૫)</div>
-                                  <div className="text-[10px] font-normal opacity-80">(શિક્ષક એન્ટ્રી)</div>
+                                <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center min-w-[70px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black text-[10px]">
+                                  <div>સજ્જતા (૫)</div>
+                                  <div className="text-[9px] font-normal opacity-80">(એન્ટ્રી)</div>
                                 </th>
-                                <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 text-center min-w-[95px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black">
-                                  <div>નોટબુક કાર્ય (૫)</div>
-                                  <div className="text-[10px] font-normal opacity-80">(શિક્ષક એન્ટ્રી)</div>
+                                <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center min-w-[70px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black text-[10px]">
+                                  <div>નોટબુક (૫)</div>
+                                  <div className="text-[9px] font-normal opacity-80">(એન્ટ્રી)</div>
                                 </th>
                               </>
                             )}
 
-                            <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 text-center w-28 bg-indigo-500/10 font-black text-indigo-900 dark:text-indigo-200">
-                              કુલ આંતરિક (૨૦)
+                            <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center w-20 bg-indigo-500/10 font-black text-indigo-900 dark:text-indigo-200 text-[10px] sm:text-xs">
+                              કુલ (૨૦)
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                          {filteredStudents.map((student, idx) => {
+                        <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-[10px] sm:text-xs">
+                          {filteredStudents.map((student) => {
                             if (activeSub.isPrayogik) {
                               const kPrac = `${student.id}_${activeSub.id}_internal_practical_work`;
                               const kSkill = `${student.id}_${activeSub.id}_internal_continuous_eval`;
@@ -2030,12 +2031,11 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
                               return (
                                 <tr key={student.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
-                                  <td className="py-2 px-2 text-center font-bold text-slate-900 dark:text-white sticky left-0 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
-                                    {student.rollNumber || idx + 1}
+                                  <td className="py-1.5 px-1 text-center font-mono font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 w-11 sm:w-14 text-[10px] sm:text-xs">
+                                    {getSeatNumber(student.id, student.rollNumber)}
                                   </td>
-                                  <td className="py-2 px-3 font-bold text-slate-900 dark:text-white sticky left-14 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] truncate">
-                                    <div>{student.studentName}</div>
-                                    <div className="text-[10px] text-slate-400 font-mono">GR: {student.grNumber || '-'}</div>
+                                  <td className="py-1.5 px-1.5 font-bold text-slate-900 dark:text-white sticky left-11 sm:left-14 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] text-[10px] sm:text-xs leading-tight whitespace-normal break-words w-24 sm:w-40 min-w-[92px] max-w-[105px] sm:max-w-[180px]">
+                                    {student.studentName}
                                   </td>
 
                                   <td className="py-2 px-1 text-center">
@@ -2105,12 +2105,11 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
                             return (
                               <tr key={student.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
-                                <td className="py-2 px-2 text-center font-bold text-slate-900 dark:text-white sticky left-0 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
-                                  {student.rollNumber || idx + 1}
+                                <td className="py-1.5 px-1 text-center font-mono font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 w-11 sm:w-14 text-[10px] sm:text-xs">
+                                  {getSeatNumber(student.id, student.rollNumber)}
                                 </td>
-                                <td className="py-2 px-3 font-bold text-slate-900 dark:text-white sticky left-14 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] truncate">
-                                  <div>{student.studentName}</div>
-                                  <div className="text-[10px] text-slate-400 font-mono">GR: {student.grNumber || '-'}</div>
+                                <td className="py-1.5 px-1.5 font-bold text-slate-900 dark:text-white sticky left-11 sm:left-14 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] text-[10px] sm:text-xs leading-tight whitespace-normal break-words w-24 sm:w-40 min-w-[92px] max-w-[105px] sm:max-w-[180px]">
+                                  {student.studentName}
                                 </td>
 
                                 {/* PT1 Auto Converted Badge */}
@@ -2180,52 +2179,53 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 ) : (
                   /* 3. STANDARD SPREADSHEET TABLE (First Exam, Second Exam, Annual 80 Main, PT1, PT2, Direct Internal) */
                   <table className="w-full text-left border-collapse text-xs">
-                    <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 sticky top-0 z-20 shadow-xs font-bold">
+                    <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 sticky top-0 z-20 shadow-xs font-bold text-[10px] sm:text-xs">
                       <tr>
-                        <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 w-14 text-center sticky left-0 z-30 bg-slate-100 dark:bg-slate-800">
-                          રોલ
+                        <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 w-11 sm:w-14 text-center sticky left-0 z-30 bg-slate-100 dark:bg-slate-800">
+                          <div>બેઠક</div>
+                          <div className="text-[9px] font-normal opacity-70">નંબર</div>
                         </th>
-                        <th className="py-3 px-3 border-b border-slate-300 dark:border-slate-700 sticky left-14 z-30 bg-slate-100 dark:bg-slate-800 min-w-[140px] sm:min-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]">
+                        <th className="py-2 px-1.5 border-b border-slate-300 dark:border-slate-700 sticky left-11 sm:left-14 z-30 bg-slate-100 dark:bg-slate-800 w-24 sm:w-40 min-w-[92px] max-w-[105px] sm:max-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] text-left">
                           વિદ્યાર્થીનું નામ
                         </th>
                         {/* Subject Columns for this Exam */}
                         {entrySubjects.map((sub) => (
                           <th
                             key={sub.id}
-                            className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 text-center min-w-[85px] sm:min-w-[100px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black"
+                            className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center min-w-[64px] sm:min-w-[85px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black"
                           >
-                            <div>{sub.nameGu}</div>
-                            <div className="text-[10px] font-normal opacity-80">({entryMaxMarks})</div>
+                            <div className="truncate">{sub.nameGu}</div>
+                            <div className="text-[9px] sm:text-[10px] font-normal opacity-80">({entryMaxMarks})</div>
                           </th>
                         ))}
-                        <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 text-center w-20 bg-indigo-500/10 font-black text-indigo-900 dark:text-indigo-200">
-                          કુલ ({entryTotalMax})
+                        <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center w-14 sm:w-20 bg-indigo-500/10 font-black text-indigo-900 dark:text-indigo-200">
+                          <div>કુલ</div>
+                          <div className="text-[9px] font-normal opacity-80">({entryTotalMax})</div>
                         </th>
-                        <th className="py-3 px-2 border-b border-slate-300 dark:border-slate-700 text-center w-16 bg-indigo-500/10 font-black text-indigo-900 dark:text-indigo-200">
+                        <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center w-11 sm:w-16 bg-indigo-500/10 font-black text-indigo-900 dark:text-indigo-200">
                           ટકા
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-[10px] sm:text-xs">
                       {filteredStudents.length === 0 ? (
                         <tr>
-                          <td colSpan={3 + entrySubjects.length} className="py-12 text-center text-slate-500 font-bold">
+                          <td colSpan={4 + entrySubjects.length} className="py-12 text-center text-slate-500 font-bold">
                             કોઈ વિદ્યાર્થીઓ નોંધાયેલા મળ્યા નથી.
                           </td>
                         </tr>
                       ) : (
-                        filteredStudents.map((student, idx) => {
+                        filteredStudents.map((student) => {
                           let rowObtained = 0;
                           let hasAnyMark = false;
 
                           return (
                             <tr key={student.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                              <td className="py-2 px-2 text-center font-bold text-slate-900 dark:text-white sticky left-0 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
-                                {student.rollNumber || idx + 1}
+                              <td className="py-1.5 px-1 text-center font-mono font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 w-11 sm:w-14">
+                                {getSeatNumber(student.id, student.rollNumber)}
                               </td>
-                              <td className="py-2 px-3 font-bold text-slate-900 dark:text-white sticky left-14 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] truncate">
-                                <div>{student.studentName}</div>
-                                <div className="text-[10px] text-slate-400 font-mono">GR: {student.grNumber || '-'}</div>
+                              <td className="py-1.5 px-1.5 font-bold text-slate-900 dark:text-white sticky left-11 sm:left-14 z-10 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] text-[10px] sm:text-xs leading-tight whitespace-normal break-words w-24 sm:w-40 min-w-[92px] max-w-[105px] sm:max-w-[180px]">
+                                {student.studentName}
                               </td>
 
                               {/* Subject-Wise Input Cells with Fixed Border Visibility */}
@@ -2240,14 +2240,14 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                 }
 
                                 return (
-                                  <td key={sub.id} className="py-2 px-1 text-center min-w-[85px] sm:min-w-[100px]">
+                                  <td key={sub.id} className="py-1.5 px-1 text-center min-w-[64px] sm:min-w-[85px]">
                                     <input
                                       type="text"
                                       inputMode="decimal"
                                       value={cellVal}
                                       placeholder={`0-${entryMaxMarks}`}
                                       onChange={(e) => handleCellChange(cellKey, e.target.value, entryMaxMarks)}
-                                      className={`w-18 sm:w-20 h-10 px-1 text-center font-bold text-sm rounded-xl border-2 transition-all shadow-xs outline-none block mx-auto ${
+                                      className={`w-14 sm:w-18 h-8 sm:h-9 px-1 text-center font-black text-xs sm:text-sm rounded-lg sm:rounded-xl border-2 transition-all shadow-xs outline-none block mx-auto ${
                                         dirtyKeys.has(cellKey)
                                           ? 'border-[#C45A2D] bg-[#FBE9DF] text-[#C45A2D] dark:bg-[#9d512d]/30 dark:text-[#f59c73]'
                                           : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-[#C45A2D]'
@@ -2258,12 +2258,12 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                               })}
 
                               {/* Live Computed Row Total */}
-                              <td className="py-2 px-2 text-center font-black text-slate-900 dark:text-white bg-indigo-500/5">
+                              <td className="py-1.5 px-1 text-center font-black text-slate-900 dark:text-white bg-indigo-500/5 text-xs">
                                 {hasAnyMark ? rowObtained : '-'}
                               </td>
 
                               {/* Live Computed Row % */}
-                              <td className="py-2 px-2 text-center font-bold text-[#C45A2D] bg-indigo-500/5">
+                              <td className="py-1.5 px-1 text-center font-bold text-[#C45A2D] bg-indigo-500/5 text-xs">
                                 {hasAnyMark ? `${Math.round((rowObtained / entryTotalMax) * 100 * 10) / 10}%` : '-'}
                               </td>
                             </tr>
