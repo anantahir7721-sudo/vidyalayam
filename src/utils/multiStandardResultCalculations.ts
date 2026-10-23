@@ -1,9 +1,7 @@
 import { Student, MarkRecord } from '../types';
 import {
   Class9SubjectDef,
-  CLASS_9_MAIN_SUBJECTS,
   CLASS_9_ADDITIONAL_SUBJECTS,
-  ALL_CLASS_9_SUBJECTS,
   StudentResultClass9,
   computeClass9StudentResult,
   calculateGsebGrade,
@@ -26,6 +24,32 @@ export const STANDARD_TABS: StandardTabDef[] = [
   { id: '12', labelGu: 'ધોરણ ૧૨ (Class 12 - Board)', labelEn: 'Class 12 (Board)', hasStreams: true },
 ];
 
+// The exact 7 Main Subjects for First Exam (પ્રથમ પરીક્ષા) and Second Exam (દ્વિતીય પરીક્ષા)
+// ગુજરાતી, ગણિત, વિજ્ઞાન, સામાજિક વિજ્ઞાન, અંગ્રેજી, હિન્દી, સંસ્કૃત
+export const FIRST_SECOND_EXAM_7_SUBJECTS: Class9SubjectDef[] = [
+  { id: 'gujarati', code: '01', nameGu: 'ગુજરાતી', nameEn: 'Gujarati', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'maths', code: '12', nameGu: 'ગણિત', nameEn: 'Mathematics', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'science', code: '11', nameGu: 'વિજ્ઞાન', nameEn: 'Science', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'social_science', code: '10', nameGu: 'સામાજિક વિજ્ઞાન', nameEn: 'Social Science', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'english', code: '16', nameGu: 'અંગ્રેજી', nameEn: 'English', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'hindi', code: '14', nameGu: 'હિન્દી', nameEn: 'Hindi', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'sanskrit', code: '15', nameGu: 'સંસ્કૃત', nameEn: 'Sanskrit', isMainSubject: true, hasFirstSecondExam: true },
+];
+
+export const FIRST_SECOND_EXAM_SUBJECTS = FIRST_SECOND_EXAM_7_SUBJECTS;
+export const FIRST_SECOND_EXAM_6_SUBJECTS = FIRST_SECOND_EXAM_7_SUBJECTS;
+
+// Class 9 Annual Main Subjects (7 Subjects)
+export const CLASS_9_ANNUAL_MAIN_SUBJECTS: Class9SubjectDef[] = [
+  { id: 'gujarati', code: '01', nameGu: 'ગુજરાતી', nameEn: 'Gujarati', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'maths', code: '12', nameGu: 'ગણિત', nameEn: 'Mathematics', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'science', code: '11', nameGu: 'વિજ્ઞાન', nameEn: 'Science', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'social_science', code: '10', nameGu: 'સામાજિક વિજ્ઞાન', nameEn: 'Social Science', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'english', code: '16', nameGu: 'અંગ્રેજી', nameEn: 'English', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'hindi', code: '14', nameGu: 'હિન્દી', nameEn: 'Hindi', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'sanskrit', code: '15', nameGu: 'સંસ્કૃત', nameEn: 'Sanskrit', isMainSubject: true, hasFirstSecondExam: true },
+];
+
 // Class 10 GSEB Subjects
 export const CLASS_10_SUBJECTS: Class9SubjectDef[] = [
   { id: 'gujarati', code: '01', nameGu: 'ગુજરાતી (પ્રથમ ભાષા)', nameEn: 'Gujarati (FL)', isMainSubject: true, hasFirstSecondExam: true },
@@ -33,8 +57,8 @@ export const CLASS_10_SUBJECTS: Class9SubjectDef[] = [
   { id: 'science', code: '11', nameGu: 'વિજ્ઞાન અને ટેકનોલોજી', nameEn: 'Science & Tech', isMainSubject: true, hasFirstSecondExam: true },
   { id: 'social_science', code: '10', nameGu: 'સામાજિક વિજ્ઞાન', nameEn: 'Social Science', isMainSubject: true, hasFirstSecondExam: true },
   { id: 'english', code: '16', nameGu: 'અંગ્રેજી (દ્વિતીય ભાષા)', nameEn: 'English (SL)', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'hindi_sanskrit', code: '14', nameGu: 'હિન્દી / સંસ્કૃત', nameEn: 'Hindi / Sanskrit', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'pe_computer', code: '40', nameGu: 'શારીરિક શિક્ષણ / કમ્પ્યુટર', nameEn: 'P.E. / Computer', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'hindi', code: '14', nameGu: 'હિન્દી', nameEn: 'Hindi', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'sanskrit', code: '15', nameGu: 'સંસ્કૃત', nameEn: 'Sanskrit', isMainSubject: true, hasFirstSecondExam: true },
 ];
 
 // Class 11 General Stream Subjects (Commerce / Arts)
@@ -79,15 +103,28 @@ export const CLASS_12_SCIENCE_SUBJECTS: Class9SubjectDef[] = [
 ];
 
 /**
- * Returns subjects for any chosen standard and stream
+ * Returns subjects for any chosen standard, stream, and exam
  */
 export function getSubjectsForStandard(
   standard: StandardKey,
   stream: StreamKey = 'general',
-  format9: '700' | '1000' = '700'
+  format9: '700' | '1000' = '700',
+  examId?: string
 ): Class9SubjectDef[] {
+  // First Exam or Second Exam strictly uses the 7 main subjects
+  if (examId === 'first_exam' || examId === 'second_exam' || examId === 'annual_exam') {
+    return FIRST_SECOND_EXAM_SUBJECTS;
+  }
+
+  // Prayogik Annual strictly uses the practical subjects
+  if (examId === 'prayogik_annual') {
+    return CLASS_9_ADDITIONAL_SUBJECTS;
+  }
+
   if (standard === '9') {
-    return format9 === '1000' ? ALL_CLASS_9_SUBJECTS : CLASS_9_MAIN_SUBJECTS;
+    return format9 === '1000'
+      ? [...CLASS_9_ANNUAL_MAIN_SUBJECTS, ...CLASS_9_ADDITIONAL_SUBJECTS]
+      : CLASS_9_ANNUAL_MAIN_SUBJECTS;
   }
   if (standard === '10') {
     return CLASS_10_SUBJECTS;
@@ -98,7 +135,7 @@ export function getSubjectsForStandard(
   if (standard === '12') {
     return stream === 'science' ? CLASS_12_SCIENCE_SUBJECTS : CLASS_12_GENERAL_SUBJECTS;
   }
-  return CLASS_9_MAIN_SUBJECTS;
+  return FIRST_SECOND_EXAM_SUBJECTS;
 }
 
 export interface StandardExamConfig {
@@ -106,6 +143,7 @@ export interface StandardExamConfig {
   nameGu: string;
   nameEn: string;
   maxMarksPerSubject: number;
+  totalExamMax: number;
   descriptionGu: string;
 }
 
@@ -115,50 +153,47 @@ export interface StandardExamConfig {
 export function getExamsForStandard(standard: StandardKey): StandardExamConfig[] {
   if (standard === '9') {
     return [
-      { id: 'first_exam', nameGu: 'પ્રથમ પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, descriptionGu: '૭ મુખ્ય વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
-      { id: 'second_exam', nameGu: 'દ્વિતીય પરીક્ષા', nameEn: 'Second Exam', maxMarksPerSubject: 50, descriptionGu: '૭ મુખ્ય વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
-      { id: 'periodic_test_1', nameGu: 'સામાયિક કસોટી ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, descriptionGu: '૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
-      { id: 'periodic_test_2', nameGu: 'સામાયિક કસોટી ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, descriptionGu: '૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
-      { id: 'internal_assessment', nameGu: 'આંતરિક ગુણ (૨૦)', nameEn: 'Internal (20M)', maxMarksPerSubject: 20, descriptionGu: 'કસોટી ૧ (૫) + કસોટી ૨ (૫) + સજ્જતા (૫) + નોટબુક (૫)' },
-      { id: 'annual_exam', nameGu: 'વાર્ષિક પરીક્ષા', nameEn: 'Annual Exam', maxMarksPerSubject: 80, descriptionGu: 'વાર્ષિક પરીક્ષા થિયરી • ૮૦ ગુણ' },
-      { id: 'final_marksheet', nameGu: 'વાર્ષિક ગુણપત્રક (૨૦૦→૧૦૦)', nameEn: 'Final Marksheet', maxMarksPerSubject: 100, descriptionGu: 'પ્રથમ (૫૦) + દ્વિતીય (૫૦) + વાર્ષિક (૮૦) + આંતરિક (૨૦) = ૨૦૦ / ૨' },
-      { id: 'annual_result_700', nameGu: 'વાર્ષિક પરિણામ (૭૦૦)', nameEn: 'Annual 700M', maxMarksPerSubject: 100, descriptionGu: '૭ મુખ્ય વિષયો • મહત્તમ ૭૦૦ ગુણ' },
-      { id: 'annual_result_1000', nameGu: 'વાર્ષિક પરિણામ (૧૦૦૦)', nameEn: 'Annual 1000M', maxMarksPerSubject: 100, descriptionGu: '૧૦ વિષયો (૭ મુખ્ય + ૩ વધારાના) • મહત્તમ ૧૦૦૦ ગુણ' },
+      { id: 'first_exam', nameGu: 'પ્રથમ પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ મુખ્ય વિષયો (ગુજરાતી, ગણિત, વિજ્ઞાન, સા.વિ., અંગ્રેજી, હિન્દી, સંસ્કૃત) • ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+      { id: 'second_exam', nameGu: 'દ્વિતીય પરીક્ષા', nameEn: 'Second Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ મુખ્ય વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+      { id: 'annual_exam', nameGu: 'વાર્ષિક પરીક્ષા (મુખ્ય વિષયો)', nameEn: 'Annual Exam (Main)', maxMarksPerSubject: 80, totalExamMax: 560, descriptionGu: '૭ મુખ્ય વિષયો • થિયરી ૮૦ ગુણ' },
+      { id: 'prayogik_annual', nameGu: 'પ્રાયોગિક વિષયો (૪૦ થિયરી + ૪૦ પ્રેક્ટિકલ)', nameEn: 'Practical (40T+40P)', maxMarksPerSubject: 80, totalExamMax: 240, descriptionGu: '૩ પ્રાયોગિક વિષયો: કમ્પ્યુટર, પી.ઈ., ચિત્રકામ • ૪૦ થિયરી + ૪૦ પ્રાયોગિક' },
+      { id: 'internal_assessment', nameGu: 'આંતરિક ગુણ (૨૦)', nameEn: 'Internal (20M)', maxMarksPerSubject: 20, totalExamMax: 200, descriptionGu: 'મુખ્ય: ૫+૫+૫+૫ | પ્રાયોગિક: ૧૦+૧૦ • કુલ ૨૦ ગુણ' },
+      { id: 'periodic_test_1', nameGu: 'સામાયિક કસોટી ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: '૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
+      { id: 'periodic_test_2', nameGu: 'સામાયિક કસોટી ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: '૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
+      { id: 'annual_result', nameGu: 'વાર્ષિક પરિણામ (૭૦૦/૧૦૦૦)', nameEn: 'Annual Result', maxMarksPerSubject: 100, totalExamMax: 700, descriptionGu: 'વાર્ષિક આખરી પરિણામ • ૧૦૦ ગુણ પદ્ધતિ' },
     ];
   }
 
   if (standard === '10') {
     return [
-      { id: 'first_exam', nameGu: 'પ્રથમ સત્રાંત પરીક્ષા', nameEn: 'First Terminal', maxMarksPerSubject: 50, descriptionGu: 'પ્રથમ સત્રાંત પરીક્ષા • ૫૦ ગુણ' },
-      { id: 'second_exam', nameGu: 'પ્રિલિમિનરી પરીક્ષા', nameEn: 'Preliminary Exam', maxMarksPerSubject: 80, descriptionGu: 'દ્વિતીય / પ્રિલિમિનરી પરીક્ષા • ૮૦ ગુણ' },
-      { id: 'periodic_test_1', nameGu: 'એકમ કસોટી - ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૧ • ૨૫ ગુણ' },
-      { id: 'periodic_test_2', nameGu: 'એકમ કસોટી - ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૨ • ૨૫ ગુણ' },
-      { id: 'internal_assessment', nameGu: 'શાળા આંતરિક ગુણ (૨૦)', nameEn: 'Internal Assessment', maxMarksPerSubject: 20, descriptionGu: 'બોર્ડ માટે શાળા આંતરિક મૂલ્યાંકન • ૨૦ ગુણ' },
-      { id: 'annual_exam', nameGu: 'વાર્ષિક / બોર્ડ ગુણ (૮૦)', nameEn: 'Board Exam (80M)', maxMarksPerSubject: 80, descriptionGu: 'વાર્ષિક થિયરી • ૮૦ ગુણ' },
-      { id: 'annual_result_700', nameGu: 'આખરી વાર્ષિક પરિણામ (૧૦૦ ગુણ પદ્ધતિ)', nameEn: 'Annual Result (100M)', maxMarksPerSubject: 100, descriptionGu: 'વિષય દીઠ ૧૦૦ ગુણ પદ્ધતિ • કુલ ૭૦૦ ગુણ' },
+      { id: 'first_exam', nameGu: 'પ્રથમ પરીક્ષા', nameEn: 'First Terminal', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+      { id: 'second_exam', nameGu: 'દ્વિતીય / પ્રિલિમ પરીક્ષા', nameEn: 'Preliminary Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: 'દ્વિતીય / પ્રિલિમ પરીક્ષા • ૫૦ ગુણ' },
+      { id: 'periodic_test_1', nameGu: 'એકમ કસોટી - ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'એકમ કસોટી ૧ • ૨૫ ગુણ' },
+      { id: 'periodic_test_2', nameGu: 'એકમ કસોટી - ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'એકમ કસોટી ૨ • ૨૫ ગુણ' },
+      { id: 'internal_assessment', nameGu: 'શાળા આંતરિક ગુણ (૨૦)', nameEn: 'Internal Assessment', maxMarksPerSubject: 20, totalExamMax: 140, descriptionGu: 'બોર્ડ માટે શાળા આંતરિક મૂલ્યાંકન • ૨૦ ગુણ' },
+      { id: 'annual_result', nameGu: 'આખરી વાર્ષિક પરિણામ', nameEn: 'Annual Result (100M)', maxMarksPerSubject: 100, totalExamMax: 700, descriptionGu: 'વિષય દીઠ ૧૦૦ ગુણ પદ્ધતિ • કુલ ૭૦૦ ગુણ' },
     ];
   }
 
   if (standard === '11') {
     return [
-      { id: 'first_exam', nameGu: 'પ્રથમ સત્રાંત પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, descriptionGu: 'પ્રથમ સત્રાંત પરીક્ષા • ૫૦ ગુણ' },
-      { id: 'second_exam', nameGu: 'દ્વિતીય સત્રાંત પરીક્ષા', nameEn: 'Second Exam', maxMarksPerSubject: 50, descriptionGu: 'દ્વિતીય સત્રાંત પરીક્ષા • ૫૦ ગુણ' },
-      { id: 'periodic_test_1', nameGu: 'એકમ કસોટી - ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૧ • ૨૫ ગુણ' },
-      { id: 'periodic_test_2', nameGu: 'એકમ કસોટી - ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૨ • ૨૫ ગુણ' },
-      { id: 'internal_assessment', nameGu: 'આંતરિક / પ્રાયોગિક ગુણ', nameEn: 'Internal/Practical', maxMarksPerSubject: 20, descriptionGu: 'આંતરિક મૂલ્યાંકન • ૨૦ ગુણ' },
-      { id: 'annual_exam', nameGu: 'વાર્ષિક પરીક્ષા', nameEn: 'Annual Exam', maxMarksPerSubject: 80, descriptionGu: 'વાર્ષિક પરીક્ષા • ૮૦ ગુણ' },
-      { id: 'annual_result_700', nameGu: 'વાર્ષિક પરિણામ પત્રક (૧૦૦ ગુણ)', nameEn: 'Annual Result', maxMarksPerSubject: 100, descriptionGu: 'વાર્ષિક આખરી પરિણામ પત્રક' },
+      { id: 'first_exam', nameGu: 'પ્રથમ પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+      { id: 'second_exam', nameGu: 'દ્વિતીય પરીક્ષા', nameEn: 'Second Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: 'દ્વિતીય પરીક્ષા • ૫૦ ગુણ' },
+      { id: 'periodic_test_1', nameGu: 'એકમ કસોટી - ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'એકમ કસોટી ૧ • ૨૫ ગુણ' },
+      { id: 'periodic_test_2', nameGu: 'એકમ કસોટી - ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'એકમ કસોટી ૨ • ૨૫ ગુણ' },
+      { id: 'internal_assessment', nameGu: 'આંતરિક ગુણ (૨૦)', nameEn: 'Internal/Practical', maxMarksPerSubject: 20, totalExamMax: 140, descriptionGu: 'આંતરિક મૂલ્યાંકન • ૨૦ ગુણ' },
+      { id: 'annual_result', nameGu: 'વાર્ષિક પરિણામ પત્રક', nameEn: 'Annual Result', maxMarksPerSubject: 100, totalExamMax: 700, descriptionGu: 'વાર્ષિક આખરી પરિણામ પત્રક' },
     ];
   }
 
   // Standard 12
   return [
-    { id: 'first_exam', nameGu: 'પ્રથમ સત્રાંત પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, descriptionGu: 'પ્રથમ સત્રાંત પરીક્ષા • ૫૦ ગુણ' },
-    { id: 'second_exam', nameGu: 'પ્રિલિમિનરી પરીક્ષા', nameEn: 'Preliminary Exam', maxMarksPerSubject: 100, descriptionGu: 'પ્રિલિમિનરી પરીક્ષા • ૧૦૦ ગુણ' },
-    { id: 'periodic_test_1', nameGu: 'એકમ કસોટી - ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૧ • ૨૫ ગુણ' },
-    { id: 'periodic_test_2', nameGu: 'એકમ કસોટી - ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, descriptionGu: 'એકમ કસોટી ૨ • ૨૫ ગુણ' },
-    { id: 'internal_assessment', nameGu: 'શાળા આંતરિક ગુણ (૨૦)', nameEn: 'Internal Assessment', maxMarksPerSubject: 20, descriptionGu: 'બોર્ડ આંતરિક ગુણ • ૨૦ ગુણ' },
-    { id: 'annual_result_700', nameGu: 'વાર્ષિક પરિણામ પત્રક (૧૦૦ ગુણ)', nameEn: 'Annual Result', maxMarksPerSubject: 100, descriptionGu: 'વાર્ષિક આખરી પરિણામ પત્રક' },
+    { id: 'first_exam', nameGu: 'પ્રથમ પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+    { id: 'second_exam', nameGu: 'દ્વિતીય / પ્રિલિમ પરીક્ષા', nameEn: 'Preliminary Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: 'પ્રિલિમિનરી પરીક્ષા • ૫૦ ગુણ' },
+    { id: 'periodic_test_1', nameGu: 'એકમ કસોટી - ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'એકમ કસોટી ૧ • ૨૫ ગુણ' },
+    { id: 'periodic_test_2', nameGu: 'એકમ કસોટી - ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'એકમ કસોટી ૨ • ૨૫ ગુણ' },
+    { id: 'internal_assessment', nameGu: 'શાળા આંતરિક ગુણ (૨૦)', nameEn: 'Internal Assessment', maxMarksPerSubject: 20, totalExamMax: 140, descriptionGu: 'બોર્ડ આંતરિક ગુણ • ૨૦ ગુણ' },
+    { id: 'annual_result', nameGu: 'વાર્ષિક પરિણામ પત્રક', nameEn: 'Annual Result', maxMarksPerSubject: 100, totalExamMax: 700, descriptionGu: 'વાર્ષિક આખરી પરિણામ પત્રક' },
   ];
 }
 
@@ -175,6 +210,119 @@ function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches:
   if (!found) return null;
   if (found.overallGrade === 'AB') return 0;
   return found.totalObtained !== undefined ? found.totalObtained : null;
+}
+
+/**
+ * Computes Dedicated Single Exam Result (First Exam or Second Exam)
+ * Supports all 7 subjects (Gujarati, Maths, Science, Social Science, English, Hindi, Sanskrit)
+ * Max marks: 50 per subject, Total Max: 350
+ */
+export function computeSingleExamStudentResult(
+  student: Student,
+  studentMarks: MarkRecord[],
+  examId: 'first_exam' | 'second_exam'
+): StudentResultClass9 {
+  const isFirst = examId === 'first_exam';
+  const examKeywords = isFirst ? ['first', 'pratham', 'પ્રથમ'] : ['second', 'dwitiya', 'દ્વિતીય'];
+  const subjects = FIRST_SECOND_EXAM_SUBJECTS;
+  const totalMax = subjects.length * 50; // 350
+
+  const scores = subjects.map((subj) => {
+    const rawVal = extractMarkValue(studentMarks, subj.id, (t) => examKeywords.some((k) => t.includes(k)));
+    const hasUnenteredMarks = rawVal === null;
+    const obtained = rawVal !== null ? rawVal : 0;
+    const grade = rawVal !== null ? calculateGsebGrade(obtained, 50) : '-';
+    const isPassed = obtained >= 17; // >= 33% of 50 is 16.5 ~ 17
+
+    return {
+      subject: subj,
+      first50: isFirst ? rawVal : null,
+      second50: !isFirst ? rawVal : null,
+      pt1_raw: null,
+      pt1_conv: null,
+      pt2_raw: null,
+      pt2_conv: null,
+      competency: null,
+      notebook: null,
+      internal20: null,
+      annual80: null,
+      combined200: null,
+      converted100: rawVal, // raw out of 50 for display
+      siddhiGiven: 0,
+      krupaGiven: 0,
+      finalMarksWithGrace: rawVal,
+      grade,
+      isPassed,
+      isEligibleForPromotion: true,
+      hasUnenteredMarks,
+    };
+  });
+
+  const totalObtained = scores.reduce((sum, s) => sum + (s.finalMarksWithGrace || 0), 0);
+  const percentage = totalMax > 0 ? Math.round((totalObtained / totalMax) * 100 * 10) / 10 : 0;
+  const overallGrade = calculateGsebGrade(percentage, 100);
+  const hasIncompleteMarks = scores.some((s) => s.hasUnenteredMarks);
+  const anySubjectFailed = scores.some((s) => !s.isPassed);
+
+  const overallResult: 'PASS' | 'PASS_WITH_SIDDHI' | 'PASS_WITH_KRUPA' | 'NEEDS_IMPROVEMENT' = anySubjectFailed
+    ? 'NEEDS_IMPROVEMENT'
+    : 'PASS';
+  const overallResultGu = anySubjectFailed ? 'સુધારણા જરૂરી (Needs Improvement)' : 'ઉત્તીર્ણ (Pass)';
+
+  return {
+    student,
+    rollNumber: student.rollNumber || '',
+    grNumber: student.grNumber || '',
+    section: student.section || student.division || 'A',
+    format: '700',
+    scores,
+    totalObtained,
+    totalMax,
+    percentage,
+    overallGrade,
+    overallResult,
+    overallResultGu,
+    isEligibleForPromotion: true,
+    isEligibleForRank: overallResult === 'PASS',
+    siddhiPoolEarned: 0,
+    totalSiddhiUsed: 0,
+    totalKrupaUsed: 0,
+    hasIncompleteMarks,
+  };
+}
+
+/**
+ * Computes Dedicated Single Exam Result for all students and ranks them
+ */
+export function computeSingleExamAllResults(
+  students: Student[],
+  marks: MarkRecord[],
+  examId: 'first_exam' | 'second_exam'
+): StudentResultClass9[] {
+  const unranked = students.map((s) => {
+    const sMarks = marks.filter((m) => m.studentId === s.id);
+    return computeSingleExamStudentResult(s, sMarks, examId);
+  });
+
+  // Calculate tie-aware ranks based on totalObtained descending
+  const sortedEligible = [...unranked]
+    .filter((r) => r.isEligibleForRank && !r.hasIncompleteMarks)
+    .sort((a, b) => b.totalObtained - a.totalObtained);
+
+  const rankMap = new Map<string, number>();
+  let currentRank = 1;
+
+  for (let i = 0; i < sortedEligible.length; i++) {
+    if (i > 0 && sortedEligible[i].totalObtained < sortedEligible[i - 1].totalObtained) {
+      currentRank = i + 1;
+    }
+    rankMap.set(sortedEligible[i].student.id, currentRank);
+  }
+
+  return unranked.map((r) => ({
+    ...r,
+    rank: rankMap.get(r.student.id),
+  }));
 }
 
 /**
@@ -342,8 +490,14 @@ export function computeMultiStandardAllResults(
   standard: StandardKey,
   stream: StreamKey = 'general',
   format9: '700' | '1000' = '700',
-  manualGraceOverrides?: Record<string, Record<string, { siddhi?: number; krupa?: number }>>
+  manualGraceOverrides?: Record<string, Record<string, { siddhi?: number; krupa?: number }>>,
+  activeExamId: string = 'annual_result'
 ): StudentResultClass9[] {
+  // If First Exam or Second Exam is specifically selected, use the dedicated 350-mark exam calculator
+  if (activeExamId === 'first_exam' || activeExamId === 'second_exam') {
+    return computeSingleExamAllResults(students, marks, activeExamId);
+  }
+
   const unranked = students.map((s) => {
     const sMarks = marks.filter((m) => m.studentId === s.id);
     const overrides = manualGraceOverrides?.[s.id];

@@ -5,31 +5,34 @@ export interface Class9SubjectDef {
   code: string;
   nameGu: string;
   nameEn: string;
-  isMainSubject: boolean; // true = 7 main subjects (700M); false = 3 additional subjects (1000M)
-  hasFirstSecondExam: boolean; // true for 7 main subjects; false for 3 additional subjects
+  isMainSubject: boolean; // true = 7 main subjects (700M); false = 3 practical subjects (1000M)
+  hasFirstSecondExam: boolean; // true for 7 main subjects (50M each); false for practical subjects
+  isPrayogik?: boolean; // true for Computer, PE & Yoga, Art/Drawing (40 Theory + 40 Practical + 10+10 Internal)
 }
 
-// 7 Official GSEB Main Subjects for Class 9
+// 7 Official GSEB Main Subjects for Class 9 (Includes Sanskrit)
 export const CLASS_9_MAIN_SUBJECTS: Class9SubjectDef[] = [
-  { id: 'gujarati', code: '01', nameGu: 'ગુજરાતી (પ્રથમ ભાષા)', nameEn: 'Gujarati (FL)', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'maths', code: '12', nameGu: 'ગણિત', nameEn: 'Mathematics', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'science', code: '11', nameGu: 'વિજ્ઞાન અને ટેકનોલોજી', nameEn: 'Science & Technology', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'social_science', code: '10', nameGu: 'સામાજિક વિજ્ઞાન', nameEn: 'Social Science', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'english', code: '16', nameGu: 'અંગ્રેજી (દ્વિતીય ભાષા)', nameEn: 'English (SL)', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'hindi_sanskrit', code: '14', nameGu: 'હિન્દી / સંસ્કૃત', nameEn: 'Hindi / Sanskrit', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'pe_yoga', code: '40', nameGu: 'શારીરિક શિક્ષણ અને યોગ', nameEn: 'P.E. & Yoga', isMainSubject: true, hasFirstSecondExam: true },
+  { id: 'gujarati', code: '01', nameGu: 'ગુજરાતી (પ્રથમ ભાષા)', nameEn: 'Gujarati (FL)', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  { id: 'maths', code: '12', nameGu: 'ગણિત', nameEn: 'Mathematics', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  { id: 'science', code: '11', nameGu: 'વિજ્ઞાન અને ટેકનોલોજી', nameEn: 'Science & Technology', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  { id: 'social_science', code: '10', nameGu: 'સામાજિક વિજ્ઞાન', nameEn: 'Social Science', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  { id: 'english', code: '16', nameGu: 'અંગ્રેજી (દ્વિતીય ભાષા)', nameEn: 'English (SL)', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  { id: 'hindi', code: '14', nameGu: 'હિન્દી', nameEn: 'Hindi', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  { id: 'sanskrit', code: '15', nameGu: 'સંસ્કૃત', nameEn: 'Sanskrit', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
 ];
 
-// 3 Additional Subjects for Class 9 (Used in 1000M format: Annual 80 + Internal 20 = 100)
-export const CLASS_9_ADDITIONAL_SUBJECTS: Class9SubjectDef[] = [
-  { id: 'art_drawing', code: '41', nameGu: 'ચિત્રકામ / સંગીત (કળા શિક્ષણ)', nameEn: 'Art / Music', isMainSubject: false, hasFirstSecondExam: false },
-  { id: 'computer_studies', code: '42', nameGu: 'કમ્પ્યુટર અધ્યયન', nameEn: 'Computer Studies', isMainSubject: false, hasFirstSecondExam: false },
-  { id: 'vocational_work', code: '43', nameGu: 'ઉદ્યોગ / કાર્ય અનુભવ', nameEn: 'Vocational / Work Exp.', isMainSubject: false, hasFirstSecondExam: false },
+// 3 Prayogik (Practical) Subjects for Class 9 (40 Theory + 40 Practical + 10+10 Internal = 100)
+export const CLASS_9_PRAYOGIK_SUBJECTS: Class9SubjectDef[] = [
+  { id: 'computer_studies', code: '42', nameGu: 'કમ્પ્યુટર અધ્યયન', nameEn: 'Computer Studies', isMainSubject: false, hasFirstSecondExam: false, isPrayogik: true },
+  { id: 'pe_yoga', code: '40', nameGu: 'શારીરિક શિક્ષણ અને યોગ', nameEn: 'P.E. & Yoga', isMainSubject: false, hasFirstSecondExam: false, isPrayogik: true },
+  { id: 'art_drawing', code: '41', nameGu: 'ચિત્રકામ / સંગીત (કળા શિક્ષણ)', nameEn: 'Art / Music', isMainSubject: false, hasFirstSecondExam: false, isPrayogik: true },
 ];
+
+export const CLASS_9_ADDITIONAL_SUBJECTS: Class9SubjectDef[] = CLASS_9_PRAYOGIK_SUBJECTS;
 
 export const ALL_CLASS_9_SUBJECTS: Class9SubjectDef[] = [
   ...CLASS_9_MAIN_SUBJECTS,
-  ...CLASS_9_ADDITIONAL_SUBJECTS,
+  ...CLASS_9_PRAYOGIK_SUBJECTS,
 ];
 
 export type Class9ExamType =
@@ -262,6 +265,11 @@ export interface StudentSubjectScoreClass9 {
   pt2_conv: number | null;
   competency: number | null;
   notebook: number | null;
+  // Prayogik (Practical) specific components:
+  theory40?: number | null;
+  practical40?: number | null;
+  practicalWork10?: number | null;
+  continuousSkill10?: number | null;
   internal20: number | null;
   annual80: number | null;
   combined200: number | null;
@@ -339,6 +347,10 @@ export function computeClass9StudentResult(
     pt2_conv: number | null;
     competency: number | null;
     notebook: number | null;
+    theory40?: number | null;
+    practical40?: number | null;
+    practicalWork10?: number | null;
+    continuousSkill10?: number | null;
     internal20: number | null;
     annual80: number | null;
     combined200: number | null;
@@ -366,20 +378,40 @@ export function computeClass9StudentResult(
     const pt2_conv = convertPeriodicTestTo5(pt2_raw);
 
     // 5. Internal Assessment components
+    // Main Subjects: 5 + 5 + 5 + 5 (PT1: 5, PT2: 5, Competency: 5, Notebook: 5)
+    // Prayogik Subjects: 10 + 10 (Practical Work/Project: 10, Continuous Evaluation/Skill: 10)
     const competency = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('competency') || ex.includes('સજ્જતા'));
     const notebook = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('notebook') || ex.includes('નોટબુક'));
+    const practicalWork10 = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('practical_work') || ex.includes('પ્રાયોગિક_કાર્ય') || ex.includes('પ્રોજેક્ટ'));
+    const continuousSkill10 = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('continuous_skill') || ex.includes('સાતત્યપૂર્ણ') || ex.includes('કૌશલ્ય'));
 
     // Check direct internal record if entered as single lump sum
     const directInternal = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('internal') || ex.includes('આંતરિક'));
     let internal20: number | null = directInternal;
 
     if (internal20 === null) {
-      const calcInt = calculateInternalTotal(pt1_conv, pt2_conv, competency, notebook);
-      internal20 = calcInt.total;
+      if (subj.isPrayogik) {
+        if (practicalWork10 !== null || continuousSkill10 !== null) {
+          internal20 = Math.min(20, (practicalWork10 ?? 0) + (continuousSkill10 ?? 0));
+        }
+      } else {
+        const calcInt = calculateInternalTotal(pt1_conv, pt2_conv, competency, notebook);
+        internal20 = calcInt.total;
+      }
     }
 
-    // 6. Annual Exam (80M)
-    const annual80 = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('annual') || ex.includes('varshik') || ex.includes('વાર્ષિક'));
+    // 6. Annual Exam:
+    // Main Subjects: 80 marks
+    // Prayogik Subjects: 40 Theory + 40 Practical = 80 marks
+    const theory40 = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('theory') || ex.includes('થિયરી'));
+    const practical40 = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('practical') || ex.includes('પ્રાયોગિક') || ex.includes('પ્રેક્ટિકલ'));
+
+    const directAnnual = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('annual') || ex.includes('varshik') || ex.includes('વાર્ષિક'));
+    let annual80: number | null = directAnnual;
+
+    if (subj.isPrayogik && (theory40 !== null || practical40 !== null)) {
+      annual80 = Math.min(80, (theory40 ?? 0) + (practical40 ?? 0));
+    }
 
     // 7. Combined & Converted 100
     let combined200: number | null = null;
@@ -407,6 +439,10 @@ export function computeClass9StudentResult(
       pt2_conv,
       competency,
       notebook,
+      theory40,
+      practical40,
+      practicalWork10,
+      continuousSkill10,
       internal20,
       annual80,
       combined200,
@@ -508,6 +544,10 @@ export function computeClass9StudentResult(
       pt2_conv: raw.pt2_conv,
       competency: raw.competency,
       notebook: raw.notebook,
+      theory40: raw.theory40,
+      practical40: raw.practical40,
+      practicalWork10: raw.practicalWork10,
+      continuousSkill10: raw.continuousSkill10,
       internal20: raw.internal20,
       annual80: raw.annual80,
       combined200: raw.combined200,

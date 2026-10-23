@@ -347,6 +347,7 @@ export interface MarkRecord {
   rollNumber?: string;
   standard: AllowedStandard | string; // '9' | '10' | '11' | '12'
   division?: string;
+  examId?: string; // e.g. 'first_exam', 'second_exam', 'siddhi_krupa_grace'
   examType: string; // 'એકમ કસોટી – 1' | 'પ્રથમ પરીક્ષા' | 'દ્વિતીય પરીક્ષા' | 'વાર્ષિક પરીક્ષા'
   academicYear: string; // e.g. '૨૦૨૬–૨૭'
   subjectId?: string; // e.g. 'gujarati', 'maths'
