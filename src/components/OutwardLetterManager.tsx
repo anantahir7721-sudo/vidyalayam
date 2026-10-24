@@ -39,7 +39,15 @@ import {
   Maximize2,
   Minimize2,
   Hash,
+  Share2,
 } from 'lucide-react';
+
+// Dedicated Official WhatsApp Icon Component
+const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 1.67c4.55 0 8.24 3.7 8.24 8.24 0 2.2-.86 4.28-2.42 5.83a8.194 8.194 0 0 1-5.82 2.41h-.01c-1.46 0-2.88-.39-4.13-1.12l-.3-.18-3.07.81.82-2.99-.19-.31a8.188 8.188 0 0 1-1.26-4.45c0-4.54 3.7-8.24 8.25-8.24zm4.51 11.66c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.06-.39-2.02-1.25-.75-.67-1.25-1.5-1.4-1.75-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43-.14-.01-.31-.01-.48-.01-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.78 2.72 4.31 3.81.6.26 1.07.42 1.44.54.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.17-.48-.29z"/>
+  </svg>
+);
 
 interface OutwardLetterManagerProps {
   school: School;
@@ -197,6 +205,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   const [previewLetter, setPreviewLetter] = useState<OutwardLetter | null>(null);
   const [previewWithSign, setPreviewWithSign] = useState<boolean>(true);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSharingWhatsApp, setIsSharingWhatsApp] = useState(false);
   const letterA4Ref = useRef<HTMLDivElement>(null);
   const modalBodyRef = useRef<HTMLDivElement>(null);
   const [previewScaleMode, setPreviewScaleMode] = useState<'fit' | 'actual'>('fit');
@@ -572,6 +581,33 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     }
   }, []);
 
+  // Helper to generate exact file name: JavakNo_Subjectinshort_date.pdf
+  const getLetterPdfFilename = useCallback((letter: OutwardLetter, withSign?: boolean): string => {
+    // 1. JavakNo (clean slashes and illegal characters into hyphens)
+    const cleanJavak = (letter.outwardNumber || 'જાવક')
+      .replace(/[\\/:*?"<>|]+/g, '-')
+      .replace(/\s+/g, '')
+      .replace(/^-+|-+$/g, '');
+
+    // 2. Subjectinshort (clean punctuation, pick first 3-4 key words, max 25 chars)
+    const rawSubject = (letter.subject || 'પત્ર')
+      .replace(/[\\/:*?"<>|\.,;!?'"()\[\]{}–—]+/g, ' ')
+      .trim();
+    const words = rawSubject.split(/\s+/).filter(Boolean);
+    let shortSub = words.slice(0, 4).join('_');
+    if (shortSub.length > 25) {
+      shortSub = shortSub.substring(0, 25).replace(/_+$/, '');
+    }
+    if (!shortSub) shortSub = 'પત્ર';
+
+    // 3. date (formatted date string YYYY-MM-DD)
+    const rawDate = letter.letterDate || new Date().toISOString().split('T')[0];
+    const cleanDate = rawDate.replace(/[\\/:*?"<>|]+/g, '-');
+
+    // Exactly JavakNo_Subjectinshort_date.pdf
+    return `${cleanJavak}_${shortSub}_${cleanDate}.pdf`;
+  }, []);
+
   // =========================================================================
   // INTERACTIVE DRAG MARGIN CALCULATION ENGINE
   // =========================================================================
@@ -672,12 +708,16 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       `
       : '';
 
+    // Filename without extension for print window document title
+    const filenameWithExt = getLetterPdfFilename(letter, withSign);
+    const filenameNoExt = filenameWithExt.replace(/\.pdf$/i, '');
+
     return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8" />
-        <title>જાવક પત્ર - ${letter.outwardNumber}</title>
+        <title>${filenameNoExt}</title>
         <!-- Anek Gujarati Font Exclusive Loading -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -847,14 +887,41 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     `;
   };
 
-  // Direct Print via native browser / Android
+  // Direct Print via native browser / Android print dialog
   const handlePrint = (letter: OutwardLetter, withSign: boolean) => {
+    const filenameWithExt = getLetterPdfFilename(letter, withSign);
+    const filenameNoExt = filenameWithExt.replace(/\.pdf$/i, '');
     const html = buildLetterPrintHtml(letter, withSign);
-    printHtmlDocument(html, `જાવક_પત્ર_${letter.outwardNumber}`);
+    printHtmlDocument(html, filenameNoExt);
   };
 
-  // Direct PDF Download via jsPDF + html2canvas with font-ready guarantee
-  const handleDownloadPdf = async (letter: OutwardLetter, withSign: boolean) => {
+  // Helper to execute crisp 300 DPI canvas capture of A4 sheet
+  const captureA4Canvas = async (element: HTMLElement): Promise<HTMLCanvasElement> => {
+    if (document.fonts) {
+      await document.fonts.ready;
+    }
+    const originalTransform = element.style.transform;
+    const originalTransformOrigin = element.style.transformOrigin;
+    element.style.transform = 'none';
+    element.style.transformOrigin = 'top left';
+
+    try {
+      return await html2canvas(element, {
+        scale: 2.5, // Crisp high-res 300 DPI equivalent
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 794,
+        windowHeight: 1123,
+      });
+    } finally {
+      element.style.transform = originalTransform;
+      element.style.transformOrigin = originalTransformOrigin;
+    }
+  };
+
+  // Core capture and download routine
+  const triggerCaptureAndDownload = async (letter: OutwardLetter, withSign: boolean) => {
     if (!letterA4Ref.current) {
       handlePrint(letter, withSign);
       return;
@@ -862,34 +929,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
     setIsGeneratingPdf(true);
     try {
-      // Ensure Google Fonts are loaded before taking screenshot
-      if (document.fonts) {
-        await document.fonts.ready;
-      }
-
-      const element = letterA4Ref.current;
-      // Temporarily reset transform for unscaled crisp capture
-      const originalTransform = element.style.transform;
-      const originalTransformOrigin = element.style.transformOrigin;
-      element.style.transform = 'none';
-      element.style.transformOrigin = 'top left';
-
-      let canvas: HTMLCanvasElement;
-      try {
-        canvas = await html2canvas(element, {
-          scale: 2.5, // Crisp 300 DPI equivalent
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          windowWidth: 794,
-          windowHeight: 1123,
-        });
-      } finally {
-        // Always restore transform
-        element.style.transform = originalTransform;
-        element.style.transformOrigin = originalTransformOrigin;
-      }
-
+      const canvas = await captureA4Canvas(letterA4Ref.current);
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -898,16 +938,103 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       });
 
       pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-      const safeNum = letter.outwardNumber.replace(/[\\/:*?"<>|]/g, '_');
-      const filename = `જાવક_પત્ર_${safeNum}_${withSign ? 'સહી_સાથે' : 'સહી_વગર'}.pdf`;
+      const filename = getLetterPdfFilename(letter, withSign);
       pdf.save(filename);
     } catch (err) {
       console.error('PDF download error:', err);
-      // Fallback to print
+      // Fallback to print dialog
       handlePrint(letter, withSign);
     } finally {
       setIsGeneratingPdf(false);
     }
+  };
+
+  // Direct PDF Download via jsPDF + html2canvas with exact filename: JavakNo_Subjectinshort_date.pdf
+  const handleDownloadPdf = async (letter: OutwardLetter, withSign: boolean) => {
+    if (!letterA4Ref.current || previewLetter?.id !== letter.id) {
+      setPreviewLetter(letter);
+      setPreviewWithSign(withSign);
+      setTimeout(async () => {
+        if (letterA4Ref.current) {
+          await triggerCaptureAndDownload(letter, withSign);
+        }
+      }, 350);
+      return;
+    }
+
+    await triggerCaptureAndDownload(letter, withSign);
+  };
+
+  // Core capture and share routine via WhatsApp
+  const triggerCaptureAndShareWhatsApp = async (letter: OutwardLetter, withSign: boolean) => {
+    if (!letterA4Ref.current) {
+      handlePrint(letter, withSign);
+      return;
+    }
+
+    setIsSharingWhatsApp(true);
+    try {
+      const canvas = await captureA4Canvas(letterA4Ref.current);
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+      const filename = getLetterPdfFilename(letter, withSign);
+      const pdfBlob = pdf.output('blob');
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+      // Native Web Share API with direct file attachment (Android Chrome, iOS Safari)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: filename,
+          text: `📄 *શાળા સત્તાવાર જાવક પત્ર*\n*જાવક નંબર:* ${letter.outwardNumber}\n*વિષય:* ${letter.subject}`,
+        });
+        return;
+      }
+
+      // Fallback for desktop / unsupported Web Share:
+      // 1. Download file directly so the user has the PDF file ready
+      pdf.save(filename);
+
+      // 2. Open WhatsApp (Web / App) with prefilled letter details
+      const shareMsg = encodeURIComponent(
+        `📄 *શાળા સત્તાવાર જાવક પત્ર*\n` +
+        `*જાવક નંબર:* ${letter.outwardNumber}\n` +
+        `*તારીખ:* ${formatDateDisplay(letter.letterDate, false)}\n` +
+        `*પ્રતિ:* ${letter.recipientDesignation || letter.recipientName}${letter.recipientOffice ? ` - ${letter.recipientOffice}` : ''}\n` +
+        `*વિષય:* ${letter.subject}\n\n` +
+        `📎 પત્રની PDF ફાઈલ (${filename}) તમારા ડિવાઈસમાં ડાઉનલોડ થઈ ગઈ છે. કૃપા કરીને આ ચેટમાં મોકલી આપો.`
+      );
+      window.open(`https://api.whatsapp.com/send?text=${shareMsg}`, '_blank');
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        console.error('WhatsApp share error:', err);
+        alert('વોટ્સએપ શેર કરવામાં ક્ષતિ આવી. કૃપા કરીને PDF ડાઉનલોડ બટનથી ફાઈલ સેવ કરો.');
+      }
+    } finally {
+      setIsSharingWhatsApp(false);
+    }
+  };
+
+  // Direct WhatsApp Share (generates PDF and shares directly to WhatsApp)
+  const handleWhatsAppShare = async (letter: OutwardLetter, withSign: boolean) => {
+    if (!letterA4Ref.current || previewLetter?.id !== letter.id) {
+      setPreviewLetter(letter);
+      setPreviewWithSign(withSign);
+      setTimeout(async () => {
+        if (letterA4Ref.current) {
+          await triggerCaptureAndShareWhatsApp(letter, withSign);
+        }
+      }, 350);
+      return;
+    }
+
+    await triggerCaptureAndShareWhatsApp(letter, withSign);
   };
 
   // Filtered letters list
@@ -1118,26 +1245,37 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                               <span>જુઓ</span>
                             </button>
 
-                            {/* Generate With Sign */}
+                            {/* Direct Print */}
                             <button
                               type="button"
                               onClick={() => handlePrint(l, true)}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-all"
-                              title="સહી સાથે A4 પ્રિન્ટ / PDF"
+                              className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-all"
+                              title="પ્રિન્ટ ડાયલોગ ખોલો"
                             >
-                              <Printer className="w-3 h-3 text-emerald-600" />
-                              <span>સહી સાથે</span>
+                              <Printer className="w-3.5 h-3.5 text-sky-400" />
+                              <span>પ્રિન્ટ</span>
                             </button>
 
-                            {/* Generate Without Sign */}
+                            {/* Direct Download PDF */}
                             <button
                               type="button"
-                              onClick={() => handlePrint(l, false)}
-                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-all"
-                              title="સહી વગર A4 પ્રિન્ટ / PDF"
+                              onClick={() => handleDownloadPdf(l, true)}
+                              className="px-2 py-1 rounded-lg bg-[#C45A2D] hover:bg-[#a84a22] text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-all"
+                              title="PDF સીધું ડાઉનલોડ કરો"
                             >
-                              <Printer className="w-3 h-3 text-slate-500" />
-                              <span>સહી વગર</span>
+                              <Download className="w-3.5 h-3.5" />
+                              <span>PDF</span>
+                            </button>
+
+                            {/* Direct WhatsApp Share */}
+                            <button
+                              type="button"
+                              onClick={() => handleWhatsAppShare(l, true)}
+                              className="px-2 py-1 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-all"
+                              title="વોટ્સએપ પર સીધો શેર કરો"
+                            >
+                              <WhatsAppIcon className="w-3.5 h-3.5" />
+                              <span>વોટ્સએપ</span>
                             </button>
 
                             {/* Edit */}
@@ -2516,35 +2654,65 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
               </div>
             </div>
 
-            {/* Modal Bottom Export Actions */}
+            {/* Modal Bottom Export Actions (Print, Download, WhatsApp Share) */}
             <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between shrink-0 flex-wrap gap-2.5">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                <span>A4 • Anek Gujarati •</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {previewWithSign ? 'સહી સાથે' : 'સહી વગર'}
-                </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Filename Tag preview */}
+                <div className="text-[11px] font-mono bg-slate-200/90 dark:bg-slate-700/80 px-2.5 py-1 rounded-lg font-bold text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[#C45A2D]" />
+                  <span>{getLetterPdfFilename(previewLetter, previewWithSign)}</span>
+                </div>
+
+                {/* Toggle With/Without Signature */}
+                <button
+                  type="button"
+                  onClick={() => setPreviewWithSign(!previewWithSign)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                    previewWithSign
+                      ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300'
+                  }`}
+                  title="સહી સાથે અથવા વગર બદલો"
+                >
+                  {previewWithSign ? '✓ સહી સાથે (With Sign)' : '○ સહી વગર (Without Sign)'}
+                </button>
               </div>
 
-              <div className="flex items-center gap-2">
-                {/* Direct Native Print / Save as PDF */}
+              {/* 3 Core Output Actions: Print, Direct Download, WhatsApp Share */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* 1. Direct Print Dialogue */}
                 <button
                   type="button"
                   onClick={() => handlePrint(previewLetter, previewWithSign)}
-                  className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer transition-all"
+                  className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-md hover:shadow-lg cursor-pointer transition-all active:scale-95"
+                  title="પ્રિન્ટ ડાયલોગ ખોલો"
                 >
-                  <Printer className="w-4 h-4" />
-                  <span>પ્રિન્ટ / Save as PDF</span>
+                  <Printer className="w-4 h-4 text-sky-400" />
+                  <span>પ્રિન્ટ (Print)</span>
                 </button>
 
-                {/* Direct High Resolution PDF Download */}
+                {/* 2. Direct PDF Download */}
                 <button
                   type="button"
                   onClick={() => handleDownloadPdf(previewLetter, previewWithSign)}
                   disabled={isGeneratingPdf}
-                  className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-[#C45A2D]/25 cursor-pointer transition-all disabled:opacity-50"
+                  className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#C45A2D]/20 hover:shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                  title="PDF સીધું ડાઉનલોડ કરો"
                 >
                   <Download className="w-4 h-4" />
-                  <span>{isGeneratingPdf ? 'PDF બની રહ્યું છે...' : 'PDF ડાઉનલોડ કરો'}</span>
+                  <span>{isGeneratingPdf ? 'PDF બની રહ્યું છે...' : 'ડાઉનલોડ (Download)'}</span>
+                </button>
+
+                {/* 3. Direct WhatsApp Share */}
+                <button
+                  type="button"
+                  onClick={() => handleWhatsAppShare(previewLetter, previewWithSign)}
+                  disabled={isSharingWhatsApp}
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-emerald-500/25 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                  title="વોટ્સએપ પર સીધો PDF પત્ર શેર કરો"
+                >
+                  <WhatsAppIcon className="w-4 h-4" />
+                  <span>{isSharingWhatsApp ? 'વોટ્સએપ શેર થઈ રહ્યું છે...' : 'વોટ્સએપ શેર (WhatsApp)'}</span>
                 </button>
               </div>
             </div>
