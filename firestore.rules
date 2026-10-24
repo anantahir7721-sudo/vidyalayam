@@ -15,7 +15,9 @@ service cloud.firestore {
         (exists(/databases/$(database)/documents/schools/$(schoolId)) && (
           get(/databases/$(database)/documents/schools/$(schoolId)).data.ownerUid == request.auth.uid ||
           request.auth.token.email == 'school_' + get(/databases/$(database)/documents/schools/$(schoolId)).data.diseCode + '@gujarat-schools.internal' ||
-          request.auth.token.email == 'school_' + schoolId + '@gujarat-schools.internal'
+          request.auth.token.email == 'school_' + schoolId + '@gujarat-schools.internal' ||
+          request.auth.token.email == 'dise_' + get(/databases/$(database)/documents/schools/$(schoolId)).data.diseCode + '@gujarat-schools.internal' ||
+          request.auth.token.email == 'dise_' + schoolId + '@gujarat-schools.internal'
         ))
       );
     }
@@ -161,9 +163,16 @@ service cloud.firestore {
         allow read, write, delete: if true;
       }
 
+      // Subcollection: Settings (Letterhead, Signature, Outward Letters settings)
+      match /settings/{settingId} {
+        allow read: if true;
+        allow write, delete: if isSchoolOwner(schoolId) || isAdmin() || isAuthenticated();
+      }
+
       // Subcollection: Outward Letters (જાવક પત્રો)
       match /outward_letters/{letterId} {
-        allow read, write, delete: if isSchoolOwner(schoolId) || isAdmin();
+        allow read: if true;
+        allow write, delete: if isSchoolOwner(schoolId) || isAdmin() || isAuthenticated();
       }
 
       // All other school-specific subcollections

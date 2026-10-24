@@ -67,6 +67,38 @@ export async function saveOutwardSettings(
 }
 
 /**
+ * Real-time subscription to outward letter settings (Letterhead, Sign, Margins, Prefix)
+ * Ensures changes by any teacher or principal sync automatically to all devices
+ */
+export function subscribeToOutwardSettings(
+  schoolId: string,
+  callback: (settings: OutwardLetterSettings) => void
+): () => void {
+  const localKey = `${SETTINGS_KEY_PREFIX}${schoolId}`;
+  const settingsDoc = doc(db, 'schools', schoolId, 'settings', 'outward_letter');
+
+  return onSnapshot(
+    settingsDoc,
+    (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as OutwardLetterSettings;
+        try {
+          localStorage.setItem(localKey, JSON.stringify(data));
+        } catch (e) {}
+        callback(data);
+      }
+    },
+    (err) => {
+      console.warn('Real-time outward settings subscription notice:', err);
+      try {
+        const raw = localStorage.getItem(localKey);
+        if (raw) callback(JSON.parse(raw));
+      } catch (e) {}
+    }
+  );
+}
+
+/**
  * Fetch all outward letters for the school
  */
 export async function getOutwardLetters(schoolId: string): Promise<OutwardLetter[]> {

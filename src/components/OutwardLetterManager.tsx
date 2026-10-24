@@ -7,6 +7,7 @@ import {
   deleteOutwardLetter,
   getOutwardSettings,
   saveOutwardSettings,
+  subscribeToOutwardSettings,
 } from '../services/outwardLetterService';
 import { printHtmlDocument } from '../utils/printAndPdfUtils';
 import { toGujaratiDigits } from '../services/dailyKnowledgeService';
@@ -40,6 +41,7 @@ import {
   Minimize2,
   Hash,
   Share2,
+  Scissors,
 } from 'lucide-react';
 
 // Dedicated Official WhatsApp Icon Component
@@ -49,101 +51,312 @@ const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' 
   </svg>
 );
 
-interface OutwardLetterManagerProps {
-  school: School;
-  onBack: () => void;
+/**
+ * High-performance edge-to-edge signature auto-crop engine.
+ * Strips away empty transparent and near-white borders, so ink strokes fit
+ * snug directly above the principal's name without large blank gaps.
+ */
+export function cropSignatureImageEdgeToEdge(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    if (!dataUrl) {
+      resolve(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const { data, width, height } = imgData;
+
+        let minX = width;
+        let minY = height;
+        let maxX = -1;
+        let maxY = -1;
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const idx = (y * width + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const a = data[idx + 3];
+
+            // Ink stroke: has opacity and is not paper white/near white
+            const isWhite = r > 228 && g > 228 && b > 228;
+            const isInk = a > 20 && !isWhite;
+
+            if (isInk) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+
+        // If no bounds detected, keep as is
+        if (maxX < minX || maxY < minY) {
+          resolve(dataUrl);
+          return;
+        }
+
+        // Add 3px breathing margin
+        const pad = 3;
+        const cropX = Math.max(0, minX - pad);
+        const cropY = Math.max(0, minY - pad);
+        const cropW = Math.min(width - cropX, maxX - minX + 1 + pad * 2);
+        const cropH = Math.min(height - cropY, maxY - minY + 1 + pad * 2);
+
+        const croppedCanvas = document.createElement('canvas');
+        croppedCanvas.width = cropW;
+        croppedCanvas.height = cropH;
+        const croppedCtx = croppedCanvas.getContext('2d');
+        if (!croppedCtx) {
+          resolve(dataUrl);
+          return;
+        }
+
+        // Clean white paper to transparency
+        const croppedData = ctx.getImageData(cropX, cropY, cropW, cropH);
+        const cData = croppedData.data;
+        for (let i = 0; i < cData.length; i += 4) {
+          const r = cData[i];
+          const g = cData[i + 1];
+          const b = cData[i + 2];
+          if (r > 225 && g > 225 && b > 225) {
+            cData[i + 3] = 0;
+          }
+        }
+        croppedCtx.putImageData(croppedData, 0, 0);
+
+        // Cap max resolution at 900px width
+        let finalCanvas = croppedCanvas;
+        if (cropW > 900) {
+          const scale = 900 / cropW;
+          const scaledCanvas = document.createElement('canvas');
+          scaledCanvas.width = 900;
+          scaledCanvas.height = Math.round(cropH * scale);
+          const sCtx = scaledCanvas.getContext('2d');
+          if (sCtx) {
+            sCtx.imageSmoothingEnabled = true;
+            sCtx.imageSmoothingQuality = 'high';
+            sCtx.drawImage(croppedCanvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
+            finalCanvas = scaledCanvas;
+          }
+        }
+
+        resolve(finalCanvas.toDataURL('image/png'));
+      } catch (err) {
+        console.warn('Signature edge crop notice:', err);
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
-// Pre-configured official Gujarati School Letter Templates
-const LETTER_TEMPLATES = [
-  {
-    title: '૧. શિષ્યવૃત્તિ દરખાસ્ત પત્ર',
-    subject: 'ધોરણ ૯ થી ૧૨ ના પાત્રતા ધરાવતા વિદ્યાર્થીઓની શિષ્યવૃત્તિ દરખાસ્ત મંજૂરી અર્થે મોકલવા બાબત.',
-    content: `સવિનય ઉપરોક્ત વિષય અન્વયે જણાવવાનું કે, ચાલુ શૈક્ષણિક વર્ષ માટે અમારી શાળામાં અભ્યાસ કરતા ધોરણ ૯ થી ૧૨ ના સામાજિક અને શૈક્ષણિક રીતે પછાત વર્ગ (SEBC), અનુસૂચિત જાતિ (SC), અનુસૂચિત જનજાતિ (ST) તેમજ આર્થિક રીતે નબળા વર્ગ (EWS) ના પાત્રતા ધરાવતા વિદ્યાર્થીઓની શિષ્યવૃત્તિની નિયત નમૂનાની દરખાસ્ત તથા જરૂરી પ્રમાણિત આધાર-પુરાવાઓ આ સાથે સામેલ રાખી આપશ્રીની કચેરીએ આગળની જરૂરી મંજૂરી અર્થે મોકલી આપેલ છે.
+/**
+ * Letterhead compressor: resizes letterhead image to standard A4 (max 1654px)
+ * ensuring it stays under 350KB so it synchronizes safely to Firestore across devices.
+ */
+export function compressLetterheadImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxW = 1654;
+          const maxH = 2338;
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
 
-જે ધ્યાને લઈ સદર દરખાસ્ત માન્ય રાખી વિદ્યાર્થીઓના બેંક ખાતામાં શિષ્યવૃત્તિની રકમ જમા કરવા નમ્ર વિનંતી છે.`,
+          if (w > maxW || h > maxH) {
+            const ratio = Math.min(maxW / w, maxH / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(dataUrl);
+            return;
+          }
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+
+          // Use high quality JPEG at 0.86 to ensure lightweight cloud sync
+          const compressed = canvas.toDataURL('image/jpeg', 0.86);
+          resolve(compressed);
+        } catch (err) {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Dynamic Recipient Presets based on the School's Profile (Taluka & District)
+ * E.g. If school is in Anjar taluka, Kachchh district, TDO will auto-fill "અંજાર - કચ્છ."
+ */
+export function getRecipientPresetsForSchool(school: School) {
+  const taluka = (school.taluka || '').trim() || 'અંજાર';
+  const district = (school.district || '').trim() || 'કચ્છ';
+  const village = (school.village || '').trim() || '';
+
+  // District Headquarters mapping for Gujarat
+  const districtHqMap: Record<string, string> = {
+    'કચ્છ': 'ભુજ - કચ્છ.',
+    'Kachchh': 'ભુજ - કચ્છ.',
+    'Kutch': 'ભુજ - કચ્છ.',
+    'બનાસકાંઠા': 'પાલનપુર - બનાસકાંઠા.',
+    'સાબરકાંઠા': 'હિંમતનગર - સાબરકાંઠા.',
+    'પંચમહાલ': 'ગોધરા - પંચમહાલ.',
+    'મહીસાગર': 'લુણાવાડા - મહીસાગર.',
+    'અરવલ્લી': 'મોડાસા - અરવલ્લી.',
+    'ડાંગ': 'આહવા - ડાંગ.',
+    'નર્મદા': 'રાજપીપળા - નર્મદા.',
+    'તાપી': 'વ્યારા - તાપી.',
+    'ગીર સોમનાથ': 'વેરાવળ - ગીર સોમનાથ.',
+    'દેવભૂમિ દ્વારકા': 'ખંભાળિયા - દેવભૂમિ દ્વારકા.',
+    'છોટાઉદેપુર': 'છોટાઉદેપુર.',
+    'બોટાદ': 'બોટાદ.',
+    'મોરબી': 'મોરબી.',
+  };
+
+  const districtHq = districtHqMap[district] || `${district}.`;
+  const talukaDistrict = `${taluka} - ${district}.`;
+
+  return [
+    {
+      label: 'જિલ્લા શિક્ષણાધિકારીશ્રી (DEO)',
+      designation: 'જિલ્લા શિક્ષણાધિકારીશ્રી,',
+      office: 'જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી',
+      address: districtHq,
+    },
+    {
+      label: 'જિલ્લા પ્રાથમિક શિક્ષણાધિકારીશ્રી (DPEO)',
+      designation: 'જિલ્લા પ્રાથમિક શિક્ષણાધિકારીશ્રી,',
+      office: 'જિલ્લા પંચાયત શિક્ષણ શાખા',
+      address: districtHq,
+    },
+    {
+      label: 'તાલુકા વિકાસ અધિકારીશ્રી (TDO)',
+      designation: 'તાલુકા વિકાસ અધિકારીશ્રી,',
+      office: 'તાલુકા પંચાયત કચેરી',
+      address: talukaDistrict,
+    },
+    {
+      label: 'તાલુકા પ્રાથમિક શિક્ષણાધિકારીશ્રી (TPEO)',
+      designation: 'તાલુકા પ્રાથમિક શિક્ષણાધિકારીશ્રી,',
+      office: 'તાલુકા પંચાયત શિક્ષણ શાખા',
+      address: talukaDistrict,
+    },
+    {
+      label: 'બ્લોક રિસોર્સ કો-ઓર્ડિનેટરશ્રી (BRC)',
+      designation: 'બ્લોક રિસોર્સ કો-ઓર્ડિનેટરશ્રી,',
+      office: `બ્લોક રિસોર્સ સેન્ટર (BRC ભવન - ${taluka})`,
+      address: talukaDistrict,
+    },
+    {
+      label: 'મામલતદારશ્રી (Mamlatdar)',
+      designation: 'મામલતદારશ્રી,',
+      office: 'મામલતદારશ્રીની કચેરી',
+      address: `${taluka} (જનસેવા કેન્દ્ર) - ${district}.`,
+    },
+    {
+      label: 'જિલ્લા વિકાસ અધિકારીશ્રી (DDO)',
+      designation: 'જિલ્લા વિકાસ અધિકારીશ્રી,',
+      office: 'જિલ્લા પંચાયત કચેરી',
+      address: districtHq,
+    },
+    {
+      label: 'કલેક્ટરશ્રી (Collector)',
+      designation: 'કલેક્ટરશ્રી,',
+      office: 'કલેક્ટર કચેરી (જિલ્લા સેવાસદન)',
+      address: districtHq,
+    },
+    {
+      label: 'ક્લસ્ટર રિસોર્સ કો-ઓર્ડિનેટરશ્રી (CRC)',
+      designation: 'ક્લસ્ટર રિસોર્સ કો-ઓર્ડિનેટરશ્રી,',
+      office: 'ક્લસ્ટર રિસોર્સ સેન્ટર (CRC)',
+      address: `${village ? `${village}, તા. ` : ''}${talukaDistrict}`,
+    },
+    {
+      label: 'સરપંચશ્રી / તલાટી કમ મંત્રીશ્રી',
+      designation: 'સરપંચશ્રી / તલાટી કમ મંત્રીશ્રી,',
+      office: 'ગ્રામ પંચાયત કચેરી',
+      address: `${village ? `${village}, તા. ` : ''}${talukaDistrict}`,
+    },
+    {
+      label: 'વાલીશ્રી / વાલી મંડળ',
+      designation: 'વાલીશ્રી,',
+      office: 'વાલી મંડળ સમિતિ',
+      address: `${village ? `${village}, તા. ` : ''}${talukaDistrict}`,
+    },
+  ];
+}
+
+export const LETTER_TEMPLATES = [
+  {
+    title: 'ગ્રાન્ટ વપરાશ પ્રમાણપત્ર',
+    subject: 'શાળા ગ્રાન્ટ વપરાશ પ્રમાણપત્ર રજૂ કરવા બાબત...',
+    content:
+      'સવિનય જયભારત સાથે ઉપરોક્ત વિષય અને સંદર્ભ અન્વયે જણાવવાનું કે અમારી શાળાને ચાલુ શૈક્ષણિક સત્ર દરમિયાન ફાળવવામાં આવેલ શાળા વિકાસ ગ્રાન્ટનો નિયમોનુસાર અને નિર્ધારિત હેતુ માટે સંપૂર્ણ વપરાશ કરવામાં આવેલ છે.\n\nજેનું વપરાશ પ્રમાણપત્ર (Utilization Certificate) તથા ખર્ચના વાઉચરો અને હિસાબી પત્રકો આ સાથે બિડાણ કરી સાદર રજૂ કરીએ છીએ. જે ધ્યાને લઈ યોગ્ય કાર્યવાહી કરવા નમ્ર વિનંતી છે.',
   },
   {
-    title: '૨. ગ્રાન્ટ વપરાશ પ્રમાણપત્ર (UC)',
-    subject: 'શાળા સંકુલ ગ્રાન્ટ વપરાશ પ્રમાણપત્ર (Utilization Certificate) રજૂ કરવા બાબત.',
-    content: `સવિનય ઉપરોક્ત વિષય અન્વયે સવિનય જણાવવાનું કે, ચાલુ નાણાકીય વર્ષ દરમિયાન આપશ્રીની કચેરી દ્વારા અમારી શાળાને મંજૂર કરવામાં આવેલ શાળા વિકાસ ગ્રાન્ટ / વાર્ષિક નિભાવ ગ્રાન્ટની ફાળવેલ રકમનો નિયમાનુસાર યોગ્ય ઉપયોગ કરવામાં આવેલ છે.
-
-સદર ગ્રાન્ટના ખર્ચનું ઓડિટેડ હિસાબ પત્રક તથા ગ્રાન્ટ વપરાશ પ્રમાણપત્ર (UC) આ પત્ર સાથે સામેલ રાખી રજૂ કરેલ છે. જે સ્વીકારવા નમ્ર વિનંતી છે.`,
+    title: 'વિદ્યાર્થી માહિતી',
+    subject: 'વિદ્યાર્થીઓની શૈક્ષણિક વિગતો મોકલવા બાબત...',
+    content:
+      'સવિનય જયભારત સાથે ઉપરોક્ત વિષય અન્વયે જણાવવાનું કે આપશ્રીની કચેરી દ્વારા માંગવામાં આવેલ અમારી શાળાના ધોરણ-૧ થી ૮ ના વિદ્યાર્થીઓની જરૂરી માહિતી આ સાથે સામેલ પત્રકમાં ભરીને મોકલી આપેલ છે.\n\nઆ વિગતો આપશ્રીના રેકોર્ડ અર્થે સ્વીકારવા નમ્ર વિનંતી છે.',
   },
   {
-    title: '૩. પરીક્ષા કેન્દ્ર વિગત પત્ર',
-    subject: 'બોર્ડ / વાર્ષિક પરીક્ષા કેન્દ્ર પર ખંડ નિરીક્ષકો અને બેઠક વ્યવસ્થાની વિગતો મોકલવા બાબત.',
-    content: `સવિનય ઉપરોક્ત વિષય અને સંદર્ભ અન્વયે જણાવવાનું કે, આગામી માર્ચ/વાર્ષિક પરીક્ષા માટે અમારી શાળાને ફાળવવામાં આવેલ પરીક્ષા કેન્દ્રની સંપૂર્ણ તૈયારીઓ પૂર્ણ કરી લેવામાં આવેલ છે.
-
-પરીક્ષા કેન્દ્ર પર નિયુક્ત કરવામાં આવેલ ખંડ નિરીક્ષકોની યાદી, બેઠક વ્યવસ્થા પ્લાન તથા સીસીટીવી કેમેરા કાર્યરત હોવાનું પ્રમાણપત્ર આ સાથે આપશ્રીની કચેરીએ માહિતિ અર્થે રવાના કરેલ છે.`,
+    title: 'સ્થાનિક રજા મંજૂરી',
+    subject: 'શાળાની સ્થાનિક રજાની મંજૂરી મેળવવા બાબત...',
+    content:
+      'સવિનય ઉપરોક્ત વિષય પરત્વે જણાવવાનું કે સ્થાનિક ઉત્સવ/કાર્યક્રમ નિમિત્તે શાળામાં સ્થાનિક રજા જાહેર કરવાની મંજૂરી મેળવવા માટે આ અરજી સાદર રજૂ કરવામાં આવેલ છે.\n\nઆ દિવસના બદલામાં અન્ય જાહેર રજાના દિવસે શિક્ષણકાર્ય ચાલુ રાખી અભ્યાસક્રમ પૂર્ણ કરવામાં આવશે. યોગ્ય મંજૂરી આપવા વિનંતી.',
   },
   {
-    title: '૪. વાલી સંમેલન આમંત્રણ પત્ર',
-    subject: 'શાળા ખાતે યોજાનાર વાર્ષિક વાલી સંમેલન અને પરિણામ વિતરણ કાર્યક્રમમાં ઉપસ્થિત રહેવા બાબત.',
-    content: `સાદર પ્રણામ. આપશ્રીના પાલ્યના શૈક્ષણિક વિકાસ, પ્રગતિ અને વાર્ષિક મૂલ્યાંકન સંદર્ભે ચર્ચા-વિચારણા કરવા તેમજ વાર્ષિક પરીક્ષાનું પરિણામ પત્રક વિતરણ કરવા માટે શાળા કક્ષાએ એક વાલી સંમેલનનું આયોજન કરવામાં આવેલ છે.
-
-આપશ્રીને આ સંમેલનમાં અચૂક ઉપસ્થિત રહી વિદ્યાર્થીના ઉજ્જવળ ભવિષ્ય અંગે ઉપયોગી માર્ગદર્શન મેળવવા અને આપના રચનાત્મક સૂચનો જણાવવા હાર્દિક નિમંત્રણ પાઠવવામાં આવે છે.`,
+    title: 'સમારકામ દરખાસ્ત',
+    subject: 'શાળા મકાન મરામત અને સમારકામ ગ્રાન્ટ મંજૂર કરવા બાબત...',
+    content:
+      'સાદર પ્રણામ સાથે જણાવવાનું કે અમારી શાળાના ઓરડાઓમાં ચોમાસા દરમિયાન તથા વાર્ષિક જાળવણી અન્વયે જરૂરી સમારકામ કરવાની તાતી જરૂરિયાત છે.\n\nજે અંગે શાળા વ્યવસ્થાપન સમિતિ (SMC) ના ઠરાવ તથા અંદાજિત ખર્ચનું પત્રક આ સાથે જોડેલ છે. યોગ્ય ગ્રાન્ટ મંજૂર કરી આપવા વિનંતી.',
   },
   {
-    title: '૫. સામાન્ય વિનંતી / રજૂઆત પત્ર',
-    subject: 'શાળાના ભૌતિક સાધનો અને સુવિધાઓની પૂર્તતા કરવા બાબત.',
-    content: `સવિનય ઉપરોક્ત વિષય અન્વયે જણાવવાનું કે, અમારી શાળામાં વિદ્યાર્થીઓની સંખ્યા અને શૈક્ષણિક ગુણવત્તામાં ઉત્તરોત્તર વધારો થઈ રહ્યો છે. શાળામાં શિક્ષણ કાર્ય વધુ સુચારુ અને ગુણવત્તાસભર બને તે હેતુથી વધારાના વર્ગખંડો, પીવાના શુદ્ધ પાણીની વ્યવસ્થા તેમજ કમ્પ્યુટર લેબ સંબંધિત જરૂરી સાધનોની તાતી જરૂરિયાત છે.
-
-આપશ્રી સમક્ષ આ પત્ર દ્વારા નમ્ર રજૂઆત છે કે સદર બાબતે યોગ્ય સર્વે કરાવી ઘટતી સુવિધાઓ મંજૂર કરી આપવા કૃપા કરશો.`,
+    title: 'સામાન્ય સત્તાવાર પત્ર',
+    subject: 'શાળાકીય બાબતો અંગે જરૂરી કાર્યવાહી કરવા બાબત...',
+    content:
+      'સવિનય જયભારત સાથે જણાવવાનું કે શાળાના વહીવટી અને શૈક્ષણિક સંચાલન અર્થે ઉપર્યુક્ત વિષય સંદર્ભે ઘટતું કરવા નમ્ર નિવેદન છે.\n\nઆ અંગે જરૂરી આધાર-પુરાવા આ પત્ર સાથે સામેલ રાખેલ છે.',
   },
 ];
 
-// Quick Recipient Presets for Gujarat Education Department
-const RECIPIENT_PRESETS = [
-  {
-    label: 'જિલ્લા શિક્ષણાધિકારીશ્રી (DEO)',
-    designation: 'જિલ્લા શિક્ષણાધિકારીશ્રી,',
-    office: 'જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી',
-    address: 'જિલ્લા સેવા સદન, ભુજ - કચ્છ.',
-  },
-  {
-    label: 'જિલ્લા પ્રાથમિક શિક્ષણાધિકારીશ્રી (DPEO)',
-    designation: 'જિલ્લા પ્રાથમિક શિક્ષણાધિકારીશ્રી,',
-    office: 'જિલ્લા પંચાયત શિક્ષણ શાખા',
-    address: 'જિલ્લા પંચાયત ભવન, ભુજ - કચ્છ.',
-  },
-  {
-    label: 'તાલુકા પ્રાથમિક શિક્ષણાધિકારીશ્રી (TPEO)',
-    designation: 'તાલુકા પ્રાથમિક શિક્ષણાધિકારીશ્રી,',
-    office: 'તાલુકા પંચાયત કચેરી',
-    address: 'તાલુકા પંચાયત શિક્ષણ શાખા.',
-  },
-  {
-    label: 'બ્લોક રિસોર્સ કો-ઓર્ડિનેટરશ્રી (BRC)',
-    designation: 'બ્લોક રિસોર્સ કો-ઓર્ડિનેટરશ્રી,',
-    office: 'બ્લોક રિસોર્સ સેન્ટર (BRC ભવન)',
-    address: 'તાલુકા શિક્ષણ કેન્દ્ર.',
-  },
-  {
-    label: 'ક્લસ્ટર રિસોર્સ કો-ઓર્ડિનેટરશ્રી (CRC)',
-    designation: 'ક્લસ્ટર રિસોર્સ કો-ઓર્ડિનેટરશ્રી,',
-    office: 'ક્લસ્ટર રિસોર્સ સેન્ટર (CRC)',
-    address: 'શાળા સંકુલ ક્લસ્ટર.',
-  },
-  {
-    label: 'મામલતદારશ્રી',
-    designation: 'મામલતદારશ્રી,',
-    office: 'મામલતદારશ્રીની કચેરી',
-    address: 'તાલુકા સેવાસદન / જનસેવા કેન્દ્ર.',
-  },
-  {
-    label: 'સરપંચશ્રી / તલાટી કમ મંત્રીશ્રી',
-    designation: 'સરપંચશ્રી / તલાટી કમ મંત્રીશ્રી,',
-    office: 'ગ્રામ પંચાયત કચેરી',
-    address: 'ગ્રામ પંચાયત ભવન.',
-  },
-  {
-    label: 'વાલીશ્રી / વાલી મંડળ',
-    designation: 'વાલીશ્રી,',
-    office: 'વાલી મંડળ સમિતિ',
-    address: 'વિદ્યાર્થી વાલી સંપર્ક.',
-  },
-];
+export interface OutwardLetterManagerProps {
+  school: School;
+  onBack?: () => void;
+}
 
 export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   school,
@@ -230,12 +443,13 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   const dragCanvasRef = useRef<HTMLDivElement>(null);
   const [draggingGuide, setDraggingGuide] = useState<'top' | 'bottom' | null>(null);
 
-  // Load Settings and Letters on Mount
+  // Load Settings and Letters on Mount with Real-time Multi-Device Cloud Sync
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
+    let unsubLetters: (() => void) | undefined;
+    let unsubSettings: (() => void) | undefined;
     if (school?.id) {
-      // 1. Fetch settings
-      getOutwardSettings(school.id).then((saved) => {
+      // 1. Real-time subscribe to outward settings (Letterhead, Sign, Margins, Prefix, Digits format)
+      unsubSettings = subscribeToOutwardSettings(school.id, (saved) => {
         const loadedFormat = saved.digitFormat || 'gujarati';
         setSettings((prev) => ({
           ...prev,
@@ -254,20 +468,18 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
         }));
         setLetterDigitFormat(loadedFormat);
         setPreviewDigitFormat(loadedFormat);
-        if (!signatoryName) {
-          setSignatoryName(saved.principalName || school.principalName || '');
-        }
       });
 
       // 2. Real-time subscribe to outward letters
-      unsubscribe = subscribeToOutwardLetters(school.id, (list) => {
+      unsubLetters = subscribeToOutwardLetters(school.id, (list) => {
         setLetters(list);
         setIsLoading(false);
       });
     }
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (unsubLetters) unsubLetters();
+      if (unsubSettings) unsubSettings();
     };
   }, [school?.id]);
 
@@ -346,12 +558,14 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   // Switch to New Letter tab
   const handleStartNewLetter = () => {
     const defaultFormat = settings.digitFormat || 'gujarati';
+    const presets = getRecipientPresetsForSchool(school);
+    const defPreset = presets[0];
     setLetterDigitFormat(defaultFormat);
     setEditingLetterId(null);
     setOutwardNumber(generateNextOutwardNumber(undefined, undefined, undefined, defaultFormat));
-    setRecipientDesignation('જિલ્લા શિક્ષણાધિકારીશ્રી,');
-    setRecipientOffice('જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી');
-    setRecipientAddress('');
+    setRecipientDesignation(defPreset?.designation || 'જિલ્લા શિક્ષણાધિકારીશ્રી,');
+    setRecipientOffice(defPreset?.office || 'જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી');
+    setRecipientAddress(defPreset?.address || '');
     setSubject(LETTER_TEMPLATES[0].subject);
     setReference('');
     setContent(LETTER_TEMPLATES[0].content);
@@ -517,8 +731,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     }
   };
 
-  // Handle Letterhead PNG Upload
-  const handleLetterheadUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Letterhead PNG/JPG Upload with Auto Compression (< 350KB for fast Cloud Sync)
+  const handleLetterheadUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -527,25 +741,51 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setSettings((prev) => ({ ...prev, letterheadUrl: dataUrl }));
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedDataUrl = await compressLetterheadImage(file);
+      setSettings((prev) => {
+        const next = { ...prev, letterheadUrl: compressedDataUrl };
+        saveOutwardSettings(school.id, next).catch(console.error);
+        return next;
+      });
+    } catch (err) {
+      console.error(err);
+      alert('લેટરહેડ અપલોડ કરવામાં ક્ષતિ આવી.');
+    }
   };
 
-  // Handle Signature Image Upload
+  // Handle Signature Image Upload with Auto Edge-to-Edge Crop
   const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setSettings((prev) => ({ ...prev, principalSignUrl: dataUrl }));
+    reader.onload = async (event) => {
+      const rawDataUrl = event.target?.result as string;
+      const cropped = await cropSignatureImageEdgeToEdge(rawDataUrl);
+      setSettings((prev) => {
+        const next = { ...prev, principalSignUrl: cropped };
+        saveOutwardSettings(school.id, next).catch(console.error);
+        return next;
+      });
     };
     reader.readAsDataURL(file);
+  };
+
+  // Trigger manual edge-to-edge crop on currently active signature
+  const handleCropActiveSignature = async () => {
+    if (!settings.principalSignUrl) return;
+    try {
+      const cropped = await cropSignatureImageEdgeToEdge(settings.principalSignUrl);
+      setSettings((prev) => {
+        const next = { ...prev, principalSignUrl: cropped };
+        saveOutwardSettings(school.id, next).catch(console.error);
+        return next;
+      });
+      alert('✅ સહી એજ-ટુ-એજ ક્રોપ થઈ ગઈ છે! હવે સહી અને આચાર્યશ્રીના નામ વચ્ચે વધારાની ખાલી જગ્યા રહેશે નહીં.');
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   // Digital Signature Canvas Handlers
@@ -595,12 +835,17 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
-  const saveCanvasSignature = () => {
+  const saveCanvasSignature = async () => {
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
-    const dataUrl = canvas.toDataURL('image/png');
-    setSettings((prev) => ({ ...prev, principalSignUrl: dataUrl }));
-    alert('✅ સહી સેવ થઈ ગઈ છે.');
+    const rawDataUrl = canvas.toDataURL('image/png');
+    const cropped = await cropSignatureImageEdgeToEdge(rawDataUrl);
+    setSettings((prev) => {
+      const next = { ...prev, principalSignUrl: cropped };
+      saveOutwardSettings(school.id, next).catch(console.error);
+      return next;
+    });
+    alert('✅ સહી સેવ અને એજ-ટુ-એજ ક્રોપ થઈ ગઈ છે.');
   };
 
   // Save Settings to Firestore
@@ -736,23 +981,22 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
         </div>
       `;
 
-    // Signatory block (allowing signature to grow up to 140mm without clipping or 30mm height limit)
+    // Signatory block (allowing signature to grow up to 140mm without clipping or height limit)
     const signBlockHtml = withSign && settings.principalSignUrl
       ? `
-        <div style="text-align: center; display: inline-block; min-width: ${Math.max(180, Math.round(signWidthMm * 1.15))}px; max-width: 340px;">
-          <p style="margin: 0 0 4px 0; font-weight: 700; font-size: 13.5px; color: #0f172a;">લિ. આપનો વિશ્વાસુ,</p>
-          <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; margin: 6px 0;">
+        <div style="text-align: center; display: inline-block; min-width: ${Math.max(180, Math.round(signWidthMm * 1.15))}px; max-width: 360px;">
+          <div style="min-height: 36px; display: flex; align-items: center; justify-content: center; margin: 2px 0 4px 0;">
             <img src="${settings.principalSignUrl}" alt="Signature" style="width: ${signWidthMm}mm; max-height: ${signMaxHeightMm}mm; height: auto; object-fit: contain; margin: 0 auto; display: block;" />
           </div>
-          <p style="margin: 4px 0 0 0; font-weight: 800; font-size: 14.5px; color: #0f172a;">(${letter.signatoryName || settings.principalName || school.principalName || ''})</p>
+          <p style="margin: 2px 0 0 0; font-weight: 800; font-size: 14.5px; color: #0f172a;">(${letter.signatoryName || settings.principalName || school.principalName || ''})</p>
           <p style="margin: 2px 0 0 0; font-size: 12.5px; color: #334155; font-weight: 600;">${letter.signatoryDesignation || 'આચાર્યશ્રી'}</p>
           <p style="margin: 1px 0 0 0; font-size: 11.5px; color: #64748b; font-weight: 500;">${school.schoolName}</p>
         </div>
       `
       : `
         <div style="text-align: center; display: inline-block; min-width: 200px;">
-          <p style="margin: 0 0 54px 0; font-weight: 700; font-size: 13.5px; color: #0f172a;">લિ. આપનો વિશ્વાસુ,</p>
-          <p style="margin: 4px 0 0 0; font-weight: 800; font-size: 14.5px; color: #0f172a;">(${letter.signatoryName || settings.principalName || school.principalName || ''})</p>
+          <div style="height: 48px;"></div>
+          <p style="margin: 2px 0 0 0; font-weight: 800; font-size: 14.5px; color: #0f172a;">(${letter.signatoryName || settings.principalName || school.principalName || ''})</p>
           <p style="margin: 2px 0 0 0; font-size: 12.5px; color: #334155; font-weight: 600;">${letter.signatoryDesignation || 'આચાર્યશ્રી'}</p>
           <p style="margin: 1px 0 0 0; font-size: 11.5px; color: #64748b; font-weight: 500;">${school.schoolName}</p>
         </div>
@@ -861,9 +1105,9 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
             color: #1e293b;
           }
           .recipient-block .to-address {
-            color: #334155;
-            font-weight: 500;
-            font-size: 13.5px;
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 14px;
           }
           .subject-container {
             margin-bottom: 20px;
@@ -1054,38 +1298,44 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
       pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
       const filename = getLetterPdfFilename(letter, withSign, activeFormat);
+      
+      // Always save/download PDF first so the teacher definitely has the file on device
+      pdf.save(filename);
+
       const pdfBlob = pdf.output('blob');
       const file = new File([pdfBlob], filename, { type: 'application/pdf' });
 
+      const shareText = `📄 *શાળા સત્તાવાર જાવક પત્ર*\n*જાવક નંબર:* ${formatDigits(letter.outwardNumber, activeFormat)}\n*તારીખ:* ${formatDateDisplay(letter.letterDate, activeFormat)}\n*પ્રતિ:* ${letter.recipientDesignation || letter.recipientName}${letter.recipientOffice ? ` - ${letter.recipientOffice}` : ''}\n*વિષય:* ${letter.subject}`;
+
       // Native Web Share API with direct file attachment (Android Chrome, iOS Safari)
+      let sharedSuccessfully = false;
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: filename,
-          text: `📄 *શાળા સત્તાવાર જાવક પત્ર*\n*જાવક નંબર:* ${formatDigits(letter.outwardNumber, activeFormat)}\n*વિષય:* ${letter.subject}`,
-        });
-        return;
+        try {
+          await navigator.share({
+            files: [file],
+            title: filename,
+            text: shareText,
+          });
+          sharedSuccessfully = true;
+          return;
+        } catch (shareErr) {
+          // If user cancelled or if iframe denied permission, seamlessly fall back to WhatsApp URL
+          console.warn('Native share was cancelled or bypassed, falling back to WhatsApp URL:', shareErr);
+        }
       }
 
-      // Fallback for desktop / unsupported Web Share:
-      // 1. Download file directly so the user has the PDF file ready
-      pdf.save(filename);
-
-      // 2. Open WhatsApp (Web / App) with prefilled letter details
-      const shareMsg = encodeURIComponent(
-        `📄 *શાળા સત્તાવાર જાવક પત્ર*\n` +
-        `*જાવક નંબર:* ${formatDigits(letter.outwardNumber, activeFormat)}\n` +
-        `*તારીખ:* ${formatDateDisplay(letter.letterDate, activeFormat)}\n` +
-        `*પ્રતિ:* ${letter.recipientDesignation || letter.recipientName}${letter.recipientOffice ? ` - ${letter.recipientOffice}` : ''}\n` +
-        `*વિષય:* ${letter.subject}\n\n` +
-        `📎 પત્રની PDF ફાઈલ (${filename}) તમારા ડિવાઈસમાં ડાઉનલોડ થઈ ગઈ છે. કૃપા કરીને આ ચેટમાં મોકલી આપો.`
-      );
-      window.open(`https://api.whatsapp.com/send?text=${shareMsg}`, '_blank');
+      if (!sharedSuccessfully) {
+        // WhatsApp URL fallback: opens WhatsApp chat directly with full letter summary
+        const shareMsg = encodeURIComponent(
+          `${shareText}\n\n` +
+          `📎 પત્રની PDF ફાઈલ (${filename}) તમારા ડિવાઈસમાં ડાઉનલોડ થઈ ગઈ છે. કૃપા કરીને આ ચેટમાં મોકલી આપો.`
+        );
+        window.open(`https://api.whatsapp.com/send?text=${shareMsg}`, '_blank');
+      }
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        console.error('WhatsApp share error:', err);
-        alert('વોટ્સએપ શેર કરવામાં ક્ષતિ આવી. કૃપા કરીને PDF ડાઉનલોડ બટનથી ફાઈલ સેવ કરો.');
-      }
+      console.error('WhatsApp export error:', err);
+      // Fallback to print if canvas fails completely
+      handlePrint(letter, withSign);
     } finally {
       setIsSharingWhatsApp(false);
     }
@@ -1547,10 +1797,11 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                       ક્રમ: પ્રતિ, → (૧) હોદ્દેદારશ્રી, → (૨) કચેરીનું નામ → (૩) સરનામું
                     </p>
                   </div>
-                  {/* Recipient Quick Presets Dropdown */}
+                  {/* Recipient Quick Presets Dropdown (Auto-fills with school taluka/district) */}
                   <select
                     onChange={(e) => {
-                      const found = RECIPIENT_PRESETS.find((p) => p.label === e.target.value);
+                      const presets = getRecipientPresetsForSchool(school);
+                      const found = presets.find((p) => p.label === e.target.value);
                       if (found) {
                         setRecipientDesignation(found.designation);
                         setRecipientOffice(found.office);
@@ -1559,8 +1810,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                     }}
                     className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer shadow-xs"
                   >
-                    <option value="">ઝડપી કચેરી પસંદ કરો (Presets)...</option>
-                    {RECIPIENT_PRESETS.map((p, idx) => (
+                    <option value="">ઝડપી કચેરી પસંદ કરો ({school?.taluka ? `${school.taluka} / ${school.district || 'કચ્છ'}` : 'તાલુકા-જિલ્લા કચેરી'})...</option>
+                    {getRecipientPresetsForSchool(school).map((p, idx) => (
                       <option key={idx} value={p.label}>
                         {p.label}
                       </option>
@@ -1597,14 +1848,14 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
                   <div>
                     <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 block mb-1">
-                      (૩) સરનામું / સ્થળ (Address / City)
+                      (૩) સરનામું / સ્થળ (Address / City) *
                     </label>
                     <input
                       type="text"
                       value={recipientAddress}
                       onChange={(e) => setRecipientAddress(e.target.value)}
                       placeholder="દા.ત. જિલ્લા સેવા સદન, ભુજ - કચ્છ."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-[#C45A2D]/50"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#C45A2D]/50"
                     />
                   </div>
                 </div>
@@ -2195,18 +2446,29 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   {/* Current Active Signature & Size Controls */}
                   {settings.principalSignUrl && (
                     <div className="space-y-3 pt-1 border-t border-slate-200 dark:border-slate-700">
-                      <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 flex items-center justify-between">
+                      <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-2">
                           <img
                             src={settings.principalSignUrl}
                             alt="Signature Preview"
-                            className="h-8 max-w-[120px] object-contain bg-white rounded border p-0.5"
+                            className="h-9 max-w-[130px] object-contain bg-white rounded border p-0.5 shadow-xs"
                           />
                           <span className="text-[11px] font-bold text-purple-900 dark:text-purple-300">
                             સક્રિય ડિજિટલ સહી
                           </span>
                         </div>
-                        <Check className="w-4 h-4 text-purple-600" />
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={handleCropActiveSignature}
+                            className="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[10.5px] font-bold flex items-center gap-1 cursor-pointer shadow-xs active:scale-95 transition-all"
+                            title="સહીની વધારાની ખાલી જગ્યા ક્રોપ કરી સહી અને નામ વચ્ચેની જગ્યા ઘટાડો"
+                          >
+                            <Scissors className="w-3.5 h-3.5" />
+                            <span>✂️ એજ-ટુ-એજ ક્રોપ</span>
+                          </button>
+                          <Check className="w-4 h-4 text-purple-600" />
+                        </div>
                       </div>
 
                       {/* Signature Size Adjuster on A4 Page */}
@@ -2286,36 +2548,89 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                           </div>
                         </div>
 
-                        {/* Real-time A4 Sign Placement Visual Box (without 32mm height cap) */}
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-purple-200 dark:border-purple-800/60 text-center font-['Anek_Gujarati']">
-                          <div className="text-[10px] text-slate-500 mb-1 font-bold">
-                            A4 પૃષ્ઠ પર સહી કેવી દેખાશે (Live A4 Sign Preview):
+                        {/* Letterhead Sheet Live Visual Preview (showing Letterhead + sample text + signature at bottom right without "લિ. આપનો વિશ્વાસુ,") */}
+                        <div className="p-3 bg-slate-100 dark:bg-slate-800/60 rounded-xl border border-dashed border-purple-300 dark:border-purple-800/80 space-y-2 font-['Anek_Gujarati']">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <span className="text-[10.5px] text-purple-900 dark:text-purple-300 font-bold flex items-center gap-1">
+                              <PenTool className="w-3 h-3 text-purple-600" />
+                              <span>લેટરહેડ શીટ પર સહી લાઈવ પ્રિવ્યુ (Letterhead Sheet Preview):</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleCropActiveSignature}
+                              className="text-[10px] font-bold text-purple-700 dark:text-purple-300 hover:underline flex items-center gap-0.5 cursor-pointer"
+                              title="ખાલી માર્જિન કાપીને સહી અને નામ નજીક લાવો"
+                            >
+                              <Scissors className="w-2.5 h-2.5" />
+                              <span>✂️ વધારાની ખાલી જગ્યા ક્રોપ કરો</span>
+                            </button>
                           </div>
-                          <div
-                            style={{
-                              maxWidth: `${Math.max(240, Math.min(380, Math.round((settings.principalSignWidthMm ?? 48) * 1.6)))}px`,
-                            }}
-                            className="bg-white border rounded-lg p-3 mx-auto shadow-xs text-right transition-all"
-                          >
-                            <div className="text-[11px] font-bold text-slate-800">લિ. આપનો વિશ્વાસુ,</div>
-                            <div className="py-2 flex justify-end items-center">
-                              <img
-                                src={settings.principalSignUrl}
-                                alt="Signature Preview"
+
+                          {/* Scaled Mini Letterhead Sheet */}
+                          <div className="relative w-full max-w-[340px] mx-auto bg-white rounded-lg shadow-md border border-slate-300 overflow-hidden text-slate-900 text-left p-3.5 space-y-2">
+                            {/* Letterhead Header Preview */}
+                            {settings.letterheadUrl ? (
+                              <div className="w-full border-b pb-1 mb-1">
+                                <img
+                                  src={settings.letterheadUrl}
+                                  alt="Letterhead"
+                                  className="w-full h-12 object-contain"
+                                />
+                              </div>
+                            ) : (
+                              <div className="text-center border-b pb-1 border-slate-300">
+                                <div className="text-[10px] font-black uppercase text-slate-900">
+                                  {school.schoolName}
+                                </div>
+                                <div className="text-[8px] text-slate-500">
+                                  {school.taluka ? `${school.taluka}, ` : ''}{school.district || 'કચ્છ'} • DISE: {school.diseCode}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Dummy Content lines representing official outward letter */}
+                            <div className="space-y-1 py-1 opacity-60 pointer-events-none">
+                              <div className="flex justify-between text-[8px] font-mono text-slate-500 border-b pb-0.5">
+                                <span>જાવક નં: સ.હા.લા/૨૦૨૬/૦૦૧</span>
+                                <span>તારીખ: ૨૪/૧૦/૨૦૨૬</span>
+                              </div>
+                              <div className="text-[8.5px] font-bold text-slate-800">
+                                પ્રતિ, તાલુકા વિકાસ અધિકારીશ્રી ({school.taluka || 'અંજાર'} - {school.district || 'કચ્છ'})
+                              </div>
+                              <div className="h-1.5 bg-slate-200 rounded-full w-full"></div>
+                              <div className="h-1.5 bg-slate-200 rounded-full w-4/5"></div>
+                              <div className="h-1.5 bg-slate-200 rounded-full w-11/12"></div>
+                            </div>
+
+                            {/* Signatory Placement directly below content, tight against principal's name */}
+                            <div className="pt-2 flex justify-end">
+                              <div
                                 style={{
-                                  width: `${settings.principalSignWidthMm ?? 48}mm`,
-                                  maxHeight: `${Math.max(48, Math.round((settings.principalSignWidthMm ?? 48) * 0.85))}mm`,
-                                  height: 'auto',
-                                  objectFit: 'contain',
+                                  width: `${Math.max(120, Math.min(220, Math.round((settings.principalSignWidthMm ?? 48) * 1.5)))}px`,
                                 }}
-                                className="transition-all duration-150 block"
-                              />
-                            </div>
-                            <div className="font-black text-xs text-slate-950">
-                              ({settings.principalName || school.principalName || 'આચાર્યશ્રીનું નામ'})
-                            </div>
-                            <div className="text-[10.5px] text-slate-600 font-semibold">
-                              {settings.principalDesignation || 'આચાર્યશ્રી'}
+                                className="text-center"
+                              >
+                                {/* Signature image tight against name without "લિ. આપનો વિશ્વાસુ" */}
+                                <div className="flex justify-center items-center py-0.5">
+                                  <img
+                                    src={settings.principalSignUrl}
+                                    alt="Principal Signature"
+                                    style={{
+                                      width: `${settings.principalSignWidthMm ?? 48}mm`,
+                                      maxHeight: `${Math.max(40, Math.round((settings.principalSignWidthMm ?? 48) * 0.85))}mm`,
+                                      height: 'auto',
+                                      objectFit: 'contain',
+                                    }}
+                                    className="transition-all duration-150 block mx-auto"
+                                  />
+                                </div>
+                                <div className="font-black text-[11px] text-slate-950 leading-tight">
+                                  ({settings.principalName || school.principalName || 'આચાર્યશ્રીનું નામ'})
+                                </div>
+                                <div className="text-[9.5px] text-slate-600 font-semibold leading-tight">
+                                  {settings.principalDesignation || 'આચાર્યશ્રી'}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -2749,6 +3064,50 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   </label>
                 </div>
               )}
+
+              {/* Row 3: Quick Direct Actions at the Top for Instant Access (Print, Download, WhatsApp) */}
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2">
+                <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>ત્વરિત નિકાસ (Direct Actions):</span>
+                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* 1. Direct Print Dialogue */}
+                  <button
+                    type="button"
+                    onClick={() => handlePrint(previewLetter, previewWithSign, previewDigitFormat)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm hover:shadow cursor-pointer transition-all active:scale-95"
+                    title="પ્રિન્ટ ડાયલોગ ખોલો"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-sky-400" />
+                    <span>પ્રિન્ટ (Print)</span>
+                  </button>
+
+                  {/* 2. Direct PDF Download */}
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadPdf(previewLetter, previewWithSign)}
+                    disabled={isGeneratingPdf}
+                    className="px-3 py-1.5 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-[#C45A2D]/20 hover:shadow cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                    title="PDF સીધું ડાઉનલોડ કરો"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>{isGeneratingPdf ? 'PDF બની રહી છે...' : 'ડાઉનલોડ PDF'}</span>
+                  </button>
+
+                  {/* 3. Direct WhatsApp Share */}
+                  <button
+                    type="button"
+                    onClick={() => handleWhatsAppShare(previewLetter, previewWithSign)}
+                    disabled={isSharingWhatsApp}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-black flex items-center gap-1.5 shadow-sm shadow-emerald-500/25 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                    title="વોટ્સએપ પર સીધો PDF પત્ર શેર કરો"
+                  >
+                    <WhatsAppIcon className="w-3.5 h-3.5" />
+                    <span>{isSharingWhatsApp ? 'શેર થઈ રહ્યું છે...' : 'વોટ્સએપ શેર'}</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Modal Body: Responsive Scaled A4 Letter Viewer */}
@@ -2835,7 +3194,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                         </div>
                       )}
                       {previewLetter.recipientAddress && (
-                        <div className="text-slate-700 text-xs mt-0.5">
+                        <div className="font-bold text-[14px] text-slate-900 mt-0.5">
                           {previewLetter.recipientAddress}
                         </div>
                       )}
@@ -2869,21 +3228,19 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   </div>
 
                   {/* Bottom Section: Signatory & Copy To */}
-                  <div className="relative z-10 pt-4 mt-4">
-                    {/* Signatory Box (Uncapped size up to 140mm) */}
+                  <div className="relative z-10 pt-3 mt-3">
+                    {/* Signatory Box (Uncapped size up to 140mm, without "લિ. આપનો વિશ્વાસુ,") */}
                     <div className="flex justify-end">
                       <div
                         style={{
                           minWidth: `${Math.max(180, Math.round((settings.principalSignWidthMm ?? 48) * 1.15))}px`,
                           maxWidth: '360px',
                         }}
-                        className="text-center space-y-1"
+                        className="text-center space-y-0.5"
                       >
-                        <div className="font-bold text-[13px] text-slate-800">લિ. આપનો વિશ્વાસુ,</div>
-
                         {previewWithSign ? (
                           settings.principalSignUrl ? (
-                            <div className="py-1 flex justify-center items-center min-h-[46px]">
+                            <div className="py-0.5 flex justify-center items-center min-h-[38px]">
                               <img
                                 src={settings.principalSignUrl}
                                 alt="Signature"
@@ -2897,7 +3254,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                               />
                             </div>
                           ) : (
-                            <div className="p-2.5 my-1.5 border border-dashed border-purple-300 rounded-lg text-center bg-purple-50/60">
+                            <div className="p-2 my-1 border border-dashed border-purple-300 rounded-lg text-center bg-purple-50/60">
                               <p className="text-[11px] text-purple-700 font-bold mb-1">ડિજિટલ સહી સેટ કરેલ નથી</p>
                               <label className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white text-[10.5px] font-bold rounded cursor-pointer shadow-xs">
                                 <Upload className="w-3 h-3" />
