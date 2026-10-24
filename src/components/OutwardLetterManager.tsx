@@ -13,6 +13,8 @@ import {
   printHtmlDocument,
   downloadPdfFile,
   sharePdfFile,
+  isAndroidNativeApp,
+  blobToBase64,
 } from '../utils/printAndPdfUtils';
 import { toGujaratiDigits } from '../services/dailyKnowledgeService';
 import jsPDF from 'jspdf';
@@ -183,8 +185,8 @@ export function compressLetterheadImage(file: File): Promise<string> {
       const img = new Image();
       img.onload = () => {
         try {
-          const maxW = 1654;
-          const maxH = 2338;
+          const maxW = 1240;
+          const maxH = 1754;
           let w = img.naturalWidth || img.width;
           let h = img.naturalHeight || img.height;
 
@@ -203,12 +205,16 @@ export function compressLetterheadImage(file: File): Promise<string> {
             return;
           }
 
+          // Pre-fill canvas with pure white background so transparent PNGs never turn black in JPEG
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, w, h);
 
-          // Use high quality JPEG at 0.86 to ensure lightweight cloud sync
-          const compressed = canvas.toDataURL('image/jpeg', 0.86);
+          // Use optimal quality JPEG at 0.80 (~180KB) for instantaneous Firestore multi-teacher cloud sync
+          const compressed = canvas.toDataURL('image/jpeg', 0.80);
           resolve(compressed);
         } catch (err) {
           resolve(dataUrl);
@@ -544,9 +550,13 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
         setComputedPreviewScale(1);
         return;
       }
-      // Target A4 width is 794px. Usable width is containerWidth - padding (approx 24px)
-      const usableWidth = Math.max(260, containerWidth - 28);
-      const scale = Math.min(1, usableWidth / 794);
+      // Target A4 is 794px wide and 1123px high
+      const usableWidth = Math.max(220, containerWidth - 20);
+      const containerHeight = modalBodyRef.current.clientHeight;
+      const usableHeight = containerHeight > 100 ? Math.max(260, containerHeight - 20) : 1123;
+      const scaleByWidth = usableWidth / 794;
+      const scaleByHeight = usableHeight / 1123;
+      const scale = Math.max(0.28, Math.min(1, Math.min(scaleByWidth, scaleByHeight)));
       setComputedPreviewScale(scale);
     };
 
@@ -1306,30 +1316,39 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
       const { blob, filename } = await renderLetterToPdfBlob(letter, withSign, activeFormat);
 
-      // 1. Always download the PDF file directly to device
-      await downloadPdfFile(blob, filename);
-
       const shareText = `📄 *શાળા સત્તાવાર જાવક પત્ર*\n*જાવક નંબર:* ${formatDigits(letter.outwardNumber, activeFormat)}\n*તારીખ:* ${formatDateDisplay(letter.letterDate, activeFormat)}\n*પ્રતિ:* ${letter.recipientDesignation || letter.recipientName}${letter.recipientOffice ? ` - ${letter.recipientOffice}` : ''}\n*વિષય:* ${letter.subject}`;
 
-      // 2. Try native file share (AndroidBridge / WebShare)
-      let shared = false;
-      try {
-        const res = await sharePdfFile(blob, filename, filename, shareText);
-        if (res.success && res.method !== 'browser_download') {
-          shared = true;
-        }
-      } catch (e) {
-        console.warn('Native share error, falling back to WhatsApp link:', e);
+      // 1. Android APK native bridge: direct system share chooser with WhatsApp
+      if (isAndroidNativeApp() && window.AndroidBridge?.shareBase64Pdf) {
+        const base64Data = await blobToBase64(blob);
+        window.AndroidBridge.shareBase64Pdf(base64Data, filename, 'application/pdf', shareText);
+        return;
       }
 
-      // 3. Open WhatsApp chat with prefilled message
-      if (!shared) {
-        const shareMsg = encodeURIComponent(
-          `${shareText}\n\n` +
-          `📎 પત્રની PDF ફાઈલ (${filename}) તમારા મોબાઈલમાં ડાઉનલોડ થઈ ગઈ છે. કૃપા કરીને આ ચેટમાં મોકલી આપો.`
-        );
-        window.open(`https://api.whatsapp.com/send?text=${shareMsg}`, '_blank');
+      // 2. Direct WebShare API with PDF File (opens WhatsApp with PDF file attached)
+      const pdfFile = new File([blob], filename, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        try {
+          await navigator.share({
+            files: [pdfFile],
+            title: filename,
+            text: shareText,
+          });
+          return;
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') {
+            return; // User cancelled share sheet
+          }
+        }
       }
+
+      // 3. Fallback for browsers without direct file sharing: download file first, then open WhatsApp chat
+      await downloadPdfFile(blob, filename);
+      const shareMsg = encodeURIComponent(
+        `${shareText}\n\n` +
+        `📎 પત્રની PDF ફાઈલ (${filename}) તમારા મોબાઈલમાં ડાઉનલોડ થઈ ગઈ છે.`
+      );
+      window.open(`https://api.whatsapp.com/send?text=${shareMsg}`, '_blank');
     } catch (err) {
       console.error('WhatsApp export error:', err);
       // Fallback: open WhatsApp chat with text summary
@@ -2580,61 +2599,24 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                               </div>
                             )}
 
-                            {/* Dummy Content lines representing official outward letter */}
-                            <div className="space-y-1 relative z-10 opacity-75 pointer-events-none">
-                              <div className="flex justify-between text-[8px] font-mono font-bold text-slate-700 border-b border-slate-200 pb-0.5">
-                                <span>જાવક નં: {formatDigits('૨૦૨૬/૦૦૧', 'gujarati')}</span>
-                                <span>તારીખ: {formatDigits('૨૪/૧૦/૨૦૨૬', 'gujarati')}</span>
-                              </div>
-                              <div className="text-[8.5px] font-extrabold text-slate-900 leading-tight">
-                                પ્રતિ, તાલુકા વિકાસ અધિકારીશ્રી ({school.taluka || 'અંજાર'} - {school.district || 'કચ્છ'})
-                              </div>
-                              <div className="text-[8px] font-black text-slate-950 bg-slate-100/80 px-1 py-0.5 rounded border-l-2 border-slate-800">
-                                વિષય: શાળા ગ્રાન્ટ વપરાશ પ્રમાણપત્ર બાબત...
-                              </div>
-                              <div className="space-y-0.5 pt-0.5">
-                                <div className="h-1 bg-slate-300 rounded-full w-full"></div>
-                                <div className="h-1 bg-slate-300 rounded-full w-5/6"></div>
-                                <div className="h-1 bg-slate-300 rounded-full w-11/12"></div>
-                              </div>
-                            </div>
-
-                            {/* Signatory Placement directly below content, tight against principal's name */}
-                            <div className="relative z-10 pt-1 flex justify-end">
+                            {/* In this settings preview, show ONLY the signature placed in the bottom right corner of the letterhead sheet */}
+                            <div className="flex-1 w-full flex items-end justify-end relative z-10 pb-1">
                               <div
                                 style={{
-                                  width: `${Math.max(22, Math.min(85, Math.round(((settings.principalSignWidthMm ?? 48) / 210) * 100)))}%`,
+                                  width: `${Math.max(20, Math.min(85, Math.round(((settings.principalSignWidthMm ?? 48) / 210) * 100)))}%`,
                                 }}
-                                className="text-center"
+                                className="flex justify-end items-end"
                               >
-                                {/* Signature image proportional to A4 sheet */}
-                                <div className="flex justify-center items-center py-0 my-0">
-                                  <img
-                                    src={settings.principalSignUrl}
-                                    alt="Principal Signature"
-                                    style={{
-                                      width: '100%',
-                                      height: 'auto',
-                                      objectFit: 'contain',
-                                    }}
-                                    className="transition-all duration-150 block mx-auto"
-                                  />
-                                </div>
-                                {settings.showSignatoryName !== false && (
-                                  <div className="font-black text-[9.5px] text-slate-950 leading-tight mt-0.5">
-                                    ({settings.principalName || school.principalName || 'આચાર્યશ્રીનું નામ'})
-                                  </div>
-                                )}
-                                {settings.showSignatoryDesignation !== false && (
-                                  <div className="text-[8px] text-slate-700 font-bold leading-tight">
-                                    {settings.principalDesignation || 'આચાર્યશ્રી'}
-                                  </div>
-                                )}
-                                {settings.showSchoolNameInSign && (
-                                  <div className="text-[7.5px] text-slate-500 font-medium leading-tight">
-                                    {school.schoolName}
-                                  </div>
-                                )}
+                                <img
+                                  src={settings.principalSignUrl}
+                                  alt="Principal Signature"
+                                  style={{
+                                    width: '100%',
+                                    height: 'auto',
+                                    objectFit: 'contain',
+                                  }}
+                                  className="transition-all duration-150 block ml-auto drop-shadow-xs"
+                                />
                               </div>
                             </div>
                           </div>
@@ -2892,8 +2874,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
           FULL-SCREEN A4 LETTER PREVIEW & INSTANT PDF EXPORT MODAL
           ========================================================================= */}
       {previewLetter && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm overflow-y-auto font-['Anek_Gujarati']">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl max-w-4xl w-full max-h-[96vh] flex flex-col shadow-2xl animate-in fade-in overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/85 flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 backdrop-blur-sm overflow-hidden font-['Anek_Gujarati']">
+          <div className="bg-white dark:bg-slate-900 border-0 sm:border border-slate-200 dark:border-white/10 rounded-none sm:rounded-3xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[94vh] flex flex-col shadow-2xl animate-in fade-in overflow-hidden">
             {/* Modal Top Bar */}
             <div className="flex items-center justify-between p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 shrink-0 flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
@@ -3156,7 +3138,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
             {/* Modal Body: Responsive Scaled A4 Letter Viewer */}
             <div
               ref={modalBodyRef}
-              className="p-2 sm:p-4 overflow-auto bg-slate-200/90 dark:bg-slate-950 flex flex-col items-center justify-start min-h-[420px] max-h-[70vh]"
+              className="flex-1 min-h-0 overflow-auto bg-slate-200/90 dark:bg-slate-950 flex flex-col items-center justify-start sm:justify-center p-2 sm:p-4"
             >
               {/* Scaled Envelope Box (Holds exact scaled dimensions for perfect layout) */}
               <div

@@ -165,14 +165,12 @@ service cloud.firestore {
 
       // Subcollection: Settings (Letterhead, Signature, Outward Letters settings)
       match /settings/{settingId} {
-        allow read: if true;
-        allow write, delete: if isSchoolOwner(schoolId) || isAdmin() || isAuthenticated();
+        allow read, write, delete: if true;
       }
 
       // Subcollection: Outward Letters (જાવક પત્રો)
       match /outward_letters/{letterId} {
-        allow read: if true;
-        allow write, delete: if isSchoolOwner(schoolId) || isAdmin() || isAuthenticated();
+        allow read, write, delete: if true;
       }
 
       // All other school-specific subcollections

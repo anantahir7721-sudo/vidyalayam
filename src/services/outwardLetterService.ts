@@ -60,12 +60,10 @@ export async function saveOutwardSettings(
 
   try {
     const settingsDoc = doc(db, 'schools', schoolId, 'settings', 'outward_letter');
-    // Use Promise.race with 1500ms timeout so slow mobile internet never blocks the UI
-    const firestorePromise = setDoc(settingsDoc, settings, { merge: true });
-    const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 1500));
-    await Promise.race([firestorePromise, timeoutPromise]);
+    await setDoc(settingsDoc, settings, { merge: true });
   } catch (err) {
-    console.warn('Error saving outward settings to Firestore:', err);
+    console.error('Error saving outward settings to Firestore:', err);
+    throw err;
   }
 }
 
@@ -191,14 +189,13 @@ export async function saveOutwardLetter(
     localStorage.setItem(localKey, JSON.stringify(list));
   } catch (e) {}
 
-  // Save to Firestore with timeout race
+  // Save to Firestore
   try {
     const letterDoc = doc(db, 'schools', schoolId, 'outward_letters', letter.id);
-    const firestorePromise = setDoc(letterDoc, letter, { merge: true });
-    const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 1500));
-    await Promise.race([firestorePromise, timeoutPromise]);
+    await setDoc(letterDoc, letter, { merge: true });
   } catch (err) {
-    console.warn('Error saving outward letter to Firestore:', err);
+    console.error('Error saving outward letter to Firestore:', err);
+    throw err;
   }
 }
 

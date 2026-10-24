@@ -272,7 +272,8 @@ export async function sharePdfFile(
   try {
     let blob: Blob;
     if (typeof source === 'string') {
-      const byteCharacters = atob(source);
+      const raw = source.includes(',') ? source.split(',')[1].trim() : source.trim();
+      const byteCharacters = atob(raw);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
