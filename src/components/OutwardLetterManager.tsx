@@ -9,7 +9,11 @@ import {
   saveOutwardSettings,
   subscribeToOutwardSettings,
 } from '../services/outwardLetterService';
-import { printHtmlDocument } from '../utils/printAndPdfUtils';
+import {
+  printHtmlDocument,
+  downloadPdfFile,
+  sharePdfFile,
+} from '../utils/printAndPdfUtils';
 import { toGujaratiDigits } from '../services/dailyKnowledgeService';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -982,23 +986,27 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       `;
 
     // Signatory block (allowing signature to grow up to 140mm without clipping or height limit)
+    const showName = settings.showSignatoryName !== false;
+    const showDesig = settings.showSignatoryDesignation !== false;
+    const showSchool = Boolean(settings.showSchoolNameInSign);
+
     const signBlockHtml = withSign && settings.principalSignUrl
       ? `
-        <div style="text-align: center; display: inline-block; min-width: ${Math.max(180, Math.round(signWidthMm * 1.15))}px; max-width: 360px;">
-          <div style="min-height: 36px; display: flex; align-items: center; justify-content: center; margin: 2px 0 4px 0;">
+        <div style="text-align: center; display: inline-block; min-width: ${Math.max(160, Math.round(signWidthMm * 1.15))}px; max-width: 360px;">
+          <div style="display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;">
             <img src="${settings.principalSignUrl}" alt="Signature" style="width: ${signWidthMm}mm; max-height: ${signMaxHeightMm}mm; height: auto; object-fit: contain; margin: 0 auto; display: block;" />
           </div>
-          <p style="margin: 2px 0 0 0; font-weight: 800; font-size: 14.5px; color: #0f172a;">(${letter.signatoryName || settings.principalName || school.principalName || ''})</p>
-          <p style="margin: 2px 0 0 0; font-size: 12.5px; color: #334155; font-weight: 600;">${letter.signatoryDesignation || 'આચાર્યશ્રી'}</p>
-          <p style="margin: 1px 0 0 0; font-size: 11.5px; color: #64748b; font-weight: 500;">${school.schoolName}</p>
+          ${showName ? `<p style="margin: 2px 0 0 0; font-weight: 800; font-size: 14.5px; color: #0f172a;">(${letter.signatoryName || settings.principalName || school.principalName || ''})</p>` : ''}
+          ${showDesig ? `<p style="margin: 2px 0 0 0; font-size: 12.5px; color: #334155; font-weight: 600;">${letter.signatoryDesignation || 'આચાર્યશ્રી'}</p>` : ''}
+          ${showSchool ? `<p style="margin: 1px 0 0 0; font-size: 11.5px; color: #64748b; font-weight: 500;">${school.schoolName}</p>` : ''}
         </div>
       `
       : `
-        <div style="text-align: center; display: inline-block; min-width: 200px;">
+        <div style="text-align: center; display: inline-block; min-width: 180px;">
           <div style="height: 48px;"></div>
-          <p style="margin: 2px 0 0 0; font-weight: 800; font-size: 14.5px; color: #0f172a;">(${letter.signatoryName || settings.principalName || school.principalName || ''})</p>
-          <p style="margin: 2px 0 0 0; font-size: 12.5px; color: #334155; font-weight: 600;">${letter.signatoryDesignation || 'આચાર્યશ્રી'}</p>
-          <p style="margin: 1px 0 0 0; font-size: 11.5px; color: #64748b; font-weight: 500;">${school.schoolName}</p>
+          ${showName ? `<p style="margin: 2px 0 0 0; font-weight: 800; font-size: 14.5px; color: #0f172a;">(${letter.signatoryName || settings.principalName || school.principalName || ''})</p>` : ''}
+          ${showDesig ? `<p style="margin: 2px 0 0 0; font-size: 12.5px; color: #334155; font-weight: 600;">${letter.signatoryDesignation || 'આચાર્યશ્રી'}</p>` : ''}
+          ${showSchool ? `<p style="margin: 1px 0 0 0; font-size: 11.5px; color: #64748b; font-weight: 500;">${school.schoolName}</p>` : ''}
         </div>
       `;
 
@@ -1206,155 +1214,132 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     printHtmlDocument(html, filenameNoExt);
   };
 
-  // Helper to execute crisp 300 DPI canvas capture of A4 sheet
-  const captureA4Canvas = async (element: HTMLElement): Promise<HTMLCanvasElement> => {
-    if (document.fonts) {
-      await document.fonts.ready;
+  // High-reliability PDF Blob generator for any outward letter (whether preview modal is open or not)
+  const renderLetterToPdfBlob = async (
+    letter: OutwardLetter,
+    withSign: boolean,
+    format: 'gujarati' | 'english'
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const filename = getLetterPdfFilename(letter, withSign, format);
+
+    let elementToCapture: HTMLElement | null = letterA4Ref.current;
+    let tempContainer: HTMLElement | null = null;
+
+    if (!elementToCapture || previewLetter?.id !== letter.id) {
+      // Create offscreen container with exact A4 printable HTML
+      tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '794px';
+      tempContainer.style.minHeight = '1123px';
+      tempContainer.style.backgroundColor = '#ffffff';
+      tempContainer.style.zIndex = '-9999';
+      tempContainer.innerHTML = buildLetterPrintHtml(letter, withSign, format);
+      document.body.appendChild(tempContainer);
+
+      const sheet = tempContainer.querySelector('.a4-sheet') as HTMLElement | null;
+      elementToCapture = sheet || tempContainer;
     }
-    const originalTransform = element.style.transform;
-    const originalTransformOrigin = element.style.transformOrigin;
-    element.style.transform = 'none';
-    element.style.transformOrigin = 'top left';
+
+    if (!elementToCapture) {
+      throw new Error('Element for A4 PDF rendering not found');
+    }
 
     try {
-      return await html2canvas(element, {
-        scale: 2.5, // Crisp high-res 300 DPI equivalent
+      if (document.fonts) {
+        await document.fonts.ready;
+      }
+      const canvas = await html2canvas(elementToCapture, {
+        scale: 1.8, // Optimal 1.8 scale: light on Android memory, perfectly crisp on A4
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 794,
         windowHeight: 1123,
       });
-    } finally {
-      element.style.transform = originalTransform;
-      element.style.transformOrigin = originalTransformOrigin;
-    }
-  };
 
-  // Core capture and download routine
-  const triggerCaptureAndDownload = async (letter: OutwardLetter, withSign: boolean) => {
-    if (!letterA4Ref.current) {
-      handlePrint(letter, withSign);
-      return;
-    }
-
-    setIsGeneratingPdf(true);
-    try {
-      const activeFormat = previewLetter?.id === letter.id ? previewDigitFormat : (letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati');
-      const canvas = await captureA4Canvas(letterA4Ref.current);
-      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
       });
-
       pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-      const filename = getLetterPdfFilename(letter, withSign, activeFormat);
-      pdf.save(filename);
+      const blob = pdf.output('blob');
+      return { blob, filename };
+    } finally {
+      if (tempContainer && document.body.contains(tempContainer)) {
+        document.body.removeChild(tempContainer);
+      }
+    }
+  };
+
+  // Direct PDF Download: ALWAYS directly downloads the PDF file, NEVER opens print preview!
+  const handleDownloadPdf = async (letter: OutwardLetter, withSign: boolean) => {
+    setIsGeneratingPdf(true);
+    try {
+      const activeFormat =
+        previewLetter?.id === letter.id
+          ? previewDigitFormat
+          : letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati';
+
+      const { blob, filename } = await renderLetterToPdfBlob(letter, withSign, activeFormat);
+      await downloadPdfFile(blob, filename);
     } catch (err) {
       console.error('PDF download error:', err);
-      // Fallback to print dialog
-      handlePrint(letter, withSign);
+      alert('PDF ડાઉનલોડ કરવામાં ક્ષતિ આવી, કૃપા કરીને ફરી પ્રયાસ કરો.');
     } finally {
       setIsGeneratingPdf(false);
     }
   };
 
-  // Direct PDF Download via jsPDF + html2canvas with exact filename: JavakNo_Subjectinshort_date.pdf
-  const handleDownloadPdf = async (letter: OutwardLetter, withSign: boolean) => {
-    if (!letterA4Ref.current || previewLetter?.id !== letter.id) {
-      setPreviewLetter(letter);
-      setPreviewWithSign(withSign);
-      setPreviewDigitFormat(letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati');
-      setTimeout(async () => {
-        if (letterA4Ref.current) {
-          await triggerCaptureAndDownload(letter, withSign);
-        }
-      }, 350);
-      return;
-    }
-
-    await triggerCaptureAndDownload(letter, withSign);
-  };
-
-  // Core capture and share routine via WhatsApp
-  const triggerCaptureAndShareWhatsApp = async (letter: OutwardLetter, withSign: boolean) => {
-    if (!letterA4Ref.current) {
-      handlePrint(letter, withSign);
-      return;
-    }
-
+  // Direct WhatsApp Share: Downloads PDF first, opens WhatsApp share/chat, NEVER opens print preview!
+  const handleWhatsAppShare = async (letter: OutwardLetter, withSign: boolean) => {
     setIsSharingWhatsApp(true);
     try {
-      const activeFormat = previewLetter?.id === letter.id ? previewDigitFormat : (letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati');
-      const canvas = await captureA4Canvas(letterA4Ref.current);
-      const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
+      const activeFormat =
+        previewLetter?.id === letter.id
+          ? previewDigitFormat
+          : letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati';
 
-      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-      const filename = getLetterPdfFilename(letter, withSign, activeFormat);
-      
-      // Always save/download PDF first so the teacher definitely has the file on device
-      pdf.save(filename);
+      const { blob, filename } = await renderLetterToPdfBlob(letter, withSign, activeFormat);
 
-      const pdfBlob = pdf.output('blob');
-      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+      // 1. Always download the PDF file directly to device
+      await downloadPdfFile(blob, filename);
 
       const shareText = `📄 *શાળા સત્તાવાર જાવક પત્ર*\n*જાવક નંબર:* ${formatDigits(letter.outwardNumber, activeFormat)}\n*તારીખ:* ${formatDateDisplay(letter.letterDate, activeFormat)}\n*પ્રતિ:* ${letter.recipientDesignation || letter.recipientName}${letter.recipientOffice ? ` - ${letter.recipientOffice}` : ''}\n*વિષય:* ${letter.subject}`;
 
-      // Native Web Share API with direct file attachment (Android Chrome, iOS Safari)
-      let sharedSuccessfully = false;
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: filename,
-            text: shareText,
-          });
-          sharedSuccessfully = true;
-          return;
-        } catch (shareErr) {
-          // If user cancelled or if iframe denied permission, seamlessly fall back to WhatsApp URL
-          console.warn('Native share was cancelled or bypassed, falling back to WhatsApp URL:', shareErr);
+      // 2. Try native file share (AndroidBridge / WebShare)
+      let shared = false;
+      try {
+        const res = await sharePdfFile(blob, filename, filename, shareText);
+        if (res.success && res.method !== 'browser_download') {
+          shared = true;
         }
+      } catch (e) {
+        console.warn('Native share error, falling back to WhatsApp link:', e);
       }
 
-      if (!sharedSuccessfully) {
-        // WhatsApp URL fallback: opens WhatsApp chat directly with full letter summary
+      // 3. Open WhatsApp chat with prefilled message
+      if (!shared) {
         const shareMsg = encodeURIComponent(
           `${shareText}\n\n` +
-          `📎 પત્રની PDF ફાઈલ (${filename}) તમારા ડિવાઈસમાં ડાઉનલોડ થઈ ગઈ છે. કૃપા કરીને આ ચેટમાં મોકલી આપો.`
+          `📎 પત્રની PDF ફાઈલ (${filename}) તમારા મોબાઈલમાં ડાઉનલોડ થઈ ગઈ છે. કૃપા કરીને આ ચેટમાં મોકલી આપો.`
         );
         window.open(`https://api.whatsapp.com/send?text=${shareMsg}`, '_blank');
       }
     } catch (err) {
       console.error('WhatsApp export error:', err);
-      // Fallback to print if canvas fails completely
-      handlePrint(letter, withSign);
+      // Fallback: open WhatsApp chat with text summary
+      const shareMsg = encodeURIComponent(
+        `📄 *શાળા સત્તાવાર જાવક પત્ર*\n*જાવક નંબર:* ${letter.outwardNumber}\n*વિષય:* ${letter.subject}`
+      );
+      window.open(`https://api.whatsapp.com/send?text=${shareMsg}`, '_blank');
     } finally {
       setIsSharingWhatsApp(false);
     }
-  };
-
-  // Direct WhatsApp Share (generates PDF and shares directly to WhatsApp)
-  const handleWhatsAppShare = async (letter: OutwardLetter, withSign: boolean) => {
-    if (!letterA4Ref.current || previewLetter?.id !== letter.id) {
-      setPreviewLetter(letter);
-      setPreviewWithSign(withSign);
-      setTimeout(async () => {
-        if (letterA4Ref.current) {
-          await triggerCaptureAndShareWhatsApp(letter, withSign);
-        }
-      }, 350);
-      return;
-    }
-
-    await triggerCaptureAndShareWhatsApp(letter, withSign);
   };
 
   // Filtered letters list
@@ -2548,12 +2533,12 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                           </div>
                         </div>
 
-                        {/* Letterhead Sheet Live Visual Preview (showing Letterhead + sample text + signature at bottom right without "લિ. આપનો વિશ્વાસુ,") */}
+                        {/* Letterhead Sheet Live Visual Preview (true A4 sheet ratio with letterhead and proportional signature) */}
                         <div className="p-3 bg-slate-100 dark:bg-slate-800/60 rounded-xl border border-dashed border-purple-300 dark:border-purple-800/80 space-y-2 font-['Anek_Gujarati']">
                           <div className="flex items-center justify-between flex-wrap gap-2">
                             <span className="text-[10.5px] text-purple-900 dark:text-purple-300 font-bold flex items-center gap-1">
                               <PenTool className="w-3 h-3 text-purple-600" />
-                              <span>લેટરહેડ શીટ પર સહી લાઈવ પ્રિવ્યુ (Letterhead Sheet Preview):</span>
+                              <span>લેટરહેડ શીટ પર સહી લાઈવ પ્રિવ્યુ (Live A4 Preview):</span>
                             </span>
                             <button
                               type="button"
@@ -2566,70 +2551,90 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                             </button>
                           </div>
 
-                          {/* Scaled Mini Letterhead Sheet */}
-                          <div className="relative w-full max-w-[340px] mx-auto bg-white rounded-lg shadow-md border border-slate-300 overflow-hidden text-slate-900 text-left p-3.5 space-y-2">
-                            {/* Letterhead Header Preview */}
+                          {/* Scaled Authentic A4 Letterhead Sheet */}
+                          <div
+                            className="relative w-full max-w-[320px] mx-auto bg-white rounded-xl shadow-lg border border-slate-300 overflow-hidden text-slate-900 text-left flex flex-col justify-between"
+                            style={{
+                              aspectRatio: '210 / 297',
+                              paddingTop: settings.letterheadUrl ? `${Math.round(((settings.topMarginMm ?? 62) / 297) * 440)}px` : '16px',
+                              paddingBottom: `${Math.round(((settings.bottomMarginMm ?? 32) / 297) * 440)}px`,
+                              paddingLeft: `${Math.round(((settings.leftMarginMm ?? 22) / 210) * 320)}px`,
+                              paddingRight: `${Math.round(((settings.rightMarginMm ?? 22) / 210) * 320)}px`,
+                            }}
+                          >
+                            {/* Full A4 Letterhead Background if uploaded */}
                             {settings.letterheadUrl ? (
-                              <div className="w-full border-b pb-1 mb-1">
-                                <img
-                                  src={settings.letterheadUrl}
-                                  alt="Letterhead"
-                                  className="w-full h-12 object-contain"
-                                />
-                              </div>
+                              <img
+                                src={settings.letterheadUrl}
+                                alt="Letterhead"
+                                className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0"
+                              />
                             ) : (
-                              <div className="text-center border-b pb-1 border-slate-300">
-                                <div className="text-[10px] font-black uppercase text-slate-900">
+                              <div className="relative z-10 text-center border-b pb-1.5 border-slate-900/80 mb-2">
+                                <div className="text-[11px] font-black uppercase text-slate-950 tracking-tight leading-tight">
                                   {school.schoolName}
                                 </div>
-                                <div className="text-[8px] text-slate-500">
-                                  {school.taluka ? `${school.taluka}, ` : ''}{school.district || 'કચ્છ'} • DISE: {school.diseCode}
+                                <div className="text-[8.5px] text-slate-600 font-semibold mt-0.5">
+                                  {school.village ? `${school.village}, ` : ''}{school.taluka ? `${school.taluka}, ` : ''}{school.district || 'કચ્છ'} • DISE: {formatDigits(school.diseCode, 'gujarati')}
                                 </div>
                               </div>
                             )}
 
                             {/* Dummy Content lines representing official outward letter */}
-                            <div className="space-y-1 py-1 opacity-60 pointer-events-none">
-                              <div className="flex justify-between text-[8px] font-mono text-slate-500 border-b pb-0.5">
-                                <span>જાવક નં: સ.હા.લા/૨૦૨૬/૦૦૧</span>
-                                <span>તારીખ: ૨૪/૧૦/૨૦૨૬</span>
+                            <div className="space-y-1 relative z-10 opacity-75 pointer-events-none">
+                              <div className="flex justify-between text-[8px] font-mono font-bold text-slate-700 border-b border-slate-200 pb-0.5">
+                                <span>જાવક નં: {formatDigits('૨૦૨૬/૦૦૧', 'gujarati')}</span>
+                                <span>તારીખ: {formatDigits('૨૪/૧૦/૨૦૨૬', 'gujarati')}</span>
                               </div>
-                              <div className="text-[8.5px] font-bold text-slate-800">
+                              <div className="text-[8.5px] font-extrabold text-slate-900 leading-tight">
                                 પ્રતિ, તાલુકા વિકાસ અધિકારીશ્રી ({school.taluka || 'અંજાર'} - {school.district || 'કચ્છ'})
                               </div>
-                              <div className="h-1.5 bg-slate-200 rounded-full w-full"></div>
-                              <div className="h-1.5 bg-slate-200 rounded-full w-4/5"></div>
-                              <div className="h-1.5 bg-slate-200 rounded-full w-11/12"></div>
+                              <div className="text-[8px] font-black text-slate-950 bg-slate-100/80 px-1 py-0.5 rounded border-l-2 border-slate-800">
+                                વિષય: શાળા ગ્રાન્ટ વપરાશ પ્રમાણપત્ર બાબત...
+                              </div>
+                              <div className="space-y-0.5 pt-0.5">
+                                <div className="h-1 bg-slate-300 rounded-full w-full"></div>
+                                <div className="h-1 bg-slate-300 rounded-full w-5/6"></div>
+                                <div className="h-1 bg-slate-300 rounded-full w-11/12"></div>
+                              </div>
                             </div>
 
                             {/* Signatory Placement directly below content, tight against principal's name */}
-                            <div className="pt-2 flex justify-end">
+                            <div className="relative z-10 pt-1 flex justify-end">
                               <div
                                 style={{
-                                  width: `${Math.max(120, Math.min(220, Math.round((settings.principalSignWidthMm ?? 48) * 1.5)))}px`,
+                                  width: `${Math.max(22, Math.min(85, Math.round(((settings.principalSignWidthMm ?? 48) / 210) * 100)))}%`,
                                 }}
                                 className="text-center"
                               >
-                                {/* Signature image tight against name without "લિ. આપનો વિશ્વાસુ" */}
-                                <div className="flex justify-center items-center py-0.5">
+                                {/* Signature image proportional to A4 sheet */}
+                                <div className="flex justify-center items-center py-0 my-0">
                                   <img
                                     src={settings.principalSignUrl}
                                     alt="Principal Signature"
                                     style={{
-                                      width: `${settings.principalSignWidthMm ?? 48}mm`,
-                                      maxHeight: `${Math.max(40, Math.round((settings.principalSignWidthMm ?? 48) * 0.85))}mm`,
+                                      width: '100%',
                                       height: 'auto',
                                       objectFit: 'contain',
                                     }}
                                     className="transition-all duration-150 block mx-auto"
                                   />
                                 </div>
-                                <div className="font-black text-[11px] text-slate-950 leading-tight">
-                                  ({settings.principalName || school.principalName || 'આચાર્યશ્રીનું નામ'})
-                                </div>
-                                <div className="text-[9.5px] text-slate-600 font-semibold leading-tight">
-                                  {settings.principalDesignation || 'આચાર્યશ્રી'}
-                                </div>
+                                {settings.showSignatoryName !== false && (
+                                  <div className="font-black text-[9.5px] text-slate-950 leading-tight mt-0.5">
+                                    ({settings.principalName || school.principalName || 'આચાર્યશ્રીનું નામ'})
+                                  </div>
+                                )}
+                                {settings.showSignatoryDesignation !== false && (
+                                  <div className="text-[8px] text-slate-700 font-bold leading-tight">
+                                    {settings.principalDesignation || 'આચાર્યશ્રી'}
+                                  </div>
+                                )}
+                                {settings.showSchoolNameInSign && (
+                                  <div className="text-[7.5px] text-slate-500 font-medium leading-tight">
+                                    {school.schoolName}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -2639,26 +2644,64 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   )}
 
                   {/* Signatory Name & Designation */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">આચાર્યશ્રીનું નામ</label>
-                      <input
-                        type="text"
-                        value={settings.principalName || ''}
-                        onChange={(e) => setSettings((p) => ({ ...p, principalName: e.target.value }))}
-                        placeholder="આચાર્યશ્રીનું નામ"
-                        className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold"
-                      />
+                  <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-slate-700">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">આચાર્યશ્રીનું નામ</label>
+                        <input
+                          type="text"
+                          value={settings.principalName || ''}
+                          onChange={(e) => setSettings((p) => ({ ...p, principalName: e.target.value }))}
+                          placeholder="આચાર્યશ્રીનું નામ"
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">હોદ્દો</label>
+                        <input
+                          type="text"
+                          value={settings.principalDesignation || 'આચાર્યશ્રી'}
+                          onChange={(e) => setSettings((p) => ({ ...p, principalDesignation: e.target.value }))}
+                          placeholder="હોદ્દો"
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">હોદ્દો</label>
-                      <input
-                        type="text"
-                        value={settings.principalDesignation || 'આચાર્યશ્રી'}
-                        onChange={(e) => setSettings((p) => ({ ...p, principalDesignation: e.target.value }))}
-                        placeholder="હોદ્દો"
-                        className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold"
-                      />
+
+                    {/* Checkboxes: Toggle display of Name / Designation / School (prevents duplicate text if stamp already has it) */}
+                    <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 block">
+                        સહી નીચે દર્શાવવાની વિગતો (જો આપના સહી સ્ટેમ્પમાં પહેલેથી લખેલું હોય તો અનચેક કરી શકો છો):
+                      </span>
+                      <div className="flex items-center gap-3 flex-wrap text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={settings.showSignatoryName !== false}
+                            onChange={(e) => setSettings((p) => ({ ...p, showSignatoryName: e.target.checked }))}
+                            className="rounded text-purple-600 focus:ring-purple-500"
+                          />
+                          <span>નામ દર્શાવો</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={settings.showSignatoryDesignation !== false}
+                            onChange={(e) => setSettings((p) => ({ ...p, showSignatoryDesignation: e.target.checked }))}
+                            className="rounded text-purple-600 focus:ring-purple-500"
+                          />
+                          <span>હોદ્દો દર્શાવો ({settings.principalDesignation || 'આચાર્યશ્રી'})</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(settings.showSchoolNameInSign)}
+                            onChange={(e) => setSettings((p) => ({ ...p, showSchoolNameInSign: e.target.checked }))}
+                            className="rounded text-purple-600 focus:ring-purple-500"
+                          />
+                          <span>શાળાનું નામ દર્શાવો</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3272,15 +3315,21 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                           <div className="h-14" /> /* Blank space for physical pen signature */
                         )}
 
-                        <div className="font-black text-[14.5px] text-slate-950">
-                          {`(${previewLetter.signatoryName || school.principalName || ''})`}
-                        </div>
-                        <div className="text-[12px] text-slate-700 font-semibold">
-                          {previewLetter.signatoryDesignation || 'આચાર્યશ્રી'}
-                        </div>
-                        <div className="text-[11px] text-slate-500 font-medium">
-                          {school.schoolName}
-                        </div>
+                        {settings.showSignatoryName !== false && (
+                          <div className="font-black text-[14.5px] text-slate-950">
+                            {`(${previewLetter.signatoryName || school.principalName || ''})`}
+                          </div>
+                        )}
+                        {settings.showSignatoryDesignation !== false && (
+                          <div className="text-[12px] text-slate-700 font-semibold">
+                            {previewLetter.signatoryDesignation || 'આચાર્યશ્રી'}
+                          </div>
+                        )}
+                        {settings.showSchoolNameInSign && (
+                          <div className="text-[11px] text-slate-500 font-medium">
+                            {school.schoolName}
+                          </div>
+                        )}
                       </div>
                     </div>
 

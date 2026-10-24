@@ -562,6 +562,9 @@ export interface OutwardLetterSettings {
   outwardPadDigits?: number; // Padding digits (default 3 for 001 / ૦૦૧)
   currentOutwardNumber?: number; // Auto increment counter
   digitFormat?: 'gujarati' | 'english'; // Option for Gujarati (૧, ૨, ૩) or English (1, 2, 3) digits
+  showSignatoryName?: boolean; // Whether to display principal name text below signature (default true)
+  showSignatoryDesignation?: boolean; // Whether to display designation text below signature (default true)
+  showSchoolNameInSign?: boolean; // Whether to display school name below signature (default false)
 }
 
 export interface OutwardLetter {
