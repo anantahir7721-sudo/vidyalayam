@@ -158,25 +158,37 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     return String(str || '').replace(/[૦-૯]/g, (d) => String(gujarati.indexOf(d)));
   };
 
+  // Universal bidirectional digit formatter (Gujarati <-> English)
+  const formatDigits = useCallback((text: string | number | undefined | null, format: 'gujarati' | 'english'): string => {
+    if (text === undefined || text === null) return '';
+    const str = String(text);
+    return format === 'gujarati' ? toGujaratiDigits(str) : toEnglishDigits(str);
+  }, []);
+
   // Letters state
   const [letters, setLetters] = useState<OutwardLetter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Settings state (Letterhead, Sign, Margins, Prefix & Auto-Numbering)
+  // Settings state (Letterhead, Sign, Margins, Prefix, Auto-Numbering & Digit Format)
   const [settings, setSettings] = useState<OutwardLetterSettings>({
     topMarginMm: 62, // Defaults calibrated for standard official letterheads
     bottomMarginMm: 32, // Defaults calibrated to clear standard footers
     leftMarginMm: 22,
     rightMarginMm: 22,
-    outwardPrefix: 'સ.હા.લા/૨૦૨૬/', // Configurable prefix e.g. "સ.હા.લા/૨૦૨૬/"
+    outwardPrefix: 'સ.હા.લા/૨૦૨૬/', // Configurable prefix e.g. "સ.હા.લા/૨૦૨૬/" or "સ.હા.લા/2026/"
     outwardStartingNumber: 1, // Start counter
     outwardPadDigits: 3, // 3-digit pad: ૦૦૧, ૦૦૨
-    principalSignWidthMm: 38, // Default signature width on A4 (in mm)
+    principalSignWidthMm: 48, // Default signature width on A4 (in mm)
     principalDesignation: 'આચાર્યશ્રી',
+    digitFormat: 'gujarati', // Default: 'gujarati' (૧, ૨, ૩) or 'english' (1, 2, 3)
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsSavedMsg, setSettingsSavedMsg] = useState(false);
+
+  // General Digits Format for Current Letter & Preview (Gujarati vs English digits)
+  const [letterDigitFormat, setLetterDigitFormat] = useState<'gujarati' | 'english'>('gujarati');
+  const [previewDigitFormat, setPreviewDigitFormat] = useState<'gujarati' | 'english'>('gujarati');
 
   // New Letter Form State
   const [editingLetterId, setEditingLetterId] = useState<string | null>(null);
@@ -188,7 +200,6 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     const yyyy = today.getFullYear();
     return `${yyyy}-${mm}-${dd}`;
   });
-  const [useGujaratiDigitsInDate, setUseGujaratiDigitsInDate] = useState(true);
   // Structured Recipient fields: 1. હોદ્દેદારશ્રી, 2. કચેરી, 3. સરનામું
   const [recipientDesignation, setRecipientDesignation] = useState('જિલ્લા શિક્ષણાધિકારીશ્રી,');
   const [recipientOffice, setRecipientOffice] = useState('જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી');
@@ -225,6 +236,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     if (school?.id) {
       // 1. Fetch settings
       getOutwardSettings(school.id).then((saved) => {
+        const loadedFormat = saved.digitFormat || 'gujarati';
         setSettings((prev) => ({
           ...prev,
           ...saved,
@@ -235,10 +247,13 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
           outwardPrefix: saved.outwardPrefix || prev.outwardPrefix || 'સ.હા.લા/૨૦૨૬/',
           outwardStartingNumber: saved.outwardStartingNumber ?? 1,
           outwardPadDigits: saved.outwardPadDigits ?? 3,
-          principalSignWidthMm: saved.principalSignWidthMm ?? 38,
+          principalSignWidthMm: saved.principalSignWidthMm ?? 48,
           principalName: saved.principalName || school.principalName || '',
           principalDesignation: saved.principalDesignation || 'આચાર્યશ્રી',
+          digitFormat: loadedFormat,
         }));
+        setLetterDigitFormat(loadedFormat);
+        setPreviewDigitFormat(loadedFormat);
         if (!signatoryName) {
           setSignatoryName(saved.principalName || school.principalName || '');
         }
@@ -256,14 +271,15 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     };
   }, [school?.id]);
 
-  // Next Auto Outward Number Generator with Smart Prefix & Zero Padding
-  const generateNextOutwardNumber = useCallback((customPrefix?: string, customPad?: number, customStart?: number) => {
+  // Next Auto Outward Number Generator with Smart Prefix, Zero Padding & Digits Format
+  const generateNextOutwardNumber = useCallback((customPrefix?: string, customPad?: number, customStart?: number, customFormat?: 'gujarati' | 'english') => {
     const rawPrefix = (customPrefix !== undefined ? customPrefix : (settings.outwardPrefix || 'સ.હા.લા/૨૦૨૬/')).trim();
     // Normalize prefix: if it doesn't end with '/' or '-', append '/'
     const prefix = rawPrefix.endsWith('/') || rawPrefix.endsWith('-') ? rawPrefix : `${rawPrefix}/`;
     
     const padDigits = customPad !== undefined ? customPad : (settings.outwardPadDigits ?? 3);
     const startNum = customStart !== undefined ? customStart : (settings.outwardStartingNumber ?? 1);
+    const activeFormat = customFormat !== undefined ? customFormat : (letterDigitFormat || settings.digitFormat || 'gujarati');
     
     // Scan saved letters to find highest sequence number with this prefix
     let maxSequence = startNum - 1;
@@ -294,10 +310,13 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     
     const nextSeq = Math.max(startNum, maxSequence + 1);
     const padded = String(nextSeq).padStart(padDigits, '0');
-    const gujaratiPadded = toGujaratiDigits(padded);
     
-    return `${prefix}${gujaratiPadded}`;
-  }, [settings.outwardPrefix, settings.outwardPadDigits, settings.outwardStartingNumber, letters]);
+    // Format both the prefix year/number and the sequence according to activeFormat!
+    const formattedPrefix = formatDigits(prefix, activeFormat);
+    const formattedSequence = formatDigits(padded, activeFormat);
+    
+    return `${formattedPrefix}${formattedSequence}`;
+  }, [settings.outwardPrefix, settings.outwardPadDigits, settings.outwardStartingNumber, settings.digitFormat, letterDigitFormat, letters, formatDigits]);
 
   // Calculate Responsive A4 Scale for Modal Preview so entire page fits on screen without horizontal scroll
   useEffect(() => {
@@ -326,8 +345,10 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
   // Switch to New Letter tab
   const handleStartNewLetter = () => {
+    const defaultFormat = settings.digitFormat || 'gujarati';
+    setLetterDigitFormat(defaultFormat);
     setEditingLetterId(null);
-    setOutwardNumber(generateNextOutwardNumber());
+    setOutwardNumber(generateNextOutwardNumber(undefined, undefined, undefined, defaultFormat));
     setRecipientDesignation('જિલ્લા શિક્ષણાધિકારીશ્રી,');
     setRecipientOffice('જિલ્લા શિક્ષણાધિકારીશ્રીની કચેરી');
     setRecipientAddress('');
@@ -342,6 +363,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
   // Edit existing letter
   const handleEditLetter = (item: OutwardLetter) => {
+    const effFormat = item.digitFormat || settings.digitFormat || 'gujarati';
+    setLetterDigitFormat(effFormat);
     setEditingLetterId(item.id);
     setOutwardNumber(item.outwardNumber);
     setLetterDate(item.letterDate);
@@ -359,8 +382,10 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
   // Duplicate letter as new
   const handleDuplicateLetter = (item: OutwardLetter) => {
+    const effFormat = item.digitFormat || settings.digitFormat || 'gujarati';
+    setLetterDigitFormat(effFormat);
     setEditingLetterId(null);
-    setOutwardNumber(generateNextOutwardNumber());
+    setOutwardNumber(generateNextOutwardNumber(undefined, undefined, undefined, effFormat));
     setRecipientDesignation(item.recipientDesignation || item.recipientName || '');
     setRecipientOffice(item.recipientOffice || '');
     setRecipientAddress(item.recipientAddress || '');
@@ -371,6 +396,30 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     setSignatoryName(settings.principalName || school.principalName || '');
     setSignatoryDesignation(settings.principalDesignation || 'આચાર્યશ્રી');
     setActiveTab('new_letter');
+  };
+
+  // Toggle Digits format in Form (Gujarati <-> English)
+  const handleToggleDigitFormat = (newFormat: 'gujarati' | 'english') => {
+    setLetterDigitFormat(newFormat);
+    setOutwardNumber((prev) => formatDigits(prev, newFormat));
+  };
+
+  // Toggle Digits format in Preview Modal
+  const handleTogglePreviewDigitFormat = (newFormat: 'gujarati' | 'english') => {
+    setPreviewDigitFormat(newFormat);
+    if (previewLetter) {
+      setPreviewLetter((prev) => prev ? ({ ...prev, digitFormat: newFormat }) : null);
+    }
+  };
+
+  // Update Signature Size live with instant save
+  const handleUpdateSignWidth = (newWidthMm: number) => {
+    const clamped = Math.max(20, Math.min(150, Math.round(newWidthMm)));
+    setSettings((prev) => {
+      const updated = { ...prev, principalSignWidthMm: clamped };
+      saveOutwardSettings(school.id, updated).catch(console.error);
+      return updated;
+    });
   };
 
   // Delete letter
@@ -443,6 +492,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       copyTo: copyToList.length > 0 ? copyToList : undefined,
       signatoryName: signatoryName.trim() || settings.principalName || school.principalName || '',
       signatoryDesignation: signatoryDesignation.trim() || 'આચાર્યશ્રી',
+      digitFormat: letterDigitFormat,
       createdAt: editingLetterId ? (letters.find((l) => l.id === editingLetterId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -463,6 +513,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     if (saved) {
       setPreviewLetter(saved);
       setPreviewWithSign(withSign);
+      setPreviewDigitFormat(saved.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati');
     }
   };
 
@@ -567,24 +618,30 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   };
 
   // Format date display (DD/MM/YYYY) in English or Gujarati digits
-  const formatDateDisplay = useCallback((isoDate: string, inGujarati = false) => {
+  const formatDateDisplay = useCallback((isoDate: string, format: 'gujarati' | 'english' = 'gujarati') => {
     if (!isoDate) return '-';
     try {
       const parts = isoDate.split('-');
       if (parts.length === 3) {
         const d = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        return inGujarati ? toGujaratiDigits(d) : d;
+        return formatDigits(d, format);
       }
-      return isoDate;
+      return formatDigits(isoDate, format);
     } catch (e) {
       return isoDate;
     }
-  }, []);
+  }, [formatDigits]);
 
   // Helper to generate exact file name: JavakNo_Subjectinshort_date.pdf
-  const getLetterPdfFilename = useCallback((letter: OutwardLetter, withSign?: boolean): string => {
+  const getLetterPdfFilename = useCallback((
+    letter: OutwardLetter,
+    withSign?: boolean,
+    customFormat?: 'gujarati' | 'english'
+  ): string => {
+    const activeFormat = customFormat || letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati';
+    const formattedJavak = formatDigits(letter.outwardNumber || 'જાવક', activeFormat);
     // 1. JavakNo (clean slashes and illegal characters into hyphens)
-    const cleanJavak = (letter.outwardNumber || 'જાવક')
+    const cleanJavak = formattedJavak
       .replace(/[\\/:*?"<>|]+/g, '-')
       .replace(/\s+/g, '')
       .replace(/^-+|-+$/g, '');
@@ -606,7 +663,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
     // Exactly JavakNo_Subjectinshort_date.pdf
     return `${cleanJavak}_${shortSub}_${cleanDate}.pdf`;
-  }, []);
+  }, [letterDigitFormat, settings.digitFormat, formatDigits]);
 
   // =========================================================================
   // INTERACTIVE DRAG MARGIN CALCULATION ENGINE
@@ -650,16 +707,21 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   // =========================================================================
   // GENERATE OFFICIAL HTML DOCUMENT FOR ULTRA-CRISP A4 PRINT / PDF
   // =========================================================================
-  const buildLetterPrintHtml = (letter: OutwardLetter, withSign: boolean): string => {
+  const buildLetterPrintHtml = (
+    letter: OutwardLetter,
+    withSign: boolean,
+    customFormat?: 'gujarati' | 'english'
+  ): string => {
+    const activeFormat = customFormat || letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati';
     const topMargin = settings.topMarginMm ?? 62;
     const bottomMargin = settings.bottomMarginMm ?? 32;
     const leftMargin = settings.leftMarginMm ?? 22;
     const rightMargin = settings.rightMarginMm ?? 22;
 
-    const formattedDate = formatDateDisplay(letter.letterDate, useGujaratiDigitsInDate);
-    const formattedOutwardNo = useGujaratiDigitsInDate
-      ? toGujaratiDigits(letter.outwardNumber)
-      : letter.outwardNumber;
+    const formattedDate = formatDateDisplay(letter.letterDate, activeFormat);
+    const formattedOutwardNo = formatDigits(letter.outwardNumber, activeFormat);
+    const signWidthMm = settings.principalSignWidthMm ?? 48;
+    const signMaxHeightMm = Math.max(50, Math.round(signWidthMm * 0.85));
 
     // Background A4 Letterhead image if uploaded
     const letterheadBgHtml = settings.letterheadUrl
@@ -674,13 +736,13 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
         </div>
       `;
 
-    // Signatory block
+    // Signatory block (allowing signature to grow up to 140mm without clipping or 30mm height limit)
     const signBlockHtml = withSign && settings.principalSignUrl
       ? `
-        <div style="text-align: center; display: inline-block; min-width: 200px;">
+        <div style="text-align: center; display: inline-block; min-width: ${Math.max(180, Math.round(signWidthMm * 1.15))}px; max-width: 340px;">
           <p style="margin: 0 0 4px 0; font-weight: 700; font-size: 13.5px; color: #0f172a;">લિ. આપનો વિશ્વાસુ,</p>
-          <div style="min-height: 46px; display: flex; align-items: center; justify-content: center; margin: 4px 0;">
-            <img src="${settings.principalSignUrl}" style="width: ${settings.principalSignWidthMm ?? 38}mm; max-height: 30mm; object-fit: contain; margin: 0 auto;" />
+          <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; margin: 6px 0;">
+            <img src="${settings.principalSignUrl}" alt="Signature" style="width: ${signWidthMm}mm; max-height: ${signMaxHeightMm}mm; height: auto; object-fit: contain; margin: 0 auto; display: block;" />
           </div>
           <p style="margin: 4px 0 0 0; font-weight: 800; font-size: 14.5px; color: #0f172a;">(${letter.signatoryName || settings.principalName || school.principalName || ''})</p>
           <p style="margin: 2px 0 0 0; font-size: 12.5px; color: #334155; font-weight: 600;">${letter.signatoryDesignation || 'આચાર્યશ્રી'}</p>
@@ -699,17 +761,21 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     // Copy to block
     const copyToHtml = letter.copyTo && letter.copyTo.length > 0
       ? `
-        <div style="margin-top: 28px; font-size: 12px; color: #334155; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+        <div style="margin-top: 24px; font-size: 12.5px; color: #334155; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
           <p style="margin: 0 0 6px 0; font-weight: 700; color: #0f172a;">નકલ સવિનય રવાના:</p>
-          <ol style="margin: 0; padding-left: 20px; line-height: 1.6; font-weight: 500;">
-            ${letter.copyTo.map((c) => `<li>${c}</li>`).join('')}
-          </ol>
+          <div style="margin: 0; padding-left: 4px; line-height: 1.7; font-weight: 500;">
+            ${letter.copyTo.map((c, idx) => {
+              const numLabel = activeFormat === 'gujarati' ? `${toGujaratiDigits(String(idx + 1))}. ` : `${idx + 1}. `;
+              const formattedItem = formatDigits(c, activeFormat);
+              return `<div style="display: flex; gap: 6px;"><span style="font-weight: 700; min-width: 18px;">${numLabel}</span><span>${formattedItem}</span></div>`;
+            }).join('')}
+          </div>
         </div>
       `
       : '';
 
     // Filename without extension for print window document title
-    const filenameWithExt = getLetterPdfFilename(letter, withSign);
+    const filenameWithExt = getLetterPdfFilename(letter, withSign, activeFormat);
     const filenameNoExt = filenameWithExt.replace(/\.pdf$/i, '');
 
     return `
@@ -864,7 +930,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
               <div class="subject-container">
                 <div class="subject-text">વિષય: ${letter.subject}</div>
-                ${letter.reference ? `<div class="reference-text">સંદર્ભ: ${letter.reference}</div>` : ''}
+                ${letter.reference ? `<div class="reference-text">સંદર્ભ: ${formatDigits(letter.reference, activeFormat)}</div>` : ''}
               </div>
 
               <div class="salutation">માનનીય સાહેબશ્રી,</div>
@@ -888,10 +954,11 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   };
 
   // Direct Print via native browser / Android print dialog
-  const handlePrint = (letter: OutwardLetter, withSign: boolean) => {
-    const filenameWithExt = getLetterPdfFilename(letter, withSign);
+  const handlePrint = (letter: OutwardLetter, withSign: boolean, customFormat?: 'gujarati' | 'english') => {
+    const activeFormat = customFormat || (previewLetter?.id === letter.id ? previewDigitFormat : (letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati'));
+    const filenameWithExt = getLetterPdfFilename(letter, withSign, activeFormat);
     const filenameNoExt = filenameWithExt.replace(/\.pdf$/i, '');
-    const html = buildLetterPrintHtml(letter, withSign);
+    const html = buildLetterPrintHtml(letter, withSign, activeFormat);
     printHtmlDocument(html, filenameNoExt);
   };
 
@@ -929,6 +996,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
     setIsGeneratingPdf(true);
     try {
+      const activeFormat = previewLetter?.id === letter.id ? previewDigitFormat : (letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati');
       const canvas = await captureA4Canvas(letterA4Ref.current);
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
       const pdf = new jsPDF({
@@ -938,7 +1006,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       });
 
       pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-      const filename = getLetterPdfFilename(letter, withSign);
+      const filename = getLetterPdfFilename(letter, withSign, activeFormat);
       pdf.save(filename);
     } catch (err) {
       console.error('PDF download error:', err);
@@ -954,6 +1022,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     if (!letterA4Ref.current || previewLetter?.id !== letter.id) {
       setPreviewLetter(letter);
       setPreviewWithSign(withSign);
+      setPreviewDigitFormat(letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati');
       setTimeout(async () => {
         if (letterA4Ref.current) {
           await triggerCaptureAndDownload(letter, withSign);
@@ -974,6 +1043,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
     setIsSharingWhatsApp(true);
     try {
+      const activeFormat = previewLetter?.id === letter.id ? previewDigitFormat : (letter.digitFormat || letterDigitFormat || settings.digitFormat || 'gujarati');
       const canvas = await captureA4Canvas(letterA4Ref.current);
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
       const pdf = new jsPDF({
@@ -983,7 +1053,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       });
 
       pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-      const filename = getLetterPdfFilename(letter, withSign);
+      const filename = getLetterPdfFilename(letter, withSign, activeFormat);
       const pdfBlob = pdf.output('blob');
       const file = new File([pdfBlob], filename, { type: 'application/pdf' });
 
@@ -992,7 +1062,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
         await navigator.share({
           files: [file],
           title: filename,
-          text: `📄 *શાળા સત્તાવાર જાવક પત્ર*\n*જાવક નંબર:* ${letter.outwardNumber}\n*વિષય:* ${letter.subject}`,
+          text: `📄 *શાળા સત્તાવાર જાવક પત્ર*\n*જાવક નંબર:* ${formatDigits(letter.outwardNumber, activeFormat)}\n*વિષય:* ${letter.subject}`,
         });
         return;
       }
@@ -1004,8 +1074,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       // 2. Open WhatsApp (Web / App) with prefilled letter details
       const shareMsg = encodeURIComponent(
         `📄 *શાળા સત્તાવાર જાવક પત્ર*\n` +
-        `*જાવક નંબર:* ${letter.outwardNumber}\n` +
-        `*તારીખ:* ${formatDateDisplay(letter.letterDate, false)}\n` +
+        `*જાવક નંબર:* ${formatDigits(letter.outwardNumber, activeFormat)}\n` +
+        `*તારીખ:* ${formatDateDisplay(letter.letterDate, activeFormat)}\n` +
         `*પ્રતિ:* ${letter.recipientDesignation || letter.recipientName}${letter.recipientOffice ? ` - ${letter.recipientOffice}` : ''}\n` +
         `*વિષય:* ${letter.subject}\n\n` +
         `📎 પત્રની PDF ફાઈલ (${filename}) તમારા ડિવાઈસમાં ડાઉનલોડ થઈ ગઈ છે. કૃપા કરીને આ ચેટમાં મોકલી આપો.`
@@ -1209,7 +1279,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                           {l.outwardNumber}
                         </td>
                         <td className="py-3 px-3 text-center font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                          {formatDateDisplay(l.letterDate, false)}
+                          {formatDateDisplay(l.letterDate, l.digitFormat || settings.digitFormat || 'gujarati')}
                         </td>
                         <td className="py-3 px-3 text-slate-900 dark:text-white">
                           <div className="font-bold text-xs line-clamp-1">
@@ -1392,7 +1462,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                       type="text"
                       value={outwardNumber}
                       onChange={(e) => setOutwardNumber(e.target.value)}
-                      placeholder="દા.ત. સ.હા.લા/૨૦૨૬/૦૦૧"
+                      placeholder={letterDigitFormat === 'gujarati' ? 'દા.ત. સ.હા.લા/૨૦૨૬/૦૦૧' : 'દા.ત. સ.હા.લા/2026/001'}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#C45A2D]/50"
                     />
                     <button
@@ -1409,7 +1479,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                     <span className="flex items-center gap-1">
                       <span>પ્રીફિક્સ:</span>
                       <strong className="text-slate-800 dark:text-slate-200 font-mono font-bold">
-                        {settings.outwardPrefix || 'સ.હા.લા/૨૦૨૬/'}
+                        {formatDigits(settings.outwardPrefix || 'સ.હા.લા/૨૦૨૬/', letterDigitFormat)}
                       </strong>
                     </span>
                     <span className="text-emerald-600 dark:text-emerald-400 font-medium">
@@ -1423,15 +1493,9 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                     <label className="text-xs font-black text-slate-700 dark:text-slate-300">
                       ૨. તારીખ (Date) *
                     </label>
-                    <label className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={useGujaratiDigitsInDate}
-                        onChange={(e) => setUseGujaratiDigitsInDate(e.target.checked)}
-                        className="rounded"
-                      />
-                      <span>ગુજરાતી અંકો</span>
-                    </label>
+                    <span className="text-[11px] font-bold text-slate-500">
+                      પ્રિવ્યુ: <strong className="text-slate-800 dark:text-slate-200">{formatDateDisplay(letterDate, letterDigitFormat)}</strong>
+                    </span>
                   </div>
                   <input
                     type="date"
@@ -1439,6 +1503,36 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                     onChange={(e) => setLetterDate(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#C45A2D]/50"
                   />
+                  {/* General Digits Format Switcher */}
+                  <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                    <span className="font-bold text-slate-600 dark:text-slate-400">અંકોનું ફોર્મેટ (Digits):</span>
+                    <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDigitFormat('gujarati')}
+                        className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold cursor-pointer transition-all ${
+                          letterDigitFormat === 'gujarati'
+                            ? 'bg-[#C45A2D] text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                        title="પત્રમાં ગુજરાતી અંકો (૧, ૨, ૩) રાખો"
+                      >
+                        ગુજરાતી (૧, ૨, ૩)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDigitFormat('english')}
+                        className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold cursor-pointer transition-all ${
+                          letterDigitFormat === 'english'
+                            ? 'bg-[#C45A2D] text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                        title="પત્રમાં અંગ્રેજી અંકો (1, 2, 3) રાખો"
+                      >
+                        English (1, 2, 3)
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1689,8 +1783,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                 </div>
 
                 <div className="flex justify-between items-center text-[10px] font-bold text-slate-600 pt-1">
-                  <span>નંબર: {outwardNumber || '...'}</span>
-                  <span>તા: {formatDateDisplay(letterDate, useGujaratiDigitsInDate)}</span>
+                  <span>નંબર: {formatDigits(outwardNumber, letterDigitFormat) || '...'}</span>
+                  <span>તા: {formatDateDisplay(letterDate, letterDigitFormat)}</span>
                 </div>
 
                 <div className="mt-1 space-y-0.5">
@@ -2116,79 +2210,105 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                       </div>
 
                       {/* Signature Size Adjuster on A4 Page */}
-                      <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2.5">
-                        <div className="flex items-center justify-between">
+                      <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-3">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
                           <label className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                             <PenTool className="w-3.5 h-3.5 text-purple-600" />
-                            <span>A4 પેજ પર સહીની સાઇઝ (Sign Size on A4)</span>
+                            <span>A4 પેજ પર સહીની સાઇઝ (Sign Size on A4: 20mm થી 140mm)</span>
                           </label>
-                          <span className="font-mono font-black text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded-md">
-                            {settings.principalSignWidthMm ?? 38} mm
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min="20"
+                              max="140"
+                              value={settings.principalSignWidthMm ?? 48}
+                              onChange={(e) => {
+                                const val = Math.max(20, Math.min(140, Number(e.target.value) || 20));
+                                setSettings((p) => ({ ...p, principalSignWidthMm: val }));
+                              }}
+                              className="w-16 px-2 py-0.5 rounded-md border text-center font-mono font-black text-xs text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 border-purple-200"
+                            />
+                            <span className="font-mono font-black text-xs text-purple-600 dark:text-purple-400">
+                              mm
+                            </span>
+                          </div>
                         </div>
 
-                        {/* Size Range Slider */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-slate-400">નાની</span>
-                          <input
-                            type="range"
-                            min="20"
-                            max="75"
-                            step="1"
-                            value={settings.principalSignWidthMm ?? 38}
-                            onChange={(e) =>
-                              setSettings((p) => ({
-                                ...p,
-                                principalSignWidthMm: Number(e.target.value),
-                              }))
-                            }
-                            className="flex-1 accent-purple-600 cursor-pointer"
-                          />
-                          <span className="text-[10px] font-bold text-slate-400">મોટી</span>
-                        </div>
-
-                        {/* Quick Presets for Signature Size */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {[
-                            { label: 'નાની', mm: 26 },
-                            { label: 'સામાન્ય', mm: 38 },
-                            { label: 'મોટી', mm: 50 },
-                            { label: 'વિશેષ મોટી', mm: 62 },
-                          ].map((item) => (
-                            <button
-                              key={item.mm}
-                              type="button"
-                              onClick={() =>
-                                setSettings((p) => ({ ...p, principalSignWidthMm: item.mm }))
+                        {/* Size Range Slider up to 140mm */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-slate-400">નાની (20mm)</span>
+                            <input
+                              type="range"
+                              min="20"
+                              max="140"
+                              step="1"
+                              value={settings.principalSignWidthMm ?? 48}
+                              onChange={(e) =>
+                                setSettings((p) => ({
+                                  ...p,
+                                  principalSignWidthMm: Number(e.target.value),
+                                }))
                               }
-                              className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
-                                (settings.principalSignWidthMm ?? 38) === item.mm
-                                  ? 'bg-purple-600 text-white shadow-xs'
-                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                              }`}
-                            >
-                              {item.label} ({item.mm}mm)
-                            </button>
-                          ))}
+                              className="flex-1 accent-purple-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                            />
+                            <span className="text-[10px] font-bold text-slate-400">મોટી (140mm)</span>
+                          </div>
                         </div>
 
-                        {/* Real-time A4 Sign Placement Visual Box */}
+                        {/* Quick Presets for Signature Size up to 140mm */}
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-400 block mb-1">ઝડપી સાઇઝ પ્રિસેટ્સ:</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {[
+                              { label: 'નાની', mm: 32 },
+                              { label: 'સામાન્ય', mm: 48 },
+                              { label: 'મોટી', mm: 65 },
+                              { label: 'વિશેષ મોટી', mm: 85 },
+                              { label: 'જમ્બો', mm: 110 },
+                              { label: 'મહત્તમ', mm: 140 },
+                            ].map((item) => (
+                              <button
+                                key={item.mm}
+                                type="button"
+                                onClick={() =>
+                                  setSettings((p) => ({ ...p, principalSignWidthMm: item.mm }))
+                                }
+                                className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                                  (settings.principalSignWidthMm ?? 48) === item.mm
+                                    ? 'bg-purple-600 text-white shadow-xs'
+                                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                {item.label} ({item.mm}mm)
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Real-time A4 Sign Placement Visual Box (without 32mm height cap) */}
                         <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-purple-200 dark:border-purple-800/60 text-center font-['Anek_Gujarati']">
                           <div className="text-[10px] text-slate-500 mb-1 font-bold">
                             A4 પૃષ્ઠ પર સહી કેવી દેખાશે (Live A4 Sign Preview):
                           </div>
-                          <div className="bg-white border rounded-lg p-3 max-w-[240px] mx-auto shadow-xs text-right">
+                          <div
+                            style={{
+                              maxWidth: `${Math.max(240, Math.min(380, Math.round((settings.principalSignWidthMm ?? 48) * 1.6)))}px`,
+                            }}
+                            className="bg-white border rounded-lg p-3 mx-auto shadow-xs text-right transition-all"
+                          >
                             <div className="text-[11px] font-bold text-slate-800">લિ. આપનો વિશ્વાસુ,</div>
-                            <div className="py-1 flex justify-end items-center min-h-[44px]">
+                            <div className="py-2 flex justify-end items-center">
                               <img
                                 src={settings.principalSignUrl}
                                 alt="Signature Preview"
                                 style={{
-                                  width: `${settings.principalSignWidthMm ?? 38}mm`,
-                                  maxHeight: '32mm',
+                                  width: `${settings.principalSignWidthMm ?? 48}mm`,
+                                  maxHeight: `${Math.max(48, Math.round((settings.principalSignWidthMm ?? 48) * 0.85))}mm`,
+                                  height: 'auto',
                                   objectFit: 'contain',
                                 }}
-                                className="transition-all duration-150"
+                                className="transition-all duration-150 block"
                               />
                             </div>
                             <div className="font-black text-xs text-slate-950">
@@ -2326,6 +2446,59 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                     </div>
                   </div>
 
+                  {/* Default Digits Format for School */}
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                    <label className="text-xs font-black text-slate-800 dark:text-slate-200 block">
+                      અંકોનું સામાન્ય ફોર્મેટ (Default Digits Format across Letters)
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      પત્રોમાં જાવક નંબર, તારીખ, સંદર્ભ ક્રમાંક અને નકલ રવાના ક્રમ માટે અંકો કેવા રાખવા છે:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setSettings((p) => ({ ...p, digitFormat: 'gujarati' }))}
+                        className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                          (settings.digitFormat || 'gujarati') === 'gujarati'
+                            ? 'bg-orange-50/80 dark:bg-orange-950/30 border-[#C45A2D] text-[#C45A2D] ring-2 ring-[#C45A2D]/20 shadow-xs'
+                            : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-xs">ગુજરાતી અંકો</span>
+                          {(settings.digitFormat || 'gujarati') === 'gujarati' && <Check className="w-3.5 h-3.5" />}
+                        </div>
+                        <div className="text-[11px] font-mono font-black text-slate-900 dark:text-white">
+                          ૧, ૨, ૩, ૪, ૫...
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          દા.ત. ૨૦૨૬/૦૦૧ • ૨૪/૧૦/૨૦૨૬
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSettings((p) => ({ ...p, digitFormat: 'english' }))}
+                        className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                          settings.digitFormat === 'english'
+                            ? 'bg-blue-50/80 dark:bg-blue-950/30 border-blue-600 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/20 shadow-xs'
+                            : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-xs">English Digits</span>
+                          {settings.digitFormat === 'english' && <Check className="w-3.5 h-3.5" />}
+                        </div>
+                        <div className="text-[11px] font-mono font-black text-slate-900 dark:text-white">
+                          1, 2, 3, 4, 5...
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          e.g. 2026/001 • 24/10/2026
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Live Next Generated Number Preview */}
                   <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
                     <div>
@@ -2333,7 +2506,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                         આગામી પત્રમાં ઓટો જનરેટ થનાર નંબર:
                       </span>
                       <span className="text-sm font-black font-mono text-emerald-900 dark:text-emerald-200">
-                        {generateNextOutwardNumber(settings.outwardPrefix, settings.outwardPadDigits, settings.outwardStartingNumber)}
+                        {generateNextOutwardNumber(settings.outwardPrefix, settings.outwardPadDigits, settings.outwardStartingNumber, settings.digitFormat || 'gujarati')}
                       </span>
                     </div>
                     <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-md">
@@ -2415,74 +2588,173 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
               </div>
             </div>
 
-            {/* View Mode & Zoom Toolbar */}
-            <div className="px-3 sm:px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between flex-wrap gap-2 text-xs shrink-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-slate-500 text-[11px]">પ્રિવ્યુ:</span>
-                <button
-                  type="button"
-                  onClick={() => setPreviewScaleMode('fit')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                    previewScaleMode === 'fit'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}
-                  title="આખું A4 પેજ સ્ક્રીન પર ફિટ કરો"
-                >
-                  <Minimize2 className="w-3 h-3" />
-                  <span>📱 આખું પેજ (Fit Screen)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewScaleMode('actual')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                    previewScaleMode === 'actual'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}
-                  title="૧૦૦% અસલ માપ"
-                >
-                  <Maximize2 className="w-3 h-3" />
-                  <span>🔍 ૧૦૦% માપ</span>
-                </button>
+            {/* View Mode, Scale, Digits & Signature Controls Toolbar */}
+            <div className="px-3 sm:px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-2 shrink-0">
+              {/* Row 1: Zoom / Scale & General Digits Switcher */}
+              <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                {/* Scale controls */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-bold text-slate-500 text-[11px]">પ્રિવ્યુ:</span>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewScaleMode('fit')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                      previewScaleMode === 'fit'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    }`}
+                    title="આખું A4 પેજ સ્ક્રીન પર ફિટ કરો"
+                  >
+                    <Minimize2 className="w-3 h-3" />
+                    <span>📱 આખું પેજ (Fit Screen)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewScaleMode('actual')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                      previewScaleMode === 'actual'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    }`}
+                    title="૧૦૦% અસલ માપ"
+                  >
+                    <Maximize2 className="w-3 h-3" />
+                    <span>🔍 ૧૦૦% માપ</span>
+                  </button>
+
+                  <div className="flex items-center gap-1 ml-1">
+                    <span className="text-[10.5px] font-mono text-slate-500">
+                      {Math.round(computedPreviewScale * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewScaleMode('actual');
+                        setComputedPreviewScale((p) => Math.min(1.5, p + 0.1));
+                      }}
+                      className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
+                      title="ઝૂમ ઇન"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewScaleMode('actual');
+                        setComputedPreviewScale((p) => Math.max(0.3, p - 0.1));
+                      }}
+                      className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
+                      title="ઝૂમ આઉટ"
+                    >
+                      <ZoomOut className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* General Digits Switcher (Gujarati <-> English) */}
+                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  <span className="text-[10.5px] font-bold text-slate-500 pl-1">અંકો (Digits):</span>
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePreviewDigitFormat('gujarati')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      previewDigitFormat === 'gujarati'
+                        ? 'bg-[#C45A2D] text-white shadow-xs font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                    title="જાવક નંબર, તારીખ, સંદર્ભ ક્રમાંક ગુજરાતી અંકોમાં દર્શાવો"
+                  >
+                    ૧૨૩ ગુજરાતી
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePreviewDigitFormat('english')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      previewDigitFormat === 'english'
+                        ? 'bg-blue-600 text-white shadow-xs font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                    title="જાવક નંબર, તારીખ, સંદર્ભ ક્રમાંક અંગ્રેજી અંકોમાં દર્શાવો"
+                  >
+                    123 English
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="text-[10.5px] font-mono text-slate-500 flex items-center gap-1">
-                  <span>સ્કેલ:</span>
-                  <strong className="text-slate-800 dark:text-slate-200 font-bold">
-                    {Math.round(computedPreviewScale * 100)}%
-                  </strong>
+              {/* Row 2: Live Signature Size Controls (20mm - 140mm) & Direct Upload Button */}
+              {previewWithSign && (
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
+                  <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
+                    <span className="text-[11px] font-black text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                      <PenTool className="w-3.5 h-3.5" />
+                      <span>સહી સાઇઝ (A4 Sign):</span>
+                    </span>
+
+                    {/* Range slider up to 140mm */}
+                    <div className="flex items-center gap-1.5 flex-1 max-w-[200px]">
+                      <span className="text-[9.5px] font-bold text-slate-400">20mm</span>
+                      <input
+                        type="range"
+                        min="20"
+                        max="140"
+                        step="1"
+                        value={settings.principalSignWidthMm ?? 48}
+                        onChange={(e) => handleUpdateSignWidth(Number(e.target.value))}
+                        className="flex-1 accent-purple-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                        title="સહીની સાઇઝ નાની-મોટી કરો"
+                      />
+                      <span className="text-[9.5px] font-bold text-slate-400">140mm</span>
+                    </div>
+
+                    <span className="font-mono font-black text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800 shrink-0">
+                      {settings.principalSignWidthMm ?? 48} mm
+                    </span>
+
+                    {/* Quick Presets */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {[
+                        { label: '32mm', mm: 32 },
+                        { label: '48mm', mm: 48 },
+                        { label: '65mm', mm: 65 },
+                        { label: '85mm', mm: 85 },
+                        { label: '110mm', mm: 110 },
+                        { label: '140mm', mm: 140 },
+                      ].map((item) => (
+                        <button
+                          key={item.mm}
+                          type="button"
+                          onClick={() => handleUpdateSignWidth(item.mm)}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all ${
+                            (settings.principalSignWidthMm ?? 48) === item.mm
+                              ? 'bg-purple-600 text-white shadow-xs'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Direct Signature Upload / Replace button */}
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-lg text-[11px] font-bold cursor-pointer transition-all shrink-0">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{settings.principalSignUrl ? 'સહી બદલો' : '+ સહી અપલોડ'}</span>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg"
+                      onChange={handleSignatureUpload}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreviewScaleMode('actual');
-                    setComputedPreviewScale((p) => Math.min(1.5, p + 0.1));
-                  }}
-                  className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
-                  title="ઝૂમ ઇન"
-                >
-                  <ZoomIn className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreviewScaleMode('actual');
-                    setComputedPreviewScale((p) => Math.max(0.3, p - 0.1));
-                  }}
-                  className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
-                  title="ઝૂમ આઉટ"
-                >
-                  <ZoomOut className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              )}
             </div>
 
             {/* Modal Body: Responsive Scaled A4 Letter Viewer */}
             <div
               ref={modalBodyRef}
-              className="p-2 sm:p-4 overflow-auto bg-slate-200/90 dark:bg-slate-950 flex flex-col items-center justify-start min-h-[420px] max-h-[72vh]"
+              className="p-2 sm:p-4 overflow-auto bg-slate-200/90 dark:bg-slate-950 flex flex-col items-center justify-start min-h-[420px] max-h-[70vh]"
             >
               {/* Scaled Envelope Box (Holds exact scaled dimensions for perfect layout) */}
               <div
@@ -2530,23 +2802,23 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                           {school.schoolName}
                         </h1>
                         <p className="text-xs text-slate-600 mt-1">
-                          ${school.village ? school.village + ', ' : ''}${school.taluka ? school.taluka + ', ' : ''}${school.district} • DISE કોડ: <strong>${school.diseCode}</strong>
+                          {school.village ? school.village + ', ' : ''}{school.taluka ? school.taluka + ', ' : ''}{school.district} • DISE કોડ: <strong>{formatDigits(school.diseCode, previewDigitFormat)}</strong>
                         </p>
                       </div>
                     )}
 
-                    {/* Outward No & Date Row */}
+                    {/* Outward No & Date Row (Harmonized with chosen digits format) */}
                     <div className="flex items-center justify-between font-bold text-[13.5px] border-b border-slate-200 pb-2">
                       <div>
                         <span className="text-slate-500">જાવક ક્રમાંક: </span>
                         <strong className="text-slate-950 font-mono text-[14px]">
-                          {useGujaratiDigitsInDate ? toGujaratiDigits(previewLetter.outwardNumber) : previewLetter.outwardNumber}
+                          {formatDigits(previewLetter.outwardNumber, previewDigitFormat)}
                         </strong>
                       </div>
                       <div>
                         <span className="text-slate-500">તારીખ: </span>
                         <strong className="text-slate-950 text-[14px]">
-                          {formatDateDisplay(previewLetter.letterDate, useGujaratiDigitsInDate)}
+                          {formatDateDisplay(previewLetter.letterDate, previewDigitFormat)}
                         </strong>
                       </div>
                     </div>
@@ -2576,7 +2848,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                       </div>
                       {previewLetter.reference && (
                         <div className="text-[12.5px] font-semibold text-slate-600 mt-1">
-                          સંદર્ભ: {previewLetter.reference}
+                          સંદર્ભ: {formatDigits(previewLetter.reference, previewDigitFormat)}
                         </div>
                       )}
                     </div>
@@ -2598,9 +2870,15 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
                   {/* Bottom Section: Signatory & Copy To */}
                   <div className="relative z-10 pt-4 mt-4">
-                    {/* Signatory Box */}
+                    {/* Signatory Box (Uncapped size up to 140mm) */}
                     <div className="flex justify-end">
-                      <div className="text-center min-w-[210px] space-y-1">
+                      <div
+                        style={{
+                          minWidth: `${Math.max(180, Math.round((settings.principalSignWidthMm ?? 48) * 1.15))}px`,
+                          maxWidth: '360px',
+                        }}
+                        className="text-center space-y-1"
+                      >
                         <div className="font-bold text-[13px] text-slate-800">લિ. આપનો વિશ્વાસુ,</div>
 
                         {previewWithSign ? (
@@ -2610,20 +2888,31 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                                 src={settings.principalSignUrl}
                                 alt="Signature"
                                 style={{
-                                  width: `${settings.principalSignWidthMm ?? 38}mm`,
-                                  maxHeight: '30mm',
+                                  width: `${settings.principalSignWidthMm ?? 48}mm`,
+                                  maxHeight: `${Math.max(50, Math.round((settings.principalSignWidthMm ?? 48) * 0.85))}mm`,
+                                  height: 'auto',
                                   objectFit: 'contain',
                                 }}
-                                className="mx-auto"
+                                className="mx-auto block transition-all"
                               />
                             </div>
                           ) : (
-                            <div className="h-12 flex items-center justify-center text-[10px] text-slate-400 italic">
-                              (ડિજિટલ સહી સેટ કરેલ નથી)
+                            <div className="p-2.5 my-1.5 border border-dashed border-purple-300 rounded-lg text-center bg-purple-50/60">
+                              <p className="text-[11px] text-purple-700 font-bold mb-1">ડિજિટલ સહી સેટ કરેલ નથી</p>
+                              <label className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white text-[10.5px] font-bold rounded cursor-pointer shadow-xs">
+                                <Upload className="w-3 h-3" />
+                                <span>+ સહી અપલોડ કરો</span>
+                                <input
+                                  type="file"
+                                  accept="image/png, image/jpeg"
+                                  onChange={handleSignatureUpload}
+                                  className="hidden"
+                                />
+                              </label>
                             </div>
                           )
                         ) : (
-                          <div className="h-12" /> /* Blank space for physical pen signature */
+                          <div className="h-14" /> /* Blank space for physical pen signature */
                         )}
 
                         <div className="font-black text-[14.5px] text-slate-950">
@@ -2638,15 +2927,20 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                       </div>
                     </div>
 
-                    {/* Copy to list */}
+                    {/* Copy to list with synchronized digit numbering */}
                     {previewLetter.copyTo && previewLetter.copyTo.length > 0 && (
                       <div className="mt-5 pt-2.5 border-t border-dashed border-slate-300 text-xs text-slate-700">
                         <div className="font-extrabold text-[12px] text-slate-900 mb-1">નકલ સવિનય રવાના:</div>
-                        <ol className="list-decimal pl-5 space-y-0.5 font-medium text-[12px]">
+                        <div className="space-y-1 font-medium text-[12px]">
                           {previewLetter.copyTo.map((item, idx) => (
-                            <li key={idx}>{item}</li>
+                            <div key={idx} className="flex items-start gap-1.5">
+                              <span className="font-bold min-w-[20px]">
+                                {previewDigitFormat === 'gujarati' ? `${toGujaratiDigits(String(idx + 1))}.` : `${idx + 1}.`}
+                              </span>
+                              <span>{formatDigits(item, previewDigitFormat)}</span>
+                            </div>
                           ))}
-                        </ol>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2657,10 +2951,10 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
             {/* Modal Bottom Export Actions (Print, Download, WhatsApp Share) */}
             <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between shrink-0 flex-wrap gap-2.5">
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Filename Tag preview */}
+                {/* Filename Tag preview with exact format: JavakNo_Subjectinshort_date.pdf */}
                 <div className="text-[11px] font-mono bg-slate-200/90 dark:bg-slate-700/80 px-2.5 py-1 rounded-lg font-bold text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-[#C45A2D]" />
-                  <span>{getLetterPdfFilename(previewLetter, previewWithSign)}</span>
+                  <span>{getLetterPdfFilename(previewLetter, previewWithSign, previewDigitFormat)}</span>
                 </div>
 
                 {/* Toggle With/Without Signature */}
@@ -2683,7 +2977,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                 {/* 1. Direct Print Dialogue */}
                 <button
                   type="button"
-                  onClick={() => handlePrint(previewLetter, previewWithSign)}
+                  onClick={() => handlePrint(previewLetter, previewWithSign, previewDigitFormat)}
                   className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-md hover:shadow-lg cursor-pointer transition-all active:scale-95"
                   title="પ્રિન્ટ ડાયલોગ ખોલો"
                 >

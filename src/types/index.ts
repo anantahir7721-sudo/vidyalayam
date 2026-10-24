@@ -561,6 +561,7 @@ export interface OutwardLetterSettings {
   outwardStartingNumber?: number; // Starting sequence counter (default 1)
   outwardPadDigits?: number; // Padding digits (default 3 for 001 / ૦૦૧)
   currentOutwardNumber?: number; // Auto increment counter
+  digitFormat?: 'gujarati' | 'english'; // Option for Gujarati (૧, ૨, ૩) or English (1, 2, 3) digits
 }
 
 export interface OutwardLetter {
@@ -578,6 +579,7 @@ export interface OutwardLetter {
   copyTo?: string[]; // નકલ રવાના (optional)
   signatoryName?: string; // સહી કરનારનું નામ
   signatoryDesignation?: string; // સહી કરનારનો હોદ્દો
+  digitFormat?: 'gujarati' | 'english'; // Format of digits used for this letter
   includeSignByDefault?: boolean;
   createdAt: string;
   updatedAt?: string;
