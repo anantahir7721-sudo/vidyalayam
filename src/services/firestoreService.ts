@@ -886,7 +886,11 @@ export async function saveBatchExamMarks(
     }
 
     try {
-      await batch.commit();
+      const commitPromise = batch.commit();
+      await Promise.race([
+        commitPromise,
+        new Promise((resolve) => setTimeout(resolve, 4000)),
+      ]);
     } catch (commitErr) {
       console.warn('Batch marks commit error, queuing for background sync:', commitErr);
       if (queueIfFailed && typeof window !== 'undefined') {

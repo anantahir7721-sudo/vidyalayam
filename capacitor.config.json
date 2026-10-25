@@ -3,7 +3,18 @@
   "appName": "Vidyalayam",
   "webDir": "dist",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "cleartext": true,
+    "allowNavigation": [
+      "ais-pre-zfvtkxwqh2zdkbq5lhk34q-908899511909.asia-southeast1.run.app",
+      "ais-dev-zfvtkxwqh2zdkbq5lhk34q-908899511909.asia-southeast1.run.app",
+      "*.run.app",
+      "*.googleapis.com",
+      "*.firebaseio.com",
+      "firestore.googleapis.com",
+      "identitytoolkit.googleapis.com",
+      "securetoken.googleapis.com"
+    ]
   },
   "plugins": {
     "StatusBar": {

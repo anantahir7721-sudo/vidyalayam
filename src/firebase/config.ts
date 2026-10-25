@@ -6,9 +6,12 @@ import {
   Firestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  persistentSingleTabManager,
+  enableNetwork,
   setLogLevel,
 } from 'firebase/firestore';
 import firebaseConfigData from '../../firebase-applet-config.json';
+import { isNativeApp } from '../utils/apiConfig';
 
 // Intercept and handle benign Firestore offline / 10s backend connection notices gracefully
 if (typeof console !== 'undefined') {
@@ -61,19 +64,49 @@ if (typeof window !== 'undefined') {
   } catch {}
 }
 
+/**
+ * Determine if running in a single-instance mobile container (e.g., Capacitor Android APK)
+ * where WebLocks are unsupported or deadlock, requiring persistentSingleTabManager({ forceOwnership: true }).
+ */
+export function shouldUseSingleTabManager(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    if (isNativeApp()) return true;
+    const ua = navigator.userAgent || '';
+    if (
+      /Android.*wv/.test(ua) ||
+      (window as any).Capacitor !== undefined ||
+      (window as any).AndroidBridge !== undefined
+    ) {
+      return true;
+    }
+    if (typeof navigator !== 'undefined' && !('locks' in navigator)) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 // The single, consistent Firestore database instance for the entire application.
-// Enabled with IndexedDB Persistent Local Cache for 100% offline access and automatic sync.
-// experimentalForceLongPolling avoids WebSocket connection handshake timeouts and ensures immediate connectivity.
-// ignoreUndefinedProperties: true prevents 'Unsupported field value: undefined' errors when sending notifications or saving objects with optional fields.
+// In Native Android APK: Uses persistentSingleTabManager({ forceOwnership: true }) to guarantee
+// immediate ownership of the IndexedDB cache and activate real-time network streams instantly.
+// experimentalAutoDetectLongPolling: true allows fast WebSockets with smooth automatic fallback.
+const useSingleTab = shouldUseSingleTabManager();
+const tabManager = useSingleTab
+  ? persistentSingleTabManager({ forceOwnership: true })
+  : persistentMultipleTabManager();
+
 let firestoreInstance: Firestore;
 try {
   firestoreInstance = initializeFirestore(
     app,
     {
       ignoreUndefinedProperties: true,
-      experimentalForceLongPolling: true,
+      experimentalAutoDetectLongPolling: true,
       localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager(),
+        tabManager,
       }),
     },
     FIRESTORE_DATABASE_ID
@@ -84,13 +117,40 @@ try {
       app,
       {
         ignoreUndefinedProperties: true,
-        experimentalForceLongPolling: true,
+        experimentalAutoDetectLongPolling: true,
       },
       FIRESTORE_DATABASE_ID
     );
   } catch (e2) {
     firestoreInstance = getFirestore(app, FIRESTORE_DATABASE_ID);
   }
+}
+
+/**
+ * Actively ensure Firestore network client is running whenever online
+ */
+export async function ensureFirestoreOnline(): Promise<void> {
+  try {
+    if (firestoreInstance) {
+      await enableNetwork(firestoreInstance);
+    }
+  } catch {
+    // Harmless if already enabled
+  }
+}
+
+// Automatically wake up Firestore network on online, focus, or visibility restore
+if (typeof window !== 'undefined') {
+  const triggerOnline = () => {
+    ensureFirestoreOnline().catch(() => {});
+  };
+  window.addEventListener('online', triggerOnline);
+  window.addEventListener('focus', triggerOnline);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      triggerOnline();
+    }
+  });
 }
 
 export const db = firestoreInstance;

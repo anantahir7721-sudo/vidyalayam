@@ -13,6 +13,9 @@ const config: CapacitorConfig = {
       '*.run.app',
       '*.googleapis.com',
       '*.firebaseio.com',
+      'firestore.googleapis.com',
+      'identitytoolkit.googleapis.com',
+      'securetoken.googleapis.com',
     ],
   },
   plugins: {

@@ -55,6 +55,7 @@ import {
   getMarks,
   flushPendingMarksQueue,
 } from './services/firestoreService';
+import { ensureFirestoreOnline } from './firebase/config';
 import { subscribeToStaff } from './services/staffService';
 import {
   getStoredStudentSession,
@@ -255,9 +256,13 @@ export default function App() {
   const [showOnlineRestored, setShowOnlineRestored] = useState(false);
 
   useEffect(() => {
+    // Actively wake up Firestore network on mount
+    ensureFirestoreOnline().catch(() => {});
+
     const handleOnline = () => {
       setIsOnline(true);
       setShowOnlineRestored(true);
+      ensureFirestoreOnline().catch(() => {});
       if (school?.id) {
         flushPendingMarksQueue(school.id).catch(() => {});
       }

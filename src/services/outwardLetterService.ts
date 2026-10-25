@@ -97,6 +97,8 @@ export async function saveOutwardSettings(
     const chunksCol = collection(db, 'schools', schoolId, 'settings', 'outward_letter', 'chunks');
     const fullLetterhead = settings.letterheadUrl || '';
 
+    let savePromise: Promise<any>;
+
     if (fullLetterhead && fullLetterhead.length > 500000) {
       // Original large image: chunk across subcollection documents to avoid 1MB Firestore limit
       const chunks: string[] = [];
@@ -104,24 +106,26 @@ export async function saveOutwardSettings(
         chunks.push(fullLetterhead.slice(i, i + CHUNK_SIZE));
       }
 
-      await Promise.all(
+      savePromise = Promise.all(
         chunks.map((chunk, idx) =>
           setDoc(doc(chunksCol, String(idx)), { index: idx, chunk })
         )
-      );
-
-      const { letterheadUrl, ...restSettings } = settings;
-      await setDoc(settingsDoc, {
-        ...restSettings,
-        letterheadUrl: '',
-        letterheadChunkCount: chunks.length,
-      }, { merge: true });
+      ).then(() => {
+        const { letterheadUrl, ...restSettings } = settings;
+        const cleanPayload = sanitizeForFirestore({
+          ...restSettings,
+          letterheadUrl: '',
+          letterheadChunkCount: chunks.length,
+        });
+        return setDoc(settingsDoc, cleanPayload, { merge: true });
+      });
     } else {
       // Normal size image or removed image
-      await setDoc(settingsDoc, {
+      const cleanPayload = sanitizeForFirestore({
         ...settings,
         letterheadChunkCount: 0,
-      }, { merge: true });
+      });
+      savePromise = setDoc(settingsDoc, cleanPayload, { merge: true });
 
       // If letterhead was removed, clean up chunks
       if (!fullLetterhead) {
@@ -130,6 +134,12 @@ export async function saveOutwardSettings(
         }).catch(() => {});
       }
     }
+
+    // Allow up to 3.5 seconds for network ACK; local storage is already safely committed
+    await Promise.race([
+      savePromise,
+      new Promise((resolve) => setTimeout(resolve, 3500)),
+    ]);
   } catch (err) {
     console.warn('Notice saving outward settings to Firestore:', err);
   }
@@ -402,7 +412,11 @@ export async function saveOutwardLetter(
   // 3. Save to Firestore
   try {
     const letterDoc = doc(db, 'schools', schoolId, 'outward_letters', letter.id);
-    await setDoc(letterDoc, cleanDoc, { merge: true });
+    const savePromise = setDoc(letterDoc, cleanDoc, { merge: true });
+    await Promise.race([
+      savePromise,
+      new Promise((resolve) => setTimeout(resolve, 4000)),
+    ]);
 
     // Clean from pending queue if present
     const queue = getPendingQueue(schoolId).filter((l) => l.id !== letter.id);

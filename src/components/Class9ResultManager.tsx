@@ -775,7 +775,10 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     try {
       const recordsToSave = buildMarksRecordsToSave(inputsToUse, currentExam);
       if (recordsToSave.length > 0) {
-        await saveBatchExamMarks(school.id, recordsToSave);
+        await Promise.race([
+          saveBatchExamMarks(school.id, recordsToSave),
+          new Promise((resolve) => setTimeout(resolve, 4000)),
+        ]);
       }
       // Safely clear dirty keys
       setDirtyKeys((prev) => {

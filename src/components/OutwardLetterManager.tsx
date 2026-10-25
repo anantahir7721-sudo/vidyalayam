@@ -495,7 +495,10 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     const timer = setTimeout(async () => {
       try {
         lastSyncedSettingsRef.current = currentJson;
-        await saveOutwardSettings(school.id, settings);
+        await Promise.race([
+          saveOutwardSettings(school.id, settings),
+          new Promise((resolve) => setTimeout(resolve, 3500)),
+        ]);
         setSyncStatus('synced');
       } catch (err) {
         console.warn('Auto cloud sync notice:', err);
