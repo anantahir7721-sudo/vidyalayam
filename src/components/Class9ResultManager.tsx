@@ -227,39 +227,31 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [rulesModalOpen, setRulesModalOpen] = useState(false);
 
-  // Unsaved changes navigation guard
+  // Auto Cloud Sync & Offline Queue States
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'offline'>('idle');
+  const [graceSyncStatus, setGraceSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'offline'>('idle');
+  const autoSyncMarksTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSyncGraceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Stable references for debounced sync
+  const gridInputsRef = useRef(gridInputs);
+  gridInputsRef.current = gridInputs;
+  const marksEntryExamIdRef = useRef(marksEntryExamId);
+  marksEntryExamIdRef.current = marksEntryExamId;
+  const manualGraceOverridesRef = useRef(manualGraceOverrides);
+  manualGraceOverridesRef.current = manualGraceOverrides;
+
+  // Zero-friction tab navigation: all changes are auto-saved in local cache and synced to cloud
   const handleSwitchTab = (newTab: 'marks_entry' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry') => {
-    if (viewTab === 'siddhi_krupa_entry' && siddhiDirtyStudents.size > 0 && newTab !== 'siddhi_krupa_entry') {
-      if (!window.confirm('સિદ્ધિ–કૃપા ગુણમાં ન સાચવેલ ફેરફારો (unsaved changes) છે. શું તમે સેવ કર્યા વગર આગળ વધવા માંગો છો?')) {
-        return;
-      }
-    } else if (viewTab === 'marks_entry' && dirtyKeys.size > 0 && newTab !== 'marks_entry') {
-      if (!window.confirm('ગુણ એન્ટ્રીમાં ન સાચવેલ ગુણ (unsaved marks) છે. શું તમે સેવ કર્યા વગર આગળ વધવા માંગો છો?')) {
-        return;
-      }
-    }
     setViewTab(newTab);
+    if (newTab === 'siddhi_krupa_entry') {
+      setMarksEntryExamId('siddhi_krupa_entry');
+    }
   };
 
   const handleSafeBack = () => {
-    if (siddhiDirtyStudents.size > 0 || dirtyKeys.size > 0) {
-      if (!window.confirm('તમારી પાસે ન સાચવેલ ફેરફારો છે. શું તમે ખરેખર બહાર નીકળવા માંગો છો?')) {
-        return;
-      }
-    }
     onBack();
   };
-
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (siddhiDirtyStudents.size > 0 || dirtyKeys.size > 0) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [siddhiDirtyStudents.size, dirtyKeys.size]);
 
   // Student Counts per standard for high-level tabs
   const studentCountsByStd = useMemo(() => {
@@ -390,14 +382,23 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     return allResults.find((r) => r.student.id === selectedStudentId) || allResults[0];
   }, [allResults, selectedStudentId]);
 
-  // Populate Grid Inputs from existing Firestore marks
+  // Populate Grid Inputs from existing Firestore marks & local offline cache
   useEffect(() => {
     const initialInputs: Record<string, string> = {};
 
+    // 1. First merge any local offline cache from previous session
+    try {
+      const cached = localStorage.getItem(`vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`);
+      if (cached) {
+        Object.assign(initialInputs, JSON.parse(cached));
+      }
+    } catch (e) {}
+
+    // 2. Merge cloud marks from Firestore
     filteredStudents.forEach((student) => {
       const studentMarks = marks.filter((m) => m.studentId === student.id);
 
-      // Populate for 6 main subjects as well as any extended subjects
+      // Populate for all Class 9 subjects
       ALL_CLASS_9_SUBJECTS.forEach((subj) => {
         const getExistingVal = (examKeywords: string[]): string => {
           const found = studentMarks.find((m) => {
@@ -420,18 +421,19 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
         const kInternal = `${student.id}_${subj.id}_internal_assessment`;
         const kAnnual = `${student.id}_${subj.id}_annual_exam`;
 
-        initialInputs[kFirst] = getExistingVal(['first', 'pratham', 'પ્રથમ']);
-        initialInputs[kSecond] = getExistingVal(['second', 'dwitiya', 'દ્વિતીય', 'prelim', 'પ્રિલિમ']);
-        initialInputs[kPt1] = getExistingVal(['pt1', 'periodic_1', 'એકમ_1', 'કસોટી ૧']);
-        initialInputs[kPt2] = getExistingVal(['pt2', 'periodic_2', 'એકમ_2', 'કસોટી ૨']);
-        initialInputs[kInternal] = getExistingVal(['internal', 'આંતરિક']);
-        initialInputs[kAnnual] = getExistingVal(['annual', 'varshik', 'વાર્ષિક', 'board', 'બોર્ડ']);
+        // If not already in local cache, populate from Firestore
+        if (initialInputs[kFirst] === undefined) initialInputs[kFirst] = getExistingVal(['first', 'pratham', 'પ્રથમ']);
+        if (initialInputs[kSecond] === undefined) initialInputs[kSecond] = getExistingVal(['second', 'dwitiya', 'દ્વિતીય', 'prelim', 'પ્રિલિમ']);
+        if (initialInputs[kPt1] === undefined) initialInputs[kPt1] = getExistingVal(['pt1', 'periodic_1', 'એકમ_1', 'કસોટી ૧']);
+        if (initialInputs[kPt2] === undefined) initialInputs[kPt2] = getExistingVal(['pt2', 'periodic_2', 'એકમ_2', 'કસોટી ૨']);
+        if (initialInputs[kInternal] === undefined) initialInputs[kInternal] = getExistingVal(['internal', 'આંતરિક']);
+        if (initialInputs[kAnnual] === undefined) initialInputs[kAnnual] = getExistingVal(['annual', 'varshik', 'વાર્ષિક', 'board', 'બોર્ડ']);
 
         // Prayogik Theory & Practical (40 + 40)
         const kTheory40 = `${student.id}_${subj.id}_theory40`;
         const kPractical40 = `${student.id}_${subj.id}_practical40`;
-        initialInputs[kTheory40] = getExistingVal(['annual_theory', 'theory', 'થિયરી']);
-        initialInputs[kPractical40] = getExistingVal(['annual_practical', 'practical', 'પ્રાયોગિક', 'પ્રેક્ટિકલ']);
+        if (initialInputs[kTheory40] === undefined) initialInputs[kTheory40] = getExistingVal(['annual_theory', 'theory', 'થિયરી']);
+        if (initialInputs[kPractical40] === undefined) initialInputs[kPractical40] = getExistingVal(['annual_practical', 'practical', 'પ્રાયોગિક', 'પ્રેક્ટિકલ']);
 
         // Internal Assessment Components (5+5+5+5 for Main, 10+10 for Prayogik)
         const kPt1Conv = `${student.id}_${subj.id}_internal_pt1`;
@@ -441,291 +443,37 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
         const kPracWork = `${student.id}_${subj.id}_internal_practical_work`;
         const kContSkill = `${student.id}_${subj.id}_internal_continuous_eval`;
 
-        initialInputs[kPt1Conv] = getExistingVal(['internal_pt1', 'pt1_conv', 'કસોટી_૧']);
-        initialInputs[kPt2Conv] = getExistingVal(['internal_pt2', 'pt2_conv', 'કસોટી_૨']);
-        initialInputs[kComp] = getExistingVal(['internal_competency', 'સજ્જતા']);
-        initialInputs[kNote] = getExistingVal(['internal_notebook', 'નોટબુક']);
-        initialInputs[kPracWork] = getExistingVal(['internal_practical_work', 'પ્રાયોગિક_કાર્ય', 'પ્રોજેક્ટ']);
-        initialInputs[kContSkill] = getExistingVal(['internal_continuous_eval', 'સાતત્યપૂર્ણ', 'કૌશલ્ય']);
+        if (initialInputs[kPt1Conv] === undefined) initialInputs[kPt1Conv] = getExistingVal(['internal_pt1', 'pt1_conv', 'કસોટી_૧']);
+        if (initialInputs[kPt2Conv] === undefined) initialInputs[kPt2Conv] = getExistingVal(['internal_pt2', 'pt2_conv', 'કસોટી_૨']);
+        if (initialInputs[kComp] === undefined) initialInputs[kComp] = getExistingVal(['internal_competency', 'સજ્જતા']);
+        if (initialInputs[kNote] === undefined) initialInputs[kNote] = getExistingVal(['internal_notebook', 'નોટબુક']);
+        if (initialInputs[kPracWork] === undefined) initialInputs[kPracWork] = getExistingVal(['internal_practical_work', 'પ્રાયોગિક_કાર્ય', 'પ્રોજેક્ટ']);
+        if (initialInputs[kContSkill] === undefined) initialInputs[kContSkill] = getExistingVal(['internal_continuous_eval', 'સાતત્યપૂર્ણ', 'કૌશલ્ય']);
       });
     });
 
     setGridInputs(initialInputs);
     setDirtyKeys(new Set());
     setSaveSuccessMsg(null);
-  }, [filteredStudents, marks]);
+  }, [filteredStudents, marks, selectedStandard, school?.id]);
 
-  // Handle cell modification in Spreadsheet Grid
-  const handleCellChange = (key: string, value: string, maxMarks: number) => {
-    const trimmed = value.trim();
-    if (trimmed.toUpperCase() === 'AB') {
-      setGridInputs((prev) => ({ ...prev, [key]: 'AB' }));
-      setDirtyKeys((prev) => new Set(prev).add(key));
-      return;
-    }
+  // Helper to compile Firestore records from grid inputs
+  const buildMarksRecordsToSave = (inputsMap: Record<string, string>, activeExamId: string) => {
+    const recordsToSave: any[] = [];
+    const examNameDisplay = marksEntryExams.find((e) => e.id === activeExamId)?.nameGu || activeExamId;
 
-    if (trimmed === '') {
-      setGridInputs((prev) => ({ ...prev, [key]: '' }));
-      setDirtyKeys((prev) => new Set(prev).add(key));
-      return;
-    }
+    if (activeExamId === 'prayogik_annual') {
+      const prayogikSubs = CLASS_9_PRAYOGIK_SUBJECTS;
+      filteredStudents.forEach((student) => {
+        prayogikSubs.forEach((subj) => {
+          const keyTh = `${student.id}_${subj.id}_theory40`;
+          const keyPr = `${student.id}_${subj.id}_practical40`;
+          const valTh = inputsMap[keyTh];
+          const valPr = inputsMap[keyPr];
 
-    const num = parseFloat(trimmed);
-    if (!isNaN(num) && num >= 0 && num <= maxMarks) {
-      setGridInputs((prev) => ({ ...prev, [key]: value }));
-      setDirtyKeys((prev) => new Set(prev).add(key));
-    }
-  };
-
-  // Batch Save all entered marks to Firestore
-  const handleSaveMarks = async () => {
-    setIsSaving(true);
-    setSaveSuccessMsg(null);
-
-    try {
-      const recordsToSave: any[] = [];
-      const examNameDisplay = marksEntryExams.find((e) => e.id === marksEntryExamId)?.nameGu || marksEntryExamId;
-
-      if (marksEntryExamId === 'prayogik_annual') {
-        const prayogikSubs = CLASS_9_PRAYOGIK_SUBJECTS;
-        filteredStudents.forEach((student) => {
-          prayogikSubs.forEach((subj) => {
-            const keyTh = `${student.id}_${subj.id}_theory40`;
-            const keyPr = `${student.id}_${subj.id}_practical40`;
-            const valTh = gridInputs[keyTh];
-            const valPr = gridInputs[keyPr];
-
-            if (valTh !== undefined && valTh !== '') {
-              const isAb = valTh.trim().toUpperCase() === 'AB';
-              const num = isAb ? 0 : parseFloat(valTh) || 0;
-              recordsToSave.push({
-                studentId: student.id,
-                studentName: student.studentName,
-                grNumber: student.grNumber || '',
-                rollNumber: student.rollNumber || '',
-                standard: selectedStandard,
-                division: student.section || student.division || 'A',
-                examId: 'annual_theory',
-                examType: `${subj.nameGu} - વાર્ષિક થિયરી (૪૦)`,
-                academicYear,
-                subjectId: subj.id,
-                subjectName: subj.nameGu,
-                totalObtained: num,
-                totalMax: 40,
-                percentage: Math.round((num / 40) * 100),
-                overallGrade: isAb ? 'AB' : calculateGsebGrade(num, 40),
-              });
-            }
-
-            if (valPr !== undefined && valPr !== '') {
-              const isAb = valPr.trim().toUpperCase() === 'AB';
-              const num = isAb ? 0 : parseFloat(valPr) || 0;
-              recordsToSave.push({
-                studentId: student.id,
-                studentName: student.studentName,
-                grNumber: student.grNumber || '',
-                rollNumber: student.rollNumber || '',
-                standard: selectedStandard,
-                division: student.section || student.division || 'A',
-                examId: 'annual_practical',
-                examType: `${subj.nameGu} - વાર્ષિક પ્રાયોગિક (૪૦)`,
-                academicYear,
-                subjectId: subj.id,
-                subjectName: subj.nameGu,
-                totalObtained: num,
-                totalMax: 40,
-                percentage: Math.round((num / 40) * 100),
-                overallGrade: isAb ? 'AB' : calculateGsebGrade(num, 40),
-              });
-            }
-
-            // Also save combined annual_exam out of 80
-            if ((valTh !== undefined && valTh !== '') || (valPr !== undefined && valPr !== '')) {
-              const nTh = parseFloat(valTh || '0') || 0;
-              const nPr = parseFloat(valPr || '0') || 0;
-              const combined80 = Math.min(80, nTh + nPr);
-              recordsToSave.push({
-                studentId: student.id,
-                studentName: student.studentName,
-                grNumber: student.grNumber || '',
-                rollNumber: student.rollNumber || '',
-                standard: selectedStandard,
-                division: student.section || student.division || 'A',
-                examId: 'annual_exam',
-                examType: `${subj.nameGu} - વાર્ષિક પરીક્ષા (૮૦)`,
-                academicYear,
-                subjectId: subj.id,
-                subjectName: subj.nameGu,
-                totalObtained: combined80,
-                totalMax: 80,
-                percentage: Math.round((combined80 / 80) * 100),
-                overallGrade: calculateGsebGrade(combined80, 80),
-              });
-            }
-          });
-        });
-      } else if (marksEntryExamId === 'internal_assessment' && internalEntryMode === 'components') {
-        const activeSub = ALL_CLASS_9_SUBJECTS.find((s) => s.id === internalSelectedSubjId) || ALL_CLASS_9_SUBJECTS[0];
-        filteredStudents.forEach((student) => {
-          if (activeSub.isPrayogik) {
-            const kPrac = `${student.id}_${activeSub.id}_internal_practical_work`;
-            const kSkill = `${student.id}_${activeSub.id}_internal_continuous_eval`;
-            const vPrac = gridInputs[kPrac];
-            const vSkill = gridInputs[kSkill];
-
-            if (vPrac !== undefined && vPrac !== '') {
-              const num = vPrac.trim().toUpperCase() === 'AB' ? 0 : parseFloat(vPrac) || 0;
-              recordsToSave.push({
-                studentId: student.id,
-                studentName: student.studentName,
-                grNumber: student.grNumber || '',
-                rollNumber: student.rollNumber || '',
-                standard: selectedStandard,
-                division: student.section || student.division || 'A',
-                examId: 'internal_practical_work',
-                examType: `${activeSub.nameGu} - પ્રાયોગિક કાર્ય/પ્રોજેક્ટ (૧૦)`,
-                academicYear,
-                subjectId: activeSub.id,
-                subjectName: activeSub.nameGu,
-                totalObtained: num,
-                totalMax: 10,
-                percentage: Math.round((num / 10) * 100),
-                overallGrade: vPrac.trim().toUpperCase() === 'AB' ? 'AB' : calculateGsebGrade(num, 10),
-              });
-            }
-
-            if (vSkill !== undefined && vSkill !== '') {
-              const num = vSkill.trim().toUpperCase() === 'AB' ? 0 : parseFloat(vSkill) || 0;
-              recordsToSave.push({
-                studentId: student.id,
-                studentName: student.studentName,
-                grNumber: student.grNumber || '',
-                rollNumber: student.rollNumber || '',
-                standard: selectedStandard,
-                division: student.section || student.division || 'A',
-                examId: 'internal_continuous_eval',
-                examType: `${activeSub.nameGu} - સાતત્યપૂર્ણ કૌશલ્ય (૧૦)`,
-                academicYear,
-                subjectId: activeSub.id,
-                subjectName: activeSub.nameGu,
-                totalObtained: num,
-                totalMax: 10,
-                percentage: Math.round((num / 10) * 100),
-                overallGrade: vSkill.trim().toUpperCase() === 'AB' ? 'AB' : calculateGsebGrade(num, 10),
-              });
-            }
-
-            if ((vPrac !== undefined && vPrac !== '') || (vSkill !== undefined && vSkill !== '')) {
-              const n1 = parseFloat(vPrac || '0') || 0;
-              const n2 = parseFloat(vSkill || '0') || 0;
-              const tot20 = Math.min(20, Math.round(n1 + n2));
-              recordsToSave.push({
-                studentId: student.id,
-                studentName: student.studentName,
-                grNumber: student.grNumber || '',
-                rollNumber: student.rollNumber || '',
-                standard: selectedStandard,
-                division: student.section || student.division || 'A',
-                examId: 'internal_assessment',
-                examType: `${activeSub.nameGu} - આંતરિક મૂલ્યાંકન (૨૦)`,
-                academicYear,
-                subjectId: activeSub.id,
-                subjectName: activeSub.nameGu,
-                totalObtained: tot20,
-                totalMax: 20,
-                percentage: Math.round((tot20 / 20) * 100),
-                overallGrade: calculateGsebGrade(tot20, 20),
-              });
-            }
-          } else {
-            // Main subject: 5 + 5 + 5 + 5
-            // PT1 and PT2 are automatically converted from 25-mark periodic tests (val / 5)
-            const kRawPt1 = `${student.id}_${activeSub.id}_periodic_test_1`;
-            const kRawPt2 = `${student.id}_${activeSub.id}_periodic_test_2`;
-            const rawPt1 = gridInputs[kRawPt1];
-            const rawPt2 = gridInputs[kRawPt2];
-
-            const convPt1 = rawPt1 === 'AB' ? '0' : (rawPt1 !== undefined && rawPt1 !== '' ? String(Math.round(((parseFloat(rawPt1) || 0) / 25) * 5 * 10) / 10) : undefined);
-            const convPt2 = rawPt2 === 'AB' ? '0' : (rawPt2 !== undefined && rawPt2 !== '' ? String(Math.round(((parseFloat(rawPt2) || 0) / 25) * 5 * 10) / 10) : undefined);
-
-            const kPt1 = `${student.id}_${activeSub.id}_internal_pt1`;
-            const kPt2 = `${student.id}_${activeSub.id}_internal_pt2`;
-            const kComp = `${student.id}_${activeSub.id}_internal_competency`;
-            const kNote = `${student.id}_${activeSub.id}_internal_notebook`;
-
-            const vPt1 = convPt1 !== undefined ? convPt1 : gridInputs[kPt1];
-            const vPt2 = convPt2 !== undefined ? convPt2 : gridInputs[kPt2];
-            const vComp = gridInputs[kComp];
-            const vNote = gridInputs[kNote];
-
-            const addComp = (fieldKey: string, typeName: string, val: string | undefined) => {
-              if (val !== undefined && val !== '') {
-                const num = val.trim().toUpperCase() === 'AB' ? 0 : parseFloat(val) || 0;
-                recordsToSave.push({
-                  studentId: student.id,
-                  studentName: student.studentName,
-                  grNumber: student.grNumber || '',
-                  rollNumber: student.rollNumber || '',
-                  standard: selectedStandard,
-                  division: student.section || student.division || 'A',
-                  examId: fieldKey,
-                  examType: `${activeSub.nameGu} - ${typeName}`,
-                  academicYear,
-                  subjectId: activeSub.id,
-                  subjectName: activeSub.nameGu,
-                  totalObtained: num,
-                  totalMax: 5,
-                  percentage: Math.round((num / 5) * 100),
-                  overallGrade: val.trim().toUpperCase() === 'AB' ? 'AB' : calculateGsebGrade(num, 5),
-                });
-              }
-            };
-
-            addComp('internal_pt1', 'કસોટી ૧ (૫)', vPt1);
-            addComp('internal_pt2', 'કસોટી ૨ (૫)', vPt2);
-            addComp('internal_competency', 'વિષય સજ્જતા (૫)', vComp);
-            addComp('internal_notebook', 'નોટબુક કાર્ય (૫)', vNote);
-
-            if (
-              (vPt1 !== undefined && vPt1 !== '') ||
-              (vPt2 !== undefined && vPt2 !== '') ||
-              (vComp !== undefined && vComp !== '') ||
-              (vNote !== undefined && vNote !== '')
-            ) {
-              const n1 = parseFloat(vPt1 || '0') || 0;
-              const n2 = parseFloat(vPt2 || '0') || 0;
-              const n3 = parseFloat(vComp || '0') || 0;
-              const n4 = parseFloat(vNote || '0') || 0;
-              const tot20 = Math.min(20, Math.round(n1 + n2 + n3 + n4));
-              recordsToSave.push({
-                studentId: student.id,
-                studentName: student.studentName,
-                grNumber: student.grNumber || '',
-                rollNumber: student.rollNumber || '',
-                standard: selectedStandard,
-                division: student.section || student.division || 'A',
-                examId: 'internal_assessment',
-                examType: `${activeSub.nameGu} - આંતરિક મૂલ્યાંકન (૨૦)`,
-                academicYear,
-                subjectId: activeSub.id,
-                subjectName: activeSub.nameGu,
-                totalObtained: tot20,
-                totalMax: 20,
-                percentage: Math.round((tot20 / 20) * 100),
-                overallGrade: calculateGsebGrade(tot20, 20),
-              });
-            }
-          }
-        });
-      } else {
-        filteredStudents.forEach((student) => {
-          entrySubjects.forEach((subj) => {
-            const valKey = `${student.id}_${subj.id}_${marksEntryExamId}`;
-            const val = gridInputs[valKey];
-            if (val === undefined || val === '') return;
-            const isAb = val.trim().toUpperCase() === 'AB';
-            const obtained = isAb ? 0 : parseFloat(val) || 0;
-
+          if (valTh !== undefined && valTh !== '') {
+            const isAb = valTh.trim().toUpperCase() === 'AB';
+            const num = isAb ? 0 : parseFloat(valTh) || 0;
             recordsToSave.push({
               studentId: student.id,
               studentName: student.studentName,
@@ -733,36 +481,354 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               rollNumber: student.rollNumber || '',
               standard: selectedStandard,
               division: student.section || student.division || 'A',
-              examId: marksEntryExamId,
-              examType: examNameDisplay,
+              examId: 'annual_theory',
+              examType: `${subj.nameGu} - વાર્ષિક થિયરી (૪૦)`,
               academicYear,
               subjectId: subj.id,
               subjectName: subj.nameGu,
-              totalObtained: obtained,
-              totalMax: entryMaxMarks,
-              percentage: isAb ? 0 : Math.round((obtained / entryMaxMarks) * 100),
-              overallGrade: isAb ? 'AB' : undefined,
+              totalObtained: num,
+              totalMax: 40,
+              percentage: Math.round((num / 40) * 100),
+              overallGrade: isAb ? 'AB' : calculateGsebGrade(num, 40),
             });
+          }
+
+          if (valPr !== undefined && valPr !== '') {
+            const isAb = valPr.trim().toUpperCase() === 'AB';
+            const num = isAb ? 0 : parseFloat(valPr) || 0;
+            recordsToSave.push({
+              studentId: student.id,
+              studentName: student.studentName,
+              grNumber: student.grNumber || '',
+              rollNumber: student.rollNumber || '',
+              standard: selectedStandard,
+              division: student.section || student.division || 'A',
+              examId: 'annual_practical',
+              examType: `${subj.nameGu} - વાર્ષિક પ્રાયોગિક (૪૦)`,
+              academicYear,
+              subjectId: subj.id,
+              subjectName: subj.nameGu,
+              totalObtained: num,
+              totalMax: 40,
+              percentage: Math.round((num / 40) * 100),
+              overallGrade: isAb ? 'AB' : calculateGsebGrade(num, 40),
+            });
+          }
+
+          // Also save combined annual_exam out of 80
+          if ((valTh !== undefined && valTh !== '') || (valPr !== undefined && valPr !== '')) {
+            const nTh = parseFloat(valTh || '0') || 0;
+            const nPr = parseFloat(valPr || '0') || 0;
+            const combined80 = Math.min(80, nTh + nPr);
+            recordsToSave.push({
+              studentId: student.id,
+              studentName: student.studentName,
+              grNumber: student.grNumber || '',
+              rollNumber: student.rollNumber || '',
+              standard: selectedStandard,
+              division: student.section || student.division || 'A',
+              examId: 'annual_exam',
+              examType: `${subj.nameGu} - વાર્ષિક પરીક્ષા (૮૦)`,
+              academicYear,
+              subjectId: subj.id,
+              subjectName: subj.nameGu,
+              totalObtained: combined80,
+              totalMax: 80,
+              percentage: Math.round((combined80 / 80) * 100),
+              overallGrade: calculateGsebGrade(combined80, 80),
+            });
+          }
+        });
+      });
+    } else if (activeExamId === 'internal_assessment' && internalEntryMode === 'components') {
+      const activeSub = ALL_CLASS_9_SUBJECTS.find((s) => s.id === internalSelectedSubjId) || ALL_CLASS_9_SUBJECTS[0];
+      filteredStudents.forEach((student) => {
+        if (activeSub.isPrayogik) {
+          const kPrac = `${student.id}_${activeSub.id}_internal_practical_work`;
+          const kSkill = `${student.id}_${activeSub.id}_internal_continuous_eval`;
+          const vPrac = inputsMap[kPrac];
+          const vSkill = inputsMap[kSkill];
+
+          if (vPrac !== undefined && vPrac !== '') {
+            const num = vPrac.trim().toUpperCase() === 'AB' ? 0 : parseFloat(vPrac) || 0;
+            recordsToSave.push({
+              studentId: student.id,
+              studentName: student.studentName,
+              grNumber: student.grNumber || '',
+              rollNumber: student.rollNumber || '',
+              standard: selectedStandard,
+              division: student.section || student.division || 'A',
+              examId: 'internal_practical_work',
+              examType: `${activeSub.nameGu} - પ્રાયોગિક કાર્ય/પ્રોજેક્ટ (૧૦)`,
+              academicYear,
+              subjectId: activeSub.id,
+              subjectName: activeSub.nameGu,
+              totalObtained: num,
+              totalMax: 10,
+              percentage: Math.round((num / 10) * 100),
+              overallGrade: vPrac.trim().toUpperCase() === 'AB' ? 'AB' : calculateGsebGrade(num, 10),
+            });
+          }
+
+          if (vSkill !== undefined && vSkill !== '') {
+            const num = vSkill.trim().toUpperCase() === 'AB' ? 0 : parseFloat(vSkill) || 0;
+            recordsToSave.push({
+              studentId: student.id,
+              studentName: student.studentName,
+              grNumber: student.grNumber || '',
+              rollNumber: student.rollNumber || '',
+              standard: selectedStandard,
+              division: student.section || student.division || 'A',
+              examId: 'internal_continuous_eval',
+              examType: `${activeSub.nameGu} - સાતત્યપૂર્ણ કૌશલ્ય (૧૦)`,
+              academicYear,
+              subjectId: activeSub.id,
+              subjectName: activeSub.nameGu,
+              totalObtained: num,
+              totalMax: 10,
+              percentage: Math.round((num / 10) * 100),
+              overallGrade: vSkill.trim().toUpperCase() === 'AB' ? 'AB' : calculateGsebGrade(num, 10),
+            });
+          }
+
+          if ((vPrac !== undefined && vPrac !== '') || (vSkill !== undefined && vSkill !== '')) {
+            const n1 = parseFloat(vPrac || '0') || 0;
+            const n2 = parseFloat(vSkill || '0') || 0;
+            const tot20 = Math.min(20, Math.round(n1 + n2));
+            recordsToSave.push({
+              studentId: student.id,
+              studentName: student.studentName,
+              grNumber: student.grNumber || '',
+              rollNumber: student.rollNumber || '',
+              standard: selectedStandard,
+              division: student.section || student.division || 'A',
+              examId: 'internal_assessment',
+              examType: `${activeSub.nameGu} - આંતરિક મૂલ્યાંકન (૨૦)`,
+              academicYear,
+              subjectId: activeSub.id,
+              subjectName: activeSub.nameGu,
+              totalObtained: tot20,
+              totalMax: 20,
+              percentage: Math.round((tot20 / 20) * 100),
+              overallGrade: calculateGsebGrade(tot20, 20),
+            });
+          }
+        } else {
+          // Main subject: 5 + 5 + 5 + 5
+          const kRawPt1 = `${student.id}_${activeSub.id}_periodic_test_1`;
+          const kRawPt2 = `${student.id}_${activeSub.id}_periodic_test_2`;
+          const rawPt1 = inputsMap[kRawPt1];
+          const rawPt2 = inputsMap[kRawPt2];
+
+          const convPt1 = rawPt1 === 'AB' ? '0' : (rawPt1 !== undefined && rawPt1 !== '' ? String(Math.round(((parseFloat(rawPt1) || 0) / 25) * 5 * 10) / 10) : undefined);
+          const convPt2 = rawPt2 === 'AB' ? '0' : (rawPt2 !== undefined && rawPt2 !== '' ? String(Math.round(((parseFloat(rawPt2) || 0) / 25) * 5 * 10) / 10) : undefined);
+
+          const kPt1 = `${student.id}_${activeSub.id}_internal_pt1`;
+          const kPt2 = `${student.id}_${activeSub.id}_internal_pt2`;
+          const kComp = `${student.id}_${activeSub.id}_internal_competency`;
+          const kNote = `${student.id}_${activeSub.id}_internal_notebook`;
+
+          const vPt1 = convPt1 !== undefined ? convPt1 : inputsMap[kPt1];
+          const vPt2 = convPt2 !== undefined ? convPt2 : inputsMap[kPt2];
+          const vComp = inputsMap[kComp];
+          const vNote = inputsMap[kNote];
+
+          const addComp = (fieldKey: string, typeName: string, val: string | undefined) => {
+            if (val !== undefined && val !== '') {
+              const num = val.trim().toUpperCase() === 'AB' ? 0 : parseFloat(val) || 0;
+              recordsToSave.push({
+                studentId: student.id,
+                studentName: student.studentName,
+                grNumber: student.grNumber || '',
+                rollNumber: student.rollNumber || '',
+                standard: selectedStandard,
+                division: student.section || student.division || 'A',
+                examId: fieldKey,
+                examType: `${activeSub.nameGu} - ${typeName}`,
+                academicYear,
+                subjectId: activeSub.id,
+                subjectName: activeSub.nameGu,
+                totalObtained: num,
+                totalMax: 5,
+                percentage: Math.round((num / 5) * 100),
+                overallGrade: val.trim().toUpperCase() === 'AB' ? 'AB' : calculateGsebGrade(num, 5),
+              });
+            }
+          };
+
+          addComp('internal_pt1', 'કસોટી ૧ (૫)', vPt1);
+          addComp('internal_pt2', 'કસોટી ૨ (૫)', vPt2);
+          addComp('internal_competency', 'વિષય સજ્જતા (૫)', vComp);
+          addComp('internal_notebook', 'નોટબુક કાર્ય (૫)', vNote);
+
+          if (
+            (vPt1 !== undefined && vPt1 !== '') ||
+            (vPt2 !== undefined && vPt2 !== '') ||
+            (vComp !== undefined && vComp !== '') ||
+            (vNote !== undefined && vNote !== '')
+          ) {
+            const n1 = parseFloat(vPt1 || '0') || 0;
+            const n2 = parseFloat(vPt2 || '0') || 0;
+            const n3 = parseFloat(vComp || '0') || 0;
+            const n4 = parseFloat(vNote || '0') || 0;
+            const tot20 = Math.min(20, Math.round(n1 + n2 + n3 + n4));
+            recordsToSave.push({
+              studentId: student.id,
+              studentName: student.studentName,
+              grNumber: student.grNumber || '',
+              rollNumber: student.rollNumber || '',
+              standard: selectedStandard,
+              division: student.section || student.division || 'A',
+              examId: 'internal_assessment',
+              examType: `${activeSub.nameGu} - આંતરિક મૂલ્યાંકન (૨૦)`,
+              academicYear,
+              subjectId: activeSub.id,
+              subjectName: activeSub.nameGu,
+              totalObtained: tot20,
+              totalMax: 20,
+              percentage: Math.round((tot20 / 20) * 100),
+              overallGrade: calculateGsebGrade(tot20, 20),
+            });
+          }
+        }
+      });
+    } else {
+      filteredStudents.forEach((student) => {
+        entrySubjects.forEach((subj) => {
+          const valKey = `${student.id}_${subj.id}_${activeExamId}`;
+          const val = inputsMap[valKey];
+          if (val === undefined || val === '') return;
+          const isAb = val.trim().toUpperCase() === 'AB';
+          const obtained = isAb ? 0 : parseFloat(val) || 0;
+
+          recordsToSave.push({
+            studentId: student.id,
+            studentName: student.studentName,
+            grNumber: student.grNumber || '',
+            rollNumber: student.rollNumber || '',
+            standard: selectedStandard,
+            division: student.section || student.division || 'A',
+            examId: activeExamId,
+            examType: examNameDisplay,
+            academicYear,
+            subjectId: subj.id,
+            subjectName: subj.nameGu,
+            totalObtained: obtained,
+            totalMax: entryMaxMarks,
+            percentage: isAb ? 0 : Math.round((obtained / entryMaxMarks) * 100),
+            overallGrade: isAb ? 'AB' : undefined,
           });
         });
-      }
+      });
+    }
 
+    return recordsToSave;
+  };
+
+  // Perform background auto-sync to Firestore for marks
+  const performAutoSyncMarks = async (inputsOverride?: Record<string, string>) => {
+    const inputsToUse = inputsOverride || gridInputsRef.current;
+    const currentExam = marksEntryExamIdRef.current;
+    if (currentExam === 'siddhi_krupa_entry') return;
+
+    if (!navigator.onLine) {
+      setCloudSyncStatus('offline');
+      try {
+        localStorage.setItem(`vidyalayam_pending_marks_${school?.id || 'default'}`, 'true');
+      } catch (e) {}
+      return;
+    }
+
+    setCloudSyncStatus('syncing');
+    try {
+      const recordsToSave = buildMarksRecordsToSave(inputsToUse, currentExam);
       if (recordsToSave.length > 0) {
         await saveBatchExamMarks(school.id, recordsToSave);
       }
-
       setDirtyKeys(new Set());
-      setSaveSuccessMsg(`સફળતાપૂર્વક ${recordsToSave.length} ગુણ રેકોર્ડ્સ (${examNameDisplay}) સાચવી લેવામાં આવ્યા છે!`);
-
-      if (onRefresh) {
-        onRefresh();
-      }
+      try {
+        localStorage.removeItem(`vidyalayam_pending_marks_${school?.id || 'default'}`);
+      } catch (e) {}
+      setCloudSyncStatus('synced');
+      setTimeout(() => {
+        setCloudSyncStatus((prev) => (prev === 'synced' ? 'idle' : prev));
+      }, 3000);
+      if (onRefresh) onRefresh();
     } catch (err) {
-      console.error('Error saving marks batch:', err);
-      alert('ગુણ સેવ કરવામાં ક્ષતિ થઈ. કૃપા કરીને પુનઃ પ્રયત્ન કરો.');
-    } finally {
-      setIsSaving(false);
+      console.error('Auto cloud sync marks error:', err);
+      setCloudSyncStatus('offline');
     }
+  };
+
+  // Debounced auto-sync trigger (450ms)
+  const triggerDebouncedMarksSync = (nextInputs: Record<string, string>) => {
+    if (autoSyncMarksTimerRef.current) {
+      clearTimeout(autoSyncMarksTimerRef.current);
+    }
+    setCloudSyncStatus('syncing');
+    autoSyncMarksTimerRef.current = setTimeout(() => {
+      performAutoSyncMarks(nextInputs);
+    }, 450);
+  };
+
+  // Handle cell modification in Spreadsheet Grid with immediate offline save & auto-sync
+  const handleCellChange = (key: string, value: string, maxMarks: number) => {
+    const trimmed = value.trim();
+    let updatedVal: string | null = null;
+
+    if (trimmed.toUpperCase() === 'AB') {
+      updatedVal = 'AB';
+    } else if (trimmed === '') {
+      updatedVal = '';
+    } else {
+      const num = parseFloat(trimmed);
+      if (!isNaN(num) && num >= 0 && num <= maxMarks) {
+        updatedVal = value;
+      }
+    }
+
+    if (updatedVal !== null) {
+      const nextInputs = { ...gridInputsRef.current, [key]: updatedVal };
+      setGridInputs(nextInputs);
+      setDirtyKeys((prev) => new Set(prev).add(key));
+
+      // 1. Immediate offline local persistence (synchronous)
+      try {
+        localStorage.setItem(
+          `vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`,
+          JSON.stringify(nextInputs)
+        );
+      } catch (e) {
+        console.error('Local cache error:', e);
+      }
+
+      // 2. Debounced real-time cloud synchronization
+      triggerDebouncedMarksSync(nextInputs);
+    }
+  };
+
+  // Re-sync listener for connectivity restoration
+  useEffect(() => {
+    const handleOnline = () => {
+      try {
+        const hasPendingMarks = localStorage.getItem(`vidyalayam_pending_marks_${school?.id || 'default'}`);
+        if (hasPendingMarks === 'true') {
+          performAutoSyncMarks();
+        }
+        const hasPendingGrace = localStorage.getItem(`vidyalayam_pending_grace_${school?.id || 'default'}`);
+        if (hasPendingGrace === 'true') {
+          performAutoSyncGrace();
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [school?.id]);
+
+  // Direct manual save fallback (if needed)
+  const handleSaveMarks = async () => {
+    await performAutoSyncMarks();
   };
 
   // KPI Metrics for Active Results
@@ -782,57 +848,149 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     return { total, directPass, siddhiCount, krupaCount, failCount, passPct, completeCount };
   }, [allResults]);
 
+  // Perform background auto-sync to Firestore for Siddhi & Krupa grace marks
+  const performAutoSyncGrace = async (overridesToUse?: Record<string, Record<string, { siddhi?: number; krupa?: number }>>) => {
+    const currentOverrides = overridesToUse || manualGraceOverridesRef.current;
+
+    if (!navigator.onLine) {
+      setGraceSyncStatus('offline');
+      try {
+        localStorage.setItem(`vidyalayam_pending_grace_${school?.id || 'default'}`, 'true');
+      } catch (e) {}
+      return;
+    }
+
+    setGraceSyncStatus('syncing');
+    try {
+      const recordsToSave: any[] = [];
+      filteredStudents.forEach((student) => {
+        const studentGrace = currentOverrides[student.id] || {};
+        const activeRes = computeClass9StudentResult(student, marks, '700', studentGrace);
+
+        activeRes.scores.forEach((sc) => {
+          const siddhiGiven = studentGrace[sc.subject.id]?.siddhi || 0;
+          const krupaGiven = studentGrace[sc.subject.id]?.krupa || 0;
+
+          if (siddhiGiven > 0 || krupaGiven > 0) {
+            recordsToSave.push({
+              studentId: student.id,
+              studentName: student.studentName,
+              grNumber: student.grNumber || '',
+              rollNumber: student.rollNumber || '',
+              standard: '9',
+              division: student.section || student.division || 'A',
+              examId: 'siddhi_krupa_grace',
+              examType: `${sc.subject.nameGu} - સિદ્ધિ/કૃપા ગુણ`,
+              academicYear,
+              subjectId: sc.subject.id,
+              subjectName: sc.subject.nameGu,
+              totalObtained: sc.finalMarksWithGrace !== null ? sc.finalMarksWithGrace : 0,
+              totalMax: 100,
+              percentage: sc.finalMarksWithGrace !== null ? sc.finalMarksWithGrace : 0,
+              questionMarks: {
+                siddhi: siddhiGiven,
+                krupa: krupaGiven,
+                originalMarks: sc.converted100 ?? 0,
+                eligiblePool: activeRes.siddhiPoolEarned,
+              },
+              overallGrade: sc.grade,
+            });
+          }
+        });
+      });
+
+      if (recordsToSave.length > 0) {
+        await saveBatchExamMarks(school.id, recordsToSave);
+      }
+      setSiddhiDirtyStudents(new Set());
+      try {
+        localStorage.removeItem(`vidyalayam_pending_grace_${school?.id || 'default'}`);
+      } catch (e) {}
+      setGraceSyncStatus('synced');
+      setTimeout(() => {
+        setGraceSyncStatus((prev) => (prev === 'synced' ? 'idle' : prev));
+      }, 3000);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Grace auto sync error:', err);
+      setGraceSyncStatus('offline');
+    }
+  };
+
+  // Debounced auto-sync trigger for grace marks (450ms)
+  const triggerDebouncedGraceSync = (nextOverrides: Record<string, Record<string, { siddhi?: number; krupa?: number }>>) => {
+    if (autoSyncGraceTimerRef.current) {
+      clearTimeout(autoSyncGraceTimerRef.current);
+    }
+    setGraceSyncStatus('syncing');
+    autoSyncGraceTimerRef.current = setTimeout(() => {
+      performAutoSyncGrace(nextOverrides);
+    }, 450);
+  };
+
   // Handle Single Subject Grace Change (Siddhi or Krupa)
-  // Enforces GSEB rule: student has an overall pool (max 15 for siddhi, max 10 for krupa), not per-subject limits.
+  // Enforces GSEB rule: student has an overall pool (max 15 for siddhi, max 10 for krupa)
+  // And 25-mark rule: student with < 25 marks in a subject cannot receive grace or pass that subject
   const handleGraceChange = (studentId: string, subjectId: string, field: 'siddhi' | 'krupa', rawVal: string) => {
     const trimmed = rawVal.trim();
     const num = trimmed === '' ? 0 : parseInt(trimmed, 10);
     if (isNaN(num) || num < 0) return;
 
-    // Determine overall pool limit for this student
+    // Check 25 marks rule: if raw converted marks < 25, grace cannot be given
     const student = activeStandardStudents.find((s) => s.id === studentId);
+    if (student) {
+      const rawRes = computeClass9StudentResult(student, marks, '700', {});
+      const targetScore = rawRes.scores.find((s) => s.subject.id === subjectId);
+      if ((targetScore?.converted100 ?? 0) < 25 && num > 0) {
+        alert('GSEB નિયમાનુસાર ૨૫ થી ઓછા ગુણ ધરાવતા વિષયમાં ગ્રેસ ગુણ આપી શકાતા નથી અને વિદ્યાર્થી પાસ થઈ શકે નહીં.');
+        return;
+      }
+    }
+
+    // Determine overall pool limit for this student
     let studentMaxPool = field === 'siddhi' ? 15 : 10;
     if (student && field === 'siddhi') {
       const rawRes = computeClass9StudentResult(student, marks, '700', {});
       studentMaxPool = rawRes.siddhiPoolEarned; // strictly capped at 15
     }
 
-    setManualGraceOverrides((prev) => {
-      const studentMap = { ...(prev[studentId] || {}) };
-      // Calculate how many marks of this field are already allocated to OTHER subjects
-      let otherSubjectsSum = 0;
-      Object.entries(studentMap).forEach(([sid, g]) => {
-        if (sid !== subjectId) {
-          otherSubjectsSum += (field === 'siddhi' ? g.siddhi : g.krupa) || 0;
-        }
-      });
-
-      const maxForThisSubject = Math.max(0, studentMaxPool - otherSubjectsSum);
-      const validNum = Math.min(maxForThisSubject, num);
-
-      const currentSubj = { ...(studentMap[subjectId] || {}) };
-      currentSubj[field] = validNum;
-      studentMap[subjectId] = currentSubj;
-      const next = { ...prev, [studentId]: studentMap };
-      try {
-        localStorage.setItem(`vidyalayam_grace_overrides_${school?.id || 'default'}`, JSON.stringify(next));
-      } catch (e) {
-        console.error(e);
+    const currentMap = manualGraceOverridesRef.current[studentId] || {};
+    let otherSubjectsSum = 0;
+    Object.entries(currentMap).forEach(([sid, g]) => {
+      if (sid !== subjectId) {
+        otherSubjectsSum += (field === 'siddhi' ? g.siddhi : g.krupa) || 0;
       }
-      return next;
     });
 
+    const maxForThisSubject = Math.max(0, studentMaxPool - otherSubjectsSum);
+    const validNum = Math.min(maxForThisSubject, num);
+
+    const nextStudentMap = { ...currentMap };
+    nextStudentMap[subjectId] = { ...(nextStudentMap[subjectId] || {}), [field]: validNum };
+    const nextOverrides = { ...manualGraceOverridesRef.current, [studentId]: nextStudentMap };
+
+    setManualGraceOverrides(nextOverrides);
     setSiddhiDirtyStudents((prev) => new Set(prev).add(studentId));
+
+    // 1. Immediate offline local persistence
+    try {
+      localStorage.setItem(`vidyalayam_grace_overrides_${school?.id || 'default'}`, JSON.stringify(nextOverrides));
+    } catch (e) {
+      console.error(e);
+    }
+
+    // 2. Debounced real-time cloud synchronization
+    triggerDebouncedGraceSync(nextOverrides);
   };
 
-  // Auto-Apply Grace for a Single Student based on GSEB Rules
+  // Auto-Apply Grace for a Single Student based on GSEB Rules with immediate auto-sync
   const handleAutoApplyGraceForStudent = (student: Student) => {
     const rawRes = computeClass9StudentResult(student, marks, '700', {});
     const pool = rawRes.siddhiPoolEarned;
     const hasUnder25 = rawRes.scores.filter((s) => s.subject.isMainSubject).some((s) => (s.converted100 ?? 0) < 25);
 
     if (hasUnder25) {
-      alert('વિદ્યાર્થીને કોઈ વિષયમાં ૨૫ થી ઓછા ગુણ હોવાથી GSEB નિયમાનુસાર ગ્રેસ મળવાપાત્ર નથી.');
+      alert('વિદ્યાર્થીને કોઈ વિષયમાં ૨૫ થી ઓછા ગુણ હોવાથી GSEB નિયમાનુસાર ગ્રેસ મળવાપાત્ર નથી અને પાસ થઈ શકે નહીં.');
       return;
     }
 
@@ -870,40 +1028,42 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       };
     });
 
-    setManualGraceOverrides((prev) => {
-      const next = { ...prev, [student.id]: studentGraces };
-      try {
-        localStorage.setItem(`vidyalayam_grace_overrides_${school?.id || 'default'}`, JSON.stringify(next));
-      } catch (e) {
-        console.error(e);
-      }
-      return next;
-    });
-
+    const nextOverrides = { ...manualGraceOverridesRef.current, [student.id]: studentGraces };
+    setManualGraceOverrides(nextOverrides);
     setSiddhiDirtyStudents((prev) => new Set(prev).add(student.id));
-    setSiddhiSaveSuccess(`${student.studentName} માટે નિયમાનુસાર ઓટો-ગ્રેસ લાગુ કરવામાં આવ્યો.`);
+
+    try {
+      localStorage.setItem(`vidyalayam_grace_overrides_${school?.id || 'default'}`, JSON.stringify(nextOverrides));
+    } catch (e) {
+      console.error(e);
+    }
+
+    performAutoSyncGrace(nextOverrides);
+    setSiddhiSaveSuccess(`${student.studentName} માટે નિયમાનુસાર ઓટો-ગ્રેસ લાગુ થયો અને આપોઆપ ક્લાઉડ સિંક થયો.`);
     setTimeout(() => setSiddhiSaveSuccess(null), 3000);
   };
 
-  // Reset Grace for a Student
+  // Reset Grace for a Student with immediate auto-sync
   const handleResetGraceForStudent = (studentId: string) => {
-    setManualGraceOverrides((prev) => {
-      const next = { ...prev };
-      delete next[studentId];
-      try {
-        localStorage.setItem(`vidyalayam_grace_overrides_${school?.id || 'default'}`, JSON.stringify(next));
-      } catch (e) {
-        console.error(e);
-      }
-      return next;
-    });
+    const nextOverrides = { ...manualGraceOverridesRef.current };
+    delete nextOverrides[studentId];
+
+    setManualGraceOverrides(nextOverrides);
     setSiddhiDirtyStudents((prev) => new Set(prev).add(studentId));
+
+    try {
+      localStorage.setItem(`vidyalayam_grace_overrides_${school?.id || 'default'}`, JSON.stringify(nextOverrides));
+    } catch (e) {
+      console.error(e);
+    }
+
+    performAutoSyncGrace(nextOverrides);
   };
 
-  // Batch Auto-Apply Grace for all eligible students in Class 9
+  // Batch Auto-Apply Grace for all eligible students in Class 9 with immediate auto-sync
   const handleBatchAutoApplyGrace = () => {
     let appliedCount = 0;
-    const updatedOverrides = { ...manualGraceOverrides };
+    const updatedOverrides = { ...manualGraceOverridesRef.current };
 
     filteredStudents.forEach((student) => {
       const rawRes = computeClass9StudentResult(student, marks, '700', {});
@@ -957,81 +1117,11 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     }
 
     filteredStudents.forEach((s) => setSiddhiDirtyStudents((prev) => new Set(prev).add(s.id)));
-    alert(`કુલ ${appliedCount} પાત્ર વિદ્યાર્થીઓને નિયમાનુસાર ઓટો-ગ્રેસ લાગુ કરવામાં આવ્યો છે.`);
+    performAutoSyncGrace(updatedOverrides);
+    setSiddhiSaveSuccess(`કુલ ${appliedCount} પાત્ર વિદ્યાર્થીઓને ઓટો-ગ્રેસ લાગુ થયો અને આપોઆપ ક્લાઉડ સિંક થઈ ગયો છે.`);
+    setTimeout(() => setSiddhiSaveSuccess(null), 4000);
   };
 
-  // Save Grace Marks to Firestore
-  const handleSaveGraceToFirestore = async (targetStudentId?: string) => {
-    setIsSaving(true);
-    setSiddhiSaveSuccess(null);
-
-    try {
-      const recordsToSave: any[] = [];
-      const targetStudents = targetStudentId
-        ? filteredStudents.filter((s) => s.id === targetStudentId)
-        : filteredStudents;
-
-      targetStudents.forEach((student) => {
-        const activeRes = computeClass9StudentResult(student, marks, '700', manualGraceOverrides[student.id]);
-        const studentGrace = manualGraceOverrides[student.id] || {};
-
-        activeRes.scores.forEach((sc) => {
-          const siddhiGiven = studentGrace[sc.subject.id]?.siddhi || 0;
-          const krupaGiven = studentGrace[sc.subject.id]?.krupa || 0;
-
-          if (siddhiGiven > 0 || krupaGiven > 0) {
-            recordsToSave.push({
-              studentId: student.id,
-              studentName: student.studentName,
-              grNumber: student.grNumber || '',
-              rollNumber: student.rollNumber || '',
-              standard: '9',
-              division: student.section || student.division || 'A',
-              examId: 'siddhi_krupa_grace',
-              examType: `${sc.subject.nameGu} - સિદ્ધિ/કૃપા ગુણ`,
-              academicYear,
-              subjectId: sc.subject.id,
-              subjectName: sc.subject.nameGu,
-              totalObtained: sc.finalMarksWithGrace !== null ? sc.finalMarksWithGrace : 0,
-              totalMax: 100,
-              percentage: sc.finalMarksWithGrace !== null ? sc.finalMarksWithGrace : 0,
-              questionMarks: {
-                siddhi: siddhiGiven,
-                krupa: krupaGiven,
-                originalMarks: sc.converted100 ?? 0,
-                eligiblePool: activeRes.siddhiPoolEarned,
-              },
-              overallGrade: sc.grade,
-            });
-          }
-        });
-      });
-
-      if (recordsToSave.length > 0) {
-        await saveBatchExamMarks(school.id, recordsToSave);
-      }
-
-      localStorage.setItem(`vidyalayam_grace_overrides_${school?.id || 'default'}`, JSON.stringify(manualGraceOverrides));
-
-      if (targetStudentId) {
-        setSiddhiDirtyStudents((prev) => {
-          const next = new Set(prev);
-          next.delete(targetStudentId);
-          return next;
-        });
-      } else {
-        setSiddhiDirtyStudents(new Set());
-      }
-
-      setSiddhiSaveSuccess(`સિદ્ધિ–કૃપા ગુણ સફળતાપૂર્વક Firebase ડેટાબેઝમાં સાચવી લેવામાં આવ્યા છે!`);
-      if (onRefresh) onRefresh();
-    } catch (err) {
-      console.error('Error saving grace marks:', err);
-      alert('સિદ્ધિ–કૃપા ગુણ સાચવવામાં ક્ષતિ થઈ.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   // Export Result Register to Excel (.xlsx)
   const handleExportRegisterExcel = () => {
@@ -1740,25 +1830,30 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 </button>
               </div>
 
-              {dirtyKeys.size > 0 && (
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-pulse">
-                  ⚠️ {dirtyKeys.size} ગુણ સેવ બાકી
-                </span>
-              )}
-
-              <button
-                type="button"
-                onClick={handleSaveMarks}
-                disabled={isSaving || dirtyKeys.size === 0}
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-xs transition-all shadow-md cursor-pointer ${
-                  dirtyKeys.size > 0
-                    ? 'bg-[#C45A2D] hover:bg-[#a84a22] text-white active:scale-95'
-                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                }`}
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>{isSaving ? 'સાચવી રહ્યું છે...' : `બધા સાચવો (Save Marks)`}</span>
-              </button>
+              {/* Live Zero-Button Auto Cloud Sync Pill */}
+              <div className="flex items-center gap-1.5">
+                {cloudSyncStatus === 'syncing' ? (
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-bold animate-pulse">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                    <span>ક્લાઉડ સિંક થઈ રહ્યું છે...</span>
+                  </div>
+                ) : cloudSyncStatus === 'synced' ? (
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>✓ સાચવેલું (Cloud Synced)</span>
+                  </div>
+                ) : cloudSyncStatus === 'offline' ? (
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs font-bold">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                    <span>📡 ઑફલાઇન સેવ થયેલું (નેટ આવતા આપોઆપ ક્લાઉડ સિંક થશે)</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-800 dark:text-teal-300 text-xs font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>☁️ ઓટો ક્લાઉડ સિંક સક્રિય</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1769,33 +1864,54 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
             </div>
           )}
 
-          {/* Exam Selector Segmented Tabs */}
+          {/* Exam Selector Segmented Tabs (All 8 GSEB Exams including Siddhi-Krupa Gun) */}
           <div className="space-y-1.5">
             <div className="text-[11px] font-black uppercase text-slate-500 tracking-wider">પરીક્ષા પસંદ કરો (Exam):</div>
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              {marksEntryExams.map((ex) => (
-                <button
-                  key={ex.id}
-                  type="button"
-                  onClick={() => setMarksEntryExamId(ex.id)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
-                    marksEntryExamId === ex.id
-                      ? 'bg-[#C45A2D] text-white border-[#C45A2D] shadow-md scale-[1.01]'
-                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-[#C45A2D]/50'
-                  }`}
-                >
-                  <div>{ex.nameGu}</div>
-                  <div className={`text-[10px] font-normal ${marksEntryExamId === ex.id ? 'text-white/80' : 'text-slate-500'}`}>
-                    {ex.id === 'first_exam' || ex.id === 'second_exam'
-                      ? '૭ મુખ્ય વિષયો • ૫૦ ગુણ (કુલ ૩૫૦)'
-                      : ex.id === 'prayogik_annual'
-                      ? '૪૦ થિયરી + ૪૦ પ્રાયોગિક (૮૦ ગુણ)'
-                      : ex.id === 'internal_assessment'
-                      ? '૨૦ ગુણ (૫+૫+૫+૫ / ૧૦+૧૦)'
-                      : `${ex.maxMarksPerSubject} ગુણ`}
-                  </div>
-                </button>
-              ))}
+              {marksEntryExams.map((ex) => {
+                const isActive = marksEntryExamId === ex.id;
+                const isSiddhiKrupa = ex.id === 'siddhi_krupa_entry';
+
+                return (
+                  <button
+                    key={ex.id}
+                    type="button"
+                    onClick={() => {
+                      setMarksEntryExamId(ex.id);
+                      if (isSiddhiKrupa) {
+                        setViewTab('siddhi_krupa_entry');
+                      }
+                    }}
+                    className={`px-4 py-2.5 rounded-2xl text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
+                      isActive
+                        ? isSiddhiKrupa
+                          ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white border-amber-500 shadow-md scale-[1.01]'
+                          : 'bg-[#C45A2D] text-white border-[#C45A2D] shadow-md scale-[1.01]'
+                        : isSiddhiKrupa
+                        ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-800 hover:border-amber-400'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-[#C45A2D]/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 justify-center">
+                      {isSiddhiKrupa && <Sparkles className="w-3.5 h-3.5 text-amber-300" />}
+                      <span>{ex.nameGu}</span>
+                    </div>
+                    <div className={`text-[10px] font-normal ${isActive ? 'text-white/80' : 'text-slate-500'}`}>
+                      {ex.id === 'first_exam' || ex.id === 'second_exam'
+                        ? '૭ મુખ્ય વિષયો • ૫૦ ગુણ (કુલ ૩૫૦)'
+                        : ex.id === 'prayogik_annual'
+                        ? '૪૦ થિયરી + ૪૦ પ્રાયોગિક (૮૦ ગુણ)'
+                        : ex.id === 'internal_assessment'
+                        ? '૨૦ ગુણ (૫+૫+૫+૫ / ૧૦+૧૦)'
+                        : ex.id === 'annual_exam'
+                        ? '૭ મુખ્ય વિષયો • ૮૦ ગુણ'
+                        : ex.id === 'siddhi_krupa_entry'
+                        ? '૭૦૦ માંથી ટકા − ૩૩% (મહત્તમ ૧૫)'
+                        : `${ex.maxMarksPerSubject} ગુણ`}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -2937,9 +3053,49 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       {/* VIEW TAB 4: SIDDHI-KRUPA MARKS ENTRY (સિદ્ધિ–કૃપા ગુણ એન્ટ્રી - CLASS 9 ONLY) */}
       {selectedStandard === '9' && viewTab === 'siddhi_krupa_entry' && (
         <div className="space-y-5">
+          {/* Exam Selector Segmented Tabs (All 8 GSEB Exams - quick switching) */}
+          <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-4 shadow-sm space-y-1.5">
+            <div className="text-[11px] font-black uppercase text-slate-500 tracking-wider">પરીક્ષા પસંદ કરો (Exam):</div>
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {marksEntryExams.map((ex) => {
+                const isActive = marksEntryExamId === ex.id;
+                const isSiddhiKrupa = ex.id === 'siddhi_krupa_entry';
+
+                return (
+                  <button
+                    key={ex.id}
+                    type="button"
+                    onClick={() => {
+                      setMarksEntryExamId(ex.id);
+                      if (isSiddhiKrupa) {
+                        setViewTab('siddhi_krupa_entry');
+                      } else {
+                        setViewTab('marks_entry');
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
+                      isActive
+                        ? isSiddhiKrupa
+                          ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white border-amber-500 shadow-md scale-[1.01]'
+                          : 'bg-[#C45A2D] text-white border-[#C45A2D] shadow-md scale-[1.01]'
+                        : isSiddhiKrupa
+                        ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-800 hover:border-amber-400'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-[#C45A2D]/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 justify-center">
+                      {isSiddhiKrupa && <Sparkles className="w-3.5 h-3.5 text-amber-300" />}
+                      <span>{ex.nameGu}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* GSEB Class 9 Rules Guidance Banner */}
           <div className="p-5 rounded-3xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-2 border-amber-300 dark:border-amber-700/60 shadow-lg space-y-3">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2.5">
                 <div className="p-2.5 rounded-2xl bg-amber-500 text-white shadow-md">
                   <Sparkles className="w-5 h-5" />
@@ -2954,46 +3110,72 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={handleBatchAutoApplyGrace}
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>બધાને નિયમાનુસાર ઓટો-ગ્રેસ</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleSaveGraceToFirestore()}
-                  disabled={isSaving}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                >
-                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  <span>{isSaving ? 'સાચવી રહ્યું છે...' : 'બધા સાચવો'}</span>
-                </button>
+
+                {/* Live Auto Cloud Sync Pill for Grace */}
+                <div className="flex items-center gap-1.5">
+                  {graceSyncStatus === 'syncing' ? (
+                    <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-bold animate-pulse">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                      <span>ક્લાઉડ સિંક થઈ રહ્યું છે...</span>
+                    </div>
+                  ) : graceSyncStatus === 'synced' ? (
+                    <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>✓ સાચવેલું</span>
+                    </div>
+                  ) : graceSyncStatus === 'offline' ? (
+                    <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs font-bold">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                      <span>📡 ઑફલાઇન સેવ</span>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-800 dark:text-teal-300 text-xs font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>☁️ ઓટો ક્લાઉડ સિંક સક્રિય</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Quick Rule Badges */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-amber-800">
-                <span className="font-bold text-amber-900 dark:text-amber-200">૧. મળવાપાત્ર સિદ્ધિ ગુણ:</span>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                  મુખ્ય વિષયોના સરેરાશ ૩૩% થી ઉપરના દરેક ૧% દીઠ ૧ ગુણ (મહત્તમ ૧૫ ગુણ પૂલ).
+            {/* Quick Rule Badges with exact user formula & examples */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+              <div className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-amber-800 space-y-1">
+                <span className="font-bold text-amber-900 dark:text-amber-200 block">૧. મળવાપાત્ર સિદ્ધિ ગુણ:</span>
+                <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                  ૭ મુખ્ય વિષયોના ૭૦૦ માંથી મેળવેલ ગુણના <strong>ટકા − ૩૩%</strong> (મહત્તમ ૧૫ ગુણ પૂલ).
                 </p>
+                <div className="text-[10px] text-amber-800 dark:text-amber-400 bg-amber-500/10 p-1.5 rounded-lg font-mono">
+                  દા.ત. ૨૮૦/૭૦૦ = ૪૦% − ૩૩% = ૭ ગુણ<br />
+                  ૫૬૦/૭૦૦ = ૮૦% − ૩૩% = ૪૭ → મહત્તમ ૧૫ ગુણ
+                </div>
               </div>
-              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-amber-800">
-                <span className="font-bold text-amber-900 dark:text-amber-200">૨. કૃપા ગુણ (આચાર્યશ્રી વિવેક):</span>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+              <div className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-amber-800 space-y-1">
+                <span className="font-bold text-amber-900 dark:text-amber-200 block">૨. કૃપા ગુણ (આચાર્યશ્રી વિવેક):</span>
+                <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
                   નાપાસ વિષયમાં પાસિંગ (૩૩ ગુણ) કરવા કુલ વધુમાં વધુ ૧૦ ગુણ.
                 </p>
+                <div className="text-[10px] text-amber-800 dark:text-amber-400 bg-amber-500/10 p-1.5 rounded-lg">
+                  સિદ્ધિ ગુણ પૂરતા ન હોય ત્યારે વિદ્યાર્થીને ઉત્તીર્ણ કરવા વપરાય છે.
+                </div>
               </div>
-              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-amber-800">
-                <span className="font-bold text-amber-900 dark:text-amber-200">૩. ૨૫ ગુણ નિયમ (અપાત્રતા):</span>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                  કોઈપણ મુખ્ય વિષયમાં મૂળ ગુણ ૨૫ થી ઓછા હોય તો વિદ્યાર્થીને ગ્રેસ મળવાપાત્ર નથી.
+              <div className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-amber-800 space-y-1">
+                <span className="font-bold text-rose-900 dark:text-rose-300 block">૩. ૨૫ ગુણ નિયમ (અપાત્રતા):</span>
+                <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                  કોઈપણ વિષયમાં ૧૦૦ માંથી મૂળ ગુણ <strong>૨૫ થી ઓછા</strong> હોય તો તે વિદ્યાર્થી પાસ થઈ શકે નહીં.
                 </p>
+                <div className="text-[10px] text-rose-700 dark:text-rose-400 bg-rose-500/10 p-1.5 rounded-lg font-bold">
+                  ⚠️ ૨૫ થી ઓછા ગુણ ધરાવતા વિષયમાં કોઈ ગ્રેસ મળવાપાત્ર નથી.
+                </div>
               </div>
             </div>
           </div>
@@ -3258,15 +3440,32 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                           <RefreshCw className="w-3.5 h-3.5" />
                           <span>રીસેટ</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveGraceToFirestore(activeSiddhiStudent.id)}
-                          disabled={isSaving}
-                          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white font-black text-xs shadow-md cursor-pointer disabled:opacity-50"
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                            graceSyncStatus === 'syncing'
+                              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700/60'
+                              : !navigator.onLine
+                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
+                              : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700/60'
+                          }`}
                         >
-                          <Save className="w-3.5 h-3.5" />
-                          <span>સાચવો</span>
-                        </button>
+                          <span
+                            className={`inline-block w-2 h-2 rounded-full ${
+                              graceSyncStatus === 'syncing'
+                                ? 'bg-amber-500 animate-pulse'
+                                : !navigator.onLine
+                                ? 'bg-slate-400'
+                                : 'bg-emerald-500'
+                            }`}
+                          />
+                          <span>
+                            {graceSyncStatus === 'syncing'
+                              ? 'ક્લાઉડ સિંક...'
+                              : !navigator.onLine
+                              ? 'ઑફલાઇન સેવ'
+                              : 'ઓટો સિંક સક્રિય'}
+                          </span>
+                        </span>
                       </div>
                     </div>
 

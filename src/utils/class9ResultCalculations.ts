@@ -455,18 +455,17 @@ export function computeClass9StudentResult(
   }
 
   // Calculate raw aggregate across 7 main subjects to determine Siddhi Pool
-  // Formula: (Sum of 7 main subjects marks out of 100 / 7) - 33
-  // Example: 389 / 7 = 55.57 -> 55.6 - 33 = 22.6 -> max 15
-  // If avg <= 33: e.g. 32 - 33 = -1 -> 0 siddhi gun
+  // Formula: 7 મુખ્ય વિષયોના ૭૦૦ માંથી મેળવેલ ગુણના ટકા − ૩૩% = સિદ્ધિ ગુણ (મહત્તમ ૧૫ ગુણ).
+  // ઉદાહરણ: ૭૦૦માંથી ૨૮૦ ગુણ એટલે ૪૦% − ૩૩% = ૭ સિદ્ધિ ગુણ.
+  // ૭૦૦માંથી ૫૬૦ ગુણ એટલે ૮૦% − ૩૩% = ૪૭, તેથી મહત્તમ મર્યાદા પ્રમાણે ૧૫ સિદ્ધિ ગુણ.
   const mainScores = rawScores.filter((r) => r.subject.isMainSubject);
   const rawMainSum = mainScores.reduce((sum, r) => sum + (r.converted100 ?? 0), 0);
-  const mainSubjectCount = mainScores.length || 7;
-  const avgMain = rawMainSum / mainSubjectCount;
+  const mainSubjectsPercentage = (rawMainSum / 700) * 100;
+  const diff = mainSubjectsPercentage - 33;
 
   let siddhiPool = 0;
-  if (avgMain > 33) {
-    const diff = avgMain - 33;
-    siddhiPool = Math.min(15, Math.max(0, Math.round(diff)));
+  if (diff > 0) {
+    siddhiPool = Math.min(15, Math.round(diff));
   }
   const siddhiPoolEarned = siddhiPool;
 
@@ -494,47 +493,55 @@ export function computeClass9StudentResult(
     let finalMark = rawVal;
     let isPassed = rawVal >= 33;
 
-    // Check manual override first
-    const override = manualGraceOverrides?.[raw.subject.id];
-    if (override) {
-      if (override.siddhi !== undefined && override.siddhi > 0) {
-        siddhiGiven = override.siddhi;
-        totalSiddhiUsed += siddhiGiven;
-      }
-      if (override.krupa !== undefined && override.krupa > 0) {
-        krupaGiven = override.krupa;
-        totalKrupaUsed += krupaGiven;
-      }
-      finalMark = Math.min(100, rawVal + siddhiGiven + krupaGiven);
-      isPassed = finalMark >= 33;
-    } else if (!isPassed && isEligibleForPromotion && raw.subject.isMainSubject) {
-      // Automatic GSEB Grace Logic
-      const deficit = 33 - rawVal;
-      if (remainingSiddhi >= deficit) {
-        siddhiGiven = deficit;
-        remainingSiddhi -= deficit;
-        totalSiddhiUsed += deficit;
-        isPassed = true;
-        finalMark = 33;
-      } else if (remainingSiddhi > 0) {
-        siddhiGiven = remainingSiddhi;
-        const stillNeeded = deficit - siddhiGiven;
-        remainingSiddhi = 0;
-        totalSiddhiUsed += siddhiGiven;
+    if (isUnder25) {
+      // ૨૫ ગુણ નિયમ: કોઈપણ વિષયમાં ૨૫ થી ઓછા ગુણ હોય તો વિદ્યાર્થી પાસ થઈ શકે નહીં (ગ્રેસ મળવાપાત્ર નથી)
+      siddhiGiven = 0;
+      krupaGiven = 0;
+      finalMark = rawVal;
+      isPassed = false;
+    } else {
+      // Check manual override first
+      const override = manualGraceOverrides?.[raw.subject.id];
+      if (override) {
+        if (override.siddhi !== undefined && override.siddhi > 0) {
+          siddhiGiven = override.siddhi;
+          totalSiddhiUsed += siddhiGiven;
+        }
+        if (override.krupa !== undefined && override.krupa > 0) {
+          krupaGiven = override.krupa;
+          totalKrupaUsed += krupaGiven;
+        }
+        finalMark = Math.min(100, rawVal + siddhiGiven + krupaGiven);
+        isPassed = finalMark >= 33;
+      } else if (!isPassed && isEligibleForPromotion && raw.subject.isMainSubject) {
+        // Automatic GSEB Grace Logic
+        const deficit = 33 - rawVal;
+        if (remainingSiddhi >= deficit) {
+          siddhiGiven = deficit;
+          remainingSiddhi -= deficit;
+          totalSiddhiUsed += deficit;
+          isPassed = true;
+          finalMark = 33;
+        } else if (remainingSiddhi > 0) {
+          siddhiGiven = remainingSiddhi;
+          const stillNeeded = deficit - siddhiGiven;
+          remainingSiddhi = 0;
+          totalSiddhiUsed += siddhiGiven;
 
-        if (remainingKrupa >= stillNeeded) {
-          krupaGiven = stillNeeded;
-          remainingKrupa -= stillNeeded;
-          totalKrupaUsed += stillNeeded;
+          if (remainingKrupa >= stillNeeded) {
+            krupaGiven = stillNeeded;
+            remainingKrupa -= stillNeeded;
+            totalKrupaUsed += stillNeeded;
+            isPassed = true;
+            finalMark = 33;
+          }
+        } else if (remainingKrupa >= deficit) {
+          krupaGiven = deficit;
+          remainingKrupa -= deficit;
+          totalKrupaUsed += deficit;
           isPassed = true;
           finalMark = 33;
         }
-      } else if (remainingKrupa >= deficit) {
-        krupaGiven = deficit;
-        remainingKrupa -= deficit;
-        totalKrupaUsed += deficit;
-        isPassed = true;
-        finalMark = 33;
       }
     }
 

@@ -153,13 +153,14 @@ export interface StandardExamConfig {
 export function getExamsForStandard(standard: StandardKey): StandardExamConfig[] {
   if (standard === '9') {
     return [
-      { id: 'first_exam', nameGu: 'પ્રથમ પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ મુખ્ય વિષયો (ગુજરાતી, ગણિત, વિજ્ઞાન, સા.વિ., અંગ્રેજી, હિન્દી, સંસ્કૃત) • ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
-      { id: 'second_exam', nameGu: 'દ્વિતીય પરીક્ષા', nameEn: 'Second Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ મુખ્ય વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
-      { id: 'annual_exam', nameGu: 'વાર્ષિક પરીક્ષા (મુખ્ય વિષયો)', nameEn: 'Annual Exam (Main)', maxMarksPerSubject: 80, totalExamMax: 560, descriptionGu: '૭ મુખ્ય વિષયો • થિયરી ૮૦ ગુણ' },
-      { id: 'prayogik_annual', nameGu: 'પ્રાયોગિક વિષયો (૪૦ થિયરી + ૪૦ પ્રેક્ટિકલ)', nameEn: 'Practical (40T+40P)', maxMarksPerSubject: 80, totalExamMax: 240, descriptionGu: '૩ પ્રાયોગિક વિષયો: કમ્પ્યુટર, પી.ઈ., ચિત્રકામ • ૪૦ થિયરી + ૪૦ પ્રાયોગિક' },
-      { id: 'internal_assessment', nameGu: 'આંતરિક ગુણ (૨૦)', nameEn: 'Internal (20M)', maxMarksPerSubject: 20, totalExamMax: 200, descriptionGu: 'મુખ્ય: ૫+૫+૫+૫ | પ્રાયોગિક: ૧૦+૧૦ • કુલ ૨૦ ગુણ' },
-      { id: 'periodic_test_1', nameGu: 'સામાયિક કસોટી ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: '૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
-      { id: 'periodic_test_2', nameGu: 'સામાયિક કસોટી ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: '૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
+      { id: 'first_exam', nameGu: 'પ્રથમ પરીક્ષા', nameEn: 'First Exam (50M)', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ મુખ્ય વિષયો (ગુજરાતી, ગણિત, વિજ્ઞાન, સા.વિ., અંગ્રેજી, હિન્દી, સંસ્કૃત) • ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+      { id: 'second_exam', nameGu: 'દ્વિતીય પરીક્ષા', nameEn: 'Second Exam (50M)', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ મુખ્ય વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+      { id: 'periodic_test_1', nameGu: 'સામાયિક કસોટી ૧', nameEn: 'Samayik 1 (25M)', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'સામાયિક કસોટી ૧ • ૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
+      { id: 'periodic_test_2', nameGu: 'સામાયિક કસોટી ૨', nameEn: 'Samayik 2 (25M)', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'સામાયિક કસોટી ૨ • ૨૫ ગુણ (આંતરિક માટે /૫ રૂપાંતરણ)' },
+      { id: 'prayogik_annual', nameGu: 'Co-Subject (સહ-અભ્યાસિક/પ્રાયોગિક)', nameEn: 'Co subject (80M)', maxMarksPerSubject: 80, totalExamMax: 240, descriptionGu: '૩ પ્રાયોગિક વિષયો: કમ્પ્યુટર, પી.ઈ., ચિત્રકામ • ૪૦ થિયરી + ૪૦ પ્રાયોગિક (કુલ ૮૦)' },
+      { id: 'internal_assessment', nameGu: 'Internal (આંતરિક ગુણ)', nameEn: 'Internal (20M)', maxMarksPerSubject: 20, totalExamMax: 200, descriptionGu: 'મુખ્ય: ૫+૫+૫+૫ | પ્રાયોગિક: ૧૦+૧૦ • કુલ ૨૦ ગુણ' },
+      { id: 'annual_exam', nameGu: 'Third Exam (વાર્ષિક પરીક્ષા)', nameEn: 'Third Exam (80M)', maxMarksPerSubject: 80, totalExamMax: 560, descriptionGu: '૭ મુખ્ય વિષયો • થિયરી ૮૦ ગુણ' },
+      { id: 'siddhi_krupa_entry', nameGu: 'સિદ્ધિ–કૃપા ગુણ (Siddhi Krupa gun)', nameEn: 'Siddhi Krupa gun', maxMarksPerSubject: 15, totalExamMax: 25, descriptionGu: '૭ મુખ્ય વિષયોના ટકા − ૩૩% = સિદ્ધિ ગુણ (મહત્તમ ૧૫) + કૃપા ગુણ (મહત્તમ ૧૦)' },
     ];
   }
 
