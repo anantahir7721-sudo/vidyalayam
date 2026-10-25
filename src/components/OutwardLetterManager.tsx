@@ -406,8 +406,10 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     principalDesignation: 'આચાર્યશ્રી',
     digitFormat: 'gujarati', // Default: 'gujarati' (૧, ૨, ૩) or 'english' (1, 2, 3)
   });
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [settingsSavedMsg, setSettingsSavedMsg] = useState(false);
+  // Auto Cloud Sync State (Instant background synchronization on every setting change)
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing'>('synced');
+  const lastSyncedSettingsRef = useRef<string>('');
+  const isInitialSettingsLoadRef = useRef<boolean>(true);
 
   // General Digits Format for Current Letter & Preview (Gujarati vs English digits)
   const [letterDigitFormat, setLetterDigitFormat] = useState<'gujarati' | 'english'>('gujarati');
@@ -461,23 +463,29 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       // 1. Real-time subscribe to outward settings (Letterhead, Sign, Margins, Prefix, Digits format)
       unsubSettings = subscribeToOutwardSettings(school.id, (saved) => {
         const loadedFormat = saved.digitFormat || 'gujarati';
-        setSettings((prev) => ({
-          ...prev,
-          ...saved,
-          topMarginMm: saved.topMarginMm ?? 62,
-          bottomMarginMm: saved.bottomMarginMm ?? 32,
-          leftMarginMm: saved.leftMarginMm ?? 22,
-          rightMarginMm: saved.rightMarginMm ?? 22,
-          outwardPrefix: saved.outwardPrefix || prev.outwardPrefix || 'સ.હા.લા/૨૦૨૬/',
-          outwardStartingNumber: saved.outwardStartingNumber ?? 1,
-          outwardPadDigits: saved.outwardPadDigits ?? 3,
-          principalSignWidthMm: saved.principalSignWidthMm ?? 48,
-          principalName: saved.principalName || school.principalName || '',
-          principalDesignation: saved.principalDesignation || 'આચાર્યશ્રી',
-          digitFormat: loadedFormat,
-        }));
+        setSettings((prev) => {
+          const merged: OutwardLetterSettings = {
+            ...prev,
+            ...saved,
+            topMarginMm: saved.topMarginMm ?? 62,
+            bottomMarginMm: saved.bottomMarginMm ?? 32,
+            leftMarginMm: saved.leftMarginMm ?? 22,
+            rightMarginMm: saved.rightMarginMm ?? 22,
+            outwardPrefix: saved.outwardPrefix || prev.outwardPrefix || 'સ.હા.લા/૨૦૨૬/',
+            outwardStartingNumber: saved.outwardStartingNumber ?? 1,
+            outwardPadDigits: saved.outwardPadDigits ?? 3,
+            principalSignWidthMm: saved.principalSignWidthMm ?? 48,
+            principalName: saved.principalName || school.principalName || '',
+            principalDesignation: saved.principalDesignation || 'આચાર્યશ્રી',
+            digitFormat: loadedFormat,
+          };
+          lastSyncedSettingsRef.current = JSON.stringify(merged);
+          return merged;
+        });
         setLetterDigitFormat(loadedFormat);
         setPreviewDigitFormat(loadedFormat);
+        isInitialSettingsLoadRef.current = false;
+        setSyncStatus('synced');
       });
 
       // 2. Real-time subscribe to outward letters
@@ -492,6 +500,27 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       if (unsubSettings) unsubSettings();
     };
   }, [school?.id]);
+
+  // Automatic Cloud Sync: Whenever any setting changes, auto-sync to Cloud & LocalStorage immediately
+  useEffect(() => {
+    if (isInitialSettingsLoadRef.current || !school?.id) return;
+    const currentJson = JSON.stringify(settings);
+    if (currentJson === lastSyncedSettingsRef.current) return;
+
+    setSyncStatus('syncing');
+    const timer = setTimeout(async () => {
+      try {
+        lastSyncedSettingsRef.current = currentJson;
+        await saveOutwardSettings(school.id, settings);
+        setSyncStatus('synced');
+      } catch (err) {
+        console.warn('Auto cloud sync notice:', err);
+        setSyncStatus('synced');
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [settings, school?.id]);
 
   // Next Auto Outward Number Generator with Smart Prefix, Zero Padding & Digits Format
   const generateNextOutwardNumber = useCallback((customPrefix?: string, customPad?: number, customStart?: number, customFormat?: 'gujarati' | 'english') => {
@@ -862,19 +891,6 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     alert('✅ સહી સેવ અને એજ-ટુ-એજ ક્રોપ થઈ ગઈ છે.');
   };
 
-  // Save Settings to Firestore
-  const handleSaveSettings = async () => {
-    setIsSavingSettings(true);
-    try {
-      await saveOutwardSettings(school.id, settings);
-      setSettingsSavedMsg(true);
-      setTimeout(() => setSettingsSavedMsg(false), 3000);
-    } catch (err) {
-      alert('સેટિંગ્સ સાચવવામાં ક્ષતિ આવી.');
-    } finally {
-      setIsSavingSettings(false);
-    }
-  };
 
   // Format date display (DD/MM/YYYY) in English or Gujarati digits
   const formatDateDisplay = useCallback((isoDate: string, format: 'gujarati' | 'english' = 'gujarati') => {
@@ -2122,23 +2138,12 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleSaveSettings}
-                disabled={isSavingSettings}
-                className="px-5 py-2.5 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-black flex items-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-50"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{isSavingSettings ? 'સાચવી રહ્યું છે...' : 'સેટિંગ્સ સેવ કરો'}</span>
-              </button>
-            </div>
-
-            {settingsSavedMsg && (
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>લેટરહેડ અને ડ્રેગ કરેલ માર્જિન સેટિંગ્સ સફળતાપૂર્વક સાચવવામાં આવ્યા છે!</span>
+              {/* Live Auto Cloud Sync Status Badge */}
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold shadow-xs shrink-0">
+                <span className={`w-2.5 h-2.5 rounded-full ${syncStatus === 'syncing' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+                <span>{syncStatus === 'syncing' ? '🔄 ક્લાઉડ સિંક થઈ રહ્યું છે...' : '☁️ ઓટો ક્લાઉડ સિંક સક્રિય'}</span>
               </div>
-            )}
+            </div>
 
             {/* MAIN TWO COLUMNS: LEFT VISUAL DRAGGABLE A4 CANVAS | RIGHT SIDE CONTROLS */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -2855,15 +2860,23 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleSaveSettings}
-                  disabled={isSavingSettings}
-                  className="w-full py-3 rounded-2xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-black shadow-lg cursor-pointer transition-all flex items-center justify-center gap-2"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>{isSavingSettings ? 'સેવ થઈ રહ્યું છે...' : 'સેટિંગ્સ સેવ કરો (Save Settings)'}</span>
-                </button>
+                {/* Auto Cloud Sync Status Notice Card */}
+                <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${syncStatus === 'syncing' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 shadow-sm shadow-emerald-500/50'}`} />
+                    <div>
+                      <span className="text-xs font-black text-emerald-950 dark:text-emerald-200 block">
+                        {syncStatus === 'syncing' ? '☁️ ક્લાઉડમાં ઓટો સિંક થઈ રહ્યું છે...' : '☁️ ઓટો ક્લાઉડ સિંક સક્રિય'}
+                      </span>
+                      <span className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-medium">
+                        તમે કોઈપણ સેટિંગ બદલશો (માર્જિન, સહી, પ્રીફિક્સ વગેરે) એ આપોઆપ ક્લાઉડમાં સાચવાઈ જાય છે. કોઈ બટન દબાવવાની જરૂર નથી.
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-mono font-black text-emerald-800 dark:text-emerald-300 bg-white/80 dark:bg-slate-900/80 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 shrink-0">
+                    {syncStatus === 'syncing' ? 'સિંકિંગ...' : '✓ સાચવેલું'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

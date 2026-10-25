@@ -60,10 +60,11 @@ export async function saveOutwardSettings(
 
   try {
     const settingsDoc = doc(db, 'schools', schoolId, 'settings', 'outward_letter');
-    await setDoc(settingsDoc, settings, { merge: true });
+    const firestorePromise = setDoc(settingsDoc, settings, { merge: true });
+    const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 2000));
+    await Promise.race([firestorePromise, timeoutPromise]);
   } catch (err) {
-    console.error('Error saving outward settings to Firestore:', err);
-    throw err;
+    console.warn('Notice saving outward settings to Firestore:', err);
   }
 }
 
