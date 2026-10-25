@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { School, Student, MarkRecord } from '../types';
 import * as XLSX from 'xlsx';
 import {
@@ -241,6 +241,12 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   const manualGraceOverridesRef = useRef(manualGraceOverrides);
   manualGraceOverridesRef.current = manualGraceOverrides;
 
+  // Real-time synchronization & mutex lock refs
+  const dirtyKeysRef = useRef<Set<string>>(new Set());
+  const isSyncingMarksRef = useRef(false);
+  const pendingSyncNeededRef = useRef(false);
+  const lastInitKeyRef = useRef<string>('');
+
   // Zero-friction tab navigation: all changes are auto-saved in local cache and synced to cloud
   const handleSwitchTab = (newTab: 'marks_entry' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry') => {
     setViewTab(newTab);
@@ -382,115 +388,175 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     return allResults.find((r) => r.student.id === selectedStudentId) || allResults[0];
   }, [allResults, selectedStudentId]);
 
-  // Populate Grid Inputs with Cloud-First Reconciliation & Offline Caching
-  useEffect(() => {
-    const initialInputs: Record<string, string> = {};
-    let cachedInputs: Record<string, string> = {};
+  // Helper to resolve an existing mark value from Firestore marks array for a given student & subject
+  const getExistingMarkVal = useCallback(
+    (studentMarks: MarkRecord[], subj: any, targetExamId: string, examKeywords: string[]): string | null => {
+      const found = studentMarks.find((m) => {
+        const sId = (m.subjectId || '').toLowerCase();
+        const sName = (m.subjectName || '').toLowerCase();
+        const subMatch =
+          sId === subj.id.toLowerCase() ||
+          sId.includes(subj.id.toLowerCase()) ||
+          subj.id.toLowerCase().includes(sId) ||
+          sName.includes(subj.nameGu.toLowerCase()) ||
+          subj.nameGu.toLowerCase().includes(sName);
+        if (!subMatch) return false;
 
-    // 1. Read local offline cache from previous session
-    try {
-      const cached = localStorage.getItem(`vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`);
-      if (cached) {
-        cachedInputs = JSON.parse(cached);
-      }
-    } catch (e) {}
+        const mExId = ((m as any).examId || '').toLowerCase();
+        const mExType = (m.examType || '').toLowerCase();
+        const mDocId = (m.id || '').toLowerCase();
 
-    let hasUnsyncedOfflineMarks = false;
-
-    // 2. Cloud-first reconciliation: Firestore marks ALWAYS take priority unless actively being typed
-    filteredStudents.forEach((student) => {
-      const studentMarks = marks.filter((m) => m.studentId === student.id);
-
-      // Populate for all Class 9 subjects
-      ALL_CLASS_9_SUBJECTS.forEach((subj) => {
-        const getExistingVal = (targetExamId: string, examKeywords: string[]): string | null => {
-          const found = studentMarks.find((m) => {
-            const sId = (m.subjectId || '').toLowerCase();
-            const sName = (m.subjectName || '').toLowerCase();
-            const subMatch =
-              sId === subj.id.toLowerCase() ||
-              sId.includes(subj.id.toLowerCase()) ||
-              subj.id.toLowerCase().includes(sId) ||
-              sName.includes(subj.nameGu.toLowerCase()) ||
-              subj.nameGu.toLowerCase().includes(sName);
-            if (!subMatch) return false;
-
-            const mExId = ((m as any).examId || '').toLowerCase();
-            const mExType = (m.examType || '').toLowerCase();
-            const mDocId = (m.id || '').toLowerCase();
-
-            if (mExId === targetExamId.toLowerCase() || mDocId.includes(`_${targetExamId.toLowerCase()}_`)) {
-              return true;
-            }
-            return examKeywords.some((k) => mExType.includes(k) || mExId.includes(k) || mDocId.includes(k));
-          });
-          if (!found) return null;
-          if (found.overallGrade === 'AB') return 'AB';
-          return found.totalObtained !== undefined && found.totalObtained !== null ? String(found.totalObtained) : '';
-        };
-
-        const applyVal = (key: string, targetExamId: string, examKeywords: string[]) => {
-          // Keep active live user input if currently being edited
-          if (dirtyKeys.has(key) && gridInputsRef.current[key] !== undefined) {
-            initialInputs[key] = gridInputsRef.current[key];
-            return;
-          }
-
-          const cloudVal = getExistingVal(targetExamId, examKeywords);
-          if (cloudVal !== null) {
-            // Cloud has data: strictly take cloud value to ensure cross-device real-time sync
-            initialInputs[key] = cloudVal;
-          } else if (cachedInputs[key] !== undefined && cachedInputs[key] !== '') {
-            // Cloud does not have it yet, but device has offline cached input: preserve offline input and flag for sync
-            initialInputs[key] = cachedInputs[key];
-            hasUnsyncedOfflineMarks = true;
-          } else {
-            initialInputs[key] = '';
-          }
-        };
-
-        // Main Exams
-        applyVal(`${student.id}_${subj.id}_first_exam`, 'first_exam', ['first', 'pratham', 'પ્રથમ']);
-        applyVal(`${student.id}_${subj.id}_second_exam`, 'second_exam', ['second', 'dwitiya', 'દ્વિતીય', 'prelim', 'પ્રિલિમ']);
-        applyVal(`${student.id}_${subj.id}_periodic_test_1`, 'periodic_test_1', ['pt1', 'periodic_1', 'periodic_test_1', 'સામાયિક કસોટી ૧', 'એકમ_1', 'કસોટી ૧']);
-        applyVal(`${student.id}_${subj.id}_periodic_test_2`, 'periodic_test_2', ['pt2', 'periodic_2', 'periodic_test_2', 'સામાયિક કસોટી ૨', 'એકમ_2', 'કસોટી ૨']);
-        applyVal(`${student.id}_${subj.id}_internal_assessment`, 'internal_assessment', ['internal', 'આંતરિક', 'internal_assessment']);
-        applyVal(`${student.id}_${subj.id}_annual_exam`, 'annual_exam', ['annual', 'varshik', 'વાર્ષિક', 'board', 'બોર્ડ', 'annual_exam']);
-
-        // Prayogik Theory & Practical (40 + 40)
-        applyVal(`${student.id}_${subj.id}_theory40`, 'annual_theory', ['annual_theory', 'theory', 'થિયરી']);
-        applyVal(`${student.id}_${subj.id}_practical40`, 'annual_practical', ['annual_practical', 'practical', 'પ્રાયોગિક', 'પ્રેક્ટિકલ']);
-
-        // Internal Assessment Components (5+5+5+5 for Main, 10+10 for Prayogik)
-        applyVal(`${student.id}_${subj.id}_internal_pt1`, 'internal_pt1', ['internal_pt1', 'pt1_conv', 'કસોટી_૧', 'કસોટી ૧']);
-        applyVal(`${student.id}_${subj.id}_internal_pt2`, 'internal_pt2', ['internal_pt2', 'pt2_conv', 'કસોટી_૨', 'કસોટી ૨']);
-        applyVal(`${student.id}_${subj.id}_internal_competency`, 'internal_competency', ['internal_competency', 'competency', 'સજ્જતા']);
-        applyVal(`${student.id}_${subj.id}_internal_notebook`, 'internal_notebook', ['internal_notebook', 'notebook', 'નોટબુક']);
-        applyVal(`${student.id}_${subj.id}_internal_practical_work`, 'internal_practical_work', ['internal_practical_work', 'પ્રાયોગિક_કાર્ય', 'પ્રોજેક્ટ']);
-        applyVal(`${student.id}_${subj.id}_internal_continuous_eval`, 'internal_continuous_eval', ['internal_continuous_eval', 'સાતત્યપૂર્ણ', 'કૌશલ્ય']);
+        if (mExId === targetExamId.toLowerCase() || mDocId.includes(`_${targetExamId.toLowerCase()}_`)) {
+          return true;
+        }
+        return examKeywords.some((k) => mExType.includes(k) || mExId.includes(k) || mDocId.includes(k));
       });
-    });
+      if (!found) return null;
+      if (found.overallGrade === 'AB') return 'AB';
+      return found.totalObtained !== undefined && found.totalObtained !== null ? String(found.totalObtained) : '';
+    },
+    []
+  );
 
-    setGridInputs(initialInputs);
+  // Populate & Smoothly Reconcile Grid Inputs with Cloud-First Offline Caching
+  useEffect(() => {
+    const currentInitKey = `${school?.id || 'default'}_${selectedStandard}_${selectedSection}`;
+    const isFirstInit = lastInitKeyRef.current !== currentInitKey;
 
-    // Keep offline cache synced with reconciled data
-    try {
-      localStorage.setItem(
-        `vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`,
-        JSON.stringify(initialInputs)
-      );
-    } catch (e) {}
+    if (isFirstInit) {
+      lastInitKeyRef.current = currentInitKey;
+      let cachedInputs: Record<string, string> = {};
 
-    // If there were offline marks not yet committed to cloud, automatically flush them
-    if (hasUnsyncedOfflineMarks && navigator.onLine) {
-      triggerDebouncedMarksSync(initialInputs);
+      // 1. Read local offline cache from previous session
+      try {
+        const cached = localStorage.getItem(`vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`);
+        if (cached) {
+          cachedInputs = JSON.parse(cached);
+        }
+      } catch (e) {}
+
+      let hasUnsyncedOfflineMarks = false;
+      const initialInputs: Record<string, string> = {};
+
+      filteredStudents.forEach((student) => {
+        const studentMarks = marks.filter((m) => m.studentId === student.id);
+
+        ALL_CLASS_9_SUBJECTS.forEach((subj) => {
+          const applyVal = (key: string, targetExamId: string, examKeywords: string[]) => {
+            // Keep active live user input if currently being edited
+            if (dirtyKeysRef.current.has(key) && gridInputsRef.current[key] !== undefined) {
+              initialInputs[key] = gridInputsRef.current[key];
+              return;
+            }
+
+            const cloudVal = getExistingMarkVal(studentMarks, subj, targetExamId, examKeywords);
+            if (cloudVal !== null) {
+              initialInputs[key] = cloudVal;
+            } else if (cachedInputs[key] !== undefined && cachedInputs[key] !== '') {
+              initialInputs[key] = cachedInputs[key];
+              hasUnsyncedOfflineMarks = true;
+            } else {
+              initialInputs[key] = '';
+            }
+          };
+
+          // Main Exams
+          applyVal(`${student.id}_${subj.id}_first_exam`, 'first_exam', ['first', 'pratham', 'પ્રથમ']);
+          applyVal(`${student.id}_${subj.id}_second_exam`, 'second_exam', ['second', 'dwitiya', 'દ્વિતીય', 'prelim', 'પ્રિલિમ']);
+          applyVal(`${student.id}_${subj.id}_periodic_test_1`, 'periodic_test_1', ['pt1', 'periodic_1', 'periodic_test_1', 'સામાયિક કસોટી ૧', 'એકમ_1', 'કસોટી ૧']);
+          applyVal(`${student.id}_${subj.id}_periodic_test_2`, 'periodic_test_2', ['pt2', 'periodic_2', 'periodic_test_2', 'સામાયિક કસોટી ૨', 'એકમ_2', 'કસોટી ૨']);
+          applyVal(`${student.id}_${subj.id}_internal_assessment`, 'internal_assessment', ['internal', 'આંતરિક', 'internal_assessment']);
+          applyVal(`${student.id}_${subj.id}_annual_exam`, 'annual_exam', ['annual', 'varshik', 'વાર્ષિક', 'board', 'બોર્ડ', 'annual_exam']);
+
+          // Prayogik Theory & Practical (40 + 40)
+          applyVal(`${student.id}_${subj.id}_theory40`, 'annual_theory', ['annual_theory', 'theory', 'થિયરી']);
+          applyVal(`${student.id}_${subj.id}_practical40`, 'annual_practical', ['annual_practical', 'practical', 'પ્રાયોગિક', 'પ્રેક્ટિકલ']);
+
+          // Internal Assessment Components (5+5+5+5 for Main, 10+10 for Prayogik)
+          applyVal(`${student.id}_${subj.id}_internal_pt1`, 'internal_pt1', ['internal_pt1', 'pt1_conv', 'કસોટી_૧', 'કસોટી ૧']);
+          applyVal(`${student.id}_${subj.id}_internal_pt2`, 'internal_pt2', ['internal_pt2', 'pt2_conv', 'કસોટી_૨', 'કસોટી ૨']);
+          applyVal(`${student.id}_${subj.id}_internal_competency`, 'internal_competency', ['internal_competency', 'competency', 'સજ્જતા']);
+          applyVal(`${student.id}_${subj.id}_internal_notebook`, 'internal_notebook', ['internal_notebook', 'notebook', 'નોટબુક']);
+          applyVal(`${student.id}_${subj.id}_internal_practical_work`, 'internal_practical_work', ['internal_practical_work', 'પ્રાયોગિક_કાર્ય', 'પ્રોજેક્ટ']);
+          applyVal(`${student.id}_${subj.id}_internal_continuous_eval`, 'internal_continuous_eval', ['internal_continuous_eval', 'સાતત્યપૂર્ણ', 'કૌશલ્ય']);
+        });
+      });
+
+      gridInputsRef.current = initialInputs;
+      setGridInputs(initialInputs);
+
+      try {
+        localStorage.setItem(
+          `vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`,
+          JSON.stringify(initialInputs)
+        );
+      } catch (e) {}
+
+      if (hasUnsyncedOfflineMarks && navigator.onLine) {
+        triggerDebouncedMarksSync();
+      }
+    } else {
+      // Incremental Reconciliation: ONLY update non-dirty cells from incoming Firestore marks!
+      // This GUARANTEES that in-flight typing in any cell is never overwritten!
+      setGridInputs((prev) => {
+        const next = { ...prev };
+        let changed = false;
+
+        filteredStudents.forEach((student) => {
+          const studentMarks = marks.filter((m) => m.studentId === student.id);
+
+          ALL_CLASS_9_SUBJECTS.forEach((subj) => {
+            const syncKey = (key: string, targetExamId: string, examKeywords: string[]) => {
+              // CRITICAL: NEVER overwrite keys currently dirty or in-flight!
+              if (dirtyKeysRef.current.has(key)) return;
+
+              const cloudVal = getExistingMarkVal(studentMarks, subj, targetExamId, examKeywords);
+              if (cloudVal !== null && cloudVal !== next[key]) {
+                next[key] = cloudVal;
+                changed = true;
+              }
+            };
+
+            syncKey(`${student.id}_${subj.id}_first_exam`, 'first_exam', ['first', 'pratham', 'પ્રથમ']);
+            syncKey(`${student.id}_${subj.id}_second_exam`, 'second_exam', ['second', 'dwitiya', 'દ્વિતીય', 'prelim', 'પ્રિલિમ']);
+            syncKey(`${student.id}_${subj.id}_periodic_test_1`, 'periodic_test_1', ['pt1', 'periodic_1', 'periodic_test_1', 'સામાયિક કસોટી ૧', 'એકમ_1', 'કસોટી ૧']);
+            syncKey(`${student.id}_${subj.id}_periodic_test_2`, 'periodic_test_2', ['pt2', 'periodic_2', 'periodic_test_2', 'સામાયિક કસોટી ૨', 'એકમ_2', 'કસોટી ૨']);
+            syncKey(`${student.id}_${subj.id}_internal_assessment`, 'internal_assessment', ['internal', 'આંતરિક', 'internal_assessment']);
+            syncKey(`${student.id}_${subj.id}_annual_exam`, 'annual_exam', ['annual', 'varshik', 'વાર્ષિક', 'board', 'બોર્ડ', 'annual_exam']);
+            syncKey(`${student.id}_${subj.id}_theory40`, 'annual_theory', ['annual_theory', 'theory', 'થિયરી']);
+            syncKey(`${student.id}_${subj.id}_practical40`, 'annual_practical', ['annual_practical', 'practical', 'પ્રાયોગિક', 'પ્રેક્ટિકલ']);
+            syncKey(`${student.id}_${subj.id}_internal_pt1`, 'internal_pt1', ['internal_pt1', 'pt1_conv', 'કસોટી_૧', 'કસોટી ૧']);
+            syncKey(`${student.id}_${subj.id}_internal_pt2`, 'internal_pt2', ['internal_pt2', 'pt2_conv', 'કસોટી_૨', 'કસોટી ૨']);
+            syncKey(`${student.id}_${subj.id}_internal_competency`, 'internal_competency', ['internal_competency', 'competency', 'સજ્જતા']);
+            syncKey(`${student.id}_${subj.id}_internal_notebook`, 'internal_notebook', ['internal_notebook', 'notebook', 'નોટબુક']);
+            syncKey(`${student.id}_${subj.id}_internal_practical_work`, 'internal_practical_work', ['internal_practical_work', 'પ્રાયોગિક_કાર્ય', 'પ્રોજેક્ટ']);
+            syncKey(`${student.id}_${subj.id}_internal_continuous_eval`, 'internal_continuous_eval', ['internal_continuous_eval', 'સાતત્યપૂર્ણ', 'કૌશલ્ય']);
+          });
+        });
+
+        if (changed) {
+          gridInputsRef.current = next;
+          try {
+            localStorage.setItem(
+              `vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`,
+              JSON.stringify(next)
+            );
+          } catch (e) {}
+          return next;
+        }
+        return prev;
+      });
     }
 
     setSaveSuccessMsg(null);
-  }, [filteredStudents, marks, selectedStandard, school?.id]);
+  }, [filteredStudents, marks, selectedStandard, selectedSection, school?.id, getExistingMarkVal]);
 
   // Helper to compile Firestore records from grid inputs
-  const buildMarksRecordsToSave = (inputsMap: Record<string, string>, activeExamId: string) => {
+  const buildMarksRecordsToSave = (
+    inputsMap: Record<string, string>,
+    activeExamId: string,
+    targetKeys?: Set<string>
+  ) => {
     const recordsToSave: any[] = [];
     const examNameDisplay = marksEntryExams.find((e) => e.id === activeExamId)?.nameGu || activeExamId;
 
@@ -500,6 +566,11 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
         prayogikSubs.forEach((subj) => {
           const keyTh = `${student.id}_${subj.id}_theory40`;
           const keyPr = `${student.id}_${subj.id}_practical40`;
+
+          if (targetKeys && targetKeys.size > 0 && !targetKeys.has(keyTh) && !targetKeys.has(keyPr)) {
+            return;
+          }
+
           const valTh = inputsMap[keyTh];
           const valPr = inputsMap[keyPr];
 
@@ -578,6 +649,11 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
         if (activeSub.isPrayogik) {
           const kPrac = `${student.id}_${activeSub.id}_internal_practical_work`;
           const kSkill = `${student.id}_${activeSub.id}_internal_continuous_eval`;
+
+          if (targetKeys && targetKeys.size > 0 && !targetKeys.has(kPrac) && !targetKeys.has(kSkill)) {
+            return;
+          }
+
           const vPrac = inputsMap[kPrac];
           const vSkill = inputsMap[kSkill];
 
@@ -647,18 +723,31 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
           }
         } else {
           // Main subject: 5 + 5 + 5 + 5
+          const kPt1 = `${student.id}_${activeSub.id}_internal_pt1`;
+          const kPt2 = `${student.id}_${activeSub.id}_internal_pt2`;
+          const kComp = `${student.id}_${activeSub.id}_internal_competency`;
+          const kNote = `${student.id}_${activeSub.id}_internal_notebook`;
           const kRawPt1 = `${student.id}_${activeSub.id}_periodic_test_1`;
           const kRawPt2 = `${student.id}_${activeSub.id}_periodic_test_2`;
+
+          if (
+            targetKeys &&
+            targetKeys.size > 0 &&
+            !targetKeys.has(kPt1) &&
+            !targetKeys.has(kPt2) &&
+            !targetKeys.has(kComp) &&
+            !targetKeys.has(kNote) &&
+            !targetKeys.has(kRawPt1) &&
+            !targetKeys.has(kRawPt2)
+          ) {
+            return;
+          }
+
           const rawPt1 = inputsMap[kRawPt1];
           const rawPt2 = inputsMap[kRawPt2];
 
           const convPt1 = rawPt1 === 'AB' ? '0' : (rawPt1 !== undefined && rawPt1 !== '' ? String(Math.round(((parseFloat(rawPt1) || 0) / 25) * 5 * 10) / 10) : undefined);
           const convPt2 = rawPt2 === 'AB' ? '0' : (rawPt2 !== undefined && rawPt2 !== '' ? String(Math.round(((parseFloat(rawPt2) || 0) / 25) * 5 * 10) / 10) : undefined);
-
-          const kPt1 = `${student.id}_${activeSub.id}_internal_pt1`;
-          const kPt2 = `${student.id}_${activeSub.id}_internal_pt2`;
-          const kComp = `${student.id}_${activeSub.id}_internal_competency`;
-          const kNote = `${student.id}_${activeSub.id}_internal_notebook`;
 
           const vPt1 = convPt1 !== undefined ? convPt1 : inputsMap[kPt1];
           const vPt2 = convPt2 !== undefined ? convPt2 : inputsMap[kPt2];
@@ -728,6 +817,10 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       filteredStudents.forEach((student) => {
         entrySubjects.forEach((subj) => {
           const valKey = `${student.id}_${subj.id}_${activeExamId}`;
+          if (targetKeys && targetKeys.size > 0 && !targetKeys.has(valKey)) {
+            return;
+          }
+
           const val = inputsMap[valKey];
           if (val === undefined || val === '') return;
           const isAb = val.trim().toUpperCase() === 'AB';
@@ -757,11 +850,16 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     return recordsToSave;
   };
 
-  // Perform background auto-sync to Firestore for marks
+  // Perform background auto-sync to Firestore with queue mutex lock
   const performAutoSyncMarks = async (inputsOverride?: Record<string, string>) => {
-    const inputsToUse = inputsOverride || gridInputsRef.current;
     const currentExam = marksEntryExamIdRef.current;
     if (currentExam === 'siddhi_krupa_entry') return;
+
+    // Mutex guard: If a sync is already in flight, flag pending and wait for current to finish
+    if (isSyncingMarksRef.current) {
+      pendingSyncNeededRef.current = true;
+      return;
+    }
 
     if (!navigator.onLine) {
       setCloudSyncStatus('offline');
@@ -771,48 +869,71 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       return;
     }
 
+    // Freeze snapshot of dirty keys to process in this specific cycle
+    const keysToSave = new Set(dirtyKeysRef.current);
+    const inputsToUse = inputsOverride || { ...gridInputsRef.current };
+
+    if (keysToSave.size === 0 && !inputsOverride) {
+      setCloudSyncStatus((prev) => (prev === 'syncing' ? 'idle' : prev));
+      return;
+    }
+
+    isSyncingMarksRef.current = true;
     setCloudSyncStatus('syncing');
+
     try {
-      const recordsToSave = buildMarksRecordsToSave(inputsToUse, currentExam);
+      const recordsToSave = buildMarksRecordsToSave(
+        inputsToUse,
+        currentExam,
+        keysToSave.size > 0 ? keysToSave : undefined
+      );
+
       if (recordsToSave.length > 0) {
         await Promise.race([
           saveBatchExamMarks(school.id, recordsToSave),
-          new Promise((resolve) => setTimeout(resolve, 4000)),
+          new Promise((resolve) => setTimeout(resolve, 3500)),
         ]);
       }
-      // Safely clear dirty keys
-      setDirtyKeys((prev) => {
-        const next = new Set(prev);
-        recordsToSave.forEach((r) => {
-          next.delete(`${r.studentId}_${r.subjectId}_${currentExam}`);
-          next.delete(`${r.studentId}_${r.subjectId}_theory40`);
-          next.delete(`${r.studentId}_${r.subjectId}_practical40`);
-          next.delete(`${r.studentId}_${r.subjectId}_${r.examId}`);
-        });
-        return next;
+
+      // Safely clear ONLY the keys that were actually included and saved in this run
+      keysToSave.forEach((k) => dirtyKeysRef.current.delete(k));
+      recordsToSave.forEach((r) => {
+        dirtyKeysRef.current.delete(`${r.studentId}_${r.subjectId}_${currentExam}`);
+        dirtyKeysRef.current.delete(`${r.studentId}_${r.subjectId}_theory40`);
+        dirtyKeysRef.current.delete(`${r.studentId}_${r.subjectId}_practical40`);
+        dirtyKeysRef.current.delete(`${r.studentId}_${r.subjectId}_${r.examId}`);
       });
+      setDirtyKeys(new Set(dirtyKeysRef.current));
+
       try {
         localStorage.removeItem(`vidyalayam_pending_marks_${school?.id || 'default'}`);
       } catch (e) {}
+
       setCloudSyncStatus('synced');
       setTimeout(() => {
         setCloudSyncStatus((prev) => (prev === 'synced' ? 'idle' : prev));
-      }, 2500);
-      if (onRefresh) onRefresh();
+      }, 2000);
     } catch (err) {
       console.error('Auto cloud sync marks error:', err);
       setCloudSyncStatus('offline');
+    } finally {
+      isSyncingMarksRef.current = false;
+      // If user typed into subsequent cells while this save was executing, process them immediately!
+      if (pendingSyncNeededRef.current || dirtyKeysRef.current.size > 0) {
+        pendingSyncNeededRef.current = false;
+        performAutoSyncMarks();
+      }
     }
   };
 
   // Debounced auto-sync trigger (350ms for instant real-time sync across devices)
-  const triggerDebouncedMarksSync = (nextInputs: Record<string, string>) => {
+  const triggerDebouncedMarksSync = (inputsOverride?: Record<string, string>) => {
     if (autoSyncMarksTimerRef.current) {
       clearTimeout(autoSyncMarksTimerRef.current);
     }
     setCloudSyncStatus('syncing');
     autoSyncMarksTimerRef.current = setTimeout(() => {
-      performAutoSyncMarks(nextInputs);
+      performAutoSyncMarks(inputsOverride);
     }, 350);
   };
 
@@ -833,11 +954,16 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     }
 
     if (updatedVal !== null) {
-      const nextInputs = { ...gridInputsRef.current, [key]: updatedVal };
-      setGridInputs(nextInputs);
-      setDirtyKeys((prev) => new Set(prev).add(key));
+      // 1. Synchronously mark key as dirty in ref and state
+      dirtyKeysRef.current.add(key);
+      setDirtyKeys(new Set(dirtyKeysRef.current));
 
-      // 1. Immediate offline local persistence (synchronous)
+      // 2. Synchronously update in-memory reference and React state
+      const nextInputs = { ...gridInputsRef.current, [key]: updatedVal };
+      gridInputsRef.current = nextInputs;
+      setGridInputs(nextInputs);
+
+      // 3. Immediate offline local persistence (synchronous)
       try {
         localStorage.setItem(
           `vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`,
@@ -847,8 +973,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
         console.error('Local cache error:', e);
       }
 
-      // 2. Debounced real-time cloud synchronization
-      triggerDebouncedMarksSync(nextInputs);
+      // 4. Trigger debounced real-time cloud synchronization
+      triggerDebouncedMarksSync();
     }
   };
 
@@ -955,7 +1081,6 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       setTimeout(() => {
         setGraceSyncStatus((prev) => (prev === 'synced' ? 'idle' : prev));
       }, 3000);
-      if (onRefresh) onRefresh();
     } catch (err) {
       console.error('Grace auto sync error:', err);
       setGraceSyncStatus('offline');
