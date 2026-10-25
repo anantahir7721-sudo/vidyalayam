@@ -180,49 +180,7 @@ export function cropSignatureImageEdgeToEdge(dataUrl: string): Promise<string> {
 export function compressLetterheadImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const maxW = 1240;
-          const maxH = 1754;
-          let w = img.naturalWidth || img.width;
-          let h = img.naturalHeight || img.height;
-
-          if (w > maxW || h > maxH) {
-            const ratio = Math.min(maxW / w, maxH / h);
-            w = Math.round(w * ratio);
-            h = Math.round(h * ratio);
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            resolve(dataUrl);
-            return;
-          }
-
-          // Pre-fill canvas with pure white background so transparent PNGs never turn black in JPEG
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, w, h);
-
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, w, h);
-
-          // Use optimal quality JPEG at 0.80 (~180KB) for instantaneous Firestore multi-teacher cloud sync
-          const compressed = canvas.toDataURL('image/jpeg', 0.80);
-          resolve(compressed);
-        } catch (err) {
-          resolve(dataUrl);
-        }
-      };
-      img.onerror = () => resolve(dataUrl);
-      img.src = dataUrl;
-    };
+    reader.onload = (e) => resolve((e.target?.result as string) || '');
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -785,12 +743,18 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     }
 
     try {
-      const compressedDataUrl = await compressLetterheadImage(file);
-      setSettings((prev) => {
-        const next = { ...prev, letterheadUrl: compressedDataUrl };
-        saveOutwardSettings(school.id, next).catch(console.error);
-        return next;
-      });
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const originalDataUrl = ev.target?.result as string;
+        if (!originalDataUrl) return;
+
+        setSettings((prev) => {
+          const next = { ...prev, letterheadUrl: originalDataUrl };
+          saveOutwardSettings(school.id, next).catch(console.error);
+          return next;
+        });
+      };
+      reader.readAsDataURL(file);
     } catch (err) {
       console.error(err);
       alert('લેટરહેડ અપલોડ કરવામાં ક્ષતિ આવી.');

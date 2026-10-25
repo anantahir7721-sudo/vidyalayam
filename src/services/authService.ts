@@ -202,7 +202,20 @@ export async function loginSchool(
       } catch {}
     }
 
-    if (!schoolSnapshot.exists()) {
+    let schoolData: School | null = null;
+    if (schoolSnapshot.exists()) {
+      schoolData = { ...(schoolSnapshot.data() as School), id: schoolSnapshot.id };
+    } else {
+      // Find school by unique DISE code across Firestore to avoid creating phantom duplicate schools
+      const q = query(collection(db, 'schools'), where('diseCode', '==', cleanDise));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const schDoc = snap.docs[0];
+        schoolData = { ...(schDoc.data() as School), id: schDoc.id };
+      }
+    }
+
+    if (!schoolData) {
       const fallbackSchool: School = {
         id: user.uid,
         ownerUid: user.uid,
@@ -215,12 +228,6 @@ export async function loginSchool(
       await setDoc(schoolDocRef, fallbackSchool);
       return { user, school: fallbackSchool };
     }
-
-    const rawData = schoolSnapshot.data() as School;
-    const schoolData: School = {
-      ...rawData,
-      status: rawData.status || 'approved',
-    };
 
     if (schoolData.mustResetPassword === true) {
       return {
@@ -547,10 +554,10 @@ export async function getSchoolByUid(uid: string): Promise<School | null> {
       };
     }
 
-    // 3. Query by authenticated user's email DISE code
+    // 3. Query by authenticated user's email DISE code (supports both dise_ and school_ prefixes)
     const curEmail = auth.currentUser?.email;
-    if (curEmail && curEmail.startsWith('school_') && curEmail.endsWith('@gujarat-schools.internal')) {
-      const extractedDise = curEmail.replace('school_', '').replace('@gujarat-schools.internal', '').trim();
+    if (curEmail && (curEmail.startsWith('school_') || curEmail.startsWith('dise_')) && curEmail.endsWith('@gujarat-schools.internal')) {
+      const extractedDise = curEmail.replace(/^(school_|dise_)/, '').replace('@gujarat-schools.internal', '').trim();
       if (extractedDise) {
         const qDise = query(collection(db, 'schools'), where('diseCode', '==', extractedDise));
         const snapDise = await getDocs(qDise);

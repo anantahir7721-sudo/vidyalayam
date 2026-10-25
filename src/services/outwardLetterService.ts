@@ -2,10 +2,9 @@ import {
   collection,
   doc,
   setDoc,
+  getDoc,
   getDocs,
   deleteDoc,
-  query,
-  orderBy,
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -13,6 +12,30 @@ import { OutwardLetter, OutwardLetterSettings } from '../types';
 
 const SETTINGS_KEY_PREFIX = 'vidyalayam_outward_settings_';
 const LETTERS_CACHE_PREFIX = 'vidyalayam_outward_letters_';
+const CHUNK_SIZE = 400000; // 400KB characters per chunk document to avoid 1MB limit
+
+/**
+ * Helper to reassemble large original letterhead image stored across chunk documents
+ */
+async function assembleLetterheadIfChunked(
+  schoolId: string,
+  rawData: any
+): Promise<string> {
+  if (rawData.letterheadChunkCount && rawData.letterheadChunkCount > 0) {
+    try {
+      const chunksCol = collection(db, 'schools', schoolId, 'settings', 'outward_letter', 'chunks');
+      const snap = await getDocs(chunksCol);
+      if (!snap.empty) {
+        const chunkDocs = snap.docs.map((d) => d.data() as { index: number; chunk: string });
+        chunkDocs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+        return chunkDocs.map((c) => c.chunk).join('');
+      }
+    } catch (e) {
+      console.warn('Error assembling chunked letterhead:', e);
+    }
+  }
+  return rawData.letterheadUrl || '';
+}
 
 /**
  * Load outward letter settings (Letterhead image, Principal Sign, Margins)
@@ -30,11 +53,21 @@ export async function getOutwardSettings(schoolId: string): Promise<OutwardLette
 
   try {
     const settingsDoc = doc(db, 'schools', schoolId, 'settings', 'outward_letter');
-    const snap = await import('firebase/firestore').then(f => f.getDoc(settingsDoc));
+    const snap = await getDoc(settingsDoc);
     if (snap.exists()) {
-      const data = snap.data() as OutwardLetterSettings;
+      const rawData = snap.data() as any;
+      let finalLetterhead = rawData.letterheadUrl;
+      if (rawData.letterheadChunkCount && rawData.letterheadChunkCount > 0) {
+        finalLetterhead = await assembleLetterheadIfChunked(schoolId, rawData);
+      }
+      const data: OutwardLetterSettings = {
+        ...rawData,
+        letterheadUrl: finalLetterhead || rawData.letterheadUrl,
+      };
       const merged = { ...cached, ...data };
-      localStorage.setItem(localKey, JSON.stringify(merged));
+      try {
+        localStorage.setItem(localKey, JSON.stringify(merged));
+      } catch (e) {}
       return merged;
     }
   } catch (err) {
@@ -46,6 +79,7 @@ export async function getOutwardSettings(schoolId: string): Promise<OutwardLette
 
 /**
  * Save outward letter settings to both LocalStorage and Firestore
+ * Supports original high-resolution uncompressed letterheads by chunking when needed
  */
 export async function saveOutwardSettings(
   schoolId: string,
@@ -60,9 +94,42 @@ export async function saveOutwardSettings(
 
   try {
     const settingsDoc = doc(db, 'schools', schoolId, 'settings', 'outward_letter');
-    const firestorePromise = setDoc(settingsDoc, settings, { merge: true });
-    const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 2000));
-    await Promise.race([firestorePromise, timeoutPromise]);
+    const chunksCol = collection(db, 'schools', schoolId, 'settings', 'outward_letter', 'chunks');
+    const fullLetterhead = settings.letterheadUrl || '';
+
+    if (fullLetterhead && fullLetterhead.length > 500000) {
+      // Original large image: chunk across subcollection documents to avoid 1MB Firestore limit
+      const chunks: string[] = [];
+      for (let i = 0; i < fullLetterhead.length; i += CHUNK_SIZE) {
+        chunks.push(fullLetterhead.slice(i, i + CHUNK_SIZE));
+      }
+
+      await Promise.all(
+        chunks.map((chunk, idx) =>
+          setDoc(doc(chunksCol, String(idx)), { index: idx, chunk })
+        )
+      );
+
+      const { letterheadUrl, ...restSettings } = settings;
+      await setDoc(settingsDoc, {
+        ...restSettings,
+        letterheadUrl: '',
+        letterheadChunkCount: chunks.length,
+      }, { merge: true });
+    } else {
+      // Normal size image or removed image
+      await setDoc(settingsDoc, {
+        ...settings,
+        letterheadChunkCount: 0,
+      }, { merge: true });
+
+      // If letterhead was removed, clean up chunks
+      if (!fullLetterhead) {
+        getDocs(chunksCol).then((snap) => {
+          snap.forEach((d) => deleteDoc(d.ref));
+        }).catch(() => {});
+      }
+    }
   } catch (err) {
     console.warn('Notice saving outward settings to Firestore:', err);
   }
@@ -81,9 +148,17 @@ export function subscribeToOutwardSettings(
 
   return onSnapshot(
     settingsDoc,
-    (snap) => {
+    async (snap) => {
       if (snap.exists()) {
-        const data = snap.data() as OutwardLetterSettings;
+        const rawData = snap.data() as any;
+        let finalLetterhead = rawData.letterheadUrl;
+        if (rawData.letterheadChunkCount && rawData.letterheadChunkCount > 0) {
+          finalLetterhead = await assembleLetterheadIfChunked(schoolId, rawData);
+        }
+        const data: OutwardLetterSettings = {
+          ...rawData,
+          letterheadUrl: finalLetterhead || rawData.letterheadUrl,
+        };
         try {
           localStorage.setItem(localKey, JSON.stringify(data));
         } catch (e) {}
@@ -115,16 +190,19 @@ export async function getOutwardLetters(schoolId: string): Promise<OutwardLetter
 
   try {
     const lettersCol = collection(db, 'schools', schoolId, 'outward_letters');
-    const q = query(lettersCol, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(lettersCol);
 
     const list: OutwardLetter[] = snapshot.docs.map((d) => ({
       id: d.id,
       ...(d.data() as Omit<OutwardLetter, 'id'>),
     }));
 
+    list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
     if (list.length > 0) {
-      localStorage.setItem(localKey, JSON.stringify(list));
+      try {
+        localStorage.setItem(localKey, JSON.stringify(list));
+      } catch (e) {}
       return list;
     }
   } catch (err) {
@@ -143,15 +221,15 @@ export function subscribeToOutwardLetters(
 ): () => void {
   const localKey = `${LETTERS_CACHE_PREFIX}${schoolId}`;
   const lettersCol = collection(db, 'schools', schoolId, 'outward_letters');
-  const q = query(lettersCol, orderBy('createdAt', 'desc'));
 
   return onSnapshot(
-    q,
+    lettersCol,
     (snapshot) => {
       const list: OutwardLetter[] = snapshot.docs.map((d) => ({
         id: d.id,
         ...(d.data() as Omit<OutwardLetter, 'id'>),
       }));
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       try {
         localStorage.setItem(localKey, JSON.stringify(list));
       } catch (e) {}
@@ -159,7 +237,6 @@ export function subscribeToOutwardLetters(
     },
     (err) => {
       console.warn('Real-time outward letters subscription error:', err);
-      // Fallback to local cache
       try {
         const raw = localStorage.getItem(localKey);
         if (raw) callback(JSON.parse(raw));
