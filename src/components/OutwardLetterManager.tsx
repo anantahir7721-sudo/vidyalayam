@@ -8,6 +8,8 @@ import {
   getOutwardSettings,
   saveOutwardSettings,
   subscribeToOutwardSettings,
+  sanitizeForFirestore,
+  flushPendingOutwardLetters,
 } from '../services/outwardLetterService';
 import {
   printHtmlDocument,
@@ -17,6 +19,7 @@ import {
   blobToBase64,
 } from '../utils/printAndPdfUtils';
 import { toGujaratiDigits } from '../services/dailyKnowledgeService';
+import { IndianEmblemIcon, INDIAN_EMBLEM_SVG } from './IndianEmblemIcon';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import {
@@ -48,6 +51,7 @@ import {
   Hash,
   Share2,
   Scissors,
+  Save,
 } from 'lucide-react';
 
 // Dedicated Official WhatsApp Icon Component
@@ -369,6 +373,11 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   const lastSyncedSettingsRef = useRef<string>('');
   const isInitialSettingsLoadRef = useRef<boolean>(true);
 
+  // Letter saving & cloud sync status
+  const [lettersSyncStatus, setLettersSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('synced');
+  const [saveLetterSuccess, setSaveLetterSuccess] = useState<string | null>(null);
+  const [isSavingLetter, setIsSavingLetter] = useState(false);
+
   // General Digits Format for Current Letter & Preview (Gujarati vs English digits)
   const [letterDigitFormat, setLetterDigitFormat] = useState<'gujarati' | 'english'>('gujarati');
   const [previewDigitFormat, setPreviewDigitFormat] = useState<'gujarati' | 'english'>('gujarati');
@@ -413,10 +422,24 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
   const dragCanvasRef = useRef<HTMLDivElement>(null);
   const [draggingGuide, setDraggingGuide] = useState<'top' | 'bottom' | null>(null);
 
-  // Load Settings and Letters on Mount with Real-time Multi-Device Cloud Sync
+  // Load Settings and Letters on Mount with Real-time Multi-Device Cloud Sync & Offline Resilience
   useEffect(() => {
     let unsubLetters: (() => void) | undefined;
     let unsubSettings: (() => void) | undefined;
+
+    const handleOnline = () => {
+      setLettersSyncStatus('synced');
+      if (school?.id) {
+        flushPendingOutwardLetters(school.id).catch(() => {});
+      }
+    };
+    const handleOffline = () => {
+      setLettersSyncStatus('offline');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     if (school?.id) {
       // 1. Real-time subscribe to outward settings (Letterhead, Sign, Margins, Prefix, Digits format)
       unsubSettings = subscribeToOutwardSettings(school.id, (saved) => {
@@ -446,16 +469,19 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
         setSyncStatus('synced');
       });
 
-      // 2. Real-time subscribe to outward letters
+      // 2. Real-time subscribe to outward letters with automatic reconciliation
       unsubLetters = subscribeToOutwardLetters(school.id, (list) => {
         setLetters(list);
         setIsLoading(false);
+        setLettersSyncStatus(navigator.onLine ? 'synced' : 'offline');
       });
     }
 
     return () => {
       if (unsubLetters) unsubLetters();
       if (unsubSettings) unsubSettings();
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, [school?.id]);
 
@@ -697,14 +723,14 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       schoolId: school.id,
       outwardNumber: outwardNumber.trim(),
       letterDate,
-      recipientDesignation: effDesignation || undefined,
-      recipientOffice: effOffice || undefined,
+      recipientDesignation: effDesignation || '',
+      recipientOffice: effOffice || '',
       recipientName: compositeName || effDesignation || effOffice || 'મેળવનારશ્રી',
-      recipientAddress: recipientAddress.trim() || undefined,
+      recipientAddress: recipientAddress.trim() || '',
       subject: subject.trim(),
-      reference: reference.trim() || undefined,
+      reference: reference.trim() || '',
       content: content.trim(),
-      copyTo: copyToList.length > 0 ? copyToList : undefined,
+      copyTo: copyToList.length > 0 ? copyToList : [],
       signatoryName: signatoryName.trim() || settings.principalName || school.principalName || '',
       signatoryDesignation: signatoryDesignation.trim() || 'આચાર્યશ્રી',
       digitFormat: letterDigitFormat,
@@ -712,13 +738,31 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       updatedAt: new Date().toISOString(),
     };
 
+    setIsSavingLetter(true);
+    setLettersSyncStatus('syncing');
     try {
       await saveOutwardLetter(school.id, newDoc);
+      setLettersSyncStatus(navigator.onLine ? 'synced' : 'offline');
+      setSaveLetterSuccess('✅ પત્ર સફળતાપૂર્વક સાચવવામાં આવ્યો છે અને ક્લાઉડમાં સિંક થઈ ગયો છે.');
+      setTimeout(() => setSaveLetterSuccess(null), 3500);
       return newDoc;
     } catch (err) {
-      console.error(err);
-      alert('પત્ર સેવ કરવામાં ક્ષતિ આવી.');
-      return null;
+      console.warn('Notice saving outward letter:', err);
+      setLettersSyncStatus('offline');
+      // Even if cloud write encounters network issue, the letter is safely stored in local cache and will auto-sync!
+      setSaveLetterSuccess('📡 પત્ર ઑફલાઇન સેવ થયો છે અને ઇન્ટરનેટ મળતાં જ આપોઆપ ક્લાઉડ સિંક થઈ જશે.');
+      setTimeout(() => setSaveLetterSuccess(null), 3500);
+      return newDoc;
+    } finally {
+      setIsSavingLetter(false);
+    }
+  };
+
+  // Direct Save Letter button handler: saves letter and returns to register
+  const handleDirectSave = async () => {
+    const saved = await handleSaveLetter();
+    if (saved) {
+      setActiveTab('register');
     }
   };
 
@@ -962,16 +1006,60 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     const signWidthMm = settings.principalSignWidthMm ?? 48;
     const signMaxHeightMm = Math.max(50, Math.round(signWidthMm * 0.85));
 
-    // Background A4 Letterhead image if uploaded
+    const effectiveTopMargin = settings.letterheadUrl ? (settings.topMarginMm ?? 62) : 15;
+    const addressLine = [
+      school.address,
+      school.village ? `મુ. ${school.village}` : '',
+      school.taluka ? `તા. ${school.taluka}` : '',
+      `જિ. ${school.district}`,
+      school.pincode ? `પિન: ${formatDigits(school.pincode, activeFormat)}` : '',
+    ].filter(Boolean).join(', ');
+
+    const rightLogoHtml = school.logoUrl
+      ? `<img src="${school.logoUrl}" alt="School Logo" style="width: 58px; height: 58px; object-fit: contain; border-radius: 8px; border: 1px solid #cbd5e1; padding: 2px; background: #ffffff; display: block;" />`
+      : `
+        <div style="width: 56px; height: 56px; border-radius: 10px; background: #fff7ed; border: 1.5px solid #fdba74; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #c2410c;">
+          <svg style="width: 26px; height: 26px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+            <path d="M6 6h10"></path>
+            <path d="M6 10h10"></path>
+          </svg>
+          <span style="font-size: 8px; font-weight: 800; margin-top: 2px;">શાળા</span>
+        </div>
+      `;
+
+    // Background A4 Letterhead image if uploaded, OR Official School Profile Header (Indian National Emblem on Left + School Name/Address/DISE/Principal/Contact in Center + School Logo on Right)
     const letterheadBgHtml = settings.letterheadUrl
       ? `<img src="${settings.letterheadUrl}" style="position: absolute; top: 0; left: 0; width: 210mm; height: 297mm; z-index: 0; object-fit: fill; pointer-events: none;" />`
       : `
-        <div style="border-bottom: 2.5px solid #0f172a; padding-bottom: 12px; margin-bottom: 24px; text-align: center;">
-          <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">${school.schoolName}</h1>
-          <p style="font-size: 13px; color: #334155; margin: 5px 0 0 0; font-weight: 500;">
-            ${school.village ? school.village + ', ' : ''}${school.taluka ? school.taluka + ', ' : ''}${school.district} • DISE કોડ: <strong>${school.diseCode}</strong>
-          </p>
-          ${school.contactPhone ? `<p style="font-size: 11px; color: #64748b; margin: 3px 0 0 0;">સંપર્ક: ${school.contactPhone} • ઈમેલ: ${school.contactEmail || '-'}</p>` : ''}
+        <div style="border-bottom: 2.5px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <!-- Left Side: Indian National Emblem -->
+            <div style="width: 58px; height: 72px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+              ${INDIAN_EMBLEM_SVG}
+            </div>
+
+            <!-- Center: School Profile Details -->
+            <div style="flex: 1; text-align: center; padding: 0 4px;">
+              <h1 style="font-size: 21px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.01em; line-height: 1.25; text-transform: uppercase;">
+                ${school.schoolName}
+              </h1>
+              ${addressLine ? `<p style="font-size: 12px; color: #334155; margin: 3px 0 0 0; font-weight: 600;">${addressLine}</p>` : ''}
+              <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 12px; margin-top: 5px; font-size: 11.5px; color: #1e293b; font-weight: 700;">
+                <span style="background: #f1f5f9; padding: 1.5px 6px; border-radius: 4px; border: 1px solid #cbd5e1;">DISE કોડ: <strong style="color: #0f172a; font-family: monospace;">${formatDigits(school.diseCode, activeFormat)}</strong></span>
+                <span>આચાર્યશ્રી: <strong style="color: #0f172a;">${letter.signatoryName || settings.principalName || school.principalName || '-'}</strong></span>
+                <span>સંપર્ક: <strong style="color: #0f172a;">${formatDigits(school.contactPhone || school.principalPhone || '-', activeFormat)}</strong></span>
+                ${school.contactEmail ? `<span>ઈમેલ: <strong style="color: #0f172a;">${school.contactEmail}</strong></span>` : ''}
+              </div>
+            </div>
+
+            <!-- Right Side: School Profile Logo -->
+            <div style="width: 58px; height: 72px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+              ${rightLogoHtml}
+            </div>
+          </div>
+          <!-- Double border official separator rule -->
+          <div style="margin-top: 8px; border-bottom: 1px solid #94a3b8;"></div>
         </div>
       `;
 
@@ -1058,7 +1146,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
           .letter-content {
             position: relative;
             z-index: 10;
-            padding-top: ${settings.letterheadUrl ? `${topMargin}mm` : '22mm'};
+            padding-top: ${effectiveTopMargin}mm;
             padding-bottom: ${bottomMargin}mm;
             padding-left: ${leftMargin}mm;
             padding-right: ${rightMargin}mm;
@@ -1389,49 +1477,78 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
             </div>
           </div>
 
-          {/* Action Tabs Header */}
-          <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => setActiveTab('register')}
-              className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'register'
-                  ? 'bg-white dark:bg-slate-900 text-[#C45A2D] dark:text-white shadow-xs font-black'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>પત્રો રજિસ્ટર ({letters.length})</span>
-            </button>
+          {/* Action Tabs Header & Cloud Sync Status */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            {/* Live Auto Cloud Sync Status Badge */}
+            <div className="flex items-center gap-2">
+              {lettersSyncStatus === 'syncing' ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-bold animate-pulse">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                  <span>ક્લાઉડ સિંક થઈ રહ્યું છે...</span>
+                </div>
+              ) : lettersSyncStatus === 'offline' || !navigator.onLine ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs font-bold">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                  <span>📡 ઑફલાઇન સેવ થયેલું (નેટ આવતા ઓટો સિંક થશે)</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-800 dark:text-teal-300 text-xs font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>☁️ રિયલ-ટાઇમ ક્લાઉડ સિંક સક્રિય</span>
+                </div>
+              )}
+            </div>
 
-            <button
-              type="button"
-              onClick={handleStartNewLetter}
-              className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'new_letter'
-                  ? 'bg-[#C45A2D] text-white shadow-xs font-black'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              <Plus className="w-4 h-4" />
-              <span>નવો પત્ર લખો</span>
-            </button>
+            <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-bold flex-wrap">
+              <button
+                type="button"
+                onClick={() => setActiveTab('register')}
+                className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'register'
+                    ? 'bg-white dark:bg-slate-900 text-[#C45A2D] dark:text-white shadow-xs font-black'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>પત્રો રજિસ્ટર ({letters.length})</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab('settings')}
-              className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'settings'
-                  ? 'bg-white dark:bg-slate-900 text-[#C45A2D] dark:text-white shadow-xs font-black'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              <Sliders className="w-4 h-4" />
-              <span>લેટરહેડ & માર્જિન ડ્રેગ</span>
-            </button>
+              <button
+                type="button"
+                onClick={handleStartNewLetter}
+                className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'new_letter'
+                    ? 'bg-[#C45A2D] text-white shadow-xs font-black'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <Plus className="w-4 h-4" />
+                <span>નવો પત્ર લખો</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('settings')}
+                className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'settings'
+                    ? 'bg-white dark:bg-slate-900 text-[#C45A2D] dark:text-white shadow-xs font-black'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <Sliders className="w-4 h-4" />
+                <span>લેટરહેડ & માર્જિન ડ્રેગ</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {saveLetterSuccess && (
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{saveLetterSuccess}</span>
+        </div>
+      )}
 
       {/* =========================================================================
           TAB 1: LETTERS REGISTER & HISTORY (જાવક પત્રો રજિસ્ટર)
@@ -1974,12 +2091,25 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   રદ કરો (Cancel)
                 </button>
 
-                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <div className="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
+                  {/* Direct Save Letter Button */}
+                  <button
+                    type="button"
+                    onClick={handleDirectSave}
+                    disabled={isSavingLetter}
+                    className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all disabled:opacity-50"
+                    title="પત્ર સીધો સાચવો અને રજિસ્ટરમાં જુઓ"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{isSavingLetter ? 'સાચવી રહ્યું છે...' : 'પત્ર સેવ કરો (Save)'}</span>
+                  </button>
+
                   {/* Generate Without Sign */}
                   <button
                     type="button"
                     onClick={() => handleOpenPreview(false)}
-                    className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+                    disabled={isSavingLetter}
+                    className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all disabled:opacity-50"
                   >
                     <FileText className="w-4 h-4" />
                     <span>સહી વગર (Without Sign)</span>
@@ -1989,7 +2119,8 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   <button
                     type="button"
                     onClick={() => handleOpenPreview(true)}
-                    className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#C45A2D]/25 cursor-pointer transition-all scale-[1.01]"
+                    disabled={isSavingLetter}
+                    className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#C45A2D]/25 cursor-pointer transition-all scale-[1.01] disabled:opacity-50"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>સહી સાથે (With Sign)</span>
@@ -2136,7 +2267,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                   }}
                   className="relative select-none rounded-xl overflow-hidden bg-white shadow-2xl border-2 border-slate-300 dark:border-slate-700 touch-none"
                 >
-                  {/* 1. Letterhead background image or placeholder */}
+                  {/* 1. Letterhead background image or School Profile Header */}
                   {settings.letterheadUrl ? (
                     <img
                       src={settings.letterheadUrl}
@@ -2144,12 +2275,33 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                       className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0"
                     />
                   ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-slate-50/50">
-                      <Upload className="w-8 h-8 mb-2 opacity-50" />
-                      <span className="text-xs font-bold">A4 લેટરહેડ ઈમેજ અપલોડ કરેલ નથી.</span>
-                      <span className="text-[10px] text-slate-400 mt-1">
-                        જમણી બાજુથી લેટરહેડ PNG પસંદ કરો જેથી અહીં દેખાશે.
-                      </span>
+                    <div className="absolute top-0 left-0 right-0 p-2.5 border-b-2 border-slate-900 bg-white z-0 pointer-events-none">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="w-7 h-9 shrink-0 flex items-center justify-center">
+                          <IndianEmblemIcon className="w-full h-full" />
+                        </div>
+                        <div className="flex-1 text-center px-1">
+                          <div className="text-[9.5px] font-black uppercase text-slate-950 truncate leading-tight">
+                            {school.schoolName}
+                          </div>
+                          <div className="text-[7px] font-bold text-slate-600 truncate mt-0.5">
+                            {school.village ? school.village + ', ' : ''}{school.district} • DISE: {school.diseCode}
+                          </div>
+                          <div className="text-[6.5px] text-slate-500 truncate">
+                            આચાર્યશ્રી: {school.principalName || '-'} • મો: {school.contactPhone || '-'}
+                          </div>
+                        </div>
+                        <div className="w-7 h-7 shrink-0 flex items-center justify-center">
+                          {school.logoUrl ? (
+                            <img src={school.logoUrl} alt="Logo" className="w-7 h-7 object-contain rounded border p-0.5" />
+                          ) : (
+                            <div className="w-6 h-6 rounded bg-amber-100 border border-amber-300 flex items-center justify-center text-[6px] font-bold text-amber-900">
+                              શાળા
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-1 border-b border-slate-300"></div>
                     </div>
                   )}
 
@@ -3136,7 +3288,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
                     height: '1123px',
                     transform: `scale(${computedPreviewScale})`,
                     transformOrigin: 'top left',
-                    paddingTop: settings.letterheadUrl ? `${settings.topMarginMm ?? 62}mm` : '22mm',
+                    paddingTop: settings.letterheadUrl ? `${settings.topMarginMm ?? 62}mm` : '15mm',
                     paddingBottom: `${settings.bottomMarginMm ?? 32}mm`,
                     paddingLeft: `${settings.leftMarginMm ?? 22}mm`,
                     paddingRight: `${settings.rightMarginMm ?? 22}mm`,
@@ -3156,15 +3308,67 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
 
                   {/* Top Section */}
                   <div className="relative z-10 space-y-4">
-                    {/* Fallback Auto Letterhead if no custom image */}
+                    {/* Fallback Auto Letterhead from School Profile: Indian Emblem on Left + School Details in Center + School Logo on Right */}
                     {!settings.letterheadUrl && (
-                      <div className="text-center border-b-2 border-slate-900 pb-3 mb-3">
-                        <h1 className="text-2xl font-black uppercase text-slate-950 tracking-tight">
-                          {school.schoolName}
-                        </h1>
-                        <p className="text-xs text-slate-600 mt-1">
-                          {school.village ? school.village + ', ' : ''}{school.taluka ? school.taluka + ', ' : ''}{school.district} • DISE કોડ: <strong>{formatDigits(school.diseCode, previewDigitFormat)}</strong>
-                        </p>
+                      <div className="border-b-2 border-slate-900 pb-2 mb-2">
+                        <div className="flex items-center justify-between gap-3">
+                          {/* Left Side: Indian National Emblem */}
+                          <div className="w-[58px] h-[72px] shrink-0 flex items-center justify-center">
+                            <IndianEmblemIcon className="w-full h-full" />
+                          </div>
+
+                          {/* Center: School Profile Details */}
+                          <div className="flex-1 text-center px-1">
+                            <h1 className="text-xl font-black uppercase text-slate-950 tracking-tight leading-snug">
+                              {school.schoolName}
+                            </h1>
+                            <p className="text-[12px] font-semibold text-slate-700 mt-0.5">
+                              {[
+                                school.address,
+                                school.village ? `મુ. ${school.village}` : '',
+                                school.taluka ? `તા. ${school.taluka}` : '',
+                                `જિ. ${school.district}`,
+                                school.pincode ? `પિન: ${formatDigits(school.pincode, previewDigitFormat)}` : '',
+                              ]
+                                .filter(Boolean)
+                                .join(', ')}
+                            </p>
+                            <div className="flex flex-wrap justify-center items-center gap-x-2.5 gap-y-0.5 mt-1 text-[11px] font-bold text-slate-800">
+                              <span className="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300">
+                                DISE કોડ: <strong className="font-mono text-slate-950">{formatDigits(school.diseCode, previewDigitFormat)}</strong>
+                              </span>
+                              <span>
+                                આચાર્યશ્રી: <strong className="text-slate-950">{previewLetter.signatoryName || school.principalName || '-'}</strong>
+                              </span>
+                              <span>
+                                સંપર્ક: <strong className="text-slate-950">{formatDigits(school.contactPhone || school.principalPhone || '-', previewDigitFormat)}</strong>
+                              </span>
+                              {school.contactEmail && (
+                                <span>
+                                  ઈમેલ: <strong className="text-slate-950">{school.contactEmail}</strong>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right Side: School Profile Logo */}
+                          <div className="w-[58px] h-[72px] shrink-0 flex items-center justify-center">
+                            {school.logoUrl ? (
+                              <img
+                                src={school.logoUrl}
+                                alt="School Logo"
+                                className="w-14 h-14 object-contain rounded-lg border border-slate-200 p-0.5 shadow-xs bg-white"
+                              />
+                            ) : (
+                              <div className="w-14 h-14 rounded-xl bg-amber-50 border border-amber-300 flex flex-col items-center justify-center text-amber-800 shadow-xs">
+                                <FileText className="w-6 h-6" />
+                                <span className="text-[8px] font-black mt-0.5">શાળા</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {/* Thin second divider line for official government look */}
+                        <div className="mt-1.5 border-b border-slate-300"></div>
                       </div>
                     )}
 

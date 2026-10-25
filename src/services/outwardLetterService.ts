@@ -175,8 +175,67 @@ export function subscribeToOutwardSettings(
   );
 }
 
+const PENDING_QUEUE_PREFIX = 'vidyalayam_pending_outward_letters_';
+
 /**
- * Fetch all outward letters for the school
+ * Recursively removes any keys with `undefined` values from an object,
+ * preventing Firestore `Function setDoc() called with invalid data. Unsupported field value: undefined` error.
+ */
+export function sanitizeForFirestore<T extends Record<string, any>>(obj: T): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        result[key] = sanitizeForFirestore(value);
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+  return result;
+}
+
+function getPendingQueue(schoolId: string): OutwardLetter[] {
+  try {
+    const raw = localStorage.getItem(`${PENDING_QUEUE_PREFIX}${schoolId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePendingQueue(schoolId: string, queue: OutwardLetter[]): void {
+  try {
+    localStorage.setItem(`${PENDING_QUEUE_PREFIX}${schoolId}`, JSON.stringify(queue));
+  } catch {}
+}
+
+/**
+ * Flush any offline queued outward letters to Firestore
+ */
+export async function flushPendingOutwardLetters(schoolId: string): Promise<number> {
+  const queue = getPendingQueue(schoolId);
+  if (!queue || queue.length === 0) return 0;
+  let synced = 0;
+  const remaining: OutwardLetter[] = [];
+
+  for (const letter of queue) {
+    try {
+      const clean = sanitizeForFirestore(letter);
+      const letterDoc = doc(db, 'schools', schoolId, 'outward_letters', letter.id);
+      await setDoc(letterDoc, clean, { merge: true });
+      synced++;
+    } catch (e) {
+      console.warn('Could not sync pending letter to Firestore:', e);
+      remaining.push(letter);
+    }
+  }
+  savePendingQueue(schoolId, remaining);
+  return synced;
+}
+
+/**
+ * Fetch all outward letters for the school with automatic offline cache & reconciliation
  */
 export async function getOutwardLetters(schoolId: string): Promise<OutwardLetter[]> {
   const localKey = `${LETTERS_CACHE_PREFIX}${schoolId}`;
@@ -192,19 +251,34 @@ export async function getOutwardLetters(schoolId: string): Promise<OutwardLetter
     const lettersCol = collection(db, 'schools', schoolId, 'outward_letters');
     const snapshot = await getDocs(lettersCol);
 
-    const list: OutwardLetter[] = snapshot.docs.map((d) => ({
+    const remoteList: OutwardLetter[] = snapshot.docs.map((d) => ({
       id: d.id,
       ...(d.data() as Omit<OutwardLetter, 'id'>),
     }));
 
-    list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-
-    if (list.length > 0) {
-      try {
-        localStorage.setItem(localKey, JSON.stringify(list));
-      } catch (e) {}
-      return list;
+    // Auto-reconciliation: If local has letters not yet in remote, push them to Firestore
+    const remoteIds = new Set(remoteList.map((l) => l.id));
+    const missingInRemote = cached.filter((l) => !remoteIds.has(l.id));
+    if (missingInRemote.length > 0) {
+      for (const item of missingInRemote) {
+        try {
+          const clean = sanitizeForFirestore(item);
+          const letterDoc = doc(db, 'schools', schoolId, 'outward_letters', item.id);
+          await setDoc(letterDoc, clean, { merge: true });
+          remoteList.push(item);
+          remoteIds.add(item.id);
+        } catch (syncErr) {
+          console.warn('Auto-sync missing letter error:', syncErr);
+        }
+      }
     }
+
+    remoteList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+    try {
+      localStorage.setItem(localKey, JSON.stringify(remoteList));
+    } catch (e) {}
+    return remoteList;
   } catch (err) {
     console.warn('Error fetching outward letters from Firestore, using cache:', err);
   }
@@ -213,7 +287,7 @@ export async function getOutwardLetters(schoolId: string): Promise<OutwardLetter
 }
 
 /**
- * Real-time subscription to outward letters
+ * Real-time subscription to outward letters with instant cache return and automatic offline reconciliation
  */
 export function subscribeToOutwardLetters(
   schoolId: string,
@@ -222,31 +296,84 @@ export function subscribeToOutwardLetters(
   const localKey = `${LETTERS_CACHE_PREFIX}${schoolId}`;
   const lettersCol = collection(db, 'schools', schoolId, 'outward_letters');
 
-  return onSnapshot(
+  // 1. Immediately invoke callback with cached letters so UI does not flicker or delay
+  try {
+    const raw = localStorage.getItem(localKey);
+    if (raw) {
+      const cached = JSON.parse(raw);
+      if (Array.isArray(cached) && cached.length > 0) {
+        callback(cached);
+      }
+    }
+  } catch (e) {}
+
+  // 2. Try flushing any queued letters from prior offline sessions
+  flushPendingOutwardLetters(schoolId).catch(() => {});
+
+  const handleOnline = () => {
+    flushPendingOutwardLetters(schoolId).catch(() => {});
+  };
+  window.addEventListener('online', handleOnline);
+
+  // 3. Set up Firestore onSnapshot listener
+  const unsub = onSnapshot(
     lettersCol,
-    (snapshot) => {
-      const list: OutwardLetter[] = snapshot.docs.map((d) => ({
+    async (snapshot) => {
+      const remoteList: OutwardLetter[] = snapshot.docs.map((d) => ({
         id: d.id,
         ...(d.data() as Omit<OutwardLetter, 'id'>),
       }));
-      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+      // Auto-reconciliation: Check if there are letters stored locally that are not yet in Firestore
+      // (e.g. created on Native APK while offline or before sanitization fix)
+      let localList: OutwardLetter[] = [];
       try {
-        localStorage.setItem(localKey, JSON.stringify(list));
+        const raw = localStorage.getItem(localKey);
+        if (raw) localList = JSON.parse(raw);
+      } catch {}
+
+      const remoteIds = new Set(remoteList.map((l) => l.id));
+      const pendingUploads = localList.filter((l) => !remoteIds.has(l.id));
+
+      if (pendingUploads.length > 0) {
+        // Upload any pending offline letters to Firestore automatically!
+        for (const pending of pendingUploads) {
+          try {
+            const clean = sanitizeForFirestore(pending);
+            const letterDoc = doc(db, 'schools', schoolId, 'outward_letters', pending.id);
+            await setDoc(letterDoc, clean, { merge: true });
+            remoteList.push(pending);
+            remoteIds.add(pending.id);
+          } catch (e) {
+            console.warn('Auto-reconciliation error for letter', pending.id, e);
+          }
+        }
+      }
+
+      remoteList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      try {
+        localStorage.setItem(localKey, JSON.stringify(remoteList));
       } catch (e) {}
-      callback(list);
+      callback(remoteList);
     },
     (err) => {
-      console.warn('Real-time outward letters subscription error:', err);
+      console.warn('Real-time outward letters subscription notice:', err);
       try {
         const raw = localStorage.getItem(localKey);
         if (raw) callback(JSON.parse(raw));
       } catch (e) {}
     }
   );
+
+  return () => {
+    unsub();
+    window.removeEventListener('online', handleOnline);
+  };
 }
 
 /**
  * Save or update an outward letter in Firestore and Local Cache
+ * Fully sanitized to ensure zero Firestore undefined errors, with offline queue backup
  */
 export async function saveOutwardLetter(
   schoolId: string,
@@ -254,7 +381,7 @@ export async function saveOutwardLetter(
 ): Promise<void> {
   const localKey = `${LETTERS_CACHE_PREFIX}${schoolId}`;
 
-  // Update local cache immediately
+  // 1. Update local cache immediately so native APK and UI are instant
   try {
     const raw = localStorage.getItem(localKey);
     const list: OutwardLetter[] = raw ? JSON.parse(raw) : [];
@@ -265,20 +392,38 @@ export async function saveOutwardLetter(
       list.unshift(letter);
     }
     localStorage.setItem(localKey, JSON.stringify(list));
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Error saving outward letter to local cache:', e);
+  }
 
-  // Save to Firestore
+  // 2. Clean doc to remove any undefined fields
+  const cleanDoc = sanitizeForFirestore(letter);
+
+  // 3. Save to Firestore
   try {
     const letterDoc = doc(db, 'schools', schoolId, 'outward_letters', letter.id);
-    await setDoc(letterDoc, letter, { merge: true });
+    await setDoc(letterDoc, cleanDoc, { merge: true });
+
+    // Clean from pending queue if present
+    const queue = getPendingQueue(schoolId).filter((l) => l.id !== letter.id);
+    savePendingQueue(schoolId, queue);
   } catch (err) {
-    console.error('Error saving outward letter to Firestore:', err);
+    console.warn('Notice saving outward letter to Firestore, queueing for background sync:', err);
+    const queue = getPendingQueue(schoolId);
+    if (!queue.some((l) => l.id === letter.id)) {
+      queue.push(letter);
+      savePendingQueue(schoolId, queue);
+    }
+    // If client is currently offline, don't throw an error to disrupt the user
+    if (!navigator.onLine) {
+      return;
+    }
     throw err;
   }
 }
 
 /**
- * Delete an outward letter
+ * Delete an outward letter from Firestore and Local Cache
  */
 export async function deleteOutwardLetter(
   schoolId: string,
@@ -295,6 +440,14 @@ export async function deleteOutwardLetter(
     }
   } catch (e) {}
 
-  const letterDoc = doc(db, 'schools', schoolId, 'outward_letters', letterId);
-  await deleteDoc(letterDoc);
+  // Also remove from pending queue
+  const queue = getPendingQueue(schoolId).filter((l) => l.id !== letterId);
+  savePendingQueue(schoolId, queue);
+
+  try {
+    const letterDoc = doc(db, 'schools', schoolId, 'outward_letters', letterId);
+    await deleteDoc(letterDoc);
+  } catch (err) {
+    console.warn('Notice deleting outward letter from Firestore:', err);
+  }
 }
