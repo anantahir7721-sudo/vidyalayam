@@ -624,27 +624,114 @@ export async function getMarks(schoolId: string): Promise<MarkRecord[]> {
  * Real-time subscription to school marks collection.
  * Enables live simultaneous multi-teacher and multi-device updates.
  */
+/**
+ * Helper to deep strip undefined values so Firestore never throws
+ * "Unsupported field value: undefined" on nested or flat objects
+ */
+function sanitizeForFirestore<T>(obj: T): any {
+  if (obj === undefined) return null;
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForFirestore).filter((v) => v !== undefined);
+  }
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, any>)) {
+    if (value !== undefined) {
+      cleaned[key] = sanitizeForFirestore(value);
+    }
+  }
+  return cleaned;
+}
+
+const stripUndefinedValues = sanitizeForFirestore;
+
+/**
+ * Flush any pending offline marks batches to Firestore
+ */
+export async function flushPendingMarksQueue(schoolId: string): Promise<void> {
+  if (typeof window === 'undefined' || !navigator.onLine) return;
+  try {
+    const queueRaw = localStorage.getItem(`vidyalayam_pending_batch_marks_${schoolId}`);
+    if (!queueRaw) return;
+    const pendingRecords: any[] = JSON.parse(queueRaw);
+    if (!Array.isArray(pendingRecords) || pendingRecords.length === 0) {
+      localStorage.removeItem(`vidyalayam_pending_batch_marks_${schoolId}`);
+      return;
+    }
+
+    console.info(`[Sync] Flushing ${pendingRecords.length} pending offline marks to Cloud Firestore...`);
+    await saveBatchExamMarks(schoolId, pendingRecords, false);
+    localStorage.removeItem(`vidyalayam_pending_batch_marks_${schoolId}`);
+    console.info(`[Sync] Successfully flushed pending offline marks!`);
+  } catch (err) {
+    console.warn('[Sync] Offline marks flush retry scheduled:', err);
+  }
+}
+
+/**
+ * Real-time subscription to school marks collection.
+ * Delivers local cache instantaneously (0ms) and updates in real time across Web, Preview, and Native APK.
+ */
 export function subscribeToMarks(
   schoolId: string,
   callback: (marks: MarkRecord[]) => void
 ): () => void {
+  // 1. Immediately provide cached marks from localStorage for instant 0ms rendering
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(`vidyalayam_school_marks_${schoolId}`) ||
+                     localStorage.getItem('vidyalayam_school_marks_last');
+      if (cached) {
+        const parsed: MarkRecord[] = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          callback(parsed);
+        }
+      }
+    } catch (e) {}
+
+    // Flush any pending marks if online
+    if (navigator.onLine) {
+      flushPendingMarksQueue(schoolId).catch(() => {});
+    }
+  }
+
   const marksCol = collection(db, 'schools', schoolId, 'marks');
   return onSnapshot(
     marksCol,
+    { includeMetadataChanges: true },
     (snapshot) => {
       const list = snapshot.docs.map((docSnap) => ({
         id: docSnap.id,
         ...(docSnap.data() as Omit<MarkRecord, 'id'>),
       }));
+
       list.sort((a, b) => {
         const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
         const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
         return timeB - timeA;
       });
+
+      // Update local storage offline cache
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`vidyalayam_school_marks_${schoolId}`, JSON.stringify(list));
+          localStorage.setItem('vidyalayam_school_marks_last', JSON.stringify(list));
+        } catch (e) {}
+      }
+
       callback(list);
     },
     (error) => {
       console.error('Realtime marks subscription error:', error);
+      // Fallback: load from local cache if subscription encountered a network hiccup
+      if (typeof window !== 'undefined') {
+        try {
+          const cached = localStorage.getItem(`vidyalayam_school_marks_${schoolId}`);
+          if (cached) {
+            callback(JSON.parse(cached));
+          }
+        } catch (e) {}
+      }
     }
   );
 }
@@ -659,7 +746,7 @@ export async function addMarkRecord(
   const marksCol = collection(db, 'schools', schoolId, 'marks');
   const now = new Date().toISOString();
   const newMark: Omit<MarkRecord, 'id'> = {
-    ...data,
+    ...sanitizeForFirestore(data),
     schoolId,
     createdAt: now,
     updatedAt: now,
@@ -673,22 +760,8 @@ export async function addMarkRecord(
 }
 
 /**
- * Helper to strip undefined values so Firestore never throws
- * "Unsupported field value: undefined"
- */
-function stripUndefinedValues<T extends Record<string, any>>(obj: T): Record<string, any> {
-  const cleaned: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      cleaned[key] = value;
-    }
-  }
-  return cleaned;
-}
-
-/**
  * Save or update Ekam Kasoti - 1 marks for multiple students in a batch
- * Stored under /schools/{schoolId}/marks/{studentId_subjectId}
+ * Stored under /schools/{schoolId}/marks/{studentId_periodic_test_1_subjectId}
  */
 export async function saveBatchEkamKasotiMarks(
   schoolId: string,
@@ -710,30 +783,20 @@ export async function saveBatchEkamKasotiMarks(
     overallGrade?: string;
   }>
 ): Promise<void> {
-  const batch = writeBatch(db);
-  const now = new Date().toISOString();
+  // Convert into standard batch exam mark records with deterministic docIds
+  const examRecords = records.map((r) => ({
+    ...r,
+    examId: 'periodic_test_1',
+  }));
 
-  for (const record of records) {
-    const docId = `${record.studentId}_${record.subjectId}`;
-    const docRef = doc(db, 'schools', schoolId, 'marks', docId);
-    
-    // Clean all undefined values so Firestore writeBatch.set never throws
-    const cleanDocData = stripUndefinedValues({
-      ...record,
-      schoolId,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    batch.set(docRef, cleanDocData, { merge: true });
-  }
-
-  await batch.commit();
+  await saveBatchExamMarks(schoolId, examRecords);
 }
 
 /**
  * Save or update batch exam marks for any standard, exam type, and subject.
  * Stored under /schools/{schoolId}/marks/{studentId_examId_subjectId}
+ * Handles large sets by chunking into batches of 400 (well within Firestore's 500 limit).
+ * Automatically updates offline cache and queues pending writes if network is unavailable.
  */
 export async function saveBatchExamMarks(
   schoolId: string,
@@ -744,7 +807,7 @@ export async function saveBatchExamMarks(
     rollNumber?: string;
     standard: string;
     division?: string;
-    examId: string; // 'pratham' | 'dwitiya' | 'varshik' | 'prelim' | 'internal'
+    examId: string; // 'first_exam' | 'second_exam' | 'annual_exam' | 'periodic_test_1' etc.
     examType: string; // Display name
     academicYear: string;
     subjectId: string;
@@ -754,32 +817,94 @@ export async function saveBatchExamMarks(
     percentage?: number;
     overallGrade?: string; // e.g. 'A1', 'B2', or 'AB'
     questionMarks?: Record<string, number>;
-  }>
+  }>,
+  queueIfFailed = true
 ): Promise<void> {
-  const batch = writeBatch(db);
+  if (!records || records.length === 0) return;
+
   const now = new Date().toISOString();
 
-  for (const record of records) {
-    const cleanExamId = (record.examId || 'exam').toLowerCase().trim();
-    const docId = `${record.studentId}_${cleanExamId}_${record.subjectId}`;
-    const docRef = doc(db, 'schools', schoolId, 'marks', docId);
+  // 1. Optimistically update local marks cache immediately so UI is instantaneous across tabs
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(`vidyalayam_school_marks_${schoolId}`);
+      const existingList: MarkRecord[] = cached ? JSON.parse(cached) : [];
+      const updatedMap = new Map<string, MarkRecord>();
+      existingList.forEach((m) => updatedMap.set(m.id, m));
 
-    const cleanDocData = stripUndefinedValues({
-      ...record,
-      schoolId,
-      createdAt: now,
-      updatedAt: now,
-    });
+      records.forEach((record) => {
+        const cleanExamId = (record.examId || 'exam').toLowerCase().trim();
+        const docId = `${record.studentId}_${cleanExamId}_${record.subjectId}`;
+        updatedMap.set(docId, {
+          id: docId,
+          ...record,
+          schoolId,
+          createdAt: updatedMap.get(docId)?.createdAt || now,
+          updatedAt: now,
+        });
+      });
 
-    batch.set(docRef, cleanDocData, { merge: true });
+      const mergedList = Array.from(updatedMap.values());
+      localStorage.setItem(`vidyalayam_school_marks_${schoolId}`, JSON.stringify(mergedList));
+      localStorage.setItem('vidyalayam_school_marks_last', JSON.stringify(mergedList));
+    } catch (e) {}
   }
 
-  await batch.commit();
+  // 2. If offline, save directly to pending queue and return without throwing
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    if (queueIfFailed && typeof window !== 'undefined') {
+      try {
+        const existingQueueRaw = localStorage.getItem(`vidyalayam_pending_batch_marks_${schoolId}`);
+        const existingQueue = existingQueueRaw ? JSON.parse(existingQueueRaw) : [];
+        const combinedQueue = [...existingQueue, ...records];
+        localStorage.setItem(`vidyalayam_pending_batch_marks_${schoolId}`, JSON.stringify(combinedQueue));
+      } catch (e) {}
+    }
+    return;
+  }
+
+  // 3. Chunk in batches of 400 for Firestore commits
+  const chunkSize = 400;
+  for (let i = 0; i < records.length; i += chunkSize) {
+    const chunk = records.slice(i, i + chunkSize);
+    const batch = writeBatch(db);
+
+    for (const record of chunk) {
+      const cleanExamId = (record.examId || 'exam').toLowerCase().trim();
+      const docId = `${record.studentId}_${cleanExamId}_${record.subjectId}`;
+      const docRef = doc(db, 'schools', schoolId, 'marks', docId);
+
+      const cleanDocData = sanitizeForFirestore({
+        ...record,
+        examId: cleanExamId,
+        schoolId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      batch.set(docRef, cleanDocData, { merge: true });
+    }
+
+    try {
+      await batch.commit();
+    } catch (commitErr) {
+      console.warn('Batch marks commit error, queuing for background sync:', commitErr);
+      if (queueIfFailed && typeof window !== 'undefined') {
+        try {
+          const existingQueueRaw = localStorage.getItem(`vidyalayam_pending_batch_marks_${schoolId}`);
+          const existingQueue = existingQueueRaw ? JSON.parse(existingQueueRaw) : [];
+          const combinedQueue = [...existingQueue, ...chunk];
+          localStorage.setItem(`vidyalayam_pending_batch_marks_${schoolId}`, JSON.stringify(combinedQueue));
+        } catch (e) {}
+      }
+      throw commitErr;
+    }
+  }
 }
 
 /**
  * Save or update Ekam Kasoti marks for a single student automatically as typed.
- * Stored under /schools/{schoolId}/marks/{studentId_subjectId}
+ * Stored under /schools/{schoolId}/marks/{studentId_periodic_test_1_subjectId}
  */
 export async function saveSingleStudentMark(
   schoolId: string,
@@ -801,16 +926,39 @@ export async function saveSingleStudentMark(
     overallGrade?: string;
   }
 ): Promise<void> {
-  const docId = `${record.studentId}_${record.subjectId}`;
+  const cleanExamId = 'periodic_test_1';
+  const docId = `${record.studentId}_${cleanExamId}_${record.subjectId}`;
   const docRef = doc(db, 'schools', schoolId, 'marks', docId);
   const now = new Date().toISOString();
 
-  const cleanDocData = stripUndefinedValues({
+  const cleanDocData = sanitizeForFirestore({
     ...record,
+    examId: cleanExamId,
     schoolId,
     createdAt: now,
     updatedAt: now,
   });
+
+  // Optimistic local cache update
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(`vidyalayam_school_marks_${schoolId}`);
+      const existingList: MarkRecord[] = cached ? JSON.parse(cached) : [];
+      const updatedMap = new Map<string, MarkRecord>();
+      existingList.forEach((m) => updatedMap.set(m.id, m));
+      updatedMap.set(docId, {
+        id: docId,
+        ...record,
+        examId: cleanExamId,
+        schoolId,
+        createdAt: updatedMap.get(docId)?.createdAt || now,
+        updatedAt: now,
+      });
+      const mergedList = Array.from(updatedMap.values());
+      localStorage.setItem(`vidyalayam_school_marks_${schoolId}`, JSON.stringify(mergedList));
+      localStorage.setItem('vidyalayam_school_marks_last', JSON.stringify(mergedList));
+    } catch (e) {}
+  }
 
   await setDoc(docRef, cleanDocData, { merge: true });
 }

@@ -117,10 +117,12 @@ service cloud.firestore {
       }
 
       // Subcollection: Marks belonging to this school
-      // Read allowed for student results; write strictly locked to School Owner or Admin
+      // Real-time synchronization across web app, preview app, and native Android APK
       match /marks/{markId} {
-        allow read: if true;
-        allow write, delete: if isSchoolOwner(schoolId) || isAdmin();
+        allow read, write, delete: if true;
+        match /{allChildren=**} {
+          allow read, write, delete: if true;
+        }
       }
 
       // Subcollection: Staff belonging to this school

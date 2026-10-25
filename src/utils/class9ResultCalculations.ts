@@ -310,16 +310,37 @@ export interface StudentResultClass9 {
 
 /**
  * Extracts numeric value or null from MarkRecord
+ * Robustly matches by subjectId, subjectName, examId, examType, and document ID
  */
 function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches: (examType: string) => boolean): number | null {
+  const targetSub = subjectId.toLowerCase().trim();
   const found = records.find((m) => {
-    const sId = (m.subjectId || '').toLowerCase();
-    const subMatch = sId === subjectId.toLowerCase() || sId.includes(subjectId.toLowerCase());
-    return subMatch && examMatches((m.examType || '').toLowerCase());
+    const sId = (m.subjectId || '').toLowerCase().trim();
+    const sName = (m.subjectName || '').toLowerCase().trim();
+    const subMatch =
+      sId === targetSub ||
+      sId.includes(targetSub) ||
+      targetSub.includes(sId) ||
+      sName.includes(targetSub) ||
+      (targetSub === 'gujarati' && (sId.includes('guj') || sName.includes('ગુજરાતી'))) ||
+      (targetSub === 'maths' && (sId.includes('math') || sName.includes('ગણિત'))) ||
+      (targetSub === 'science' && (sId.includes('sci') || sName.includes('વિજ્ઞાન'))) ||
+      (targetSub === 'social_science' && (sId.includes('soc') || sName.includes('સામાજિક'))) ||
+      (targetSub === 'english' && (sId.includes('eng') || sName.includes('અંગ્રેજી'))) ||
+      (targetSub === 'hindi' && (sId.includes('hin') || sName.includes('હિન્દી'))) ||
+      (targetSub === 'sanskrit' && (sId.includes('san') || sName.includes('સંસ્કૃત'))) ||
+      (targetSub === 'computer_studies' && (sId.includes('comp') || sName.includes('કમ્પ્યુટર'))) ||
+      (targetSub === 'pe_yoga' && (sId.includes('pe') || sId.includes('yoga') || sName.includes('શારીરિક') || sName.includes('યોગ'))) ||
+      (targetSub === 'art_drawing' && (sId.includes('art') || sId.includes('draw') || sName.includes('ચિત્ર')));
+
+    if (!subMatch) return false;
+
+    const fullExamString = `${(m as any).examId || ''} ${m.examType || ''} ${m.id || ''}`.toLowerCase();
+    return examMatches(fullExamString);
   });
   if (!found) return null;
   if (found.overallGrade === 'AB') return 0;
-  return found.totalObtained !== undefined ? found.totalObtained : null;
+  return found.totalObtained !== undefined && found.totalObtained !== null ? found.totalObtained : null;
 }
 
 /**

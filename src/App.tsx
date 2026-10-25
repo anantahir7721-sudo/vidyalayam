@@ -53,6 +53,7 @@ import {
   subscribeToMarks,
   getStudents,
   getMarks,
+  flushPendingMarksQueue,
 } from './services/firestoreService';
 import { subscribeToStaff } from './services/staffService';
 import {
@@ -212,7 +213,15 @@ export default function App() {
 
   // Active School Data
   const [students, setStudents] = useState<Student[]>([]);
-  const [marks, setMarks] = useState<MarkRecord[]>([]);
+  const [marks, setMarks] = useState<MarkRecord[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem('vidyalayam_school_marks_last');
+        if (cached) return JSON.parse(cached);
+      }
+    } catch {}
+    return [];
+  });
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [resultsViewMode, setResultsViewMode] = useState<'class9' | 'general'>('class9');
@@ -249,6 +258,9 @@ export default function App() {
     const handleOnline = () => {
       setIsOnline(true);
       setShowOnlineRestored(true);
+      if (school?.id) {
+        flushPendingMarksQueue(school.id).catch(() => {});
+      }
       const timer = setTimeout(() => setShowOnlineRestored(false), 3500);
       return () => clearTimeout(timer);
     };
@@ -264,7 +276,7 @@ export default function App() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [school?.id]);
 
   // Automated 06:00 AM, 02:00 PM, 06:00 PM Scheduled Notifications Engine
   useEffect(() => {

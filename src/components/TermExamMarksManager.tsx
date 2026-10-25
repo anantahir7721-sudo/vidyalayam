@@ -112,16 +112,32 @@ export const TermExamMarksManager: React.FC<TermExamMarksManagerProps> = ({
         if (normMStd !== normCurrStd) return false;
 
         const exLower = (m.examType || '').toLowerCase();
+        const mExId = ((m as any).examId || '').toLowerCase();
+        const mDocId = (m.id || '').toLowerCase();
+
         const matchesExam =
-          (m as any).examId === currentExam.id ||
-          exLower.includes(currentExam.id) ||
-          exLower.includes(currentExam.nameGu.toLowerCase());
+          mExId === currentExam.id.toLowerCase() ||
+          (currentExam.id === 'pratham' && (mExId === 'first_exam' || exLower.includes('first') || exLower.includes('પ્રથમ') || mDocId.includes('first_exam'))) ||
+          (currentExam.id === 'dwitiya' && (mExId === 'second_exam' || exLower.includes('second') || exLower.includes('દ્વિતીય') || mDocId.includes('second_exam'))) ||
+          (currentExam.id === 'varshik' && (mExId === 'annual_exam' || exLower.includes('annual') || exLower.includes('વાર્ષિક') || mDocId.includes('annual_exam'))) ||
+          exLower.includes(currentExam.id.toLowerCase()) ||
+          exLower.includes(currentExam.nameGu.toLowerCase()) ||
+          mDocId.includes(`_${currentExam.id.toLowerCase()}_`);
 
         const subLower = (m.subjectId || m.subjectName || '').toLowerCase();
+        const currSubId = (currentSubject.id || '').toLowerCase();
+        const currSubName = (currentSubject.nameGu || '').toLowerCase();
         const matchesSubject =
-          (m.subjectId && m.subjectId.toLowerCase() === currentSubject.id.toLowerCase()) ||
-          subLower.includes(currentSubject.id.toLowerCase()) ||
-          subLower.includes(currentSubject.nameGu.toLowerCase());
+          (m.subjectId && m.subjectId.toLowerCase() === currSubId) ||
+          subLower.includes(currSubId) ||
+          subLower.includes(currSubName) ||
+          (currSubId.includes('gujarati') && subLower.includes('gujarati')) ||
+          (currSubId.includes('math') && subLower.includes('math')) ||
+          (currSubId.includes('science') && subLower.includes('science')) ||
+          (currSubId.includes('social') && (subLower.includes('social') || subLower.includes('સામાજિક'))) ||
+          (currSubId.includes('english') && subLower.includes('english')) ||
+          (currSubId.includes('hindi') && subLower.includes('hindi')) ||
+          (currSubId.includes('sanskrit') && subLower.includes('sanskrit'));
 
         return matchesExam && matchesSubject;
       });
