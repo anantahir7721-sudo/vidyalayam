@@ -311,7 +311,7 @@ export function subscribeToOutwardLetters(
     const raw = localStorage.getItem(localKey);
     if (raw) {
       const cached = JSON.parse(raw);
-      if (Array.isArray(cached) && cached.length > 0) {
+      if (Array.isArray(cached)) {
         callback(cached);
       }
     }
@@ -370,8 +370,14 @@ export function subscribeToOutwardLetters(
       console.warn('Real-time outward letters subscription notice:', err);
       try {
         const raw = localStorage.getItem(localKey);
-        if (raw) callback(JSON.parse(raw));
-      } catch (e) {}
+        if (raw) {
+          callback(JSON.parse(raw));
+        } else {
+          callback([]);
+        }
+      } catch (e) {
+        callback([]);
+      }
     }
   );
 

@@ -22,6 +22,7 @@ import { OnlineExamManager } from './components/OnlineExamManager';
 import { ExamFileTab } from './components/ExamFileTab';
 import { AdmissionManager } from './components/AdmissionManager';
 import { OutwardLetterManager } from './components/OutwardLetterManager';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { SchoolNoticeBoardTab } from './components/SchoolNoticeBoardTab';
 import { StudentPortal } from './components/StudentPortal';
 import { VidyalayamLoadingScreen } from './components/VidyalayamLoadingScreen';
@@ -861,7 +862,7 @@ export default function App() {
         {!isOnline && (
           <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 text-xs font-semibold text-amber-800 dark:text-amber-200 flex items-center justify-center gap-2 animate-in fade-in duration-200">
             <WifiOff className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>ઇન્ટરનેટ કનેક્શન મળતું નથી (ઑફલાઇન મોડ) • આપનું કામ સાચવેલું છે, નેટવર્ક આવતાં આપોઆપ સિંક થશે.</span>
+            <span>📡 લાઇવ ક્લાઉડ સિંક માટે ઇન્ટરનેટ કનેક્શન જરૂરી છે (હાલ ઑફલાઇન છે).</span>
           </div>
         )}
         {showOnlineRestored && isOnline && (
@@ -878,6 +879,8 @@ export default function App() {
               <span>Syncing records with Cloud Firestore...</span>
             </div>
           )}
+
+          <ErrorBoundary>
 
           {activeTab === 'overview' && (
             <DashboardOverview
@@ -1082,6 +1085,7 @@ export default function App() {
               onBack={navigateBack}
             />
           )}
+          </ErrorBoundary>
         </main>
 
         <footer className="bg-white/90 dark:bg-[#0e141b]/90 border-t border-slate-200 dark:border-white/10 pt-5 pb-24 lg:pb-6 text-center text-xs text-slate-600 dark:text-slate-400 space-y-1">
@@ -1095,7 +1099,7 @@ export default function App() {
             General School Management System • Gujarat Education Department Reference Standard
           </div>
         </footer>
-        <FirstLaunchPermissionModal schoolName={school.schoolName} />
+        <FirstLaunchPermissionModal schoolName={school?.schoolName || ''} />
         <TTSFloatingBar />
       </div>
     );

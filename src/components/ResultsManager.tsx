@@ -28,6 +28,7 @@ import {
   RefreshCw,
   Calculator,
   Info,
+  Trash2,
 } from 'lucide-react';
 import {
   calculateClassResults,
@@ -42,7 +43,7 @@ import {
   normalizeStandardAndStream,
   calculateGsebGrade,
 } from '../utils/resultFormulaUtils';
-import { saveBatchExamMarks } from '../services/firestoreService';
+import { saveBatchExamMarks, bulkDeleteMarks, deleteMarksForStandard } from '../services/firestoreService';
 import { printHtmlDocument } from '../utils/printAndPdfUtils';
 import { SendExamResultModal } from './SendExamResultModal';
 
@@ -289,7 +290,10 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
     });
   };
 
-  // Batch Save all marks to Firestore
+  // State for clearing entire subject marks
+  const [isClearingSubjectMarks, setIsClearingSubjectMarks] = useState(false);
+
+  // Batch Save all marks to Firestore (with instant deletion of cleared marks)
   const handleSaveMarks = async () => {
     if (!activeSubject) return;
     setIsSavingMarks(true);
@@ -297,13 +301,22 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
 
     try {
       const recordsToSave: any[] = [];
+      const idsToDelete: string[] = [];
       const academicYear = '૨૦૨૬–૨૭';
 
       Object.values(marksGrid).forEach((row) => {
-        const { student, pratham, dwitiya, ekam1, ekam2, practical, internal, varshik } = row;
+        const { student, pratham, dwitiya, ekam1, ekam2, practical, internal, varshik, isDirty } = row;
+        if (!isDirty) return;
 
-        const addRecord = (examId: string, examType: string, val: string, maxM: number) => {
-          if (!val || val.trim() === '') return;
+        const processRecord = (examId: string, examType: string, val: string, maxM: number) => {
+          const cleanEx = examId.toLowerCase().trim();
+          const docId = `${student.id}_${cleanEx}_${activeSubject.id}`;
+
+          if (!val || val.trim() === '') {
+            idsToDelete.push(docId);
+            return;
+          }
+
           const isAb = val.trim().toUpperCase() === 'AB';
           const obtained = isAb ? 0 : parseFloat(val.trim()) || 0;
 
@@ -326,24 +339,32 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           });
         };
 
-        addRecord('pratham', 'પ્રથમ પરીક્ષા', pratham, 50);
-        addRecord(
+        processRecord('pratham', 'પ્રથમ પરીક્ષા', pratham, 50);
+        processRecord(
           currentStdInfo.baseStd === '10' || currentStdInfo.baseStd === '12' ? 'prelim' : 'dwitiya',
           currentStdInfo.baseStd === '10' || currentStdInfo.baseStd === '12' ? 'પ્રિલિમિનરી પરીક્ષા' : 'દ્વિતીય પરીક્ષા',
           dwitiya,
           currentStdInfo.baseStd === '12' ? 100 : currentStdInfo.baseStd === '10' ? 80 : 50
         );
-        addRecord('ekam_1', 'એકમ કસોટી - ૧', ekam1, 25);
-        addRecord('ekam_2', 'એકમ કસોટી - ૨', ekam2, 25);
+        processRecord('ekam_1', 'એકમ કસોટી - ૧', ekam1, 25);
+        processRecord('ekam_2', 'એકમ કસોટી - ૨', ekam2, 25);
         if (activeSubject.hasPractical) {
-          addRecord('practical', 'પ્રાયોગિક પરીક્ષા', practical, 50);
+          processRecord('practical', 'પ્રાયોગિક પરીક્ષા', practical, 50);
         }
-        addRecord('internal', 'આંતરિક મૂલ્યાંકન', internal, 20);
-        addRecord('varshik', 'વાર્ષિક પરીક્ષા', varshik, 80);
+        processRecord('internal', 'આંતરિક મૂલ્યાંકન', internal, 20);
+        processRecord('varshik', 'વાર્ષિક પરીક્ષા', varshik, 80);
       });
 
+      const promises: Promise<any>[] = [];
       if (recordsToSave.length > 0) {
-        await saveBatchExamMarks(school.id, recordsToSave);
+        promises.push(saveBatchExamMarks(school.id, recordsToSave));
+      }
+      if (idsToDelete.length > 0) {
+        promises.push(bulkDeleteMarks(school.id, Array.from(new Set(idsToDelete))));
+      }
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
       }
 
       // Mark clean
@@ -355,7 +376,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
         return clean;
       });
 
-      setSaveSuccessMsg(`સફળતાપૂર્વક ${recordsToSave.length} ગુણ રેકોર્ડ્સ ડેટાબેઝમાં સાચવી લેવામાં આવ્યા છે!`);
+      setSaveSuccessMsg(`સફળતાપૂર્વક ${recordsToSave.length} ગુણ રેકોર્ડ સાચવી લીધા અને ક્લાઉડમાંથી ડિલીટ કરેલા ગુણ સાફ કર્યા!`);
       if (onRefresh) {
         onRefresh();
       }
@@ -364,6 +385,60 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
       alert('ગુણ સેવ કરવામાં ભૂલ થઈ. કૃપા કરીને પુનઃ પ્રયત્ન કરો.');
     } finally {
       setIsSavingMarks(false);
+    }
+  };
+
+  // Handler to clear all marks for the active subject from Cloud Firestore
+  const handleClearSubjectMarks = async () => {
+    if (!activeSubject) return;
+    const ok = window.confirm(
+      `શું તમે ખરેખર ધોરણ ${selectedStandard} ના "${activeSubject.nameGu}" વિષયના તમામ ગુણ ક્લાઉડમાંથી ડિલીટ કરવા માંગો છો?\nઆનાથી બંને ઉપકરણો (વેબ અને મોબાઇલ) પરથી આ વિષયના ગુણ તરત જ સાફ થઈ જશે.`
+    );
+    if (!ok) return;
+
+    setIsClearingSubjectMarks(true);
+    try {
+      const idsToDelete: string[] = [];
+      const exams = ['pratham', 'dwitiya', 'prelim', 'ekam_1', 'ekam_2', 'practical', 'internal', 'varshik'];
+
+      standardStudents.forEach((student) => {
+        exams.forEach((ex) => {
+          idsToDelete.push(`${student.id}_${ex}_${activeSubject.id}`);
+        });
+      });
+
+      await bulkDeleteMarks(school.id, Array.from(new Set(idsToDelete)));
+
+      setMarksGrid((prev) => {
+        const cleared: Record<string, StudentMarksRowState> = {};
+        Object.entries(prev).forEach(([k, v]) => {
+          cleared[k] = {
+            ...v,
+            pratham: '',
+            dwitiya: '',
+            ekam1: '',
+            ekam2: '',
+            practical: '',
+            internal: '',
+            varshik: '',
+            total100: 0,
+            grade: '-',
+            status: 'FAIL',
+            isDirty: false,
+          };
+        });
+        return cleared;
+      });
+
+      setSaveSuccessMsg(`"${activeSubject.nameGu}" વિષયના તમામ ગુણ ક્લાઉડમાંથી સફળતાપૂર્વક સાફ કરવામાં આવ્યા છે.`);
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('Error clearing subject marks:', err);
+      alert('ગુણ સાફ કરવામાં ભૂલ થઈ.');
+    } finally {
+      setIsClearingSubjectMarks(false);
     }
   };
 
@@ -1068,6 +1143,17 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                     <span>બધા ગુણ સેવ કરો 💾</span>
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClearSubjectMarks}
+                disabled={isClearingSubjectMarks}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                title="આ વિષયના તમામ ગુણ ક્લાઉડમાંથી ડિલીટ (સાફ) કરો"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                <span>{isClearingSubjectMarks ? 'સાફ થઈ રહ્યું છે...' : 'ગુણ સાફ કરો'}</span>
               </button>
             </>
           )}

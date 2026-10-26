@@ -34,6 +34,7 @@ import {
   LayoutGrid,
   Smartphone,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import {
   Class9ExamType,
@@ -55,7 +56,12 @@ import {
   getExamsForStandard as getMultiExams,
   computeMultiStandardAllResults,
 } from '../utils/multiStandardResultCalculations';
-import { saveBatchExamMarks } from '../services/firestoreService';
+import {
+  saveBatchExamMarks,
+  bulkDeleteMarks,
+  deleteMarksForStandard,
+  deleteAllSchoolMarks,
+} from '../services/firestoreService';
 import { printHtmlDocument } from '../utils/printAndPdfUtils';
 
 export interface Class9ResultManagerProps {
@@ -418,24 +424,13 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     []
   );
 
-  // Populate & Smoothly Reconcile Grid Inputs with Cloud-First Offline Caching
+  // Populate & Smoothly Reconcile Grid Inputs with Cloud-First Online Sync
   useEffect(() => {
     const currentInitKey = `${school?.id || 'default'}_${selectedStandard}_${selectedSection}`;
     const isFirstInit = lastInitKeyRef.current !== currentInitKey;
 
     if (isFirstInit) {
       lastInitKeyRef.current = currentInitKey;
-      let cachedInputs: Record<string, string> = {};
-
-      // 1. Read local offline cache from previous session
-      try {
-        const cached = localStorage.getItem(`vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`);
-        if (cached) {
-          cachedInputs = JSON.parse(cached);
-        }
-      } catch (e) {}
-
-      let hasUnsyncedOfflineMarks = false;
       const initialInputs: Record<string, string> = {};
 
       filteredStudents.forEach((student) => {
@@ -450,14 +445,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
             }
 
             const cloudVal = getExistingMarkVal(studentMarks, subj, targetExamId, examKeywords);
-            if (cloudVal !== null) {
-              initialInputs[key] = cloudVal;
-            } else if (cachedInputs[key] !== undefined && cachedInputs[key] !== '') {
-              initialInputs[key] = cachedInputs[key];
-              hasUnsyncedOfflineMarks = true;
-            } else {
-              initialInputs[key] = '';
-            }
+            initialInputs[key] = cloudVal !== null ? cloudVal : '';
           };
 
           // Main Exams
@@ -484,20 +472,9 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
       gridInputsRef.current = initialInputs;
       setGridInputs(initialInputs);
-
-      try {
-        localStorage.setItem(
-          `vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`,
-          JSON.stringify(initialInputs)
-        );
-      } catch (e) {}
-
-      if (hasUnsyncedOfflineMarks && navigator.onLine) {
-        triggerDebouncedMarksSync();
-      }
     } else {
-      // Incremental Reconciliation: ONLY update non-dirty cells from incoming Firestore marks!
-      // This GUARANTEES that in-flight typing in any cell is never overwritten!
+      // Incremental Reconciliation: Update non-dirty cells from incoming Cloud Firestore marks!
+      // Guarantees deleted marks are cleared and newly entered marks from other devices appear live.
       setGridInputs((prev) => {
         const next = { ...prev };
         let changed = false;
@@ -511,8 +488,9 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               if (dirtyKeysRef.current.has(key)) return;
 
               const cloudVal = getExistingMarkVal(studentMarks, subj, targetExamId, examKeywords);
-              if (cloudVal !== null && cloudVal !== next[key]) {
-                next[key] = cloudVal;
+              const expectedVal = cloudVal !== null ? cloudVal : '';
+              if (next[key] !== expectedVal) {
+                next[key] = expectedVal;
                 changed = true;
               }
             };
@@ -536,12 +514,6 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
         if (changed) {
           gridInputsRef.current = next;
-          try {
-            localStorage.setItem(
-              `vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`,
-              JSON.stringify(next)
-            );
-          } catch (e) {}
           return next;
         }
         return prev;
@@ -551,13 +523,14 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     setSaveSuccessMsg(null);
   }, [filteredStudents, marks, selectedStandard, selectedSection, school?.id, getExistingMarkVal]);
 
-  // Helper to compile Firestore records from grid inputs
+  // Helper to compile Firestore records from grid inputs (and detect deleted records)
   const buildMarksRecordsToSave = (
     inputsMap: Record<string, string>,
     activeExamId: string,
     targetKeys?: Set<string>
-  ) => {
+  ): { recordsToSave: any[]; idsToDelete: string[] } => {
     const recordsToSave: any[] = [];
+    const idsToDelete: string[] = [];
     const examNameDisplay = marksEntryExams.find((e) => e.id === activeExamId)?.nameGu || activeExamId;
 
     if (activeExamId === 'prayogik_annual') {
@@ -574,7 +547,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
           const valTh = inputsMap[keyTh];
           const valPr = inputsMap[keyPr];
 
-          if (valTh !== undefined && valTh !== '') {
+          if (valTh !== undefined && valTh.trim() !== '') {
             const isAb = valTh.trim().toUpperCase() === 'AB';
             const num = isAb ? 0 : parseFloat(valTh) || 0;
             recordsToSave.push({
@@ -594,9 +567,11 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               percentage: Math.round((num / 40) * 100),
               overallGrade: isAb ? 'AB' : calculateGsebGrade(num, 40),
             });
+          } else if (valTh !== undefined && valTh.trim() === '') {
+            idsToDelete.push(`${student.id}_annual_theory_${subj.id}`);
           }
 
-          if (valPr !== undefined && valPr !== '') {
+          if (valPr !== undefined && valPr.trim() !== '') {
             const isAb = valPr.trim().toUpperCase() === 'AB';
             const num = isAb ? 0 : parseFloat(valPr) || 0;
             recordsToSave.push({
@@ -616,10 +591,14 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               percentage: Math.round((num / 40) * 100),
               overallGrade: isAb ? 'AB' : calculateGsebGrade(num, 40),
             });
+          } else if (valPr !== undefined && valPr.trim() === '') {
+            idsToDelete.push(`${student.id}_annual_practical_${subj.id}`);
           }
 
-          // Also save combined annual_exam out of 80
-          if ((valTh !== undefined && valTh !== '') || (valPr !== undefined && valPr !== '')) {
+          // Combined annual_exam out of 80
+          const hasTh = valTh !== undefined && valTh.trim() !== '';
+          const hasPr = valPr !== undefined && valPr.trim() !== '';
+          if (hasTh || hasPr) {
             const nTh = parseFloat(valTh || '0') || 0;
             const nPr = parseFloat(valPr || '0') || 0;
             const combined80 = Math.min(80, nTh + nPr);
@@ -640,6 +619,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               percentage: Math.round((combined80 / 80) * 100),
               overallGrade: calculateGsebGrade(combined80, 80),
             });
+          } else if ((!targetKeys || targetKeys.has(keyTh) || targetKeys.has(keyPr)) && !hasTh && !hasPr) {
+            idsToDelete.push(`${student.id}_annual_exam_${subj.id}`);
           }
         });
       });
@@ -657,7 +638,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
           const vPrac = inputsMap[kPrac];
           const vSkill = inputsMap[kSkill];
 
-          if (vPrac !== undefined && vPrac !== '') {
+          if (vPrac !== undefined && vPrac.trim() !== '') {
             const num = vPrac.trim().toUpperCase() === 'AB' ? 0 : parseFloat(vPrac) || 0;
             recordsToSave.push({
               studentId: student.id,
@@ -676,9 +657,11 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               percentage: Math.round((num / 10) * 100),
               overallGrade: vPrac.trim().toUpperCase() === 'AB' ? 'AB' : calculateGsebGrade(num, 10),
             });
+          } else if (vPrac !== undefined && vPrac.trim() === '') {
+            idsToDelete.push(`${student.id}_internal_practical_work_${activeSub.id}`);
           }
 
-          if (vSkill !== undefined && vSkill !== '') {
+          if (vSkill !== undefined && vSkill.trim() !== '') {
             const num = vSkill.trim().toUpperCase() === 'AB' ? 0 : parseFloat(vSkill) || 0;
             recordsToSave.push({
               studentId: student.id,
@@ -697,9 +680,13 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               percentage: Math.round((num / 10) * 100),
               overallGrade: vSkill.trim().toUpperCase() === 'AB' ? 'AB' : calculateGsebGrade(num, 10),
             });
+          } else if (vSkill !== undefined && vSkill.trim() === '') {
+            idsToDelete.push(`${student.id}_internal_continuous_eval_${activeSub.id}`);
           }
 
-          if ((vPrac !== undefined && vPrac !== '') || (vSkill !== undefined && vSkill !== '')) {
+          const hasPrac = vPrac !== undefined && vPrac.trim() !== '';
+          const hasSkill = vSkill !== undefined && vSkill.trim() !== '';
+          if (hasPrac || hasSkill) {
             const n1 = parseFloat(vPrac || '0') || 0;
             const n2 = parseFloat(vSkill || '0') || 0;
             const tot20 = Math.min(20, Math.round(n1 + n2));
@@ -720,6 +707,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               percentage: Math.round((tot20 / 20) * 100),
               overallGrade: calculateGsebGrade(tot20, 20),
             });
+          } else {
+            idsToDelete.push(`${student.id}_internal_assessment_${activeSub.id}`);
           }
         } else {
           // Main subject: 5 + 5 + 5 + 5
@@ -755,7 +744,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
           const vNote = inputsMap[kNote];
 
           const addComp = (fieldKey: string, typeName: string, val: string | undefined) => {
-            if (val !== undefined && val !== '') {
+            if (val !== undefined && val.trim() !== '') {
               const num = val.trim().toUpperCase() === 'AB' ? 0 : parseFloat(val) || 0;
               recordsToSave.push({
                 studentId: student.id,
@@ -774,6 +763,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 percentage: Math.round((num / 5) * 100),
                 overallGrade: val.trim().toUpperCase() === 'AB' ? 'AB' : calculateGsebGrade(num, 5),
               });
+            } else if (val !== undefined && val.trim() === '') {
+              idsToDelete.push(`${student.id}_${fieldKey}_${activeSub.id}`);
             }
           };
 
@@ -782,12 +773,13 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
           addComp('internal_competency', 'વિષય સજ્જતા (૫)', vComp);
           addComp('internal_notebook', 'નોટબુક કાર્ય (૫)', vNote);
 
-          if (
-            (vPt1 !== undefined && vPt1 !== '') ||
-            (vPt2 !== undefined && vPt2 !== '') ||
-            (vComp !== undefined && vComp !== '') ||
-            (vNote !== undefined && vNote !== '')
-          ) {
+          const hasAnyComp =
+            (vPt1 !== undefined && vPt1.trim() !== '') ||
+            (vPt2 !== undefined && vPt2.trim() !== '') ||
+            (vComp !== undefined && vComp.trim() !== '') ||
+            (vNote !== undefined && vNote.trim() !== '');
+
+          if (hasAnyComp) {
             const n1 = parseFloat(vPt1 || '0') || 0;
             const n2 = parseFloat(vPt2 || '0') || 0;
             const n3 = parseFloat(vComp || '0') || 0;
@@ -810,6 +802,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               percentage: Math.round((tot20 / 20) * 100),
               overallGrade: calculateGsebGrade(tot20, 20),
             });
+          } else {
+            idsToDelete.push(`${student.id}_internal_assessment_${activeSub.id}`);
           }
         }
       });
@@ -822,7 +816,16 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
           }
 
           const val = inputsMap[valKey];
-          if (val === undefined || val === '') return;
+          const cleanExam = activeExamId.toLowerCase().trim();
+          const docId = `${student.id}_${cleanExam}_${subj.id}`;
+
+          if (val === undefined || val.trim() === '') {
+            if (!targetKeys || targetKeys.has(valKey)) {
+              idsToDelete.push(docId);
+            }
+            return;
+          }
+
           const isAb = val.trim().toUpperCase() === 'AB';
           const obtained = isAb ? 0 : parseFloat(val) || 0;
 
@@ -847,7 +850,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       });
     }
 
-    return recordsToSave;
+    return { recordsToSave, idsToDelete };
   };
 
   // Perform background auto-sync to Firestore with queue mutex lock
@@ -882,20 +885,30 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     setCloudSyncStatus('syncing');
 
     try {
-      const recordsToSave = buildMarksRecordsToSave(
+      const { recordsToSave, idsToDelete } = buildMarksRecordsToSave(
         inputsToUse,
         currentExam,
         keysToSave.size > 0 ? keysToSave : undefined
       );
 
+      const uniqueDeleteIds = Array.from(new Set(idsToDelete));
+      const syncPromises: Promise<any>[] = [];
+
       if (recordsToSave.length > 0) {
+        syncPromises.push(saveBatchExamMarks(school.id, recordsToSave));
+      }
+      if (uniqueDeleteIds.length > 0) {
+        syncPromises.push(bulkDeleteMarks(school.id, uniqueDeleteIds));
+      }
+
+      if (syncPromises.length > 0) {
         await Promise.race([
-          saveBatchExamMarks(school.id, recordsToSave),
-          new Promise((resolve) => setTimeout(resolve, 3500)),
+          Promise.all(syncPromises),
+          new Promise((resolve) => setTimeout(resolve, 4000)),
         ]);
       }
 
-      // Safely clear ONLY the keys that were actually included and saved in this run
+      // Safely clear ONLY the keys that were actually included and saved or deleted in this run
       keysToSave.forEach((k) => dirtyKeysRef.current.delete(k));
       recordsToSave.forEach((r) => {
         dirtyKeysRef.current.delete(`${r.studentId}_${r.subjectId}_${currentExam}`);
@@ -1000,6 +1013,101 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   // Direct manual save fallback (if needed)
   const handleSaveMarks = async () => {
     await performAutoSyncMarks();
+  };
+
+  // State and handler to completely clear/delete marks for the current exam from Cloud Firestore
+  const [isClearingExamMarks, setIsClearingExamMarks] = useState(false);
+
+  const handleClearExamMarks = async () => {
+    const examObj = marksEntryExams.find((e) => e.id === marksEntryExamId);
+    const examLabel = examObj?.nameGu || marksEntryExamId;
+
+    const ok = window.confirm(
+      `શું તમે ખરેખર ધોરણ ${selectedStandard} ના "${examLabel}" ના તમામ ગુણ ક્લાઉડમાંથી સાફ (ડિલીટ) કરવા માંગો છો?\n\nઆ કરવાથી તમામ વિદ્યાર્થીઓના આ પરીક્ષાના ગુણ કાયમ માટે ડિલીટ થઈ જશે અને વેબ તથા મોબાઇલ એપ્લિકેશન બંનેમાં તરત જ સાફ થઈ જશે.`
+    );
+    if (!ok) return;
+
+    setIsClearingExamMarks(true);
+    try {
+      const idsToDelete: string[] = [];
+      const nextInputs = { ...gridInputsRef.current };
+
+      if (marksEntryExamId === 'prayogik_annual') {
+        filteredStudents.forEach((student) => {
+          CLASS_9_PRAYOGIK_SUBJECTS.forEach((subj) => {
+            const kTh = `${student.id}_${subj.id}_theory40`;
+            const kPr = `${student.id}_${subj.id}_practical40`;
+            delete nextInputs[kTh];
+            delete nextInputs[kPr];
+            dirtyKeysRef.current.delete(kTh);
+            dirtyKeysRef.current.delete(kPr);
+            idsToDelete.push(`${student.id}_annual_theory_${subj.id}`);
+            idsToDelete.push(`${student.id}_annual_practical_${subj.id}`);
+            idsToDelete.push(`${student.id}_annual_exam_${subj.id}`);
+          });
+        });
+      } else if (marksEntryExamId === 'internal_assessment') {
+        filteredStudents.forEach((student) => {
+          ALL_CLASS_9_SUBJECTS.forEach((subj) => {
+            const keys = [
+              `${student.id}_${subj.id}_internal_assessment`,
+              `${student.id}_${subj.id}_internal_pt1`,
+              `${student.id}_${subj.id}_internal_pt2`,
+              `${student.id}_${subj.id}_internal_competency`,
+              `${student.id}_${subj.id}_internal_notebook`,
+              `${student.id}_${subj.id}_internal_practical_work`,
+              `${student.id}_${subj.id}_internal_continuous_eval`,
+            ];
+            keys.forEach((k) => {
+              delete nextInputs[k];
+              dirtyKeysRef.current.delete(k);
+            });
+            idsToDelete.push(`${student.id}_internal_assessment_${subj.id}`);
+            idsToDelete.push(`${student.id}_internal_pt1_${subj.id}`);
+            idsToDelete.push(`${student.id}_internal_pt2_${subj.id}`);
+            idsToDelete.push(`${student.id}_internal_competency_${subj.id}`);
+            idsToDelete.push(`${student.id}_internal_notebook_${subj.id}`);
+            idsToDelete.push(`${student.id}_internal_practical_work_${subj.id}`);
+            idsToDelete.push(`${student.id}_internal_continuous_eval_${subj.id}`);
+          });
+        });
+      } else {
+        const cleanExam = marksEntryExamId.toLowerCase().trim();
+        filteredStudents.forEach((student) => {
+          entrySubjects.forEach((subj) => {
+            const valKey = `${student.id}_${subj.id}_${marksEntryExamId}`;
+            delete nextInputs[valKey];
+            dirtyKeysRef.current.delete(valKey);
+            idsToDelete.push(`${student.id}_${cleanExam}_${subj.id}`);
+          });
+        });
+      }
+
+      const uniqueIds = Array.from(new Set(idsToDelete));
+      await Promise.all([
+        bulkDeleteMarks(school.id, uniqueIds),
+        deleteMarksForStandard(school.id, selectedStandard, marksEntryExamId),
+      ]);
+
+      gridInputsRef.current = nextInputs;
+      setGridInputs(nextInputs);
+      setDirtyKeys(new Set(dirtyKeysRef.current));
+
+      try {
+        localStorage.setItem(
+          `vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`,
+          JSON.stringify(nextInputs)
+        );
+      } catch (e) {}
+
+      setSaveSuccessMsg(`"${examLabel}" ના તમામ ગુણ ક્લાઉડમાંથી સફળતાપૂર્વક સાફ કરવામાં આવ્યા છે.`);
+      setTimeout(() => setSaveSuccessMsg(null), 4000);
+    } catch (err) {
+      console.error('Error clearing exam marks:', err);
+      alert('ગુણ સાફ કરવામાં ત્રુટિ આવી. કૃપા કરીને પુનઃ પ્રયાસ કરો.');
+    } finally {
+      setIsClearingExamMarks(false);
+    }
   };
 
   // KPI Metrics for Active Results
@@ -2024,6 +2132,20 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Clear Exam Marks from Cloud */}
+              {marksEntryExamId !== 'siddhi_krupa_entry' && (
+                <button
+                  type="button"
+                  onClick={handleClearExamMarks}
+                  disabled={isClearingExamMarks}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                  title="આ પસંદ કરેલ પરીક્ષાના તમામ ગુણ ક્લાઉડમાંથી ડિલીટ (સાફ) કરો"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                  <span>{isClearingExamMarks ? 'સાફ થઈ રહ્યું છે...' : 'ગુણ સાફ કરો'}</span>
+                </button>
+              )}
             </div>
           </div>
 

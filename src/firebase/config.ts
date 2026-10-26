@@ -4,9 +4,7 @@ import {
   getFirestore,
   initializeFirestore,
   Firestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
-  persistentSingleTabManager,
+  memoryLocalCache,
   enableNetwork,
   setLogLevel,
 } from 'firebase/firestore';
@@ -65,39 +63,13 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * Determine if running in a single-instance mobile container (e.g., Capacitor Android APK)
- * where WebLocks are unsupported or deadlock, requiring persistentSingleTabManager({ forceOwnership: true }).
+ * The single, consistent Firestore database instance for the entire application.
+ * Configured with memoryLocalCache() for direct, instantaneous real-time cloud sync across
+ * Native Android APK, Web App, and Preview App.
+ *
+ * Eliminates all IndexedDB disk locking errors, WebLocks deadlocks, and stale disk cache desync.
+ * Uses experimentalAutoDetectLongPolling: true for full duplex WebSockets with automatic fallback.
  */
-export function shouldUseSingleTabManager(): boolean {
-  if (typeof window === 'undefined') return true;
-  try {
-    if (isNativeApp()) return true;
-    const ua = navigator.userAgent || '';
-    if (
-      /Android.*wv/.test(ua) ||
-      (window as any).Capacitor !== undefined ||
-      (window as any).AndroidBridge !== undefined
-    ) {
-      return true;
-    }
-    if (typeof navigator !== 'undefined' && !('locks' in navigator)) {
-      return true;
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-// The single, consistent Firestore database instance for the entire application.
-// In Native Android APK: Uses persistentSingleTabManager({ forceOwnership: true }) to guarantee
-// immediate ownership of the IndexedDB cache and activate real-time network streams instantly.
-// experimentalAutoDetectLongPolling: true allows fast WebSockets with smooth automatic fallback.
-const useSingleTab = shouldUseSingleTabManager();
-const tabManager = useSingleTab
-  ? persistentSingleTabManager({ forceOwnership: true })
-  : persistentMultipleTabManager();
-
 let firestoreInstance: Firestore;
 try {
   firestoreInstance = initializeFirestore(
@@ -105,9 +77,7 @@ try {
     {
       ignoreUndefinedProperties: true,
       experimentalAutoDetectLongPolling: true,
-      localCache: persistentLocalCache({
-        tabManager,
-      }),
+      localCache: memoryLocalCache(),
     },
     FIRESTORE_DATABASE_ID
   );

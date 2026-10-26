@@ -698,7 +698,6 @@ export function subscribeToMarks(
   const marksCol = collection(db, 'schools', schoolId, 'marks');
   return onSnapshot(
     marksCol,
-    { includeMetadataChanges: true },
     (snapshot) => {
       const list = snapshot.docs.map((docSnap) => ({
         id: docSnap.id,
@@ -973,6 +972,88 @@ export async function saveSingleStudentMark(
 export async function deleteMarkRecord(schoolId: string, markId: string): Promise<void> {
   const markDocRef = doc(db, 'schools', schoolId, 'marks', markId);
   await deleteDoc(markDocRef);
+}
+
+/**
+ * Bulk delete multiple mark records by their document IDs
+ */
+export async function bulkDeleteMarks(schoolId: string, markIds: string[]): Promise<number> {
+  if (!markIds || markIds.length === 0) return 0;
+
+  // Immediately remove from local cache so UI updates with 0ms delay
+  if (typeof window !== 'undefined') {
+    try {
+      const idSet = new Set(markIds);
+      const cached = localStorage.getItem(`vidyalayam_school_marks_${schoolId}`);
+      if (cached) {
+        const existingList: MarkRecord[] = JSON.parse(cached);
+        const filtered = existingList.filter((m) => !idSet.has(m.id));
+        localStorage.setItem(`vidyalayam_school_marks_${schoolId}`, JSON.stringify(filtered));
+        localStorage.setItem('vidyalayam_school_marks_last', JSON.stringify(filtered));
+      }
+    } catch (e) {}
+  }
+
+  const chunkSize = 400;
+  let deletedCount = 0;
+
+  for (let i = 0; i < markIds.length; i += chunkSize) {
+    const chunk = markIds.slice(i, i + chunkSize);
+    const batch = writeBatch(db);
+
+    for (const id of chunk) {
+      const markDocRef = doc(db, 'schools', schoolId, 'marks', id);
+      batch.delete(markDocRef);
+    }
+
+    await batch.commit();
+    deletedCount += chunk.length;
+  }
+
+  return deletedCount;
+}
+
+/**
+ * Delete all marks for a specific standard and optional exam from Firestore
+ */
+export async function deleteMarksForStandard(
+  schoolId: string,
+  standard: string,
+  examId?: string
+): Promise<number> {
+  const marksCol = collection(db, 'schools', schoolId, 'marks');
+  const snapshot = await getDocs(marksCol);
+  const cleanStd = String(standard).replace(/^class\s*/i, '').trim().toLowerCase();
+
+  const idsToDelete: string[] = [];
+  snapshot.docs.forEach((docSnap) => {
+    const data = docSnap.data() as any;
+    const docStd = String(data.standard || '').replace(/^class\s*/i, '').trim().toLowerCase();
+    if (docStd === cleanStd) {
+      if (!examId) {
+        idsToDelete.push(docSnap.id);
+      } else {
+        const cleanEx = examId.toLowerCase().trim();
+        const docEx = String(data.examId || '').toLowerCase().trim();
+        const docType = String(data.examType || '').toLowerCase().trim();
+        if (docEx === cleanEx || docType.includes(cleanEx) || docSnap.id.includes(`_${cleanEx}_`)) {
+          idsToDelete.push(docSnap.id);
+        }
+      }
+    }
+  });
+
+  return bulkDeleteMarks(schoolId, idsToDelete);
+}
+
+/**
+ * Delete ALL marks for the entire school from Firestore
+ */
+export async function deleteAllSchoolMarks(schoolId: string): Promise<number> {
+  const marksCol = collection(db, 'schools', schoolId, 'marks');
+  const snapshot = await getDocs(marksCol);
+  const ids = snapshot.docs.map((docSnap) => docSnap.id);
+  return bulkDeleteMarks(schoolId, ids);
 }
 
 /**

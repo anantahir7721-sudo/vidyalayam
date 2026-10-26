@@ -194,10 +194,10 @@ export function compressLetterheadImage(file: File): Promise<string> {
  * Dynamic Recipient Presets based on the School's Profile (Taluka & District)
  * E.g. If school is in Anjar taluka, Kachchh district, TDO will auto-fill "અંજાર - કચ્છ."
  */
-export function getRecipientPresetsForSchool(school: School) {
-  const taluka = (school.taluka || '').trim() || 'અંજાર';
-  const district = (school.district || '').trim() || 'કચ્છ';
-  const village = (school.village || '').trim() || '';
+export function getRecipientPresetsForSchool(school?: School | null) {
+  const taluka = (school?.taluka || '').trim() || 'અંજાર';
+  const district = (school?.district || '').trim() || 'કચ્છ';
+  const village = (school?.village || '').trim() || '';
 
   // District Headquarters mapping for Gujarat
   const districtHqMap: Record<string, string> = {
@@ -326,7 +326,7 @@ export const LETTER_TEMPLATES = [
 ];
 
 export interface OutwardLetterManagerProps {
-  school: School;
+  school?: School | null;
   onBack?: () => void;
 }
 
@@ -456,7 +456,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
             outwardStartingNumber: saved.outwardStartingNumber ?? 1,
             outwardPadDigits: saved.outwardPadDigits ?? 3,
             principalSignWidthMm: saved.principalSignWidthMm ?? 48,
-            principalName: saved.principalName || school.principalName || '',
+            principalName: saved.principalName || school?.principalName || '',
             principalDesignation: saved.principalDesignation || 'આચાર્યશ્રી',
             digitFormat: loadedFormat,
           };
@@ -600,7 +600,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     setReference('');
     setContent(LETTER_TEMPLATES[0].content);
     setCopyToList([]);
-    setSignatoryName(settings.principalName || school.principalName || '');
+    setSignatoryName(settings.principalName || school?.principalName || '');
     setSignatoryDesignation(settings.principalDesignation || 'આચાર્યશ્રી');
     setActiveTab('new_letter');
   };
@@ -619,7 +619,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     setReference(item.reference || '');
     setContent(item.content);
     setCopyToList(item.copyTo || []);
-    setSignatoryName(item.signatoryName || settings.principalName || school.principalName || '');
+    setSignatoryName(item.signatoryName || settings.principalName || school?.principalName || '');
     setSignatoryDesignation(item.signatoryDesignation || 'આચાર્યશ્રી');
     setActiveTab('new_letter');
   };
@@ -637,7 +637,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     setReference(item.reference || '');
     setContent(item.content);
     setCopyToList(item.copyTo || []);
-    setSignatoryName(settings.principalName || school.principalName || '');
+    setSignatoryName(settings.principalName || school?.principalName || '');
     setSignatoryDesignation(settings.principalDesignation || 'આચાર્યશ્રી');
     setActiveTab('new_letter');
   };
@@ -661,13 +661,16 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
     const clamped = Math.max(20, Math.min(150, Math.round(newWidthMm)));
     setSettings((prev) => {
       const updated = { ...prev, principalSignWidthMm: clamped };
-      saveOutwardSettings(school.id, updated).catch(console.error);
+      if (school?.id) {
+        saveOutwardSettings(school.id, updated).catch(console.error);
+      }
       return updated;
     });
   };
 
   // Delete letter
   const handleDeleteLetter = async (id: string, outNo: string) => {
+    if (!school?.id) return;
     if (window.confirm(`શું તમે ખરેખર જાવક પત્ર નં. ${outNo} રદ (Delete) કરવા માંગો છો?`)) {
       try {
         await deleteOutwardLetter(school.id, id);
@@ -716,6 +719,11 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       return null;
     }
 
+    if (!school?.id) {
+      alert('શાળા પ્રોફાઇલ હજુ લોડ થઈ રહી છે, કૃપા કરીને થોડીવાર રાહ જુઓ.');
+      return null;
+    }
+
     const docId = editingLetterId || `out_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const effDesignation = recipientDesignation.trim();
     const effOffice = recipientOffice.trim();
@@ -734,7 +742,7 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       reference: reference.trim() || '',
       content: content.trim(),
       copyTo: copyToList.length > 0 ? copyToList : [],
-      signatoryName: signatoryName.trim() || settings.principalName || school.principalName || '',
+      signatoryName: signatoryName.trim() || settings.principalName || school?.principalName || '',
       signatoryDesignation: signatoryDesignation.trim() || 'આચાર્યશ્રી',
       digitFormat: letterDigitFormat,
       createdAt: editingLetterId ? (letters.find((l) => l.id === editingLetterId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
@@ -1450,6 +1458,15 @@ export const OutwardLetterManager: React.FC<OutwardLetterManagerProps> = ({
       return true;
     });
   }, [letters, searchQuery]);
+
+  if (!school) {
+    return (
+      <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-12 text-center shadow-xl space-y-3 bg-white dark:bg-slate-900 my-6">
+        <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#C45A2D]" />
+        <p className="font-bold text-slate-700 dark:text-slate-200">શાળા પ્રોફાઇલ લોડ થઈ રહી છે...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-200 font-['Anek_Gujarati']">
