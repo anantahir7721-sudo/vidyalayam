@@ -252,6 +252,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   const isSyncingMarksRef = useRef(false);
   const pendingSyncNeededRef = useRef(false);
   const lastInitKeyRef = useRef<string>('');
+  const focusedCellKeyRef = useRef<string | null>(null);
 
   // Zero-friction tab navigation: all changes are auto-saved in local cache and synced to cloud
   const handleSwitchTab = (newTab: 'marks_entry' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry') => {
@@ -397,26 +398,55 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   // Helper to resolve an existing mark value from Firestore marks array for a given student & subject
   const getExistingMarkVal = useCallback(
     (studentMarks: MarkRecord[], subj: any, targetExamId: string, examKeywords: string[]): string | null => {
+      const targetSubId = (subj.id || '').toLowerCase().trim();
+      const targetSubName = (subj.nameGu || '').toLowerCase().trim();
+
       const found = studentMarks.find((m) => {
-        const sId = (m.subjectId || '').toLowerCase();
-        const sName = (m.subjectName || '').toLowerCase();
-        const subMatch =
-          sId === subj.id.toLowerCase() ||
-          sId.includes(subj.id.toLowerCase()) ||
-          subj.id.toLowerCase().includes(sId) ||
-          sName.includes(subj.nameGu.toLowerCase()) ||
-          subj.nameGu.toLowerCase().includes(sName);
+        const sId = (m.subjectId || '').toLowerCase().trim();
+        const sName = (m.subjectName || '').toLowerCase().trim();
+
+        // 1. Precise Subject Matching: Absolutely NEVER allow cross-matching between science & social_science or hindi & sanskrit
+        let subMatch = false;
+
+        if (targetSubId === 'science') {
+          if (sId === 'social_science' || sId === 'ss' || sName.includes('સામાજિક')) {
+            return false;
+          }
+          subMatch = sId === 'science' || sId === 'sci' || (sName.includes('વિજ્ઞાન') && !sName.includes('સામાજિક'));
+        } else if (targetSubId === 'social_science') {
+          if (sId === 'science' || (sName.includes('વિજ્ઞાન') && !sName.includes('સામાજિક') && sId !== 'social_science' && sId !== 'ss')) {
+            return false;
+          }
+          subMatch = sId === 'social_science' || sId === 'ss' || sName.includes('સામાજિક');
+        } else if (targetSubId === 'hindi') {
+          if (sId === 'sanskrit' || sName.includes('સંસ્કૃત')) {
+            return false;
+          }
+          subMatch = sId === 'hindi' || sId === 'hin' || (sName.includes('હિન્દી') && !sName.includes('સંસ્કૃત'));
+        } else if (targetSubId === 'sanskrit') {
+          if (sId === 'hindi' || sName.includes('હિન્દી')) {
+            return false;
+          }
+          subMatch = sId === 'sanskrit' || sId === 'san' || (sName.includes('સંસ્કૃત') && !sName.includes('હિન્દી'));
+        } else if (sId === targetSubId) {
+          subMatch = true;
+        } else if (sName && targetSubName && (sName === targetSubName || sName.startsWith(targetSubName) || targetSubName.startsWith(sName))) {
+          subMatch = true;
+        }
+
         if (!subMatch) return false;
 
-        const mExId = ((m as any).examId || '').toLowerCase();
-        const mExType = (m.examType || '').toLowerCase();
-        const mDocId = (m.id || '').toLowerCase();
+        const mExId = ((m as any).examId || '').toLowerCase().trim();
+        const mExType = (m.examType || '').toLowerCase().trim();
+        const mDocId = (m.id || '').toLowerCase().trim();
+        const cleanTargetExam = targetExamId.toLowerCase().trim();
 
-        if (mExId === targetExamId.toLowerCase() || mDocId.includes(`_${targetExamId.toLowerCase()}_`)) {
+        if (mExId === cleanTargetExam || mDocId.includes(`_${cleanTargetExam}_`)) {
           return true;
         }
         return examKeywords.some((k) => mExType.includes(k) || mExId.includes(k) || mDocId.includes(k));
       });
+
       if (!found) return null;
       if (found.overallGrade === 'AB') return 'AB';
       return found.totalObtained !== undefined && found.totalObtained !== null ? String(found.totalObtained) : '';
@@ -438,8 +468,11 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
         ALL_CLASS_9_SUBJECTS.forEach((subj) => {
           const applyVal = (key: string, targetExamId: string, examKeywords: string[]) => {
-            // Keep active live user input if currently being edited
-            if (dirtyKeysRef.current.has(key) && gridInputsRef.current[key] !== undefined) {
+            // Keep active live user input if currently focused or dirty
+            if (
+              (focusedCellKeyRef.current === key || dirtyKeysRef.current.has(key)) &&
+              gridInputsRef.current[key] !== undefined
+            ) {
               initialInputs[key] = gridInputsRef.current[key];
               return;
             }
@@ -473,8 +506,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       gridInputsRef.current = initialInputs;
       setGridInputs(initialInputs);
     } else {
-      // Incremental Reconciliation: Update non-dirty cells from incoming Cloud Firestore marks!
-      // Guarantees deleted marks are cleared and newly entered marks from other devices appear live.
+      // Incremental Reconciliation: Update non-dirty and non-focused cells from incoming Cloud Firestore marks!
+      // Guarantees active keystrokes are NEVER overwritten mid-typing.
       setGridInputs((prev) => {
         const next = { ...prev };
         let changed = false;
@@ -484,8 +517,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
           ALL_CLASS_9_SUBJECTS.forEach((subj) => {
             const syncKey = (key: string, targetExamId: string, examKeywords: string[]) => {
-              // CRITICAL: NEVER overwrite keys currently dirty or in-flight!
-              if (dirtyKeysRef.current.has(key)) return;
+              // CRITICAL: NEVER overwrite keys currently focused, dirty, or in-flight!
+              if (focusedCellKeyRef.current === key || dirtyKeysRef.current.has(key)) return;
 
               const cloudVal = getExistingMarkVal(studentMarks, subj, targetExamId, examKeywords);
               const expectedVal = cloudVal !== null ? cloudVal : '';
@@ -908,13 +941,12 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
         ]);
       }
 
-      // Safely clear ONLY the keys that were actually included and saved or deleted in this run
-      keysToSave.forEach((k) => dirtyKeysRef.current.delete(k));
-      recordsToSave.forEach((r) => {
-        dirtyKeysRef.current.delete(`${r.studentId}_${r.subjectId}_${currentExam}`);
-        dirtyKeysRef.current.delete(`${r.studentId}_${r.subjectId}_theory40`);
-        dirtyKeysRef.current.delete(`${r.studentId}_${r.subjectId}_practical40`);
-        dirtyKeysRef.current.delete(`${r.studentId}_${r.subjectId}_${r.examId}`);
+      // ONLY clear dirty status for a key if the in-memory value STILL equals what was sent to cloud!
+      // If user typed another character (e.g. '3' after '2') while save was in-flight, it REMAINS dirty!
+      keysToSave.forEach((k) => {
+        if (gridInputsRef.current[k] === inputsToUse[k]) {
+          dirtyKeysRef.current.delete(k);
+        }
       });
       setDirtyKeys(new Set(dirtyKeysRef.current));
 
@@ -939,15 +971,19 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     }
   };
 
-  // Debounced auto-sync trigger (350ms for instant real-time sync across devices)
-  const triggerDebouncedMarksSync = (inputsOverride?: Record<string, string>) => {
+  // Debounced auto-sync trigger (1200ms pause during typing, or immediate on blur/exit)
+  const triggerDebouncedMarksSync = (inputsOverride?: Record<string, string>, immediate: boolean = false) => {
     if (autoSyncMarksTimerRef.current) {
       clearTimeout(autoSyncMarksTimerRef.current);
     }
     setCloudSyncStatus('syncing');
-    autoSyncMarksTimerRef.current = setTimeout(() => {
+    if (immediate) {
       performAutoSyncMarks(inputsOverride);
-    }, 350);
+    } else {
+      autoSyncMarksTimerRef.current = setTimeout(() => {
+        performAutoSyncMarks(inputsOverride);
+      }, 1200);
+    }
   };
 
   // Handle cell modification in Spreadsheet Grid with immediate offline save & auto-sync
@@ -2352,6 +2388,22 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                       inputMode="decimal"
                                       value={valTh}
                                       placeholder="0-40"
+                                      onFocus={() => {
+                                        focusedCellKeyRef.current = keyTh;
+                                      }}
+                                      onBlur={() => {
+                                        if (focusedCellKeyRef.current === keyTh) {
+                                          focusedCellKeyRef.current = null;
+                                        }
+                                        if (dirtyKeysRef.current.has(keyTh)) {
+                                          triggerDebouncedMarksSync(undefined, true);
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
                                       onChange={(e) => handleCellChange(keyTh, e.target.value, 40)}
                                       className={`w-16 h-10 px-1 text-center font-bold text-xs rounded-xl border-2 transition-all block mx-auto ${
                                         dirtyKeys.has(keyTh)
@@ -2366,6 +2418,22 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                       inputMode="decimal"
                                       value={valPr}
                                       placeholder="0-40"
+                                      onFocus={() => {
+                                        focusedCellKeyRef.current = keyPr;
+                                      }}
+                                      onBlur={() => {
+                                        if (focusedCellKeyRef.current === keyPr) {
+                                          focusedCellKeyRef.current = null;
+                                        }
+                                        if (dirtyKeysRef.current.has(keyPr)) {
+                                          triggerDebouncedMarksSync(undefined, true);
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
                                       onChange={(e) => handleCellChange(keyPr, e.target.value, 40)}
                                       className={`w-16 h-10 px-1 text-center font-bold text-xs rounded-xl border-2 transition-all block mx-auto ${
                                         dirtyKeys.has(keyPr)
@@ -2674,6 +2742,22 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                       inputMode="decimal"
                                       value={cellVal}
                                       placeholder={`0-${entryMaxMarks}`}
+                                      onFocus={() => {
+                                        focusedCellKeyRef.current = cellKey;
+                                      }}
+                                      onBlur={() => {
+                                        if (focusedCellKeyRef.current === cellKey) {
+                                          focusedCellKeyRef.current = null;
+                                        }
+                                        if (dirtyKeysRef.current.has(cellKey)) {
+                                          triggerDebouncedMarksSync(undefined, true);
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
                                       onChange={(e) => handleCellChange(cellKey, e.target.value, entryMaxMarks)}
                                       className={`w-14 sm:w-18 h-8 sm:h-9 px-1 text-center font-black text-xs sm:text-sm rounded-lg sm:rounded-xl border-2 transition-all shadow-xs outline-none block mx-auto ${
                                         dirtyKeys.has(cellKey)

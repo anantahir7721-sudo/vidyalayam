@@ -210,10 +210,28 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
     standardStudents.forEach((student) => {
       const studentMarks = marks.filter((m) => {
         if (m.studentId !== student.id) return false;
-        const matchesSubject =
-          (m.subjectId && m.subjectId.toLowerCase() === activeSubject.id.toLowerCase()) ||
-          (m.subjectName && m.subjectName.toLowerCase().includes(activeSubject.nameGu.toLowerCase()));
-        return matchesSubject;
+        const sId = (m.subjectId || '').toLowerCase().trim();
+        const sName = (m.subjectName || '').toLowerCase().trim();
+        const tId = activeSubject.id.toLowerCase().trim();
+
+        if (tId === 'science') {
+          if (sId === 'social_science' || sId === 'ss' || sName.includes('સામાજિક')) return false;
+          return sId === 'science' || sId === 'sci' || (sName.includes('વિજ્ઞાન') && !sName.includes('સામાજિક'));
+        }
+        if (tId === 'social_science') {
+          if (sId === 'science' || (sName.includes('વિજ્ઞાન') && !sName.includes('સામાજિક') && sId !== 'social_science' && sId !== 'ss')) return false;
+          return sId === 'social_science' || sId === 'ss' || sName.includes('સામાજિક');
+        }
+        if (tId === 'hindi') {
+          if (sId === 'sanskrit' || sName.includes('સંસ્કૃત')) return false;
+          return sId === 'hindi' || sId === 'hin' || (sName.includes('હિન્દી') && !sName.includes('સંસ્કૃત'));
+        }
+        if (tId === 'sanskrit') {
+          if (sId === 'hindi' || sName.includes('હિન્દી')) return false;
+          return sId === 'sanskrit' || sId === 'san' || (sName.includes('સંસ્કૃત') && !sName.includes('હિન્દી'));
+        }
+        if (sId === tId) return true;
+        return sName === activeSubject.nameGu.toLowerCase().trim();
       });
 
       const getVal = (examTypeKey: string): string => {
