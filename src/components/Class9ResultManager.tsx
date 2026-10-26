@@ -87,8 +87,9 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   const [selectedSection, setSelectedSection] = useState<string>('ALL');
   const [academicYear, setAcademicYear] = useState<string>(school?.academicYear || '૨૦૨૬–૨૭');
 
-  // View Navigation Tabs
-  const [viewTab, setViewTab] = useState<'marks_entry' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry'>('marks_entry');
+  // View Navigation Tabs: Marks Entry | Download Section | Result Register | Marksheet | Siddhi-Krupa
+  const [viewTab, setViewTab] = useState<'marks_entry' | 'download_section' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry'>('marks_entry');
+  const [showDetailedKpi, setShowDetailedKpi] = useState(false);
 
   // Exam Selection in Marks Entry
   const [marksEntryExamId, setMarksEntryExamId] = useState<string>('first_exam');
@@ -255,7 +256,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   const focusedCellKeyRef = useRef<string | null>(null);
 
   // Zero-friction tab navigation: all changes are auto-saved in local cache and synced to cloud
-  const handleSwitchTab = (newTab: 'marks_entry' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry') => {
+  const handleSwitchTab = (newTab: 'marks_entry' | 'download_section' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry') => {
     setViewTab(newTab);
     if (newTab === 'siddhi_krupa_entry') {
       setMarksEntryExamId('siddhi_krupa_entry');
@@ -1437,21 +1438,32 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   };
 
 
-  // Export Result Register to Excel (.xlsx)
-  const handleExportRegisterExcel = () => {
-    if (allResults.length === 0) {
+  // Export Result Register to Excel (.xlsx) with optional targetExamMode override
+  const handleExportRegisterExcel = (targetExamMode?: 'first_exam' | 'second_exam' | 'annual') => {
+    const examMode = targetExamMode || resultExamMode;
+    const resultsToUse = examMode === resultExamMode ? allResults : computeMultiStandardAllResults(
+      filteredStudents,
+      marks,
+      selectedStandard,
+      selectedStream,
+      resultFormat,
+      manualGraceOverrides,
+      examMode
+    );
+
+    if (resultsToUse.length === 0) {
       alert('એક્સપોર્ટ કરવા માટે કોઈ પરિણામ ઉપલબ્ધ નથી.');
       return;
     }
 
     const examTitle =
-      resultExamMode === 'first_exam'
+      examMode === 'first_exam'
         ? 'પ્રથમ પરીક્ષા (૩૦૦ ગુણ)'
-        : resultExamMode === 'second_exam'
+        : examMode === 'second_exam'
         ? 'દ્વિતીય પરીક્ષા (૩૦૦ ગુણ)'
         : 'વાર્ષિક પરિણામ';
 
-    const rows = allResults.map((r, idx) => {
+    const rows = resultsToUse.map((r, idx) => {
       const rowData: Record<string, any> = {
         'ક્રમ': idx + 1,
         'રોલ નં': r.rollNumber,
@@ -1464,7 +1476,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       r.scores.forEach((sc) => {
         const markVal = sc.converted100 !== null ? sc.converted100 : '-';
         const graceSuffix = sc.siddhiGiven > 0 ? ` +${sc.siddhiGiven}#` : sc.krupaGiven > 0 ? ` +${sc.krupaGiven}*` : '';
-        const maxLabel = resultExamMode === 'annual' ? '૧૦૦' : '૫૦';
+        const maxLabel = examMode === 'annual' ? '૧૦૦' : '૫૦';
         rowData[`${sc.subject.nameGu} (${maxLabel})`] = `${markVal}${graceSuffix}`;
         rowData[`${sc.subject.nameGu} ગ્રેડ`] = sc.grade;
       });
@@ -1481,28 +1493,39 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
-    const sheetName = resultExamMode === 'first_exam' ? 'First_Exam' : resultExamMode === 'second_exam' ? 'Second_Exam' : 'Annual';
+    const sheetName = examMode === 'first_exam' ? 'First_Exam' : examMode === 'second_exam' ? 'Second_Exam' : 'Annual';
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
     XLSX.writeFile(workbook, `${school.schoolName}_Std${selectedStandard}_${sheetName}_Register.xlsx`);
   };
 
-  // Print Result Register (A4 Landscape)
-  const handlePrintRegister = () => {
-    if (allResults.length === 0) {
+  // Print Result Register (A4 Landscape) with optional targetExamMode override
+  const handlePrintRegister = (targetExamMode?: 'first_exam' | 'second_exam' | 'annual') => {
+    const examMode = targetExamMode || resultExamMode;
+    const resultsToUse = examMode === resultExamMode ? allResults : computeMultiStandardAllResults(
+      filteredStudents,
+      marks,
+      selectedStandard,
+      selectedStream,
+      resultFormat,
+      manualGraceOverrides,
+      examMode
+    );
+
+    if (resultsToUse.length === 0) {
       alert('પ્રિન્ટ કરવા માટે કોઈ પરિણામ ઉપલબ્ધ નથી.');
       return;
     }
 
     const examTitle =
-      resultExamMode === 'first_exam'
+      examMode === 'first_exam'
         ? 'પ્રથમ સત્રાંત પરીક્ષા પરિણામ રજિસ્ટર (૩૦૦ ગુણ પદ્ધતિ)'
-        : resultExamMode === 'second_exam'
+        : examMode === 'second_exam'
         ? 'દ્વિતીય સત્રાંત પરીક્ષા પરિણામ રજિસ્ટર (૩૦૦ ગુણ પદ્ધતિ)'
         : `વાર્ષિક પરિણામ રજિસ્ટર • ${resultFormat} ગુણ પદ્ધતિ`;
 
-    const subMaxLabel = resultExamMode === 'annual' ? '૧૦૦' : '૫૦';
+    const subMaxLabel = examMode === 'annual' ? '૧૦૦' : '૫૦';
 
-    const rowsHtml = allResults
+    const rowsHtml = resultsToUse
       .map(
         (r, idx) => `
       <tr>
@@ -1533,7 +1556,9 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       )
       .join('');
 
-    const activeRegSubjects = allResults[0]?.scores.map((s) => s.subject) || [];
+    const activeRegSubjects = resultsToUse[0]?.scores.map((s) => s.subject) || [];
+    const passedCount = resultsToUse.filter((r) => r.overallResult !== 'NEEDS_IMPROVEMENT').length;
+    const regPassPct = resultsToUse.length > 0 ? Math.round((passedCount / resultsToUse.length) * 100 * 10) / 10 : 0;
 
     const html = `
       <!DOCTYPE html>
@@ -1566,12 +1591,10 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
           <div class="badge">ધોરણ ${selectedStandard} • ${examTitle} • શૈક્ષણિક વર્ષ ${academicYear}</div>
         </div>
         <div class="summary-strip">
-          <span>કુલ વિદ્યાર્થી: ${stats.total}</span>
-          <span>સીધા ઉત્તીર્ણ: ${stats.directPass}</span>
-          <span>સિદ્ધિ (#): ${stats.siddhiCount}</span>
-          <span>કૃપા (*): ${stats.krupaCount}</span>
-          <span>સુધારણા: ${stats.failCount}</span>
-          <span>પરિણામ: ${stats.passPct}%</span>
+          <span>કુલ વિદ્યાર્થી: ${resultsToUse.length}</span>
+          <span>ઉત્તીર્ણ: ${passedCount}</span>
+          <span>સુધારણા: ${resultsToUse.length - passedCount}</span>
+          <span>પરિણામ: ${regPassPct}%</span>
         </div>
         <table>
           <thead>
@@ -1581,7 +1604,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               <th style="width: 50px;">G.R.</th>
               <th style="text-align: left;">વિદ્યાર્થીનું નામ</th>
               ${activeRegSubjects.map((sub) => `<th>${sub.nameGu.split(' ')[0]}<br><span style="font-weight:normal; font-size:7pt;">(${subMaxLabel})</span></th>`).join('')}
-              <th style="width: 55px;">કુલ (${allResults[0]?.totalMax || 300})</th>
+              <th style="width: 55px;">કુલ (${resultsToUse[0]?.totalMax || 300})</th>
               <th style="width: 40px;">ટકા</th>
               <th style="width: 40px;">ગ્રેડ</th>
               <th style="width: 75px;">પરિણામ</th>
@@ -1809,39 +1832,198 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     printHtmlDocument(html, `${cleanName}_Std${selectedStandard}_Marksheet`);
   };
 
+  // Print All Marksheets in batch (Multi-page A4 document)
+  const handlePrintAllMarksheets = () => {
+    if (allResults.length === 0) {
+      alert('પ્રિન્ટ કરવા માટે કોઈ પરિણામ ઉપલબ્ધ નથી.');
+      return;
+    }
+
+    const isFirstOrSecond = resultExamMode === 'first_exam' || resultExamMode === 'second_exam';
+    const examBadgeTitle =
+      resultExamMode === 'first_exam'
+        ? `પ્રથમ સત્રાંત પરીક્ષા ગુણપત્રક • ધોરણ ${selectedStandard} • વર્ષ ${academicYear}`
+        : resultExamMode === 'second_exam'
+        ? `દ્વિતીય સત્રાંત પરીક્ષા ગુણપત્રક • ધોરણ ${selectedStandard} • વર્ષ ${academicYear}`
+        : marksheetPrintMode === 'simple100'
+        ? `વાર્ષિક ગુણપત્રક • ધોરણ ${selectedStandard} • વર્ષ ${academicYear}`
+        : `વાર્ષિક પ્રગતિ પત્રક • ધોરણ ${selectedStandard} • વર્ષ ${academicYear}`;
+
+    const studentPagesHtml = allResults
+      .map((r) => {
+        let tableContentHtml = '';
+
+        if (isFirstOrSecond) {
+          const rows = r.scores
+            .map(
+              (sc, sIdx) => `
+            <tr>
+              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold;">${sIdx + 1}</td>
+              <td style="border: 1px solid #000; padding: 6px 10px; font-weight: bold; text-align: left;">${sc.subject.nameGu}</td>
+              <td style="border: 1px solid #000; padding: 6px; text-align: center;">૫૦</td>
+              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: 800; font-size: 11pt;">
+                ${sc.converted100 !== null ? sc.converted100 : '-'}
+              </td>
+              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; font-size: 10.5pt;">${sc.grade}</td>
+              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; color: ${sc.isPassed ? '#047857' : '#b91c1c'};">
+                ${sc.converted100 === null ? '-' : sc.isPassed ? 'ઉત્તીર્ણ' : 'સુધારણા'}
+              </td>
+            </tr>
+          `
+            )
+            .join('');
+
+          tableContentHtml = `
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 45px;">ક્રમ</th>
+                  <th style="text-align: left; padding-left: 10px;">વિષયનું નામ</th>
+                  <th style="width: 80px;">કુલ ગુણ</th>
+                  <th style="width: 100px;">મેળવેલ ગુણ (૫૦)</th>
+                  <th style="width: 75px;">વિષય ગ્રેડ</th>
+                  <th style="width: 90px;">પરિણામ</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          `;
+        } else {
+          const simpleRows = r.scores
+            .map(
+              (sc, sIdx) => `
+            <tr>
+              <td style="border: 1px solid #000; padding: 6px; text-align: center;">${sIdx + 1}</td>
+              <td style="border: 1px solid #000; padding: 6px 10px; font-weight: bold; text-align: left;">${sc.subject.nameGu}</td>
+              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: 800; font-size: 11pt;">
+                ${sc.converted100 !== null ? sc.converted100 : '-'}
+                ${sc.siddhiGiven > 0 ? `<span style="color:#0f766e; font-size:8.5pt;"> +${sc.siddhiGiven}#</span>` : ''}
+                ${sc.krupaGiven > 0 ? `<span style="color:#b45309; font-size:8.5pt;"> +${sc.krupaGiven}*</span>` : ''}
+              </td>
+              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; font-size: 10.5pt;">${sc.grade}</td>
+            </tr>
+          `
+            )
+            .join('');
+
+          tableContentHtml = `
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 45px;">ક્રમ</th>
+                  <th style="text-align: left; padding-left: 10px;">વિષયનું નામ</th>
+                  <th style="width: 140px;">મેળવેલ ગુણ / ૧૦૦</th>
+                  <th style="width: 90px;">વિષય ગ્રેડ</th>
+                </tr>
+              </thead>
+              <tbody>${simpleRows}</tbody>
+            </table>
+          `;
+        }
+
+        return `
+          <div class="marksheet-page" style="page-break-after: always; padding: 10px 0;">
+            <div class="border-frame">
+              <div>
+                <div class="header">
+                  <h1 class="school-title">${school.schoolName}</h1>
+                  <div style="font-size: 9pt; margin-top: 2px;">
+                    ${school.village ? school.village + ', ' : ''}${school.taluka ? school.taluka + ', ' : ''}${school.district} • DISE: <strong>${school.diseCode}</strong>
+                  </div>
+                  <div class="badge">${examBadgeTitle}</div>
+                </div>
+                <div class="meta-box">
+                  <div>G.R. નંબર: <strong>${r.grNumber || '-'}</strong></div>
+                  <div>રોલ નંબર: <strong>${r.rollNumber || '-'}</strong></div>
+                  <div>બેઠક ક્રમાંક: <strong>${getSeatNumber(r.student.id, r.rollNumber)}</strong></div>
+                  <div>ધોરણ & વર્ગ: <strong>ધોરણ ${selectedStandard} (${r.section})</strong></div>
+                  <div style="grid-column: span 2;">વિદ્યાર્થીનું નામ: <strong>${r.student.studentName}</strong></div>
+                </div>
+                ${tableContentHtml}
+                <div class="summary-card">
+                  <div><div class="sum-lbl">કુલ મેળવેલ ગુણ</div><div class="sum-val">${r.totalObtained} / ${r.totalMax}</div></div>
+                  <div><div class="sum-lbl">ટકાવારી (%)</div><div class="sum-val">${r.percentage}%</div></div>
+                  <div><div class="sum-lbl">પરિણામ ગ્રેડ</div><div class="sum-val">${r.overallGrade}</div></div>
+                  <div><div class="sum-lbl">વર્ગમાં ક્રમ</div><div class="sum-val">${r.rank ? `#${r.rank}` : '-'}</div></div>
+                  <div><div class="sum-lbl">પરિણામ સ્થિતિ</div><div class="sum-val" style="color:${r.overallResult === 'PASS' ? '#047857' : '#b91c1c'};">${r.overallResultGu}</div></div>
+                </div>
+                <div class="notes">
+                  • કસોટી મૂલ્યાંકન GSEB નિયમોનુસાર પ્રમાણિત કરવામાં આવેલ છે.
+                </div>
+              </div>
+              <div class="signatures">
+                <div class="sig-line">વર્ગ શિક્ષકની સહી</div>
+                <div class="sig-line">પરીક્ષા પ્રમુખશ્રી સહી</div>
+                <div class="sig-line">આચાર્યશ્રી સિક્કો & સહી</div>
+              </div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="gu">
+      <head>
+        <meta charset="UTF-8">
+        <title>${school.schoolName} - ધોરણ ${selectedStandard} તમામ ગુણપત્રક</title>
+        <link href="https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <style>
+          @page { size: A4 portrait; margin: 8mm; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body { font-family: 'Anek Gujarati', system-ui, sans-serif; color: #000; background: #fff; margin: 0; padding: 0; }
+          .border-frame { border: 3px double #000; padding: 16px; min-height: 96vh; display: flex; flex-direction: column; justify-content: space-between; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 10px; }
+          .school-title { font-size: 16pt; font-weight: 800; margin: 0; text-transform: uppercase; }
+          .badge { display: inline-block; background: #000; color: #fff; font-size: 10pt; font-weight: bold; padding: 2px 14px; border-radius: 4px; margin-top: 4px; }
+          .meta-box { border: 1.5px solid #000; padding: 6px 10px; margin-bottom: 10px; font-size: 9pt; display: grid; grid-template-columns: 1fr 1fr; gap: 3px 14px; background: #fafafa; }
+          table { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 10px; }
+          th { border: 1px solid #000; background-color: #f1f5f9; padding: 6px; text-align: center; font-weight: 800; }
+          .summary-card { border: 1.5px solid #000; padding: 6px 10px; margin-bottom: 10px; display: flex; justify-content: space-around; background: #f8fafc; text-align: center; }
+          .sum-lbl { font-size: 7.5pt; color: #555; font-weight: bold; }
+          .sum-val { font-size: 12pt; font-weight: 800; margin-top: 2px; }
+          .signatures { margin-top: 25px; display: flex; justify-content: space-between; font-size: 9pt; font-weight: 700; padding: 0 15px; }
+          .sig-line { border-top: 1.5px dashed #000; padding-top: 4px; width: 140px; text-align: center; }
+          .notes { font-size: 7.5pt; color: #555; border: 1px dashed #777; padding: 4px; margin-top: 4px; }
+        </style>
+      </head>
+      <body>
+        ${studentPagesHtml}
+      </body>
+      </html>
+    `;
+
+    printHtmlDocument(html, `${school.schoolName}_Std${selectedStandard}_All_Marksheets`);
+  };
+
   // Card view student navigation
   const currentCardStudent = filteredStudents[cardStudentIndex] || filteredStudents[0];
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner: Standard Selection Bar */}
-      <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-5 sm:p-6 shadow-xl relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
-          <div className="flex items-start gap-3.5">
+    <div className="space-y-3 sm:space-y-5">
+      {/* Top Banner: Streamlined Standard & Section Control Bar */}
+      <div className="glass-panel rounded-2xl sm:rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-3.5 sm:p-5 shadow-lg relative overflow-hidden">
+        <div className="flex items-center justify-between gap-3 relative z-10 flex-wrap">
+          <div className="flex items-center gap-2.5">
             <button
               type="button"
               onClick={handleSafeBack}
-              className="p-2.5 rounded-2xl bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 text-slate-800 dark:text-[#e4ded6] transition-all cursor-pointer shadow-xs shrink-0 mt-0.5 border border-[#E2E8F0] dark:border-transparent"
+              className="p-2 rounded-xl bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 text-slate-800 dark:text-[#e4ded6] transition-all cursor-pointer shadow-xs shrink-0 border border-[#E2E8F0] dark:border-transparent"
               title="પાછળ જાઓ"
             >
-              <ArrowLeft className="w-5 h-5 text-[#C45A2D] dark:text-[#f59c73]" />
+              <ArrowLeft className="w-4 h-4 text-[#C45A2D] dark:text-[#f59c73]" />
             </button>
             <div>
-              <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-black bg-[#C45A2D] text-white shadow-xs">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  <span>પરિણામ કેન્દ્ર (Result Hub)</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-[#C45A2D] text-white shadow-xs">
+                  <GraduationCap className="w-3 h-3" />
+                  <span>પરિણામ કેન્દ્ર</span>
                 </span>
-                <span className="text-xs text-slate-500 font-medium font-mono">
-                  GSEB ધોરણ ૯ થી ૧૨ પરિણામ સિસ્ટમ
-                </span>
+                <h1 className="text-sm sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  ધોરણ ૯ થી ૧૨ પરિણામ સિસ્ટમ
+                </h1>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                પરિણામ & ગુણપત્રક વ્યવસ્થાપન (Result Management)
-              </h1>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                પ્રથમ, દ્વિતીય અને વાર્ષિક પરીક્ષા ગુણ એન્ટ્રી, પરિણામ રજિસ્ટર અને સુંદર વ્યક્તિગત માર્કશીટ.
-              </p>
             </div>
           </div>
 
@@ -1850,32 +2032,26 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               <button
                 type="button"
                 onClick={onSwitchToGeneralResults}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 transition-all cursor-pointer"
                 title="સામાન્ય ગેઝેટ વ્યુ"
               >
                 <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                <span>ગેઝેટ વ્યૂ</span>
+                <span className="hidden sm:inline">ગેઝેટ વ્યૂ</span>
               </button>
             )}
             <button
               onClick={() => setRulesModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl glass-card text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-900 border-amber-500/30 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl glass-card text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-900 border-amber-500/30 transition-all cursor-pointer"
             >
               <HelpCircle className="w-3.5 h-3.5 text-amber-500" />
-              <span>GSEB ફોર્મ્યુલા નિયમો</span>
+              <span>નિયમો</span>
             </button>
           </div>
         </div>
 
-        {/* 4 Standards Selector Tabs */}
-        <div className="mt-5 pt-4 border-t border-slate-200 dark:border-white/10 space-y-3">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <span>ધોરણ પસંદ કરો (Select Standard):</span>
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        {/* 4 Standards Selector Tabs (Compact for Android) */}
+        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-white/10 space-y-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
             {STANDARD_TABS.map((tab) => {
               const isSelected = selectedStandard === tab.id;
               const count = studentCountsByStd[tab.id] || 0;
@@ -1888,26 +2064,26 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                     setSelectedStandard(tab.id);
                     setCardStudentIndex(0);
                   }}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                  className={`p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-1.5 ${
                     isSelected
-                      ? 'bg-[#C45A2D] text-white border-[#C45A2D] shadow-md scale-[1.01]'
+                      ? 'bg-[#C45A2D] text-white border-[#C45A2D] shadow-xs'
                       : 'bg-white/80 dark:bg-white/5 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-white/10 hover:border-[#C45A2D]/50'
                   }`}
                 >
-                  <div>
-                    <div className="text-xs sm:text-sm font-black">{tab.labelGu}</div>
-                    <div className={`text-[10px] ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>
+                  <div className="min-w-0">
+                    <div className="text-xs sm:text-sm font-black truncate">{tab.labelGu}</div>
+                    <div className={`text-[10px] hidden sm:block truncate ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>
                       {tab.labelEn}
                     </div>
                   </div>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-bold shrink-0 ${
                       isSelected
                         ? 'bg-white/20 text-white'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                     }`}
                   >
-                    {count} છાત્રો
+                    {count}
                   </span>
                 </button>
               );
@@ -1916,57 +2092,78 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
           {/* Stream selector if standard 11 or 12 is chosen */}
           {(selectedStandard === '11' || selectedStandard === '12') && (
-            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20 text-xs">
-              <span className="font-bold text-amber-900 dark:text-amber-200 px-2">પ્રવાહ:</span>
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20 text-xs overflow-x-auto">
+              <span className="font-bold text-amber-900 dark:text-amber-200 px-1.5 shrink-0">પ્રવાહ:</span>
               <button
                 type="button"
                 onClick={() => setSelectedStream('general')}
-                className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
                   selectedStream === 'general' ? 'bg-[#C45A2D] text-white shadow-xs' : 'text-slate-700 dark:text-slate-300 hover:bg-white/60'
                 }`}
               >
-                સામાન્ય પ્રવાહ (Commerce / Arts)
+                સામાન્ય પ્રવાહ
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedStream('science')}
-                className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
                   selectedStream === 'science' ? 'bg-[#C45A2D] text-white shadow-xs' : 'text-slate-700 dark:text-slate-300 hover:bg-white/60'
                 }`}
               >
-                વિજ્ઞાન પ્રવાહ (Science)
+                વિજ્ઞાન પ્રવાહ
               </button>
             </div>
           )}
 
-          {/* Section & Academic Year Controls */}
-          <div className="pt-2 flex items-center justify-between gap-4 flex-wrap text-xs">
-            <div className="flex items-center gap-4 flex-wrap">
+          {/* Section & Academic Year Controls (Fast 1-tap pills for Android) */}
+          <div className="pt-2 flex items-center justify-between gap-3 flex-wrap text-xs">
+            <div className="flex items-center gap-2 flex-wrap">
               {availableSections.length > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-slate-600 dark:text-slate-400">સેક્શન / વર્ગ:</span>
-                  <select
-                    value={selectedSection}
-                    onChange={(e) => {
-                      setSelectedSection(e.target.value);
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className="font-bold text-slate-600 dark:text-slate-400 mr-1">સેક્શન:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSection('ALL');
                       setCardStudentIndex(0);
                     }}
-                    className="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-white"
+                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      selectedSection === 'ALL'
+                        ? 'bg-[#C45A2D] text-white shadow-xs'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                    }`}
                   >
-                    <option value="ALL">બધા સેક્શન ({activeStandardStudents.length})</option>
-                    {availableSections.map((sec) => (
-                      <option key={sec} value={sec}>સેક્શન {sec}</option>
-                    ))}
-                  </select>
+                    બધા ({activeStandardStudents.length})
+                  </button>
+                  {availableSections.map((sec) => {
+                    const secCount = activeStandardStudents.filter((s) => (s.section || s.division || 'A').toUpperCase() === sec).length;
+                    return (
+                      <button
+                        key={sec}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSection(sec);
+                          setCardStudentIndex(0);
+                        }}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          selectedSection === sec
+                            ? 'bg-[#C45A2D] text-white shadow-xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        {sec} ({secCount})
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-slate-600 dark:text-slate-400">શૈક્ષણિક વર્ષ:</span>
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-slate-600 dark:text-slate-400">વર્ષ:</span>
                 <select
                   value={academicYear}
                   onChange={(e) => setAcademicYear(e.target.value)}
-                  className="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-white font-mono"
+                  className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-white font-mono text-xs"
                 >
                   <option value="૨૦૨૬–૨૭">૨૦૨૬–૨૭</option>
                   <option value="૨૦૨૫–૨૬">૨૦૨૫–૨૬</option>
@@ -1974,197 +2171,395 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               </div>
             </div>
 
-            <div className="text-slate-500 text-[11px]">
-              કુલ નોંધાયેલ વિદ્યાર્થીઓ: <strong className="text-slate-800 dark:text-slate-200">{filteredStudents.length}</strong>
+            <div className="text-slate-500 text-[11px] font-medium">
+              છાત્રો: <strong className="text-slate-800 dark:text-slate-200 font-mono">{filteredStudents.length}</strong>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3 Main View Tabs: Marks Entry | Result Register | Marksheet */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 overflow-x-auto">
+      {/* Main View Tabs: Marks Entry | Download Section | Result Register | Marksheet */}
+      <div className="flex items-center justify-between gap-2.5 flex-wrap">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 overflow-x-auto max-w-full">
           <button
             type="button"
             onClick={() => handleSwitchTab('marks_entry')}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
               viewTab === 'marks_entry'
                 ? 'bg-[#C45A2D] text-white shadow-xs'
                 : 'text-slate-700 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            <Edit2 className="w-4 h-4" />
-            <span>📝 ગુણ એન્ટ્રી (Marks Entry)</span>
+            <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>📝 ગુણ એન્ટ્રી</span>
             {dirtyKeys.size > 0 && <span className="w-2 h-2 rounded-full bg-amber-300 animate-pulse" />}
           </button>
 
           <button
             type="button"
+            onClick={() => handleSwitchTab('download_section')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+              viewTab === 'download_section'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-emerald-800 dark:text-emerald-300 hover:text-emerald-950 bg-emerald-500/10'
+            }`}
+          >
+            <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>📥 ડાઉનલોડ સેક્શન</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => handleSwitchTab('result_register')}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
               viewTab === 'result_register'
                 ? 'bg-[#C45A2D] text-white shadow-xs'
                 : 'text-slate-700 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>📋 પરિણામ રજિસ્ટર (Result Register)</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>📋 રજિસ્ટર</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleSwitchTab('individual_marksheet')}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
               viewTab === 'individual_marksheet'
                 ? 'bg-[#C45A2D] text-white shadow-xs'
                 : 'text-slate-700 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            <Award className="w-4 h-4" />
-            <span>🎓 ગુણપત્રક (Marksheet)</span>
+            <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>🎓 માર્કશીટ</span>
           </button>
 
           {selectedStandard === '9' && (
             <button
               type="button"
               onClick={() => handleSwitchTab('siddhi_krupa_entry')}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
                 viewTab === 'siddhi_krupa_entry'
-                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-sm'
                   : 'text-amber-800 dark:text-amber-300 hover:text-amber-900 bg-amber-500/10'
               }`}
             >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>✨ સિદ્ધિ–કૃપા ગુણ એન્ટ્રી</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>✨ સિદ્ધિ–કૃપા</span>
             </button>
           )}
         </div>
 
         {/* Quick export/print buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
-            onClick={handleExportRegisterExcel}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+            onClick={() => handleExportRegisterExcel()}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
             title="Excel ફાઇલ ડાઉનલોડ કરો"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Excel ડાઉનલોડ (.xlsx)</span>
+            <span className="hidden sm:inline">Excel</span>
           </button>
 
           <button
             type="button"
-            onClick={handlePrintRegister}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-black text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+            onClick={() => handlePrintRegister()}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-black text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
             title="A4 રજિસ્ટર પ્રિન્ટ / PDF કરો"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>રજિસ્ટર પ્રિન્ટ</span>
+            <span className="hidden sm:inline">રજિસ્ટર</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Metric Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xs text-center">
-          <div className="text-[10px] font-bold text-slate-500 uppercase">કુલ છાત્રો</div>
-          <div className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{stats.total}</div>
+      {/* KPI Metric Strip - Compact 1-line on mobile, full grid on tablet/desktop */}
+      <div className="space-y-2">
+        <div className="flex sm:hidden items-center justify-between px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xs text-xs">
+          <div className="flex items-center gap-2.5 font-bold text-slate-700 dark:text-slate-300">
+            <span>કુલ: <strong className="text-slate-900 dark:text-white font-mono">{stats.total}</strong></span>
+            <span>•</span>
+            <span>પાસ: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{stats.directPass + stats.siddhiCount + stats.krupaCount}</strong></span>
+            <span>•</span>
+            <span>ટકા: <strong className="text-[#C45A2D] dark:text-[#f59c73] font-mono">{stats.passPct}%</strong></span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowDetailedKpi(!showDetailedKpi)}
+            className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white underline cursor-pointer"
+          >
+            {showDetailedKpi ? 'ઓછું કરો ▲' : 'વિગત ▼'}
+          </button>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center">
-          <div className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase">સીધા પાસ</div>
-          <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{stats.directPass}</div>
-        </div>
+        <div className={`${showDetailedKpi ? 'grid' : 'hidden sm:grid'} grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2`}>
+          <div className="p-2 sm:p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xs text-center">
+            <div className="text-[10px] font-bold text-slate-500 uppercase">કુલ છાત્રો</div>
+            <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-0.5">{stats.total}</div>
+          </div>
 
-        <div className="p-3.5 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-center">
-          <div className="text-[10px] font-bold text-teal-800 dark:text-teal-300 uppercase">સિદ્ધિ (#) પાસ</div>
-          <div className="text-xl font-black text-teal-600 dark:text-teal-400 mt-0.5">{stats.siddhiCount}</div>
-        </div>
+          <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+            <div className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase">સીધા પાસ</div>
+            <div className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{stats.directPass}</div>
+          </div>
 
-        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center">
-          <div className="text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase">કૃપા (*) પાસ</div>
-          <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5">{stats.krupaCount}</div>
-        </div>
+          <div className="p-2 sm:p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20 text-center">
+            <div className="text-[10px] font-bold text-teal-800 dark:text-teal-300 uppercase">સિદ્ધિ (#)</div>
+            <div className="text-base sm:text-lg font-black text-teal-600 dark:text-teal-400 mt-0.5">{stats.siddhiCount}</div>
+          </div>
 
-        <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center">
-          <div className="text-[10px] font-bold text-rose-800 dark:text-rose-300 uppercase">સુધારણા જરૂરી</div>
-          <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-0.5">{stats.failCount}</div>
-        </div>
+          <div className="p-2 sm:p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
+            <div className="text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase">કૃપા (*)</div>
+            <div className="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 mt-0.5">{stats.krupaCount}</div>
+          </div>
 
-        <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-center">
-          <div className="text-[10px] font-bold text-indigo-800 dark:text-indigo-300 uppercase">સંપૂર્ણ ગુણ</div>
-          <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-0.5">{stats.completeCount}</div>
-        </div>
+          <div className="p-2 sm:p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center">
+            <div className="text-[10px] font-bold text-rose-800 dark:text-rose-300 uppercase">સુધારણા</div>
+            <div className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400 mt-0.5">{stats.failCount}</div>
+          </div>
 
-        <div className="p-3.5 rounded-2xl bg-[#C45A2D]/10 border border-[#C45A2D]/20 text-center col-span-2 sm:col-span-1">
-          <div className="text-[10px] font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase">પરિણામ ટકા</div>
-          <div className="text-xl font-black text-[#C45A2D] dark:text-[#f59c73] mt-0.5">{stats.passPct}%</div>
+          <div className="p-2 sm:p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-center">
+            <div className="text-[10px] font-bold text-indigo-800 dark:text-indigo-300 uppercase">સંપૂર્ણ ગુણ</div>
+            <div className="text-base sm:text-lg font-black text-indigo-600 dark:text-indigo-400 mt-0.5">{stats.completeCount}</div>
+          </div>
+
+          <div className="p-2 sm:p-2.5 rounded-xl bg-[#C45A2D]/10 border border-[#C45A2D]/20 text-center col-span-2 sm:col-span-1">
+            <div className="text-[10px] font-bold text-[#C45A2D] dark:text-[#f59c73] uppercase">પરિણામ ટકા</div>
+            <div className="text-base sm:text-lg font-black text-[#C45A2D] dark:text-[#f59c73] mt-0.5">{stats.passPct}%</div>
+          </div>
         </div>
       </div>
 
-      {/* VIEW TAB 1: MARKS ENTRY (SUBJECT-WISE COLUMNS FOR THE CHOSEN EXAM!) */}
-      {viewTab === 'marks_entry' && (
-        <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-5 sm:p-6 shadow-xl space-y-5">
-          {/* Header & Save Action Bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
+      {/* VIEW TAB: DEDICATED DOWNLOAD SECTION (ડાઉનલોડ સેક્શન) */}
+      {viewTab === 'download_section' && (
+        <div className="glass-panel rounded-2xl sm:rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-4 sm:p-6 shadow-lg space-y-4 sm:space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-white/10 pb-3">
             <div>
               <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <Edit2 className="w-5 h-5 text-[#C45A2D]" />
+                <Download className="w-5 h-5 text-emerald-600" />
+                <span>ધોરણ {selectedStandard} • ડાઉનલોડ & પ્રિન્ટ સેક્શન (Download Center)</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {selectedSection !== 'ALL' ? `સેક્શન ${selectedSection} • ` : 'બધા સેક્શન • '} શૈક્ષણિક વર્ષ {academicYear}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs flex-wrap">
+              <span className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300">
+                કુલ છાત્રો: <strong className="text-slate-900 dark:text-white font-mono">{filteredResults.length}</strong>
+              </span>
+              <span className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold">
+                પાસ: <strong className="font-mono">{stats.directPass + stats.siddhiCount + stats.krupaCount}</strong> ({stats.passPct}%)
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {/* 1. Excel Downloads Card */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-emerald-500/20 shadow-xs space-y-2.5">
+              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                <div className="p-2 rounded-xl bg-emerald-500/10">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 dark:text-white">Excel પરિણામ રજિસ્ટર</h3>
+                  <div className="text-[11px] text-slate-500">MS Excel (.xlsx) ફાઇલ ડાઉનલોડ</div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleExportRegisterExcel('first_exam')}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 text-emerald-900 dark:text-emerald-200 text-xs font-bold transition-all cursor-pointer border border-emerald-200 dark:border-emerald-800"
+                >
+                  <span className="flex items-center gap-2">
+                    <Download className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>🥇 પ્રથમ પરીક્ષા Excel (૩૦૦ ગુણ)</span>
+                  </span>
+                  <span className="text-[10px] font-mono opacity-70">.xlsx</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleExportRegisterExcel('second_exam')}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 text-emerald-900 dark:text-emerald-200 text-xs font-bold transition-all cursor-pointer border border-emerald-200 dark:border-emerald-800"
+                >
+                  <span className="flex items-center gap-2">
+                    <Download className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>🥈 દ્વિતીય પરીક્ષા Excel (૩૦૦ ગુણ)</span>
+                  </span>
+                  <span className="text-[10px] font-mono opacity-70">.xlsx</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleExportRegisterExcel('annual')}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                >
+                  <span className="flex items-center gap-2">
+                    <Download className="w-3.5 h-3.5" />
+                    <span>🏆 વાર્ષિક આખરી રજિસ્ટર Excel ({resultFormat} ગુણ)</span>
+                  </span>
+                  <span className="text-[10px] font-mono opacity-80">.xlsx</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. PDF & A4 Register Print Card */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500/20 shadow-xs space-y-2.5">
+              <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                <div className="p-2 rounded-xl bg-indigo-500/10">
+                  <Printer className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 dark:text-white">A4 પરિણામ રજિસ્ટર (PDF)</h3>
+                  <div className="text-[11px] text-slate-500">લેન્ડસ્કેપ ફોર્મેટ પ્રિન્ટ / PDF</div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handlePrintRegister('first_exam')}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 text-indigo-900 dark:text-indigo-200 text-xs font-bold transition-all cursor-pointer border border-indigo-200 dark:border-indigo-800"
+                >
+                  <span className="flex items-center gap-2">
+                    <Printer className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>🥇 પ્રથમ પરીક્ષા રજિસ્ટર (A4)</span>
+                  </span>
+                  <span className="text-[10px] opacity-70">પ્રિન્ટ</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handlePrintRegister('second_exam')}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 text-indigo-900 dark:text-indigo-200 text-xs font-bold transition-all cursor-pointer border border-indigo-200 dark:border-indigo-800"
+                >
+                  <span className="flex items-center gap-2">
+                    <Printer className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>🥈 દ્વિતીય પરીક્ષા રજિસ્ટર (A4)</span>
+                  </span>
+                  <span className="text-[10px] opacity-70">પ્રિન્ટ</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handlePrintRegister('annual')}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                >
+                  <span className="flex items-center gap-2">
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>🏆 વાર્ષિક આખરી રજિસ્ટર (A4)</span>
+                  </span>
+                  <span className="text-[10px] opacity-80">પ્રિન્ટ</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Marksheet Print & Batch Download Card */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-[#C45A2D]/20 shadow-xs space-y-2.5">
+              <div className="flex items-center gap-2 text-[#C45A2D]">
+                <div className="p-2 rounded-xl bg-[#C45A2D]/10">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 dark:text-white">વિદ્યાર્થી ગુણપત્રક (Marksheet)</h3>
+                  <div className="text-[11px] text-slate-500">A4 પોર્ટ્રેટ વ્યક્તિગત / સામૂહિક પ્રિન્ટ</div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={handlePrintAllMarksheets}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                >
+                  <span className="flex items-center gap-2">
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>🎓 બધા છાત્રોની માર્કશીટ એકસાથે પ્રિન્ટ / PDF</span>
+                  </span>
+                  <span className="text-[10px] font-mono opacity-80">{filteredResults.length} છાત્રો</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSwitchTab('individual_marksheet')}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/30 hover:bg-orange-100 text-orange-900 dark:text-orange-200 text-xs font-bold transition-all cursor-pointer border border-orange-200 dark:border-orange-800"
+                >
+                  <span className="flex items-center gap-2">
+                    <Eye className="w-3.5 h-3.5 text-orange-600" />
+                    <span>📄 વ્યક્તિગત માર્કશીટ જુઓ</span>
+                  </span>
+                  <span className="text-[10px] opacity-70">વ્યૂઅર</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW TAB 1: MARKS ENTRY (SUBJECT-WISE COLUMNS FOR THE CHOSEN EXAM!) */}
+      {viewTab === 'marks_entry' && (
+        <div className="glass-panel rounded-2xl sm:rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-3.5 sm:p-5 shadow-lg space-y-3 sm:space-y-4">
+          {/* Header & Save Action Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 border-b border-slate-200 dark:border-white/10 pb-3">
+            <div>
+              <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Edit2 className="w-4 h-4 text-[#C45A2D]" />
                 <span>
                   ધોરણ {selectedStandard} • {marksEntryExams.find((e) => e.id === marksEntryExamId)?.nameGu || 'પરીક્ષા'} ગુણ એન્ટ્રી
                 </span>
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                પરીક્ષા પસંદ કરો અને નીચે આપેલા વિષયવાર બોક્સમાં ગુણ દાખલ કરો. (ગેરહાજર માટે 'AB' લખો).
-              </p>
             </div>
 
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               {/* Toggle Table vs Mobile Card Mode */}
-              <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+              <div className="flex items-center gap-0.5 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
                 <button
                   type="button"
                   onClick={() => setEntryLayoutMode('table')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                    entryLayoutMode === 'table' ? 'bg-white dark:bg-slate-900 text-[#C45A2D] shadow-xs' : 'text-slate-600'
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                    entryLayoutMode === 'table' ? 'bg-white dark:bg-slate-900 text-[#C45A2D] shadow-xs' : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
-                  <span>સ્પ્રેડશીટ</span>
+                  <span>કોષ્ટક</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setEntryLayoutMode('card')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                    entryLayoutMode === 'card' ? 'bg-white dark:bg-slate-900 text-[#C45A2D] shadow-xs' : 'text-slate-600'
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                    entryLayoutMode === 'card' ? 'bg-white dark:bg-slate-900 text-[#C45A2D] shadow-xs' : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   <Smartphone className="w-3.5 h-3.5" />
-                  <span>કાર્ડ મોડ</span>
+                  <span>કાર્ડ</span>
                 </button>
               </div>
 
               {/* Live Zero-Button Auto Cloud Sync Pill */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 {cloudSyncStatus === 'syncing' ? (
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-bold animate-pulse">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
-                    <span>ક્લાઉડ સિંક થઈ રહ્યું છે...</span>
+                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-bold animate-pulse">
+                    <RefreshCw className="w-3 h-3 animate-spin text-amber-600" />
+                    <span>સિંક...</span>
                   </div>
                 ) : cloudSyncStatus === 'synced' ? (
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>✓ સાચવેલું (Cloud Synced)</span>
+                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <span>✓ સાચવેલું</span>
                   </div>
                 ) : cloudSyncStatus === 'offline' ? (
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs font-bold">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                    <span>📡 ઑફલાઇન સેવ થયેલું (નેટ આવતા આપોઆપ ક્લાઉડ સિંક થશે)</span>
+                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                    <span>ઑફલાઇન</span>
                   </div>
                 ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-800 dark:text-teal-300 text-xs font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>☁️ ઓટો ક્લાઉડ સિંક સક્રિય</span>
+                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-800 dark:text-teal-300 text-xs font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>☁️ ઓટો સિંક</span>
                   </div>
                 )}
               </div>
@@ -2175,27 +2570,26 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                   type="button"
                   onClick={handleClearExamMarks}
                   disabled={isClearingExamMarks}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50"
-                  title="આ પસંદ કરેલ પરીક્ષાના તમામ ગુણ ક્લાઉડમાંથી ડિલીટ (સાફ) કરો"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                  title="આ પરીક્ષાના તમામ ગુણ ક્લાઉડમાંથી ડિલીટ (સાફ) કરો"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                  <span>{isClearingExamMarks ? 'સાફ થઈ રહ્યું છે...' : 'ગુણ સાફ કરો'}</span>
+                  <Trash2 className="w-3 h-3 text-rose-500" />
+                  <span>{isClearingExamMarks ? '...' : 'સાફ'}</span>
                 </button>
               )}
             </div>
           </div>
 
           {saveSuccessMsg && (
-            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{saveSuccessMsg}</span>
             </div>
           )}
 
-          {/* Exam Selector Segmented Tabs (All 8 GSEB Exams including Siddhi-Krupa Gun) */}
-          <div className="space-y-1.5">
-            <div className="text-[11px] font-black uppercase text-slate-500 tracking-wider">પરીક્ષા પસંદ કરો (Exam):</div>
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {/* Exam Selector Segmented Tabs (Clean single-line pills for Android) */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
               {marksEntryExams.map((ex) => {
                 const isActive = marksEntryExamId === ex.id;
                 const isSiddhiKrupa = ex.id === 'siddhi_krupa_entry';
@@ -2210,33 +2604,18 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                         setViewTab('siddhi_krupa_entry');
                       }
                     }}
-                    className={`px-4 py-2.5 rounded-2xl text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
+                    className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
                       isActive
                         ? isSiddhiKrupa
-                          ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white border-amber-500 shadow-md scale-[1.01]'
-                          : 'bg-[#C45A2D] text-white border-[#C45A2D] shadow-md scale-[1.01]'
+                          ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white border-amber-500 shadow-sm'
+                          : 'bg-[#C45A2D] text-white border-[#C45A2D] shadow-sm'
                         : isSiddhiKrupa
                         ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-800 hover:border-amber-400'
                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-[#C45A2D]/50'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 justify-center">
-                      {isSiddhiKrupa && <Sparkles className="w-3.5 h-3.5 text-amber-300" />}
-                      <span>{ex.nameGu}</span>
-                    </div>
-                    <div className={`text-[10px] font-normal ${isActive ? 'text-white/80' : 'text-slate-500'}`}>
-                      {ex.id === 'first_exam' || ex.id === 'second_exam'
-                        ? '૭ મુખ્ય વિષયો • ૫૦ ગુણ (કુલ ૩૫૦)'
-                        : ex.id === 'prayogik_annual'
-                        ? '૪૦ થિયરી + ૪૦ પ્રાયોગિક (૮૦ ગુણ)'
-                        : ex.id === 'internal_assessment'
-                        ? '૨૦ ગુણ (૫+૫+૫+૫ / ૧૦+૧૦)'
-                        : ex.id === 'annual_exam'
-                        ? '૭ મુખ્ય વિષયો • ૮૦ ગુણ'
-                        : ex.id === 'siddhi_krupa_entry'
-                        ? '૭૦૦ માંથી ટકા − ૩૩% (મહત્તમ ૧૫)'
-                        : `${ex.maxMarksPerSubject} ગુણ`}
-                    </div>
+                    {isSiddhiKrupa && <Sparkles className="w-3.5 h-3.5 text-amber-300" />}
+                    <span>{ex.nameGu}</span>
                   </button>
                 );
               })}
@@ -2259,7 +2638,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                           : 'text-slate-700 dark:text-slate-300'
                       }`}
                     >
-                      ✨ વિગતવાર ઘટકો (મુખ્ય: ૫+૫+૫+૫ | પ્રાયોગિક: ૧૦+૧૦)
+                      ✨ વિગતવાર ઘટકો (૫+૫+૫+૫)
                     </button>
                     <button
                       type="button"
@@ -2274,12 +2653,6 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                     </button>
                   </div>
                 </div>
-
-                {internalEntryMode === 'components' && (
-                  <span className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">
-                    કોઈપણ વિષય પસંદ કરી તેના ૪ ઘટકો (મુખ્ય) અથવા ૨ ઘટકો (પ્રાયોગિક) ભરો.
-                  </span>
-                )}
               </div>
 
               {internalEntryMode === 'components' && (
@@ -2382,7 +2755,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
                               return (
                                 <React.Fragment key={sub.id}>
-                                  <td className="py-2 px-1 text-center border border-slate-200 dark:border-slate-800">
+                                  <td className="py-1.5 px-0.5 sm:px-1 text-center border border-slate-200 dark:border-slate-800">
                                     <input
                                       type="text"
                                       inputMode="decimal"
@@ -2405,14 +2778,14 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                         }
                                       }}
                                       onChange={(e) => handleCellChange(keyTh, e.target.value, 40)}
-                                      className={`w-16 h-10 px-1 text-center font-bold text-xs rounded-xl border-2 transition-all block mx-auto ${
+                                      className={`w-12 sm:w-16 h-8 sm:h-9 px-1 text-center font-black text-xs sm:text-sm rounded-lg sm:rounded-xl border-2 transition-all block mx-auto ${
                                         dirtyKeys.has(keyTh)
                                           ? 'border-[#C45A2D] bg-[#FBE9DF] text-[#C45A2D]'
                                           : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
                                       }`}
                                     />
                                   </td>
-                                  <td className="py-2 px-1 text-center border border-slate-200 dark:border-slate-800">
+                                  <td className="py-1.5 px-0.5 sm:px-1 text-center border border-slate-200 dark:border-slate-800">
                                     <input
                                       type="text"
                                       inputMode="decimal"
@@ -2435,24 +2808,24 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                         }
                                       }}
                                       onChange={(e) => handleCellChange(keyPr, e.target.value, 40)}
-                                      className={`w-16 h-10 px-1 text-center font-bold text-xs rounded-xl border-2 transition-all block mx-auto ${
+                                      className={`w-12 sm:w-16 h-8 sm:h-9 px-1 text-center font-black text-xs sm:text-sm rounded-lg sm:rounded-xl border-2 transition-all block mx-auto ${
                                         dirtyKeys.has(keyPr)
                                           ? 'border-[#C45A2D] bg-[#FBE9DF] text-[#C45A2D]'
                                           : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
                                       }`}
                                     />
                                   </td>
-                                  <td className="py-2 px-1 text-center font-black text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+                                  <td className="py-1.5 px-1 text-center font-black text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
                                     {subTotal !== null ? subTotal : '-'}
                                   </td>
                                 </React.Fragment>
                               );
                             })}
 
-                            <td className="py-2 px-2 text-center font-black text-slate-900 dark:text-white bg-indigo-500/10 border border-slate-200 dark:border-slate-800">
+                            <td className="py-1.5 px-1.5 text-center font-black text-slate-900 dark:text-white bg-indigo-500/10 border border-slate-200 dark:border-slate-800">
                               {anyMarksEntered ? totalRowObtained : '-'}
                             </td>
-                            <td className="py-2 px-2 text-center font-bold text-[#C45A2D] bg-indigo-500/10 border border-slate-200 dark:border-slate-800">
+                            <td className="py-1.5 px-1.5 text-center font-bold text-[#C45A2D] bg-indigo-500/10 border border-slate-200 dark:border-slate-800">
                               {anyMarksEntered ? `${Math.round((totalRowObtained / 240) * 100 * 10) / 10}%` : '-'}
                             </td>
                           </tr>
@@ -2534,14 +2907,14 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                     {student.studentName}
                                   </td>
 
-                                  <td className="py-2 px-1 text-center">
+                                  <td className="py-1.5 px-0.5 sm:px-1 text-center">
                                     <input
                                       type="text"
                                       inputMode="decimal"
                                       value={vPrac}
                                       placeholder="0-10"
                                       onChange={(e) => handleCellChange(kPrac, e.target.value, 10)}
-                                      className={`w-20 h-10 px-1 text-center font-bold text-sm rounded-xl border-2 transition-all block mx-auto ${
+                                      className={`w-12 sm:w-16 h-8 sm:h-9 px-1 text-center font-black text-xs sm:text-sm rounded-lg sm:rounded-xl border-2 transition-all block mx-auto ${
                                         dirtyKeys.has(kPrac)
                                           ? 'border-[#C45A2D] bg-[#FBE9DF] text-[#C45A2D]'
                                           : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
@@ -2549,14 +2922,14 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                     />
                                   </td>
 
-                                  <td className="py-2 px-1 text-center">
+                                  <td className="py-1.5 px-0.5 sm:px-1 text-center">
                                     <input
                                       type="text"
                                       inputMode="decimal"
                                       value={vSkill}
                                       placeholder="0-10"
                                       onChange={(e) => handleCellChange(kSkill, e.target.value, 10)}
-                                      className={`w-20 h-10 px-1 text-center font-bold text-sm rounded-xl border-2 transition-all block mx-auto ${
+                                      className={`w-12 sm:w-16 h-8 sm:h-9 px-1 text-center font-black text-xs sm:text-sm rounded-lg sm:rounded-xl border-2 transition-all block mx-auto ${
                                         dirtyKeys.has(kSkill)
                                           ? 'border-[#C45A2D] bg-[#FBE9DF] text-[#C45A2D]'
                                           : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
@@ -2564,7 +2937,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                     />
                                   </td>
 
-                                  <td className="py-2 px-2 text-center font-black text-slate-900 dark:text-white bg-indigo-500/10 text-sm">
+                                  <td className="py-1.5 px-1.5 text-center font-black text-slate-900 dark:text-white bg-indigo-500/10 text-xs sm:text-sm">
                                     {tot20 !== null ? tot20 : '-'}
                                   </td>
                                 </tr>
@@ -2632,14 +3005,14 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                   </div>
                                 </td>
 
-                                <td className="py-2 px-1 text-center">
+                                <td className="py-1.5 px-0.5 sm:px-1 text-center">
                                   <input
                                     type="text"
                                     inputMode="decimal"
                                     value={vComp}
                                     placeholder="0-5"
                                     onChange={(e) => handleCellChange(kComp, e.target.value, 5)}
-                                    className={`w-18 h-10 px-1 text-center font-bold text-sm rounded-xl border-2 transition-all block mx-auto ${
+                                    className={`w-12 sm:w-16 h-8 sm:h-9 px-1 text-center font-black text-xs sm:text-sm rounded-lg sm:rounded-xl border-2 transition-all block mx-auto ${
                                       dirtyKeys.has(kComp)
                                         ? 'border-[#C45A2D] bg-[#FBE9DF] text-[#C45A2D]'
                                         : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
@@ -2647,14 +3020,14 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                   />
                                 </td>
 
-                                <td className="py-2 px-1 text-center">
+                                <td className="py-1.5 px-0.5 sm:px-1 text-center">
                                   <input
                                     type="text"
                                     inputMode="decimal"
                                     value={vNote}
                                     placeholder="0-5"
                                     onChange={(e) => handleCellChange(kNote, e.target.value, 5)}
-                                    className={`w-18 h-10 px-1 text-center font-bold text-sm rounded-xl border-2 transition-all block mx-auto ${
+                                    className={`w-12 sm:w-16 h-8 sm:h-9 px-1 text-center font-black text-xs sm:text-sm rounded-lg sm:rounded-xl border-2 transition-all block mx-auto ${
                                       dirtyKeys.has(kNote)
                                         ? 'border-[#C45A2D] bg-[#FBE9DF] text-[#C45A2D]'
                                         : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
@@ -2662,7 +3035,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                   />
                                 </td>
 
-                                <td className="py-2 px-2 text-center font-black text-slate-900 dark:text-white bg-indigo-500/10 text-sm">
+                                <td className="py-1.5 px-1.5 text-center font-black text-slate-900 dark:text-white bg-indigo-500/10 text-xs sm:text-sm">
                                   {tot20 !== null ? tot20 : '-'}
                                 </td>
                               </tr>
@@ -2688,13 +3061,13 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                         {entrySubjects.map((sub) => (
                           <th
                             key={sub.id}
-                            className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center min-w-[64px] sm:min-w-[85px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black"
+                            className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center min-w-[56px] sm:min-w-[80px] bg-amber-500/10 text-amber-900 dark:text-amber-200 font-black"
                           >
                             <div className="truncate">{sub.nameGu}</div>
                             <div className="text-[9px] sm:text-[10px] font-normal opacity-80">({entryMaxMarks})</div>
                           </th>
                         ))}
-                        <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center w-14 sm:w-20 bg-indigo-500/10 font-black text-indigo-900 dark:text-indigo-200">
+                        <th className="py-2 px-1 border-b border-slate-300 dark:border-slate-700 text-center w-12 sm:w-20 bg-indigo-500/10 font-black text-indigo-900 dark:text-indigo-200">
                           <div>કુલ</div>
                           <div className="text-[9px] font-normal opacity-80">({entryTotalMax})</div>
                         </th>
@@ -2736,7 +3109,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                 }
 
                                 return (
-                                  <td key={sub.id} className="py-1.5 px-1 text-center min-w-[64px] sm:min-w-[85px]">
+                                  <td key={sub.id} className="py-1.5 px-0.5 sm:px-1 text-center min-w-[56px] sm:min-w-[80px]">
                                     <input
                                       type="text"
                                       inputMode="decimal"
@@ -2759,7 +3132,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                                         }
                                       }}
                                       onChange={(e) => handleCellChange(cellKey, e.target.value, entryMaxMarks)}
-                                      className={`w-14 sm:w-18 h-8 sm:h-9 px-1 text-center font-black text-xs sm:text-sm rounded-lg sm:rounded-xl border-2 transition-all shadow-xs outline-none block mx-auto ${
+                                      className={`w-12 sm:w-16 h-8 sm:h-9 px-1 text-center font-black text-xs sm:text-sm rounded-lg sm:rounded-xl border-2 transition-all shadow-xs outline-none block mx-auto ${
                                         dirtyKeys.has(cellKey)
                                           ? 'border-[#C45A2D] bg-[#FBE9DF] text-[#C45A2D] dark:bg-[#9d512d]/30 dark:text-[#f59c73]'
                                           : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-[#C45A2D]'
