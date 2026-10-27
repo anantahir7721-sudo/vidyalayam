@@ -291,7 +291,7 @@ export interface StudentResultClass9 {
   rollNumber: string;
   grNumber: string;
   section: string;
-  format: '700' | '1000' | '900';
+  format: '700' | '1000' | '900' | '600' | '480';
   scores: StudentSubjectScoreClass9[];
   totalObtained: number; // Sum of final marks across subjects
   totalMax: number; // 700 or 1000

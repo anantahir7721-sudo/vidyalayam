@@ -47,6 +47,7 @@ import {
   calculateGsebGrade,
   computeClass9StudentResult,
 } from '../utils/class9ResultCalculations';
+import { Class10BoardAnalyticsModal } from './Class10BoardAnalyticsModal';
 import {
   StandardKey,
   StreamKey,
@@ -60,6 +61,12 @@ import {
   STD_11_ALL_AVAILABLE_SUBJECTS,
   getStd11ActiveSubjects,
   computeClass11StudentResult,
+  Std10SubjectConfig,
+  DEFAULT_STD_10_SUBJECT_CONFIG,
+  CLASS_10_AVAILABLE_SUBJECTS,
+  getStd10StudentSubjects,
+  calculateGseb10Grade,
+  computeClass10StudentResult,
 } from '../utils/multiStandardResultCalculations';
 import {
   saveBatchExamMarks,
@@ -102,6 +109,20 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     }
     return DEFAULT_STD_11_SUBJECT_CONFIG;
   });
+
+  // Std 10 Subject Configuration State (Maths Basic/Std, Sanskrit/Hindi)
+  const [std10Config, setStd10Config] = useState<Std10SubjectConfig>(() => {
+    try {
+      const saved = localStorage.getItem(`vidyalayam_std10_subject_config_${school?.id || 'default'}`);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Error loading Std 10 subject config:', e);
+    }
+    return DEFAULT_STD_10_SUBJECT_CONFIG;
+  });
+
+  // Std 10 Board Analytics Official A4 Modal state
+  const [boardAnalyticsModalOpen, setBoardAnalyticsModalOpen] = useState(false);
 
   const updateStd11Config = (newCfg: Std11SubjectConfig) => {
     setStd11Config(newCfg);
@@ -399,6 +420,13 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
   // Subjects to display in Marks Entry table (subject-wise columns for the chosen exam)
   const entrySubjects = useMemo(() => {
+    if (selectedStandard === '10') {
+      if (marksEntryExamId === 'board_practical') {
+        return [CLASS_10_AVAILABLE_SUBJECTS.physical_education];
+      }
+      const { allSubjects } = getStd10StudentSubjects(undefined, std10Config);
+      return allSubjects;
+    }
     if (selectedStandard === '11') {
       if (marksEntryExamId === 'first_exam' || marksEntryExamId === 'second_exam' || marksEntryExamId === 'annual_exam') {
         return std11Active.mainSubjects; // 7 Main GSEB subjects chosen for Std 11
@@ -419,6 +447,12 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
   // Max marks per subject for the chosen marks entry exam
   const entryMaxMarks = useMemo(() => {
+    if (selectedStandard === '10') {
+      if (marksEntryExamId === 'first_exam' || marksEntryExamId === 'second_exam' || marksEntryExamId === 'board_exam') return 80;
+      if (marksEntryExamId === 'board_practical') return 100;
+      if (marksEntryExamId === 'internal_assessment') return 20;
+      return 100;
+    }
     if (marksEntryExamId === 'first_exam' || marksEntryExamId === 'second_exam') return 50;
     if (marksEntryExamId === 'periodic_test_1' || marksEntryExamId === 'periodic_test_2') return 25;
     if (marksEntryExamId === 'internal_assessment') return 20;
@@ -453,9 +487,10 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       effectiveResultFormat,
       manualGraceOverrides,
       resultExamMode,
-      std11Config
+      std11Config,
+      std10Config
     );
-  }, [filteredStudents, marks, selectedStandard, selectedStream, effectiveResultFormat, manualGraceOverrides, resultExamMode, std11Config]);
+  }, [filteredStudents, marks, selectedStandard, selectedStream, effectiveResultFormat, manualGraceOverrides, resultExamMode, std11Config, std10Config]);
 
   // Filtered Results for Register View
   const filteredResults = useMemo(() => {
@@ -2638,7 +2673,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 >
                   <span className="flex items-center gap-2">
                     <Download className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>🥇 પ્રથમ પરીક્ષા Excel (૩૦૦ ગુણ)</span>
+                    <span>🥇 પ્રથમ પરીક્ષા Excel ({selectedStandard === '10' ? '૪૮૦ ગુણ' : selectedStandard === '11' ? '૩૫૦ ગુણ' : '૩૦૦ ગુણ'})</span>
                   </span>
                   <span className="text-[10px] font-mono opacity-70">.xlsx</span>
                 </button>
@@ -2650,12 +2685,24 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 >
                   <span className="flex items-center gap-2">
                     <Download className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>🥈 દ્વિતીય પરીક્ષા Excel (૩૦૦ ગુણ)</span>
+                    <span>🥈 દ્વિતીય / પ્રિલિમ પરીક્ષા Excel ({selectedStandard === '10' ? '૪૮૦ ગુણ' : selectedStandard === '11' ? '૩૫૦ ગુણ' : '૩૦૦ ગુણ'})</span>
                   </span>
                   <span className="text-[10px] font-mono opacity-70">.xlsx</span>
                 </button>
 
-                {selectedStandard === '11' ? (
+                {selectedStandard === '10' ? (
+                  <button
+                    type="button"
+                    onClick={() => handleExportRegisterExcel('annual', '700')}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Download className="w-3.5 h-3.5" />
+                      <span>🏆 વાર્ષિક આખરી પરિણામ Excel (૬૦૦ ગુણ)</span>
+                    </span>
+                    <span className="text-[10px] font-mono opacity-80">.xlsx</span>
+                  </button>
+                ) : selectedStandard === '11' ? (
                   <>
                     <button
                       type="button"
@@ -2746,7 +2793,19 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                   <span className="text-[10px] opacity-70">પ્રિન્ટ</span>
                 </button>
 
-                {selectedStandard === '11' ? (
+                {selectedStandard === '10' ? (
+                  <button
+                    type="button"
+                    onClick={() => handlePrintRegister('annual', '700')}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>🏆 વાર્ષિક આખરી રજિસ્ટર A4 (૬૦૦ ગુણ)</span>
+                    </span>
+                    <span className="text-[10px] opacity-80">પ્રિન્ટ</span>
+                  </button>
+                ) : selectedStandard === '11' ? (
                   <>
                     <button
                       type="button"
@@ -5040,6 +5099,18 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Std 10 GSEB Official A4 Board Result Analytics Modal */}
+      {selectedStandard === '10' && (
+        <Class10BoardAnalyticsModal
+          isOpen={boardAnalyticsModalOpen}
+          onClose={() => setBoardAnalyticsModalOpen(false)}
+          school={school}
+          students={activeStandardStudents}
+          marks={marks}
+          results={allResults}
+        />
       )}
     </div>
   );
