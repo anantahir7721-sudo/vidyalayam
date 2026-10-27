@@ -55,6 +55,11 @@ import {
   getSubjectsForStandard as getMultiSubjects,
   getExamsForStandard as getMultiExams,
   computeMultiStandardAllResults,
+  Std11SubjectConfig,
+  DEFAULT_STD_11_SUBJECT_CONFIG,
+  STD_11_ALL_AVAILABLE_SUBJECTS,
+  getStd11ActiveSubjects,
+  computeClass11StudentResult,
 } from '../utils/multiStandardResultCalculations';
 import {
   saveBatchExamMarks,
@@ -87,6 +92,46 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   const [selectedSection, setSelectedSection] = useState<string>('ALL');
   const [academicYear, setAcademicYear] = useState<string>(school?.academicYear || '૨૦૨૬–૨૭');
 
+  // Std 11 Subject Customization State (7 Main + 2 Co-subs = 900 Marks)
+  const [std11Config, setStd11Config] = useState<Std11SubjectConfig>(() => {
+    try {
+      const saved = localStorage.getItem(`vidyalayam_std11_subject_config_${school?.id || 'default'}`);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Error loading Std 11 subject config:', e);
+    }
+    return DEFAULT_STD_11_SUBJECT_CONFIG;
+  });
+
+  const updateStd11Config = (newCfg: Std11SubjectConfig) => {
+    setStd11Config(newCfg);
+    try {
+      localStorage.setItem(`vidyalayam_std11_subject_config_${school?.id || 'default'}`, JSON.stringify(newCfg));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const toggleStd11ElectiveGroup = (subId: string) => {
+    const current = std11Config.electiveGroup || [];
+    let updated: string[];
+    if (current.includes(subId)) {
+      if (current.length <= 1) return; // Keep at least 1
+      updated = current.filter((id) => id !== subId);
+    } else {
+      if (current.length >= 3) {
+        // Keep last 2 and append new one to maintain exactly 3
+        updated = [...current.slice(1), subId];
+      } else {
+        updated = [...current, subId];
+      }
+    }
+    updateStd11Config({ ...std11Config, electiveGroup: updated });
+  };
+
+  // Active Std 11 Subjects Memo (7 Main + 2 Co-subs)
+  const std11Active = useMemo(() => getStd11ActiveSubjects(std11Config), [std11Config]);
+
   // View Navigation Tabs: Marks Entry | Download Section | Result Register | Marksheet | Siddhi-Krupa
   const [viewTab, setViewTab] = useState<'marks_entry' | 'download_section' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry'>('marks_entry');
   const [showDetailedKpi, setShowDetailedKpi] = useState(false);
@@ -101,8 +146,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   // Exam Selection in Result Register & Marksheet: 'first_exam' | 'second_exam' | 'annual'
   const [resultExamMode, setResultExamMode] = useState<'first_exam' | 'second_exam' | 'annual'>('first_exam');
 
-  // Annual Result Format for Class 9: 700 vs 1000
-  const [resultFormat, setResultFormat] = useState<'700' | '1000'>('700');
+  // Annual Result Format: 700 vs 1000 (Std 9) | 700 vs 900 (Std 11)
+  const [resultFormat, setResultFormat] = useState<'700' | '1000' | '900'>('700');
 
   // Annual Marksheet Display Mode: Detailed Breakdown vs Simple 100 Marks Only
   const [marksheetPrintMode, setMarksheetPrintMode] = useState<'detailed' | 'simple100'>('simple100');
@@ -222,7 +267,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   const [siddhiSelectedStudentId, setSiddhiSelectedStudentId] = useState<string>('');
   const [siddhiSearchQuery, setSiddhiSearchQuery] = useState('');
   const [siddhiSectionFilter, setSiddhiSectionFilter] = useState<string>('ALL');
-  const [siddhiFilterMode, setSiddhiFilterMode] = useState<'ALL' | 'ELIGIBLE_SIDDHI' | 'NEEDS_GRACE' | 'PASSED' | 'FAILED'>('ALL');
+  const [siddhiFilterMode, setSiddhiFilterMode] = useState<'ALL' | 'ELIGIBLE' | 'ELIGIBLE_SIDDHI' | 'NEEDS_GRACE' | 'PASSED' | 'FAILED'>('ELIGIBLE');
   const [siddhiViewLayout, setSiddhiViewLayout] = useState<'student' | 'overview'>('student');
   const [siddhiDirtyStudents, setSiddhiDirtyStudents] = useState<Set<string>>(new Set());
   const [siddhiSaveSuccess, setSiddhiSaveSuccess] = useState<string | null>(null);
@@ -290,7 +335,13 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
         if (selectedStream === 'science') {
           return std === '11-S' || (std === '11' && (s.stream === 'science' || s.division?.toUpperCase().includes('S')));
         }
-        return std === '11' || std === '11-G' || s.stream === 'general' || !s.stream;
+        return (
+          std === '11' ||
+          std === '11-G' ||
+          std === '11-A' ||
+          std === '11-C' ||
+          ((std.startsWith('11') || std === '11') && s.stream !== 'science')
+        );
       }
       if (selectedStandard === '12') {
         if (selectedStream === 'science') {
@@ -330,8 +381,33 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     return getMultiExams(selectedStandard).filter((e) => e.id !== 'annual_result' && e.id !== 'final_marksheet');
   }, [selectedStandard]);
 
+  // Prayogik / Co-subjects for selected standard
+  const prayogikSubjects = useMemo(() => {
+    if (selectedStandard === '11') {
+      return std11Active.coSubjects;
+    }
+    return CLASS_9_PRAYOGIK_SUBJECTS;
+  }, [selectedStandard, std11Active]);
+
+  // All active internal subjects (main + prayogik/co-subjects)
+  const allActiveInternalSubjects = useMemo(() => {
+    if (selectedStandard === '11') {
+      return std11Active.allSubjects;
+    }
+    return ALL_CLASS_9_SUBJECTS;
+  }, [selectedStandard, std11Active]);
+
   // Subjects to display in Marks Entry table (subject-wise columns for the chosen exam)
   const entrySubjects = useMemo(() => {
+    if (selectedStandard === '11') {
+      if (marksEntryExamId === 'first_exam' || marksEntryExamId === 'second_exam' || marksEntryExamId === 'annual_exam') {
+        return std11Active.mainSubjects; // 7 Main GSEB subjects chosen for Std 11
+      }
+      if (marksEntryExamId === 'prayogik_annual') {
+        return std11Active.coSubjects; // 2 Co-subjects (Udyog + chosen co-subject)
+      }
+      return std11Active.allSubjects;
+    }
     if (marksEntryExamId === 'first_exam' || marksEntryExamId === 'second_exam' || marksEntryExamId === 'annual_exam') {
       return FIRST_SECOND_EXAM_SUBJECTS; // 7 GSEB core subjects: Gujarati, Maths, Science, SS, English, Hindi, Sanskrit
     }
@@ -339,7 +415,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       return CLASS_9_PRAYOGIK_SUBJECTS; // 3 Prayogik subjects: Computer (42), PE & Yoga (40), Art & Music (41)
     }
     return getMultiSubjects(selectedStandard, selectedStream, resultFormat, marksEntryExamId);
-  }, [selectedStandard, selectedStream, resultFormat, marksEntryExamId]);
+  }, [selectedStandard, selectedStream, resultFormat, marksEntryExamId, std11Active]);
 
   // Max marks per subject for the chosen marks entry exam
   const entryMaxMarks = useMemo(() => {
@@ -353,9 +429,19 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
   // Total Max Marks for the chosen marks entry exam
   const entryTotalMax = useMemo(() => {
-    if (marksEntryExamId === 'prayogik_annual') return 3 * 80; // 240
+    if (marksEntryExamId === 'prayogik_annual') {
+      return prayogikSubjects.length * 80; // Std 11: 2 * 80 = 160 | Std 9: 3 * 80 = 240
+    }
     return entrySubjects.length * entryMaxMarks;
-  }, [entrySubjects, entryMaxMarks, marksEntryExamId]);
+  }, [entrySubjects, entryMaxMarks, marksEntryExamId, prayogikSubjects]);
+
+  // Effective format: Std 9 has 700 or 1000; Std 11 has 700 or 900
+  const effectiveResultFormat: '700' | '1000' | '900' = useMemo(() => {
+    if (selectedStandard === '11') {
+      return resultFormat === '700' ? '700' : '900';
+    }
+    return resultFormat === '1000' ? '1000' : '700';
+  }, [selectedStandard, resultFormat]);
 
   // Calculate All Results based on active resultExamMode
   const allResults = useMemo(() => {
@@ -364,11 +450,12 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       marks,
       selectedStandard,
       selectedStream,
-      resultFormat,
+      effectiveResultFormat,
       manualGraceOverrides,
-      resultExamMode
+      resultExamMode,
+      std11Config
     );
-  }, [filteredStudents, marks, selectedStandard, selectedStream, resultFormat, manualGraceOverrides, resultExamMode]);
+  }, [filteredStudents, marks, selectedStandard, selectedStream, effectiveResultFormat, manualGraceOverrides, resultExamMode, std11Config]);
 
   // Filtered Results for Register View
   const filteredResults = useMemo(() => {
@@ -457,8 +544,10 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
   // Populate & Smoothly Reconcile Grid Inputs with Cloud-First Online Sync
   useEffect(() => {
-    const currentInitKey = `${school?.id || 'default'}_${selectedStandard}_${selectedSection}`;
+    const std11Key = selectedStandard === '11' ? `_${std11Config.electiveLanguage}_${(std11Config.electiveGroup || []).join('-')}_${std11Config.electiveCoSub}` : '';
+    const currentInitKey = `${school?.id || 'default'}_${selectedStandard}_${selectedSection}${std11Key}`;
     const isFirstInit = lastInitKeyRef.current !== currentInitKey;
+    const subjectsForInputs = selectedStandard === '11' ? std11Active.allSubjects : ALL_CLASS_9_SUBJECTS;
 
     if (isFirstInit) {
       lastInitKeyRef.current = currentInitKey;
@@ -467,7 +556,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       filteredStudents.forEach((student) => {
         const studentMarks = marks.filter((m) => m.studentId === student.id);
 
-        ALL_CLASS_9_SUBJECTS.forEach((subj) => {
+        subjectsForInputs.forEach((subj) => {
           const applyVal = (key: string, targetExamId: string, examKeywords: string[]) => {
             // Keep active live user input if currently focused or dirty
             if (
@@ -516,7 +605,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
         filteredStudents.forEach((student) => {
           const studentMarks = marks.filter((m) => m.studentId === student.id);
 
-          ALL_CLASS_9_SUBJECTS.forEach((subj) => {
+          subjectsForInputs.forEach((subj) => {
             const syncKey = (key: string, targetExamId: string, examKeywords: string[]) => {
               // CRITICAL: NEVER overwrite keys currently focused, dirty, or in-flight!
               if (focusedCellKeyRef.current === key || dirtyKeysRef.current.has(key)) return;
@@ -555,7 +644,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     }
 
     setSaveSuccessMsg(null);
-  }, [filteredStudents, marks, selectedStandard, selectedSection, school?.id, getExistingMarkVal]);
+  }, [filteredStudents, marks, selectedStandard, selectedSection, school?.id, getExistingMarkVal, std11Active, std11Config]);
 
   // Helper to compile Firestore records from grid inputs (and detect deleted records)
   const buildMarksRecordsToSave = (
@@ -568,7 +657,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     const examNameDisplay = marksEntryExams.find((e) => e.id === activeExamId)?.nameGu || activeExamId;
 
     if (activeExamId === 'prayogik_annual') {
-      const prayogikSubs = CLASS_9_PRAYOGIK_SUBJECTS;
+      const prayogikSubs = prayogikSubjects;
       filteredStudents.forEach((student) => {
         prayogikSubs.forEach((subj) => {
           const keyTh = `${student.id}_${subj.id}_theory40`;
@@ -659,7 +748,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
         });
       });
     } else if (activeExamId === 'internal_assessment' && internalEntryMode === 'components') {
-      const activeSub = ALL_CLASS_9_SUBJECTS.find((s) => s.id === internalSelectedSubjId) || ALL_CLASS_9_SUBJECTS[0];
+      const activeSub = allActiveInternalSubjects.find((s) => s.id === internalSelectedSubjId) || allActiveInternalSubjects[0];
       filteredStudents.forEach((student) => {
         if (activeSub.isPrayogik) {
           const kPrac = `${student.id}_${activeSub.id}_internal_practical_work`;
@@ -1298,9 +1387,20 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     triggerDebouncedGraceSync(nextOverrides);
   };
 
+  // Standard-aware student result calculation for grace and preview (supports Std 9 and Std 11)
+  const computeActiveStdStudentResult = useCallback(
+    (student: Student, overrideMap?: Record<string, { siddhi?: number; krupa?: number }>) => {
+      if (selectedStandard === '11') {
+        return computeClass11StudentResult(student, marks, std11Config, overrideMap, effectiveResultFormat === '700' ? '700' : '900');
+      }
+      return computeClass9StudentResult(student, marks, effectiveResultFormat === '1000' ? '1000' : '700', overrideMap);
+    },
+    [selectedStandard, marks, std11Config, effectiveResultFormat]
+  );
+
   // Auto-Apply Grace for a Single Student based on GSEB Rules with immediate auto-sync
   const handleAutoApplyGraceForStudent = (student: Student) => {
-    const rawRes = computeClass9StudentResult(student, marks, '700', {});
+    const rawRes = computeActiveStdStudentResult(student, {});
     const pool = rawRes.siddhiPoolEarned;
     const hasUnder25 = rawRes.scores.filter((s) => s.subject.isMainSubject).some((s) => (s.converted100 ?? 0) < 25);
 
@@ -1375,13 +1475,13 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     performAutoSyncGrace(nextOverrides);
   };
 
-  // Batch Auto-Apply Grace for all eligible students in Class 9 with immediate auto-sync
+  // Batch Auto-Apply Grace for all eligible students in Class 9 / 11 with immediate auto-sync
   const handleBatchAutoApplyGrace = () => {
     let appliedCount = 0;
     const updatedOverrides = { ...manualGraceOverridesRef.current };
 
     filteredStudents.forEach((student) => {
-      const rawRes = computeClass9StudentResult(student, marks, '700', {});
+      const rawRes = computeActiveStdStudentResult(student, {});
       const hasUnder25 = rawRes.scores.filter((s) => s.subject.isMainSubject).some((s) => (s.converted100 ?? 0) < 25);
       if (hasUnder25) return;
 
@@ -1439,16 +1539,18 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
 
   // Export Result Register to Excel (.xlsx) with optional targetExamMode override
-  const handleExportRegisterExcel = (targetExamMode?: 'first_exam' | 'second_exam' | 'annual') => {
+  const handleExportRegisterExcel = (targetExamMode?: 'first_exam' | 'second_exam' | 'annual', targetFormat?: '700' | '1000' | '900') => {
     const examMode = targetExamMode || resultExamMode;
-    const resultsToUse = examMode === resultExamMode ? allResults : computeMultiStandardAllResults(
+    const formatToUse = targetFormat || effectiveResultFormat;
+    const resultsToUse = examMode === resultExamMode && formatToUse === effectiveResultFormat ? allResults : computeMultiStandardAllResults(
       filteredStudents,
       marks,
       selectedStandard,
       selectedStream,
-      resultFormat,
+      formatToUse,
       manualGraceOverrides,
-      examMode
+      examMode,
+      std11Config
     );
 
     if (resultsToUse.length === 0) {
@@ -1458,10 +1560,10 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
     const examTitle =
       examMode === 'first_exam'
-        ? 'પ્રથમ પરીક્ષા (૩૦૦ ગુણ)'
+        ? (selectedStandard === '11' ? 'પ્રથમ પરીક્ષા (૩૫૦ ગુણ)' : 'પ્રથમ પરીક્ષા (૩૦૦ ગુણ)')
         : examMode === 'second_exam'
-        ? 'દ્વિતીય પરીક્ષા (૩૦૦ ગુણ)'
-        : 'વાર્ષિક પરિણામ';
+        ? (selectedStandard === '11' ? 'દ્વિતીય પરીક્ષા (૩૫૦ ગુણ)' : 'દ્વિતીય પરીક્ષા (૩૦૦ ગુણ)')
+        : `વાર્ષિક પરિણામ (${formatToUse} ગુણ)`;
 
     const rows = resultsToUse.map((r, idx) => {
       const rowData: Record<string, any> = {
@@ -1495,20 +1597,22 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     const workbook = XLSX.utils.book_new();
     const sheetName = examMode === 'first_exam' ? 'First_Exam' : examMode === 'second_exam' ? 'Second_Exam' : 'Annual';
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-    XLSX.writeFile(workbook, `${school.schoolName}_Std${selectedStandard}_${sheetName}_Register.xlsx`);
+    XLSX.writeFile(workbook, `${school.schoolName}_Std${selectedStandard}_${sheetName}_${examMode === 'annual' ? formatToUse + 'M_' : ''}Register.xlsx`);
   };
 
   // Print Result Register (A4 Landscape) with optional targetExamMode override
-  const handlePrintRegister = (targetExamMode?: 'first_exam' | 'second_exam' | 'annual') => {
+  const handlePrintRegister = (targetExamMode?: 'first_exam' | 'second_exam' | 'annual', targetFormat?: '700' | '1000' | '900') => {
     const examMode = targetExamMode || resultExamMode;
-    const resultsToUse = examMode === resultExamMode ? allResults : computeMultiStandardAllResults(
+    const formatToUse = targetFormat || effectiveResultFormat;
+    const resultsToUse = examMode === resultExamMode && formatToUse === effectiveResultFormat ? allResults : computeMultiStandardAllResults(
       filteredStudents,
       marks,
       selectedStandard,
       selectedStream,
-      resultFormat,
+      formatToUse,
       manualGraceOverrides,
-      examMode
+      examMode,
+      std11Config
     );
 
     if (resultsToUse.length === 0) {
@@ -1518,10 +1622,10 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
     const examTitle =
       examMode === 'first_exam'
-        ? 'પ્રથમ સત્રાંત પરીક્ષા પરિણામ રજિસ્ટર (૩૦૦ ગુણ પદ્ધતિ)'
+        ? (selectedStandard === '11' ? 'પ્રથમ સત્રાંત પરીક્ષા પરિણામ રજિસ્ટર (૩૫૦ ગુણ પદ્ધતિ)' : 'પ્રથમ સત્રાંત પરીક્ષા પરિણામ રજિસ્ટર (૩૦૦ ગુણ પદ્ધતિ)')
         : examMode === 'second_exam'
-        ? 'દ્વિતીય સત્રાંત પરીક્ષા પરિણામ રજિસ્ટર (૩૦૦ ગુણ પદ્ધતિ)'
-        : `વાર્ષિક પરિણામ રજિસ્ટર • ${resultFormat} ગુણ પદ્ધતિ`;
+        ? (selectedStandard === '11' ? 'દ્વિતીય સત્રાંત પરીક્ષા પરિણામ રજિસ્ટર (૩૫૦ ગુણ પદ્ધતિ)' : 'દ્વિતીય સત્રાંત પરીક્ષા પરિણામ રજિસ્ટર (૩૦૦ ગુણ પદ્ધતિ)')
+        : `વાર્ષિક પરિણામ રજિસ્ટર • ${formatToUse} ગુણ પદ્ધતિ`;
 
     const subMaxLabel = examMode === 'annual' ? '૧૦૦' : '૫૦';
 
@@ -2115,6 +2219,164 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
             </div>
           )}
 
+          {/* Std 11 Subject Selection Panel (7 Main + 2 Co-subs = 900 Marks) */}
+          {selectedStandard === '11' && selectedStream === 'general' && (
+            <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-orange-50/90 via-amber-50/70 to-orange-50/90 dark:from-slate-900 dark:via-slate-800/80 dark:to-slate-900 border-2 border-orange-200 dark:border-orange-500/30 shadow-xs space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-orange-200/70 dark:border-white/10">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-[#C45A2D] text-white">
+                    <SlidersHorizontal className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                      ધોરણ ૧૧ વિષય પસંદગી (૭ મુખ્ય + ૨ સહ-વિષય = ૯૦૦ ગુણ)
+                    </h3>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                      ગુજરાતી, હિન્દી, અંગ્રેજી (ફરજિયાત) + નીચેના વિષયો પસંદ કરો:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-orange-500/10 text-orange-900 dark:text-orange-200 text-xs font-bold font-mono">
+                  <span>કુલ: <strong>૯૦૦ ગુણ</strong></span>
+                  <span>•</span>
+                  <span>સિદ્ધિ: <strong>૯૦૦ માંથી ટકા - ૩૩</strong></span>
+                </div>
+              </div>
+
+              {/* 3 Interactive Selection Groups */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+                {/* Group 1: સંસ્કૃત / મનોવિજ્ઞાન (1 પસંદ કરો) */}
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-orange-200 dark:border-slate-700 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-black text-slate-800 dark:text-slate-200">
+                    <span>૧. સંસ્કૃત / મનોવિજ્ઞાન:</span>
+                    <span className="text-[10px] text-orange-600 font-bold">૧ પસંદ કરો</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => updateStd11Config({ ...std11Config, electiveLanguage: 'sanskrit' })}
+                      className={`p-2 rounded-lg font-bold text-xs transition-all cursor-pointer border text-center ${
+                        std11Config.electiveLanguage === 'sanskrit'
+                          ? 'bg-[#C45A2D] text-white border-[#C45A2D] shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-orange-300'
+                      }`}
+                    >
+                      સંસ્કૃત
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateStd11Config({ ...std11Config, electiveLanguage: 'psychology' })}
+                      className={`p-2 rounded-lg font-bold text-xs transition-all cursor-pointer border text-center ${
+                        std11Config.electiveLanguage === 'psychology'
+                          ? 'bg-[#C45A2D] text-white border-[#C45A2D] shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-orange-300'
+                      }`}
+                    >
+                      મનોવિજ્ઞાન
+                    </button>
+                  </div>
+                </div>
+
+                {/* Group 2: કોઈપણ ૩ પસંદ કરો (અર્થશાસ્ત્ર, સમાજશાસ્ત્ર, રાજ્યશાસ્ત્ર, ઇતિહાસ, ભૂગોળ, તત્વજ્ઞાન) */}
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-orange-200 dark:border-slate-700 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-black text-slate-800 dark:text-slate-200">
+                    <span>૨. ૬ માંથી ૩ વિષય પસંદ કરો:</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                      (std11Config.electiveGroup || []).length === 3 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {(std11Config.electiveGroup || []).length}/૩ પસંદ
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[
+                      { id: 'economics', label: 'અર્થશાસ્ત્ર' },
+                      { id: 'sociology', label: 'સમાજશાસ્ત્ર' },
+                      { id: 'political_science', label: 'રાજ્યશાસ્ત્ર' },
+                      { id: 'history', label: 'ઇતિહાસ' },
+                      { id: 'geography', label: 'ભૂગોળ' },
+                      { id: 'philosophy', label: 'તત્વજ્ઞાન' },
+                    ].map((opt) => {
+                      const isChosen = (std11Config.electiveGroup || []).includes(opt.id);
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => toggleStd11ElectiveGroup(opt.id)}
+                          className={`p-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border truncate text-center ${
+                            isChosen
+                              ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                              : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-300'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Group 3: સહ-વિષયો (ઉદ્યોગ + ૧ પસંદ કરો) */}
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-orange-200 dark:border-slate-700 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-black text-slate-800 dark:text-slate-200">
+                    <span>૩. સહ-વિષય (ઉદ્યોગ + ૧):</span>
+                    <span className="text-[10px] text-teal-700 font-bold">૨૦૦ ગુણ</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => updateStd11Config({ ...std11Config, electiveCoSub: 'computer_studies' })}
+                      className={`p-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border text-center ${
+                        std11Config.electiveCoSub === 'computer_studies'
+                          ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-300'
+                      }`}
+                    >
+                      કોમ્પ્યુટર
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateStd11Config({ ...std11Config, electiveCoSub: 'art_drawing' })}
+                      className={`p-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border text-center ${
+                        std11Config.electiveCoSub === 'art_drawing'
+                          ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-300'
+                      }`}
+                    >
+                      ચિત્રકલા
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateStd11Config({ ...std11Config, electiveCoSub: 'music' })}
+                      className={`p-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border text-center ${
+                        std11Config.electiveCoSub === 'music'
+                          ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-300'
+                      }`}
+                    >
+                      સંગીત
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Selected Subjects Ribbon */}
+              <div className="flex items-center gap-1.5 flex-wrap text-[11px] pt-1">
+                <span className="font-black text-slate-700 dark:text-slate-300">સક્રિય વિષયો (૯):</span>
+                {std11Active.mainSubjects.map((s) => (
+                  <span key={s.id} className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200">
+                    {s.nameGu.split(' ')[0]}
+                  </span>
+                ))}
+                {std11Active.coSubjects.map((s) => (
+                  <span key={s.id} className="px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/40 border border-teal-300 dark:border-teal-700 font-bold text-teal-800 dark:text-teal-200">
+                    {s.nameGu.split(' ')[0]} (સહ)
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Section & Academic Year Controls (Fast 1-tap pills for Android) */}
           <div className="pt-2 flex items-center justify-between gap-3 flex-wrap text-xs">
             <div className="flex items-center gap-2 flex-wrap">
@@ -2234,7 +2496,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
             <span>🎓 માર્કશીટ</span>
           </button>
 
-          {selectedStandard === '9' && (
+          {(selectedStandard === '9' || selectedStandard === '11') && (
             <button
               type="button"
               onClick={() => handleSwitchTab('siddhi_krupa_entry')}
@@ -2393,17 +2655,57 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                   <span className="text-[10px] font-mono opacity-70">.xlsx</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleExportRegisterExcel('annual')}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
-                >
-                  <span className="flex items-center gap-2">
-                    <Download className="w-3.5 h-3.5" />
-                    <span>🏆 વાર્ષિક આખરી રજિસ્ટર Excel ({resultFormat} ગુણ)</span>
-                  </span>
-                  <span className="text-[10px] font-mono opacity-80">.xlsx</span>
-                </button>
+                {selectedStandard === '11' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleExportRegisterExcel('annual', '700')}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Download className="w-3.5 h-3.5" />
+                        <span>🏆 વાર્ષિક રજિસ્ટર Excel (Annual-700)</span>
+                      </span>
+                      <span className="text-[10px] font-mono opacity-80">.xlsx</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExportRegisterExcel('annual', '900')}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Download className="w-3.5 h-3.5" />
+                        <span>🏆 વાર્ષિક રજિસ્ટર Excel (Annual-900)</span>
+                      </span>
+                      <span className="text-[10px] font-mono opacity-80">.xlsx</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleExportRegisterExcel('annual', '700')}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Download className="w-3.5 h-3.5" />
+                        <span>🏆 વાર્ષિક રજિસ્ટર Excel (Annual-700)</span>
+                      </span>
+                      <span className="text-[10px] font-mono opacity-80">.xlsx</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExportRegisterExcel('annual', '1000')}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Download className="w-3.5 h-3.5" />
+                        <span>🏆 વાર્ષિક રજિસ્ટર Excel (Annual-1000)</span>
+                      </span>
+                      <span className="text-[10px] font-mono opacity-80">.xlsx</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -2444,17 +2746,57 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                   <span className="text-[10px] opacity-70">પ્રિન્ટ</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => handlePrintRegister('annual')}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
-                >
-                  <span className="flex items-center gap-2">
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>🏆 વાર્ષિક આખરી રજિસ્ટર (A4)</span>
-                  </span>
-                  <span className="text-[10px] opacity-80">પ્રિન્ટ</span>
-                </button>
+                {selectedStandard === '11' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handlePrintRegister('annual', '700')}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>🏆 વાર્ષિક રજિસ્ટર A4 (Annual-700)</span>
+                      </span>
+                      <span className="text-[10px] opacity-80">પ્રિન્ટ</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePrintRegister('annual', '900')}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>🏆 વાર્ષિક રજિસ્ટર A4 (Annual-900)</span>
+                      </span>
+                      <span className="text-[10px] opacity-80">પ્રિન્ટ</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handlePrintRegister('annual', '700')}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>🏆 વાર્ષિક રજિસ્ટર A4 (Annual-700)</span>
+                      </span>
+                      <span className="text-[10px] opacity-80">પ્રિન્ટ</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePrintRegister('annual', '1000')}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>🏆 વાર્ષિક રજિસ્ટર A4 (Annual-1000)</span>
+                      </span>
+                      <span className="text-[10px] opacity-80">પ્રિન્ટ</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -2659,7 +3001,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 <div className="space-y-1">
                   <div className="text-[11px] font-bold text-slate-600 dark:text-slate-300">વિષય પસંદ કરો:</div>
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                    {ALL_CLASS_9_SUBJECTS.map((subj) => (
+                    {allActiveInternalSubjects.map((subj) => (
                       <button
                         key={subj.id}
                         type="button"
@@ -2698,20 +3040,20 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                         <th rowSpan={2} className="py-2 px-1.5 border border-slate-300 dark:border-slate-700 sticky left-11 sm:left-14 z-30 bg-slate-100 dark:bg-slate-800 w-24 sm:w-40 min-w-[92px] max-w-[105px] sm:max-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] text-left text-[10px] sm:text-xs font-bold">
                           વિદ્યાર્થીનું નામ
                         </th>
-                        {CLASS_9_PRAYOGIK_SUBJECTS.map((sub) => (
+                        {prayogikSubjects.map((sub) => (
                           <th key={sub.id} colSpan={3} className="py-2 px-2 border border-slate-300 dark:border-slate-700 text-center bg-teal-500/10 text-teal-900 dark:text-teal-200 font-black">
                             {sub.nameGu} (કુલ ૮૦)
                           </th>
                         ))}
                         <th rowSpan={2} className="py-2.5 px-2 border border-slate-300 dark:border-slate-700 text-center w-24 bg-indigo-500/10 font-black text-indigo-900 dark:text-indigo-200">
-                          કુલ (૨૪૦)
+                          કુલ ({prayogikSubjects.length * 80})
                         </th>
                         <th rowSpan={2} className="py-2.5 px-2 border border-slate-300 dark:border-slate-700 text-center w-16 bg-indigo-500/10 font-black text-indigo-900 dark:text-indigo-200">
                           ટકા
                         </th>
                       </tr>
                       <tr>
-                        {CLASS_9_PRAYOGIK_SUBJECTS.map((sub) => (
+                        {prayogikSubjects.map((sub) => (
                           <React.Fragment key={sub.id}>
                             <th className="py-1 px-1 border border-slate-300 dark:border-slate-700 text-center min-w-[65px] bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 text-[10px]">
                               થિયરી (૪૦)
@@ -2740,7 +3082,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                               {student.studentName}
                             </td>
 
-                            {CLASS_9_PRAYOGIK_SUBJECTS.map((sub) => {
+                            {prayogikSubjects.map((sub) => {
                               const keyTh = `${student.id}_${sub.id}_theory40`;
                               const keyPr = `${student.id}_${sub.id}_practical40`;
                               const valTh = gridInputs[keyTh] || '';
@@ -3477,6 +3819,34 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 🏆 વાર્ષિક પરિણામ
               </button>
             </div>
+
+            {/* Annual Format Selector: 700 vs 1000 (Std 9) | 700 vs 900 (Std 11) */}
+            {resultExamMode === 'annual' && (
+              <div className="flex items-center gap-1 p-1 bg-amber-500/10 dark:bg-amber-950/30 rounded-2xl border border-amber-300 dark:border-amber-700/60 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setResultFormat('700')}
+                  className={`px-3 py-1.5 rounded-xl font-black transition-all cursor-pointer ${
+                    effectiveResultFormat === '700'
+                      ? 'bg-[#C45A2D] text-white shadow-xs'
+                      : 'text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                  }`}
+                >
+                  Annual-700
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResultFormat(selectedStandard === '11' ? '900' : '1000')}
+                  className={`px-3 py-1.5 rounded-xl font-black transition-all cursor-pointer ${
+                    effectiveResultFormat !== '700'
+                      ? 'bg-[#C45A2D] text-white shadow-xs'
+                      : 'text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                  }`}
+                >
+                  {selectedStandard === '11' ? 'Annual-900' : 'Annual-1000'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Search & Status Filters */}
@@ -3645,26 +4015,49 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               </div>
 
               {resultExamMode === 'annual' && (
-                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setMarksheetPrintMode('simple100')}
-                    className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                      marksheetPrintMode === 'simple100' ? 'bg-slate-900 text-white' : 'text-slate-600'
-                    }`}
-                  >
-                    ૧૦૦ માંથી
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMarksheetPrintMode('detailed')}
-                    className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                      marksheetPrintMode === 'detailed' ? 'bg-slate-900 text-white' : 'text-slate-600'
-                    }`}
-                  >
-                    વિગતવાર
-                  </button>
-                </div>
+                <>
+                  <div className="flex items-center gap-1 p-1 bg-amber-500/10 dark:bg-amber-950/30 rounded-2xl border border-amber-300 dark:border-amber-700/60 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setResultFormat('700')}
+                      className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                        effectiveResultFormat === '700' ? 'bg-[#C45A2D] text-white' : 'text-amber-900 dark:text-amber-200'
+                      }`}
+                    >
+                      Annual-700
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setResultFormat(selectedStandard === '11' ? '900' : '1000')}
+                      className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                        effectiveResultFormat !== '700' ? 'bg-[#C45A2D] text-white' : 'text-amber-900 dark:text-amber-200'
+                      }`}
+                    >
+                      {selectedStandard === '11' ? 'Annual-900' : 'Annual-1000'}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setMarksheetPrintMode('simple100')}
+                      className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                        marksheetPrintMode === 'simple100' ? 'bg-slate-900 text-white' : 'text-slate-600'
+                      }`}
+                    >
+                      ૧૦૦ માંથી
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMarksheetPrintMode('detailed')}
+                      className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                        marksheetPrintMode === 'detailed' ? 'bg-slate-900 text-white' : 'text-slate-600'
+                      }`}
+                    >
+                      વિગતવાર
+                    </button>
+                  </div>
+                </>
               )}
 
               <button
@@ -3800,7 +4193,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       )}
 
       {/* VIEW TAB 4: SIDDHI-KRUPA MARKS ENTRY (સિદ્ધિ–કૃપા ગુણ એન્ટ્રી - CLASS 9 ONLY) */}
-      {selectedStandard === '9' && viewTab === 'siddhi_krupa_entry' && (
+      {(selectedStandard === '9' || selectedStandard === '11') && viewTab === 'siddhi_krupa_entry' && (
         <div className="space-y-5">
           {/* Exam Selector Segmented Tabs (All 8 GSEB Exams - quick switching) */}
           <div className="glass-panel rounded-3xl border border-[#E2E8F0] dark:border-white/10 p-4 shadow-sm space-y-1.5">
@@ -3851,7 +4244,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 </div>
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-amber-950 dark:text-amber-200">
-                    ધોરણ ૯ • સિદ્ધિ–કૃપા ગુણ એન્ટ્રી (GSEB Grace Marks Module)
+                    ધોરણ {selectedStandard} • સિદ્ધિ–કૃપા ગુણ એન્ટ્રી ({effectiveResultFormat} ગુણ પદ્ધતિ)
                   </h3>
                   <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
                     ગુજરાત માધ્યમિક અને ઉચ્ચતર માધ્યમિક શિક્ષણ બોર્ડ (GSEB) ના નિયમોનુસાર સિદ્ધિ અને કૃપા ગુણ આપવાનું પત્રક.
@@ -3860,6 +4253,28 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
+                {/* Format toggle for Siddhi */}
+                <div className="flex items-center gap-1 p-1 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-amber-300 dark:border-amber-700 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setResultFormat('700')}
+                    className={`px-2.5 py-1.5 rounded-xl font-black transition-all cursor-pointer ${
+                      effectiveResultFormat === '700' ? 'bg-[#C45A2D] text-white shadow-xs' : 'text-amber-950 dark:text-amber-200'
+                    }`}
+                  >
+                    Annual-700
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResultFormat(selectedStandard === '11' ? '900' : '1000')}
+                    className={`px-2.5 py-1.5 rounded-xl font-black transition-all cursor-pointer ${
+                      effectiveResultFormat !== '700' ? 'bg-[#C45A2D] text-white shadow-xs' : 'text-amber-950 dark:text-amber-200'
+                    }`}
+                  >
+                    {selectedStandard === '11' ? 'Annual-900' : 'Annual-1000'}
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={handleBatchAutoApplyGrace}
@@ -3899,13 +4314,18 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
             {/* Quick Rule Badges with exact user formula & examples */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
               <div className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-amber-800 space-y-1">
-                <span className="font-bold text-amber-900 dark:text-amber-200 block">૧. મળવાપાત્ર સિદ્ધિ ગુણ:</span>
+                <span className="font-bold text-amber-900 dark:text-amber-200 block">૧. મળવાપાત્ર સિદ્ધિ ગુણ ({effectiveResultFormat} ગુણ):</span>
                 <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
-                  ૭ મુખ્ય વિષયોના ૭૦૦ માંથી મેળવેલ ગુણના <strong>ટકા − ૩૩%</strong> (મહત્તમ ૧૫ ગુણ પૂલ).
+                  {selectedStandard === '11' && effectiveResultFormat === '900'
+                    ? 'કુલ ૯ વિષયોના ૯૦૦ માંથી મેળવેલ ગુણના ટકા − ૩૩% (મહત્તમ ૧૫ ગુણ પૂલ).'
+                    : '૭ મુખ્ય વિષયોના ૭૦૦ માંથી મેળવેલ ગુણના ટકા − ૩૩% (મહત્તમ ૧૫ ગુણ પૂલ).'}
                 </p>
                 <div className="text-[10px] text-amber-800 dark:text-amber-400 bg-amber-500/10 p-1.5 rounded-lg font-mono">
-                  દા.ત. ૨૮૦/૭૦૦ = ૪૦% − ૩૩% = ૭ ગુણ<br />
-                  ૫૬૦/૭૦૦ = ૮૦% − ૩૩% = ૪૭ → મહત્તમ ૧૫ ગુણ
+                  {selectedStandard === '11' && effectiveResultFormat === '900' ? (
+                    <>દા.ત. ૪૫૦/૯૦૦ = ૫૦% − ૩૩% = ૧૭ → મહત્તમ ૧૫ ગુણ<br />૩૬૦/૯૦૦ = ૪૦% − ૩૩% = ૭ ગુણ</>
+                  ) : (
+                    <>દા.ત. ૨૮૦/૭૦૦ = ૪૦% − ૩૩% = ૭ ગુણ<br />૫૬૦/૭૦૦ = ૮૦% − ૩૩% = ૪૭ → મહત્તમ ૧૫ ગુણ</>
+                  )}
                 </div>
               </div>
               <div className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-amber-800 space-y-1">
@@ -3969,11 +4389,12 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               <select
                 value={siddhiFilterMode}
                 onChange={(e) => setSiddhiFilterMode(e.target.value as any)}
-                className="px-2.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white"
+                className="px-2.5 py-1.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 text-xs font-bold text-amber-950 dark:text-amber-200"
               >
-                <option value="ALL">બધા વિદ્યાર્થી ({filteredStudents.length})</option>
+                <option value="ELIGIBLE">✨ ફક્ત પાત્ર વિદ્યાર્થીઓ</option>
                 <option value="NEEDS_GRACE">ગ્રેસથી પાસ થઈ શકે તેવા</option>
                 <option value="ELIGIBLE_SIDDHI">સિદ્ધિ ગુણ મળવાપાત્ર</option>
+                <option value="ALL">બધા વિદ્યાર્થી ({filteredStudents.length})</option>
                 <option value="PASSED">ઉત્તીર્ણ (Pass)</option>
                 <option value="FAILED">સુધારણા જરૂરી (Fail)</option>
               </select>
@@ -4004,8 +4425,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
             </div>
           </div>
 
-          {/* LAYOUT 1: STUDENT-WISE VIEW */}
-          {siddhiViewLayout === 'student' && (() => {
+          {/* Unified Siddhi / Krupa Calculation Scope for Layout 1 & Layout 2 */}
+          {(() => {
             const siddhiStudents = filteredStudents.filter((st) => {
               if (siddhiSectionFilter !== 'ALL' && (st.section || st.division || 'A').toUpperCase() !== siddhiSectionFilter) {
                 return false;
@@ -4019,12 +4440,15 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 if (!mName && !mRoll && !mGr && !mSeat) return false;
               }
 
-              const rawRes = computeClass9StudentResult(st, marks, '700', {});
-              const activeRes = computeClass9StudentResult(st, marks, '700', manualGraceOverrides[st.id]);
+              const rawRes = computeActiveStdStudentResult(st, {});
+              const activeRes = computeActiveStdStudentResult(st, manualGraceOverrides[st.id]);
               const pool = rawRes.siddhiPoolEarned;
               const hasFailing = rawRes.scores.some((s) => (s.converted100 ?? 0) < 33);
               const hasUnder25 = rawRes.scores.filter((s) => s.subject.isMainSubject).some((s) => (s.converted100 ?? 0) < 25);
+              const hasGraceAssigned = activeRes.totalSiddhiUsed > 0 || activeRes.totalKrupaUsed > 0;
+              const isEligible = (hasFailing && !hasUnder25 && (pool > 0 || 10 > 0)) || hasGraceAssigned;
 
+              if (siddhiFilterMode === 'ELIGIBLE') return isEligible;
               if (siddhiFilterMode === 'ELIGIBLE_SIDDHI') return pool > 0;
               if (siddhiFilterMode === 'NEEDS_GRACE') return hasFailing && !hasUnder25 && (pool > 0 || 10 > 0);
               if (siddhiFilterMode === 'PASSED') return activeRes.overallResult !== 'NEEDS_IMPROVEMENT';
@@ -4033,18 +4457,22 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               return true;
             });
 
-            const activeSiddhiStudent = siddhiStudents.find((s) => s.id === siddhiSelectedStudentId) || siddhiStudents[0];
-
-            if (!activeSiddhiStudent) {
+            if (siddhiStudents.length === 0) {
               return (
-                <div className="p-12 text-center text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-3xl border">
-                  પસંદ કરેલ ફિલ્ટર મુજબ કોઈ વિદ્યાર્થી મળ્યા નથી.
+                <div className="p-12 text-center text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 space-y-2">
+                  <div className="text-base text-slate-800 dark:text-slate-200">
+                    પસંદ કરેલ ફિલ્ટર મુજબ કોઈ વિદ્યાર્થી મળ્યા નથી.
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    તમામ વિદ્યાર્થીઓની યાદી જોવા માટે ઉપર ફિલ્ટરમાંથી <strong>"બધા વિદ્યાર્થી"</strong> પસંદ કરો.
+                  </div>
                 </div>
               );
             }
 
-            const rawRes = computeClass9StudentResult(activeSiddhiStudent, marks, '700', {});
-            const activeRes = computeClass9StudentResult(activeSiddhiStudent, marks, '700', manualGraceOverrides[activeSiddhiStudent.id]);
+            const activeSiddhiStudent = siddhiStudents.find((s) => s.id === siddhiSelectedStudentId) || siddhiStudents[0];
+            const rawRes = computeActiveStdStudentResult(activeSiddhiStudent, {});
+            const activeRes = computeActiveStdStudentResult(activeSiddhiStudent, manualGraceOverrides[activeSiddhiStudent.id]);
             const siddhiPool = rawRes.siddhiPoolEarned;
             const hasUnder25 = rawRes.scores.filter((s) => s.subject.isMainSubject).some((s) => (s.converted100 ?? 0) < 25);
             const awardedSiddhiTotal = activeRes.totalSiddhiUsed;
@@ -4057,358 +4485,493 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
             const studentGraceMap = manualGraceOverrides[activeSiddhiStudent.id] || {};
 
             return (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                {/* Left Side: Student Selection List */}
-                <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 p-4 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">
-                      વિદ્યાર્થી યાદી ({siddhiStudents.length})
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-bold">રોલ / બેઠક / સિદ્ધિ</span>
-                  </div>
+              <>
+                {/* LAYOUT 1: STUDENT-WISE VIEW */}
+                {siddhiViewLayout === 'student' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    {/* Left Side: Student Selection List */}
+                    <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 p-4 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                        <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                          {siddhiFilterMode === 'ELIGIBLE' ? 'પાત્ર વિદ્યાર્થી યાદી' : 'વિદ્યાર્થી યાદી'} ({siddhiStudents.length})
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-bold">રોલ / બેઠક / સિદ્ધિ</span>
+                      </div>
 
-                  <div className="space-y-1.5 max-h-[580px] overflow-y-auto pr-1">
-                    {siddhiStudents.map((st) => {
-                      const stRawRes = computeClass9StudentResult(st, marks, '700', {});
-                      const stActiveRes = computeClass9StudentResult(st, marks, '700', manualGraceOverrides[st.id]);
-                      const isSelected = st.id === activeSiddhiStudent.id;
-                      const hasDirty = siddhiDirtyStudents.has(st.id);
-                      const stSeat = getSeatNumber(st.id, st.rollNumber);
+                      <div className="space-y-1.5 max-h-[580px] overflow-y-auto pr-1">
+                        {siddhiStudents.map((st) => {
+                          const stRawRes = computeActiveStdStudentResult(st, {});
+                          const stActiveRes = computeActiveStdStudentResult(st, manualGraceOverrides[st.id]);
+                          const isSelected = st.id === activeSiddhiStudent.id;
+                          const hasDirty = siddhiDirtyStudents.has(st.id);
+                          const stSeat = getSeatNumber(st.id, st.rollNumber);
 
-                      return (
-                        <div
-                          key={st.id}
-                          onClick={() => setSiddhiSelectedStudentId(st.id)}
-                          className={`p-3 rounded-2xl cursor-pointer transition-all border text-left ${
-                            isSelected
-                              ? 'bg-[#C45A2D]/10 border-[#C45A2D] shadow-xs'
-                              : 'bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100 border-slate-200 dark:border-slate-800'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span className="text-xs font-black text-slate-900 dark:text-white truncate">
-                              {st.studentName}
-                            </span>
-                            {hasDirty && (
-                              <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" title="સેવ બાકી" />
-                            )}
-                          </div>
-
-                          <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
-                            <span>રોલ: <strong>{st.rollNumber || '-'}</strong> • બેઠક: <strong>{stSeat}</strong></span>
-                            <span className="font-mono text-[10px]">GR: {st.grNumber || '-'}</span>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-2 mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60">
-                            {/* Eligible Siddhi badge */}
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-800 dark:text-teal-300 text-[10px] font-bold">
-                              <span>સિદ્ધિ:</span>
-                              <strong>{stRawRes.siddhiPoolEarned} ગુણ</strong>
-                            </span>
-
-                            {/* Result status */}
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                                stActiveRes.overallResult === 'PASS'
-                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                  : stActiveRes.overallResult === 'PASS_WITH_SIDDHI'
-                                  ? 'bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300'
-                                  : stActiveRes.overallResult === 'PASS_WITH_KRUPA'
-                                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
-                                  : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+                          return (
+                            <div
+                              key={st.id}
+                              onClick={() => setSiddhiSelectedStudentId(st.id)}
+                              className={`p-3 rounded-2xl cursor-pointer transition-all border text-left ${
+                                isSelected
+                                  ? 'bg-[#C45A2D]/10 border-[#C45A2D] shadow-xs'
+                                  : 'bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100 border-slate-200 dark:border-slate-800'
                               }`}
                             >
-                              {stActiveRes.overallResultGu.split(' ')[0]}
+                              <div className="flex items-center justify-between gap-1.5">
+                                <span className="text-xs font-black text-slate-900 dark:text-white truncate">
+                                  {st.studentName}
+                                </span>
+                                {hasDirty && (
+                                  <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" title="સેવ બાકી" />
+                                )}
+                              </div>
+
+                              <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                                <span>રોલ: <strong>{st.rollNumber || '-'}</strong> • બેઠક: <strong>{stSeat}</strong></span>
+                                <span className="font-mono text-[10px]">GR: {st.grNumber || '-'}</span>
+                              </div>
+
+                              <div className="flex items-center justify-between gap-2 mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60">
+                                {/* Eligible Siddhi badge - strictly from this student's earned pool */}
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-800 dark:text-teal-300 text-[10px] font-bold">
+                                  <span>સિદ્ધિ પૂલ:</span>
+                                  <strong>{stRawRes.siddhiPoolEarned} ગુણ</strong>
+                                </span>
+
+                                {/* Result status */}
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                    stActiveRes.overallResult === 'PASS'
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                      : stActiveRes.overallResult === 'PASS_WITH_SIDDHI'
+                                      ? 'bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300'
+                                      : stActiveRes.overallResult === 'PASS_WITH_KRUPA'
+                                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+                                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+                                  }`}
+                                >
+                                  {stActiveRes.overallResultGu.split(' ')[0]}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Right Side: Active Student Subject-Wise Grace Table */}
+                    <div className="lg:col-span-8 space-y-4">
+                      {/* Student Header & Quick KPI Bar */}
+                      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 p-5 shadow-sm space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-lg font-black text-slate-900 dark:text-white">
+                                {activeSiddhiStudent.studentName}
+                              </h4>
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-xs font-black ${
+                                  activeRes.overallResult === 'PASS'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : activeRes.overallResult === 'PASS_WITH_SIDDHI'
+                                    ? 'bg-teal-100 text-teal-800'
+                                    : activeRes.overallResult === 'PASS_WITH_KRUPA'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-rose-100 text-rose-800'
+                                }`}
+                              >
+                                {activeRes.overallResultGu}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 font-mono flex-wrap">
+                              <span>રોલ નં: <strong>{activeSiddhiStudent.rollNumber || '-'}</strong></span>
+                              <span>•</span>
+                              <span>
+                                બેઠક ક્રમાંક:{' '}
+                                <input
+                                  type="text"
+                                  value={getSeatNumber(activeSiddhiStudent.id, activeSiddhiStudent.rollNumber)}
+                                  onChange={(e) => handleUpdateSeatNumber(activeSiddhiStudent.id, e.target.value)}
+                                  className="w-20 px-1 py-0.5 border border-slate-300 dark:border-slate-700 rounded-md font-bold text-slate-900 dark:text-white text-xs text-center"
+                                  title="બેઠક ક્રમાંક બદલો"
+                                />
+                              </span>
+                              <span>•</span>
+                              <span>G.R. નં: <strong>{activeSiddhiStudent.grNumber || '-'}</strong></span>
+                              <span>•</span>
+                              <span>વર્ગ: <strong>ધોરણ {selectedStandard} ({activeSiddhiStudent.section || 'A'})</strong></span>
+                            </div>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleAutoApplyGraceForStudent(activeSiddhiStudent)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs cursor-pointer"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>ઓટો-ગ્રેસ</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleResetGraceForStudent(activeSiddhiStudent.id)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 cursor-pointer"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                              <span>રીસેટ</span>
+                            </button>
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                                graceSyncStatus === 'syncing'
+                                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700/60'
+                                  : !navigator.onLine
+                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
+                                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700/60'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block w-2 h-2 rounded-full ${
+                                  graceSyncStatus === 'syncing'
+                                    ? 'bg-amber-500 animate-pulse'
+                                    : !navigator.onLine
+                                    ? 'bg-slate-400'
+                                    : 'bg-emerald-500'
+                                }`}
+                              />
+                              <span>
+                                {graceSyncStatus === 'syncing'
+                                  ? 'ક્લાઉડ સિંક...'
+                                  : !navigator.onLine
+                                  ? 'ઑફલાઇન સેવ'
+                                  : 'ઓટો સિંક સક્રિય'}
+                              </span>
                             </span>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                {/* Right Side: Active Student Subject-Wise Grace Table */}
-                <div className="lg:col-span-8 space-y-4">
-                  {/* Student Header & Quick KPI Bar */}
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 p-5 shadow-sm space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-lg font-black text-slate-900 dark:text-white">
-                            {activeSiddhiStudent.studentName}
-                          </h4>
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-black ${
-                              activeRes.overallResult === 'PASS'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : activeRes.overallResult === 'PASS_WITH_SIDDHI'
-                                ? 'bg-teal-100 text-teal-800'
-                                : activeRes.overallResult === 'PASS_WITH_KRUPA'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-rose-100 text-rose-800'
-                            }`}
-                          >
-                            {activeRes.overallResultGu}
-                          </span>
+                        {/* 4 Summary Stat Chips */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                            <div className="text-[10px] font-bold text-slate-500 uppercase">મૂળ સરેરાશ ટકા</div>
+                            <div className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
+                              {rawRes.percentage}%
+                            </div>
+                            <div className="text-[10px] text-slate-400">કુલ {effectiveResultFormat} ગુણ</div>
+                          </div>
+
+                          <div className="p-3 rounded-2xl bg-teal-500/10 border border-teal-500/30">
+                            <div className="text-[10px] font-bold text-teal-800 dark:text-teal-300 uppercase">મળવાપાત્ર સિદ્ધિ ગુણ પૂલ</div>
+                            <div className="text-lg font-black text-teal-700 dark:text-teal-300 mt-0.5">
+                              {siddhiPool} ગુણ
+                            </div>
+                            <div className="text-[10px] text-teal-600 dark:text-teal-400">
+                              {hasUnder25 ? 'અપાત્ર (<૨૫ ગુણ)' : 'સરેરાશ >૩૩% નિયમ'}
+                            </div>
+                          </div>
+
+                          <div className={`p-3 rounded-2xl border ${
+                            isSiddhiOverLimit
+                              ? 'bg-rose-500/10 border-rose-500/30'
+                              : 'bg-indigo-500/10 border-indigo-500/30'
+                          }`}>
+                            <div className="text-[10px] font-bold text-indigo-900 dark:text-indigo-300 uppercase">આપેલ સિદ્ધિ ગુણ (#)</div>
+                            <div className={`text-lg font-black mt-0.5 ${isSiddhiOverLimit ? 'text-rose-600' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                              {awardedSiddhiTotal} ગુણ
+                            </div>
+                            <div className="text-[10px] text-indigo-700 dark:text-indigo-300">
+                              બાકી ઉપલબ્ધ: <strong>{remainingSiddhi}</strong> / {siddhiPool}
+                            </div>
+                          </div>
+
+                          <div className={`p-3 rounded-2xl border ${
+                            isKrupaOverLimit
+                              ? 'bg-rose-500/10 border-rose-500/30'
+                              : 'bg-amber-500/10 border-amber-500/30'
+                          }`}>
+                            <div className="text-[10px] font-bold text-amber-900 dark:text-amber-300 uppercase">આપેલ કૃપા ગુણ (*)</div>
+                            <div className={`text-lg font-black mt-0.5 ${isKrupaOverLimit ? 'text-rose-600' : 'text-amber-600 dark:text-amber-400'}`}>
+                              {awardedKrupaTotal} / ૧૦
+                            </div>
+                            <div className="text-[10px] text-amber-700 dark:text-amber-300">
+                              બાકી: <strong>{remainingKrupa}</strong> / ૧૦
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 font-mono flex-wrap">
-                          <span>રોલ નં: <strong>{activeSiddhiStudent.rollNumber || '-'}</strong></span>
-                          <span>•</span>
-                          <span>
-                            બેઠક ક્રમાંક:{' '}
-                            <input
-                              type="text"
-                              value={getSeatNumber(activeSiddhiStudent.id, activeSiddhiStudent.rollNumber)}
-                              onChange={(e) => handleUpdateSeatNumber(activeSiddhiStudent.id, e.target.value)}
-                              className="w-20 px-1 py-0.5 border border-slate-300 dark:border-slate-700 rounded-md font-bold text-slate-900 dark:text-white text-xs text-center"
-                              title="બેઠક ક્રમાંક બદલો"
-                            />
-                          </span>
-                          <span>•</span>
-                          <span>G.R. નં: <strong>{activeSiddhiStudent.grNumber || '-'}</strong></span>
-                          <span>•</span>
-                          <span>વર્ગ: <strong>ધોરણ ૯ ({activeSiddhiStudent.section || 'A'})</strong></span>
+
+                        {/* GSEB Student Pool Rule Guidance Banner */}
+                        <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                          <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <strong>સિદ્ધિ ગુણ વિતરણ નિયમ:</strong> સિદ્ધિ ગુણ વિદ્યાર્થીનો કુલ પૂલ છે (વિષયવાર મર્યાદિત નથી). દા.ત. જો વિદ્યાર્થીને ૭ સિદ્ધિ ગુણ મળવાપાત્ર હોય, તો તેને એક વિષયમાં ૪ અને બીજામાં ૩ એમ કુલ ૭ સુધી જરૂરિયાત મુજબ આપી શકાય છે.
+                          </div>
                         </div>
+
+                        {/* Validation Warnings */}
+                        {isSiddhiOverLimit && (
+                          <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-800 dark:text-rose-300 text-xs font-bold flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                            <span>ધ્યાન આપો: આપેલ સિદ્ધિ ગુણ ({awardedSiddhiTotal}) વિદ્યાર્થીના મળવાપાત્ર પૂલ ({siddhiPool}) કરતાં વધી ગયા છે! કૃપા કરીને સુધારો કરો.</span>
+                          </div>
+                        )}
+
+                        {isKrupaOverLimit && (
+                          <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-800 dark:text-rose-300 text-xs font-bold flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                            <span>ધ્યાન આપો: આપેલ કૃપા ગુણ ({awardedKrupaTotal}) નિયમાનુસાર મહત્તમ ૧૦ ગુણ કરતાં વધી ગયા છે!</span>
+                          </div>
+                        )}
+
+                        {hasUnder25 && (
+                          <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-900 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>આ વિદ્યાર્થીને એક અથવા વધુ વિષયમાં મૂળ ગુણ ૨૫ કરતાં ઓછા હોવાથી GSEB નિયમાનુસાર પ્રમોશન માટે સિદ્ધિ ગુણ મળવાપાત્ર નથી.</span>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Action buttons */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleAutoApplyGraceForStudent(activeSiddhiStudent)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs cursor-pointer"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>ઓટો-ગ્રેસ</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleResetGraceForStudent(activeSiddhiStudent.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 cursor-pointer"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          <span>રીસેટ</span>
-                        </button>
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                            graceSyncStatus === 'syncing'
-                              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700/60'
-                              : !navigator.onLine
-                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
-                              : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700/60'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block w-2 h-2 rounded-full ${
-                              graceSyncStatus === 'syncing'
-                                ? 'bg-amber-500 animate-pulse'
-                                : !navigator.onLine
-                                ? 'bg-slate-400'
-                                : 'bg-emerald-500'
-                            }`}
-                          />
-                          <span>
-                            {graceSyncStatus === 'syncing'
-                              ? 'ક્લાઉડ સિંક...'
-                              : !navigator.onLine
-                              ? 'ઑફલાઇન સેવ'
-                              : 'ઓટો સિંક સક્રિય'}
-                          </span>
-                        </span>
+                      {/* Subject-Wise Grace Marks Table */}
+                      <div className="border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-xs bg-white dark:bg-slate-900">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-center border-b">
+                              <tr>
+                                <th className="py-3 px-3 text-left min-w-[140px]">વિષય (Subject)</th>
+                                <th className="py-3 px-2 w-28 bg-slate-200/60 dark:bg-slate-700/60">
+                                  <div>મૂળ મેળવેલ ગુણ</div>
+                                  <div className="text-[10px] font-normal text-slate-500">૧૦૦ માંથી</div>
+                                </th>
+                                <th className="py-3 px-2 w-32 bg-amber-500/10 text-amber-900 dark:text-amber-200">
+                                  <div>જરૂરિયાત (Deficit)</div>
+                                  <div className="text-[10px] font-normal text-amber-700">૩૩ ગુણ પાસિંગ માટે</div>
+                                </th>
+                                <th className="py-3 px-2 w-32 bg-indigo-500/10 text-indigo-900 dark:text-indigo-200">
+                                  <div>આપેલ સિદ્ધિ ગુણ (#)</div>
+                                  <div className="text-[10px] font-normal text-indigo-700">બાકી પૂલ: {remainingSiddhi}/{siddhiPool}</div>
+                                </th>
+                                <th className="py-3 px-2 w-32 bg-amber-500/10 text-amber-900 dark:text-amber-200">
+                                  <div>આપેલ કૃપા ગુણ (*)</div>
+                                  <div className="text-[10px] font-normal text-amber-700">બાકી: {remainingKrupa}/૧૦</div>
+                                </th>
+                                <th className="py-3 px-2 w-28 bg-emerald-500/10 font-black text-emerald-950 dark:text-emerald-200">
+                                  <div>આખરી ગુણ</div>
+                                  <div className="text-[10px] font-normal text-emerald-700">૧૦૦ માંથી</div>
+                                </th>
+                                <th className="py-3 px-3 w-28">પરિણામ</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-center">
+                              {rawRes.scores.map((sc) => {
+                                const raw = sc.converted100 ?? 0;
+                                const isSubjectUnder25 = raw < 25;
+                                const sid = sc.subject.id;
+                                const siddhiVal = studentGraceMap[sid]?.siddhi || 0;
+                                const krupaVal = studentGraceMap[sid]?.krupa || 0;
+                                const finalMark = Math.min(100, raw + siddhiVal + krupaVal);
+                                const isPassed = finalMark >= 33;
+                                const deficit = Math.max(0, 33 - raw);
+
+                                return (
+                                  <tr key={sid} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                                    <td className="py-3 px-3 text-left font-black text-slate-900 dark:text-white">
+                                      <div>{sc.subject.nameGu}</div>
+                                      <div className="text-[10px] text-slate-400 font-normal">{sc.subject.nameEn}</div>
+                                    </td>
+
+                                    {/* 1. મૂળ મેળવેલ ગુણ */}
+                                    <td className="py-3 px-2 font-black text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-800 dark:text-slate-200">
+                                      {sc.converted100 !== null ? sc.converted100 : '-'}
+                                      {isSubjectUnder25 && (
+                                        <span className="block text-[9px] text-rose-600 font-normal">(&lt;૨૫ ગુણ)</span>
+                                      )}
+                                    </td>
+
+                                    {/* 2. જરૂરિયાત (Deficit) */}
+                                    <td className="py-3 px-2 font-bold text-xs bg-amber-500/5">
+                                      {raw >= 33 ? (
+                                        <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md inline-block">
+                                          ✓ પાસ ({raw})
+                                        </span>
+                                      ) : isSubjectUnder25 ? (
+                                        <span className="text-rose-700 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md inline-block font-black">
+                                          અપાત્ર (&lt;૨૫)
+                                        </span>
+                                      ) : (
+                                        <div className="space-y-1">
+                                          <span className="text-amber-800 dark:text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-md inline-block font-black">
+                                            {deficit} ગુણ જરૂર
+                                          </span>
+                                          {!hasUnder25 && remainingSiddhi > 0 && siddhiVal === 0 && (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const allocate = Math.min(deficit, remainingSiddhi);
+                                                handleGraceChange(activeSiddhiStudent.id, sid, 'siddhi', String(allocate));
+                                              }}
+                                              className="block mx-auto text-[10px] px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all cursor-pointer shadow-xs"
+                                              title={`આ વિષયમાં ${Math.min(deficit, remainingSiddhi)} સિદ્ધિ ગુણ ફાળવો`}
+                                            >
+                                              +{Math.min(deficit, remainingSiddhi)} ફાળવો
+                                            </button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </td>
+
+                                    {/* 3. આપેલ સિદ્ધિ ગુણ (#) */}
+                                    <td className="py-2 px-2 bg-indigo-500/5">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max={Math.max(0, siddhiPool - (awardedSiddhiTotal - siddhiVal))}
+                                        value={siddhiVal > 0 ? siddhiVal : ''}
+                                        placeholder="0"
+                                        disabled={hasUnder25 || isSubjectUnder25}
+                                        onChange={(e) => handleGraceChange(activeSiddhiStudent.id, sid, 'siddhi', e.target.value)}
+                                        className={`w-20 h-10 text-center font-black text-sm rounded-xl border-2 transition-all mx-auto block ${
+                                          siddhiVal > 0
+                                            ? 'border-indigo-500 bg-indigo-50 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200'
+                                            : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
+                                        } ${hasUnder25 || isSubjectUnder25 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                      />
+                                    </td>
+
+                                    {/* 4. આપેલ કૃપા ગુણ (*) */}
+                                    <td className="py-2 px-2 bg-amber-500/5">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max={Math.max(0, 10 - (awardedKrupaTotal - krupaVal))}
+                                        value={krupaVal > 0 ? krupaVal : ''}
+                                        placeholder="0"
+                                        disabled={isSubjectUnder25}
+                                        onChange={(e) => handleGraceChange(activeSiddhiStudent.id, sid, 'krupa', e.target.value)}
+                                        className={`w-20 h-10 text-center font-black text-sm rounded-xl border-2 transition-all mx-auto block ${
+                                          krupaVal > 0
+                                            ? 'border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
+                                            : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
+                                        } ${isSubjectUnder25 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                      />
+                                    </td>
+
+                                    {/* 5. કુલ ગુણ (મૂળ + સિદ્ધિ + કૃપા) */}
+                                    <td className="py-3 px-2 font-black text-base text-emerald-950 dark:text-emerald-200 bg-emerald-500/10">
+                                      {sc.converted100 !== null ? finalMark : '-'}
+                                      {(siddhiVal > 0 || krupaVal > 0) && (
+                                        <span className="block text-[9px] text-slate-500 font-normal">
+                                          ({raw} {siddhiVal > 0 ? `+${siddhiVal}#` : ''} {krupaVal > 0 ? `+${krupaVal}*` : ''})
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    {/* 6. પરિણામ (પાસ / નાપાસ) */}
+                                    <td className="py-3 px-3">
+                                      <span
+                                        className={`px-3 py-1 rounded-full text-xs font-black inline-block ${
+                                          sc.converted100 === null
+                                            ? 'text-slate-400 bg-slate-100'
+                                            : isPassed
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                            : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+                                        }`}
+                                      >
+                                        {sc.converted100 === null ? '-' : isPassed ? 'પાસ' : 'નાપાસ'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
+                  </div>
+                )}
 
-                    {/* 4 Summary Stat Chips */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                        <div className="text-[10px] font-bold text-slate-500 uppercase">મૂળ સરેરાશ ટકા</div>
-                        <div className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-                          {rawRes.percentage}%
-                        </div>
-                        <div className="text-[10px] text-slate-400">મુખ્ય વિષયો (૭૦૦)</div>
-                      </div>
-
-                      <div className="p-3 rounded-2xl bg-teal-500/10 border border-teal-500/30">
-                        <div className="text-[10px] font-bold text-teal-800 dark:text-teal-300 uppercase">મળવાપાત્ર સિદ્ધિ ગુણ</div>
-                        <div className="text-lg font-black text-teal-700 dark:text-teal-300 mt-0.5">
-                          {siddhiPool} ગુણ
-                        </div>
-                        <div className="text-[10px] text-teal-600 dark:text-teal-400">
-                          {hasUnder25 ? 'અપાત્ર (<૨૫ ગુણ)' : 'સરેરાશ >૩૩% નિયમ'}
-                        </div>
-                      </div>
-
-                      <div className={`p-3 rounded-2xl border ${
-                        isSiddhiOverLimit
-                          ? 'bg-rose-500/10 border-rose-500/30'
-                          : 'bg-indigo-500/10 border-indigo-500/30'
-                      }`}>
-                        <div className="text-[10px] font-bold text-indigo-900 dark:text-indigo-300 uppercase">આપેલ સિદ્ધિ ગુણ (#)</div>
-                        <div className={`text-lg font-black mt-0.5 ${isSiddhiOverLimit ? 'text-rose-600' : 'text-indigo-600 dark:text-indigo-400'}`}>
-                          {awardedSiddhiTotal} ગુણ
-                        </div>
-                        <div className="text-[10px] text-indigo-700 dark:text-indigo-300">
-                          બાકી: <strong>{remainingSiddhi}</strong> / {siddhiPool}
-                        </div>
-                      </div>
-
-                      <div className={`p-3 rounded-2xl border ${
-                        isKrupaOverLimit
-                          ? 'bg-rose-500/10 border-rose-500/30'
-                          : 'bg-amber-500/10 border-amber-500/30'
-                      }`}>
-                        <div className="text-[10px] font-bold text-amber-900 dark:text-amber-300 uppercase">આપેલ કૃપા ગુણ (*)</div>
-                        <div className={`text-lg font-black mt-0.5 ${isKrupaOverLimit ? 'text-rose-600' : 'text-amber-600 dark:text-amber-400'}`}>
-                          {awardedKrupaTotal} / ૧૦
-                        </div>
-                        <div className="text-[10px] text-amber-700 dark:text-amber-300">
-                          બાકી: <strong>{remainingKrupa}</strong> / ૧૦
-                        </div>
-                      </div>
+                {/* LAYOUT 2: CLASS-WIDE OVERVIEW TABLE */}
+                {siddhiViewLayout === 'overview' && (
+                  <div className="border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-xs bg-white dark:bg-slate-900 space-y-4 p-4">
+                    <div className="flex items-center justify-between pb-3 border-b flex-wrap gap-3">
+                      <span className="text-sm font-black text-slate-900 dark:text-white">
+                        ધોરણ {selectedStandard} • વર્ગવાર સિદ્ધિ અને કૃપા ગુણ વિહંગાવલોકન
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {siddhiFilterMode === 'ELIGIBLE' ? (
+                          <>પાત્ર વિદ્યાર્થીઓ: <strong>{siddhiStudents.length}</strong> / {filteredStudents.length}</>
+                        ) : (
+                          <>દર્શાવેલ વિદ્યાર્થીઓ: <strong>{siddhiStudents.length}</strong> / {filteredStudents.length}</>
+                        )}
+                      </span>
                     </div>
 
-                    {/* Validation Warnings */}
-                    {isSiddhiOverLimit && (
-                      <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-800 dark:text-rose-300 text-xs font-bold flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                        <span>ધ્યાન આપો: આપેલ સિદ્ધિ ગુણ ({awardedSiddhiTotal}) વિદ્યાર્થીના મળવાપાત્ર પૂલ ({siddhiPool}) કરતાં વધી ગયા છે! કૃપા કરીને સુધારો કરો.</span>
-                      </div>
-                    )}
-
-                    {isKrupaOverLimit && (
-                      <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-800 dark:text-rose-300 text-xs font-bold flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                        <span>ધ્યાન આપો: આપેલ કૃપા ગુણ ({awardedKrupaTotal}) નિયમાનુસાર મહત્તમ ૧૦ ગુણ કરતાં વધી ગયા છે!</span>
-                      </div>
-                    )}
-
-                    {hasUnder25 && (
-                      <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-900 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                        <span>આ વિદ્યાર્થીને એક અથવા વધુ વિષયમાં મૂળ ગુણ ૨૫ કરતાં ઓછા હોવાથી GSEB નિયમાનુસાર પ્રમોશન માટે સિદ્ધિ ગુણ મળવાપાત્ર નથી.</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Subject-Wise Grace Marks Table (Columns requested by User) */}
-                  <div className="border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-xs bg-white dark:bg-slate-900">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto max-h-[600px]">
                       <table className="w-full text-left border-collapse text-xs">
-                        <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-center border-b">
+                        <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-center sticky top-0 z-10">
                           <tr>
-                            <th className="py-3 px-3 text-left min-w-[140px]">વિષય (Subject)</th>
-                            <th className="py-3 px-2 w-28 bg-slate-200/60 dark:bg-slate-700/60">
-                              <div>મૂળ મેળવેલ ગુણ</div>
-                              <div className="text-[10px] font-normal text-slate-500">૧૦૦ માંથી</div>
-                            </th>
-                            <th className="py-3 px-2 w-28 bg-teal-500/10 text-teal-900 dark:text-teal-200">
-                              <div>મળવાપાત્ર સિદ્ધિ</div>
-                              <div className="text-[10px] font-normal text-teal-700">વિદ્યાર્થી પૂલ: {siddhiPool}/૧૫</div>
-                            </th>
-                            <th className="py-3 px-2 w-28 bg-indigo-500/10 text-indigo-900 dark:text-indigo-200">
-                              <div>આપેલ સિદ્ધિ ગુણ (#)</div>
-                              <div className="text-[10px] font-normal text-indigo-700">બાકી પૂલ: {remainingSiddhi}</div>
-                            </th>
-                            <th className="py-3 px-2 w-28 bg-amber-500/10 text-amber-900 dark:text-amber-200">
-                              <div>આપેલ કૃપા ગુણ (*)</div>
-                              <div className="text-[10px] font-normal text-amber-700">બાકી: {remainingKrupa}/૧૦</div>
-                            </th>
-                            <th className="py-3 px-2 w-28 bg-emerald-500/10 font-black text-emerald-950 dark:text-emerald-200">
-                              <div>કુલ ગુણ</div>
-                              <div className="text-[10px] font-normal text-emerald-700">૧૦૦ માંથી</div>
-                            </th>
-                            <th className="py-3 px-3 w-28">પરિણામ</th>
+                            <th className="py-3 px-2 w-12 border-b">રોલ</th>
+                            <th className="py-3 px-2 w-20 border-b">બેઠક નં.</th>
+                            <th className="py-3 px-2 w-16 border-b">G.R.</th>
+                            <th className="py-3 px-3 text-left border-b min-w-[180px]">વિદ્યાર્થીનું નામ</th>
+                            <th className="py-3 px-2 w-16 border-b">મૂળ ટકા</th>
+                            <th className="py-3 px-2 w-24 border-b bg-teal-500/10 text-teal-900">મળવાપાત્ર સિદ્ધિ</th>
+                            <th className="py-3 px-2 w-24 border-b bg-indigo-500/10 text-indigo-900">આપેલ સિદ્ધિ (#)</th>
+                            <th className="py-3 px-2 w-24 border-b bg-amber-500/10 text-amber-900">આપેલ કૃપા (*)</th>
+                            <th className="py-3 px-2 w-16 border-b font-black">આખરી ટકા</th>
+                            <th className="py-3 px-2 w-28 border-b">પરિણામ સ્થિતિ</th>
+                            <th className="py-3 px-2 w-20 border-b">એક્શન</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-center">
-                          {rawRes.scores.map((sc) => {
-                            const raw = sc.converted100 ?? 0;
-                            const isSubjectUnder25 = raw < 25;
-                            const sid = sc.subject.id;
-                            const siddhiVal = studentGraceMap[sid]?.siddhi || 0;
-                            const krupaVal = studentGraceMap[sid]?.krupa || 0;
-                            const finalMark = Math.min(100, raw + siddhiVal + krupaVal);
-                            const isPassed = finalMark >= 33;
+                          {siddhiStudents.map((st, idx) => {
+                            const rawRes = computeActiveStdStudentResult(st, {});
+                            const activeRes = computeActiveStdStudentResult(st, manualGraceOverrides[st.id]);
+                            const pool = rawRes.siddhiPoolEarned;
 
                             return (
-                              <tr key={sid} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                                <td className="py-3 px-3 text-left font-black text-slate-900 dark:text-white">
-                                  <div>{sc.subject.nameGu}</div>
-                                  <div className="text-[10px] text-slate-400 font-normal">{sc.subject.nameEn}</div>
+                              <tr key={st.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
+                                <td className="py-2 px-2 font-bold">{st.rollNumber || idx + 1}</td>
+                                <td className="py-2 px-2 font-mono font-bold text-slate-700 dark:text-slate-300">
+                                  {getSeatNumber(st.id, st.rollNumber)}
                                 </td>
-
-                                {/* 1. મૂળ મેળવેલ ગુણ */}
-                                <td className="py-3 px-2 font-black text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-800 dark:text-slate-200">
-                                  {sc.converted100 !== null ? sc.converted100 : '-'}
-                                  {isSubjectUnder25 && (
-                                    <span className="block text-[9px] text-rose-600 font-normal">(&lt;૨૫ ગુણ)</span>
-                                  )}
+                                <td className="py-2 px-2 font-mono text-slate-500">{st.grNumber || '-'}</td>
+                                <td className="py-2 px-3 text-left font-bold text-slate-900 dark:text-white truncate">
+                                  {st.studentName}
                                 </td>
-
-                                {/* 2. મળવાપાત્ર સિદ્ધિ ગુણ */}
-                                <td className="py-3 px-2 text-teal-800 dark:text-teal-300 font-bold bg-teal-500/5">
-                                  {hasUnder25 ? '૦' : siddhiPool}
+                                <td className="py-2 px-2 font-bold text-slate-600">{rawRes.percentage}%</td>
+                                <td className="py-2 px-2 font-black text-teal-700 bg-teal-500/5">{pool} ગુણ</td>
+                                <td className="py-2 px-2 font-black text-indigo-700 bg-indigo-500/5">
+                                  {activeRes.totalSiddhiUsed > 0 ? `+${activeRes.totalSiddhiUsed}#` : '-'}
                                 </td>
-
-                                {/* 3. આપેલ સિદ્ધિ ગુણ (#) */}
-                                <td className="py-2 px-2 bg-indigo-500/5">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max={Math.max(0, siddhiPool - (awardedSiddhiTotal - siddhiVal))}
-                                    value={siddhiVal > 0 ? siddhiVal : ''}
-                                    placeholder="0"
-                                    disabled={hasUnder25 || isSubjectUnder25}
-                                    onChange={(e) => handleGraceChange(activeSiddhiStudent.id, sid, 'siddhi', e.target.value)}
-                                    className={`w-20 h-10 text-center font-black text-sm rounded-xl border-2 transition-all mx-auto block ${
-                                      siddhiVal > 0
-                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200'
-                                        : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
-                                    } ${hasUnder25 || isSubjectUnder25 ? 'opacity-40 cursor-not-allowed' : ''}`}
-                                  />
+                                <td className="py-2 px-2 font-black text-amber-700 bg-amber-500/5">
+                                  {activeRes.totalKrupaUsed > 0 ? `+${activeRes.totalKrupaUsed}*` : '-'}
                                 </td>
-
-                                {/* 4. આપેલ કૃપા ગુણ (*) */}
-                                <td className="py-2 px-2 bg-amber-500/5">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max={Math.max(0, 10 - (awardedKrupaTotal - krupaVal))}
-                                    value={krupaVal > 0 ? krupaVal : ''}
-                                    placeholder="0"
-                                    disabled={isSubjectUnder25}
-                                    onChange={(e) => handleGraceChange(activeSiddhiStudent.id, sid, 'krupa', e.target.value)}
-                                    className={`w-20 h-10 text-center font-black text-sm rounded-xl border-2 transition-all mx-auto block ${
-                                      krupaVal > 0
-                                        ? 'border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
-                                        : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
-                                    } ${isSubjectUnder25 ? 'opacity-40 cursor-not-allowed' : ''}`}
-                                  />
-                                </td>
-
-                                {/* 5. કુલ ગુણ (મૂળ + સિદ્ધિ + કૃપા) */}
-                                <td className="py-3 px-2 font-black text-base text-emerald-950 dark:text-emerald-200 bg-emerald-500/10">
-                                  {sc.converted100 !== null ? finalMark : '-'}
-                                  {(siddhiVal > 0 || krupaVal > 0) && (
-                                    <span className="block text-[9px] text-slate-500 font-normal">
-                                      ({raw} {siddhiVal > 0 ? `+${siddhiVal}#` : ''} {krupaVal > 0 ? `+${krupaVal}*` : ''})
-                                    </span>
-                                  )}
-                                </td>
-
-                                {/* 6. પરિણામ (પાસ / નાપાસ) */}
-                                <td className="py-3 px-3">
+                                <td className="py-2 px-2 font-black text-[#C45A2D]">{activeRes.percentage}%</td>
+                                <td className="py-2 px-2">
                                   <span
-                                    className={`px-3 py-1 rounded-full text-xs font-black inline-block ${
-                                      sc.converted100 === null
-                                        ? 'text-slate-400 bg-slate-100'
-                                        : isPassed
-                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                        : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                      activeRes.overallResult === 'PASS'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : activeRes.overallResult === 'PASS_WITH_SIDDHI'
+                                        ? 'bg-teal-100 text-teal-800'
+                                        : activeRes.overallResult === 'PASS_WITH_KRUPA'
+                                        ? 'bg-amber-100 text-amber-800'
+                                        : 'bg-rose-100 text-rose-800'
                                     }`}
                                   >
-                                    {sc.converted100 === null ? '-' : isPassed ? 'પાસ' : 'નાપાસ'}
+                                    {activeRes.overallResultGu.split(' ')[0]}
                                   </span>
+                                </td>
+                                <td className="py-2 px-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSiddhiSelectedStudentId(st.id);
+                                      setSiddhiViewLayout('student');
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#C45A2D] hover:text-white text-slate-700 dark:text-slate-300 text-[11px] font-bold transition-all cursor-pointer"
+                                  >
+                                    સુધારો
+                                  </button>
                                 </td>
                               </tr>
                             );
@@ -4417,100 +4980,10 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                       </table>
                     </div>
                   </div>
-                </div>
-              </div>
+                )}
+              </>
             );
           })()}
-
-          {/* LAYOUT 2: CLASS-WIDE OVERVIEW TABLE */}
-          {siddhiViewLayout === 'overview' && (
-            <div className="border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-xs bg-white dark:bg-slate-900 space-y-4 p-4">
-              <div className="flex items-center justify-between pb-3 border-b flex-wrap gap-3">
-                <span className="text-sm font-black text-slate-900 dark:text-white">
-                  ધોરણ ૯ • વર્ગવાર સિદ્ધિ અને કૃપા ગુણ વિહંગાવલોકન
-                </span>
-                <span className="text-xs text-slate-500">
-                  કુલ વિદ્યાર્થીઓ: <strong>{filteredStudents.length}</strong>
-                </span>
-              </div>
-
-              <div className="overflow-x-auto max-h-[600px]">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-center sticky top-0 z-10">
-                    <tr>
-                      <th className="py-3 px-2 w-12 border-b">રોલ</th>
-                      <th className="py-3 px-2 w-20 border-b">બેઠક નં.</th>
-                      <th className="py-3 px-2 w-16 border-b">G.R.</th>
-                      <th className="py-3 px-3 text-left border-b min-w-[180px]">વિદ્યાર્થીનું નામ</th>
-                      <th className="py-3 px-2 w-16 border-b">મૂળ ટકા</th>
-                      <th className="py-3 px-2 w-24 border-b bg-teal-500/10 text-teal-900">મળવાપાત્ર સિદ્ધિ</th>
-                      <th className="py-3 px-2 w-24 border-b bg-indigo-500/10 text-indigo-900">આપેલ સિદ્ધિ (#)</th>
-                      <th className="py-3 px-2 w-24 border-b bg-amber-500/10 text-amber-900">આપેલ કૃપા (*)</th>
-                      <th className="py-3 px-2 w-16 border-b font-black">આખરી ટકા</th>
-                      <th className="py-3 px-2 w-28 border-b">પરિણામ સ્થિતિ</th>
-                      <th className="py-3 px-2 w-20 border-b">એક્શન</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-center">
-                    {filteredStudents.map((st, idx) => {
-                      const rawRes = computeClass9StudentResult(st, marks, '700', {});
-                      const activeRes = computeClass9StudentResult(st, marks, '700', manualGraceOverrides[st.id]);
-                      const pool = rawRes.siddhiPoolEarned;
-
-                      return (
-                        <tr key={st.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
-                          <td className="py-2 px-2 font-bold">{st.rollNumber || idx + 1}</td>
-                          <td className="py-2 px-2 font-mono font-bold text-slate-700 dark:text-slate-300">
-                            {getSeatNumber(st.id, st.rollNumber)}
-                          </td>
-                          <td className="py-2 px-2 font-mono text-slate-500">{st.grNumber || '-'}</td>
-                          <td className="py-2 px-3 text-left font-bold text-slate-900 dark:text-white truncate">
-                            {st.studentName}
-                          </td>
-                          <td className="py-2 px-2 font-bold text-slate-600">{rawRes.percentage}%</td>
-                          <td className="py-2 px-2 font-black text-teal-700 bg-teal-500/5">{pool} ગુણ</td>
-                          <td className="py-2 px-2 font-black text-indigo-700 bg-indigo-500/5">
-                            {activeRes.totalSiddhiUsed > 0 ? `+${activeRes.totalSiddhiUsed}#` : '-'}
-                          </td>
-                          <td className="py-2 px-2 font-black text-amber-700 bg-amber-500/5">
-                            {activeRes.totalKrupaUsed > 0 ? `+${activeRes.totalKrupaUsed}*` : '-'}
-                          </td>
-                          <td className="py-2 px-2 font-black text-[#C45A2D]">{activeRes.percentage}%</td>
-                          <td className="py-2 px-2">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                                activeRes.overallResult === 'PASS'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : activeRes.overallResult === 'PASS_WITH_SIDDHI'
-                                  ? 'bg-teal-100 text-teal-800'
-                                  : activeRes.overallResult === 'PASS_WITH_KRUPA'
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-rose-100 text-rose-800'
-                              }`}
-                            >
-                              {activeRes.overallResultGu.split(' ')[0]}
-                            </span>
-                          </td>
-                          <td className="py-2 px-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSiddhiSelectedStudentId(st.id);
-                                setSiddhiViewLayout('student');
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#C45A2D] hover:text-white text-slate-700 dark:text-slate-300 text-[11px] font-bold transition-all cursor-pointer"
-                            >
-                              સુધારો
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </div>
       )}
 

@@ -291,7 +291,7 @@ export interface StudentResultClass9 {
   rollNumber: string;
   grNumber: string;
   section: string;
-  format: '700' | '1000';
+  format: '700' | '1000' | '900';
   scores: StudentSubjectScoreClass9[];
   totalObtained: number; // Sum of final marks across subjects
   totalMax: number; // 700 or 1000
@@ -344,6 +344,24 @@ function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches:
     } else if (targetSub === 'pe_yoga' && (sId.includes('pe') || sId.includes('yoga') || sName.includes('શારીરિક') || sName.includes('યોગ'))) {
       subMatch = true;
     } else if (targetSub === 'art_drawing' && (sId.includes('art') || sId.includes('draw') || sName.includes('ચિત્ર'))) {
+      subMatch = true;
+    } else if (targetSub === 'psychology' && (sId.includes('psy') || sName.includes('મનોવિજ્ઞાન'))) {
+      subMatch = true;
+    } else if (targetSub === 'economics' && (sId.includes('eco') || sName.includes('અર્થશાસ્ત્ર'))) {
+      subMatch = true;
+    } else if (targetSub === 'sociology' && (sId.includes('soc') || sName.includes('સમાજશાસ્ત્ર'))) {
+      subMatch = true;
+    } else if (targetSub === 'political_science' && (sId.includes('pol') || sName.includes('રાજ્યશાસ્ત્ર'))) {
+      subMatch = true;
+    } else if (targetSub === 'history' && (sId.includes('his') || sName.includes('ઇતિહાસ') || sName.includes('ઈતિહાસ'))) {
+      subMatch = true;
+    } else if (targetSub === 'geography' && (sId.includes('geo') || sName.includes('ભૂગોળ'))) {
+      subMatch = true;
+    } else if (targetSub === 'philosophy' && (sId.includes('phil') || sName.includes('તત્વજ્ઞાન'))) {
+      subMatch = true;
+    } else if (targetSub === 'udyog' && (sId.includes('udyog') || sId.includes('ind') || sName.includes('ઉદ્યોગ'))) {
+      subMatch = true;
+    } else if (targetSub === 'music' && (sId.includes('mus') || sName.includes('સંગીત'))) {
       subMatch = true;
     }
 

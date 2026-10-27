@@ -61,16 +61,86 @@ export const CLASS_10_SUBJECTS: Class9SubjectDef[] = [
   { id: 'sanskrit', code: '15', nameGu: 'સંસ્કૃત', nameEn: 'Sanskrit', isMainSubject: true, hasFirstSecondExam: true },
 ];
 
-// Class 11 General Stream Subjects (Commerce / Arts)
-export const CLASS_11_GENERAL_SUBJECTS: Class9SubjectDef[] = [
-  { id: 'accounts', code: '154', nameGu: 'નામાના મૂળતત્વો (Accounts)', nameEn: 'Elements of Accounts', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'ba', code: '153', nameGu: 'વાણિજ્ય વ્યવસ્થા અને સંચાલન (B.A.)', nameEn: 'Org. of Commerce', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'economics', code: '022', nameGu: 'અર્થશાસ્ત્ર (Economics)', nameEn: 'Economics', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'statistics', code: '135', nameGu: 'આંકડાશાસ્ત્ર (Statistics)', nameEn: 'Statistics', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'gujarati', code: '001', nameGu: 'ગુજરાતી (પ્રથમ ભાષા)', nameEn: 'Gujarati', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'english', code: '013', nameGu: 'અંગ્રેજી (દ્વિતીય ભાષા)', nameEn: 'English', isMainSubject: true, hasFirstSecondExam: true },
-  { id: 'spcc_computer', code: '337', nameGu: 'એસ.પી. અને સી.સી. / કમ્પ્યુટર', nameEn: 'S.P. & C.C. / Comp', isMainSubject: true, hasFirstSecondExam: true },
-];
+// Class 11 Subject Configuration (User requested model: 7 Main + 2 Co-subs = 900 Marks)
+export interface Std11SubjectConfig {
+  electiveLanguage: 'sanskrit' | 'psychology';
+  electiveGroup: string[]; // 3 of: ['economics', 'sociology', 'political_science', 'history', 'geography', 'philosophy']
+  electiveCoSub: 'art_drawing' | 'music' | 'computer_studies';
+}
+
+export const DEFAULT_STD_11_SUBJECT_CONFIG: Std11SubjectConfig = {
+  electiveLanguage: 'sanskrit',
+  electiveGroup: ['economics', 'sociology', 'geography'],
+  electiveCoSub: 'computer_studies',
+};
+
+// All available subjects for Std 11
+export const STD_11_ALL_AVAILABLE_SUBJECTS: Record<string, Class9SubjectDef> = {
+  // Compulsory main (3)
+  gujarati: { id: 'gujarati', code: '001', nameGu: 'ગુજરાતી (પ્રથમ ભાષા)', nameEn: 'Gujarati (FL)', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  hindi: { id: 'hindi', code: '014', nameGu: 'હિન્દી', nameEn: 'Hindi', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  english: { id: 'english', code: '013', nameGu: 'English (અંગ્રેજી)', nameEn: 'English (SL)', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  
+  // Option 1: સંસ્કૃત / મનોવિજ્ઞાન (Choose 1)
+  sanskrit: { id: 'sanskrit', code: '129', nameGu: 'સંસ્કૃત', nameEn: 'Sanskrit', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  psychology: { id: 'psychology', code: '084', nameGu: 'મનોવિજ્ઞાન', nameEn: 'Psychology', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+
+  // Option 2: કોઈપણ ૩ પસંદ કરો (Choose 3 from 6)
+  economics: { id: 'economics', code: '022', nameGu: 'અર્થશાસ્ત્ર', nameEn: 'Economics', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  sociology: { id: 'sociology', code: '023', nameGu: 'સમાજશાસ્ત્ર', nameEn: 'Sociology', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  political_science: { id: 'political_science', code: '024', nameGu: 'રાજ્યશાસ્ત્ર', nameEn: 'Political Science', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  history: { id: 'history', code: '021', nameGu: 'ઇતિહાસ', nameEn: 'History', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  geography: { id: 'geography', code: '025', nameGu: 'ભૂગોળ', nameEn: 'Geography', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+  philosophy: { id: 'philosophy', code: '136', nameGu: 'તત્વજ્ઞાન', nameEn: 'Philosophy', isMainSubject: true, hasFirstSecondExam: true, isPrayogik: false },
+
+  // Co-subjects (2 subjects: Udyog compulsory + 1 of Chitrakala/Sangeet/Computer)
+  udyog: { id: 'udyog', code: '44', nameGu: 'ઉદ્યોગ', nameEn: 'Udyog / Vocational', isMainSubject: false, hasFirstSecondExam: false, isPrayogik: true },
+  art_drawing: { id: 'art_drawing', code: '41', nameGu: 'ચિત્રકલા', nameEn: 'Art / Drawing', isMainSubject: false, hasFirstSecondExam: false, isPrayogik: true },
+  music: { id: 'music', code: '43', nameGu: 'સંગીત', nameEn: 'Music', isMainSubject: false, hasFirstSecondExam: false, isPrayogik: true },
+  computer_studies: { id: 'computer_studies', code: '42', nameGu: 'કોમ્પ્યુટર', nameEn: 'Computer Studies', isMainSubject: false, hasFirstSecondExam: false, isPrayogik: true },
+};
+
+/**
+ * Returns active 7 main subjects and 2 co-subjects for Class 11 based on configuration
+ */
+export function getStd11ActiveSubjects(config?: Std11SubjectConfig): {
+  mainSubjects: Class9SubjectDef[];
+  coSubjects: Class9SubjectDef[];
+  allSubjects: Class9SubjectDef[];
+} {
+  const cfg = config || DEFAULT_STD_11_SUBJECT_CONFIG;
+  const langSub = STD_11_ALL_AVAILABLE_SUBJECTS[cfg.electiveLanguage] || STD_11_ALL_AVAILABLE_SUBJECTS.sanskrit;
+  const groupIds = Array.isArray(cfg.electiveGroup) && cfg.electiveGroup.length > 0
+    ? cfg.electiveGroup
+    : ['economics', 'sociology', 'geography'];
+
+  const electives = groupIds
+    .map((id) => STD_11_ALL_AVAILABLE_SUBJECTS[id])
+    .filter(Boolean);
+
+  const mainSubjects: Class9SubjectDef[] = [
+    STD_11_ALL_AVAILABLE_SUBJECTS.gujarati,
+    STD_11_ALL_AVAILABLE_SUBJECTS.hindi,
+    STD_11_ALL_AVAILABLE_SUBJECTS.english,
+    langSub,
+    ...electives,
+  ];
+
+  const chosenCo = STD_11_ALL_AVAILABLE_SUBJECTS[cfg.electiveCoSub] || STD_11_ALL_AVAILABLE_SUBJECTS.computer_studies;
+  const coSubjects: Class9SubjectDef[] = [
+    STD_11_ALL_AVAILABLE_SUBJECTS.udyog,
+    chosenCo,
+  ];
+
+  return {
+    mainSubjects,
+    coSubjects,
+    allSubjects: [...mainSubjects, ...coSubjects],
+  };
+}
+
+// Class 11 General Stream Subjects (Legacy Fallback)
+export const CLASS_11_GENERAL_SUBJECTS: Class9SubjectDef[] = getStd11ActiveSubjects().allSubjects;
 
 // Class 11 Science Stream Subjects
 export const CLASS_11_SCIENCE_SUBJECTS: Class9SubjectDef[] = [
@@ -108,9 +178,24 @@ export const CLASS_12_SCIENCE_SUBJECTS: Class9SubjectDef[] = [
 export function getSubjectsForStandard(
   standard: StandardKey,
   stream: StreamKey = 'general',
-  format9: '700' | '1000' = '700',
-  examId?: string
+  format9: '700' | '1000' | '900' = '700',
+  examId?: string,
+  std11Config?: Std11SubjectConfig
 ): Class9SubjectDef[] {
+  if (standard === '11') {
+    const { mainSubjects, coSubjects, allSubjects } = getStd11ActiveSubjects(std11Config);
+    if (examId === 'first_exam' || examId === 'second_exam' || examId === 'annual_exam' || examId === 'periodic_test_1' || examId === 'periodic_test_2') {
+      return mainSubjects; // 7 main subjects
+    }
+    if (examId === 'prayogik_annual') {
+      return coSubjects; // 2 co-subjects
+    }
+    if (examId === 'internal_assessment') {
+      return allSubjects; // all 9 subjects
+    }
+    return allSubjects;
+  }
+
   // First Exam or Second Exam strictly uses the 7 main subjects
   if (examId === 'first_exam' || examId === 'second_exam' || examId === 'annual_exam') {
     return FIRST_SECOND_EXAM_SUBJECTS;
@@ -128,9 +213,6 @@ export function getSubjectsForStandard(
   }
   if (standard === '10') {
     return CLASS_10_SUBJECTS;
-  }
-  if (standard === '11') {
-    return stream === 'science' ? CLASS_11_SCIENCE_SUBJECTS : CLASS_11_GENERAL_SUBJECTS;
   }
   if (standard === '12') {
     return stream === 'science' ? CLASS_12_SCIENCE_SUBJECTS : CLASS_12_GENERAL_SUBJECTS;
@@ -177,12 +259,14 @@ export function getExamsForStandard(standard: StandardKey): StandardExamConfig[]
 
   if (standard === '11') {
     return [
-      { id: 'first_exam', nameGu: 'પ્રથમ પરીક્ષા', nameEn: 'First Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ વિષયો • વિષય દીઠ ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
-      { id: 'second_exam', nameGu: 'દ્વિતીય પરીક્ષા', nameEn: 'Second Exam', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: 'દ્વિતીય પરીક્ષા • ૫૦ ગુણ' },
-      { id: 'periodic_test_1', nameGu: 'એકમ કસોટી - ૧', nameEn: 'Unit Test 1', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'એકમ કસોટી ૧ • ૨૫ ગુણ' },
-      { id: 'periodic_test_2', nameGu: 'એકમ કસોટી - ૨', nameEn: 'Unit Test 2', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'એકમ કસોટી ૨ • ૨૫ ગુણ' },
-      { id: 'internal_assessment', nameGu: 'આંતરિક ગુણ (૨૦)', nameEn: 'Internal/Practical', maxMarksPerSubject: 20, totalExamMax: 140, descriptionGu: 'આંતરિક મૂલ્યાંકન • ૨૦ ગુણ' },
-      { id: 'annual_result', nameGu: 'વાર્ષિક પરિણામ પત્રક', nameEn: 'Annual Result', maxMarksPerSubject: 100, totalExamMax: 700, descriptionGu: 'વાર્ષિક આખરી પરિણામ પત્રક' },
+      { id: 'first_exam', nameGu: '🥇 પ્રથમ કસોટી', nameEn: 'First Exam (50M)', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ મુખ્ય વિષયો • ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+      { id: 'second_exam', nameGu: '🥈 દ્વિતીય કસોટી', nameEn: 'Second Exam (50M)', maxMarksPerSubject: 50, totalExamMax: 350, descriptionGu: '૭ મુખ્ય વિષયો • ૫૦ ગુણ • કુલ ૩૫૦ ગુણ' },
+      { id: 'periodic_test_1', nameGu: '📝 સામાયિક ૧ (PT 1)', nameEn: 'Samayik 1 (25M)', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'સામાયિક કસોટી ૧ • ૨૫ ગુણ' },
+      { id: 'periodic_test_2', nameGu: '📝 સામાયિક ૨ (PT 2)', nameEn: 'Samayik 2 (25M)', maxMarksPerSubject: 25, totalExamMax: 175, descriptionGu: 'સામાયિક કસોટી ૨ • ૨૫ ગુણ' },
+      { id: 'prayogik_annual', nameGu: '🎨 સહ-અભ્યાસિક (Co-Sub)', nameEn: 'Co subject (80M)', maxMarksPerSubject: 80, totalExamMax: 160, descriptionGu: '૨ સહ-અભ્યાસિક વિષયો: ઉદ્યોગ + પસંદ કરેલ • ૪૦ થિયરી + ૪૦ પ્રાયોગિક (કુલ ૮૦)' },
+      { id: 'internal_assessment', nameGu: '📋 આંતરિક ગુણ (૨૦)', nameEn: 'Internal (20M)', maxMarksPerSubject: 20, totalExamMax: 180, descriptionGu: 'મુખ્ય ૭ વિષયો: ૫+૫+૫+૫ | ૨ સહ-અભ્યાસિક: ૧૦+૧૦ • કુલ ૨૦ ગુણ' },
+      { id: 'annual_exam', nameGu: '🏆 વાર્ષિક કસોટી (80M)', nameEn: 'Third Exam (80M)', maxMarksPerSubject: 80, totalExamMax: 560, descriptionGu: '૭ મુખ્ય વિષયો • થિયરી ૮૦ ગુણ' },
+      { id: 'siddhi_krupa_entry', nameGu: '✨ સિદ્ધિ–કૃપા ગુણ', nameEn: 'Siddhi Krupa gun', maxMarksPerSubject: 15, totalExamMax: 25, descriptionGu: 'કુલ ૯૦૦ ગુણના ટકા − ૩૩% = સિદ્ધિ ગુણ (મહત્તમ ૧૫) + કૃપા ગુણ (મહત્તમ ૧૦)' },
     ];
   }
 
@@ -234,6 +318,24 @@ function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches:
       subMatch = true;
     } else if (targetSub === 'art_drawing' && (sId.includes('art') || sId.includes('draw') || sName.includes('ચિત્ર'))) {
       subMatch = true;
+    } else if (targetSub === 'psychology' && (sId.includes('psy') || sName.includes('મનોવિજ્ઞાન'))) {
+      subMatch = true;
+    } else if (targetSub === 'economics' && (sId.includes('eco') || sName.includes('અર્થશાસ્ત્ર'))) {
+      subMatch = true;
+    } else if (targetSub === 'sociology' && (sId.includes('soc') || sName.includes('સમાજશાસ્ત્ર'))) {
+      subMatch = true;
+    } else if (targetSub === 'political_science' && (sId.includes('pol') || sName.includes('રાજ્યશાસ્ત્ર'))) {
+      subMatch = true;
+    } else if (targetSub === 'history' && (sId.includes('his') || sName.includes('ઇતિહાસ') || sName.includes('ઈતિહાસ'))) {
+      subMatch = true;
+    } else if (targetSub === 'geography' && (sId.includes('geo') || sName.includes('ભૂગોળ'))) {
+      subMatch = true;
+    } else if (targetSub === 'philosophy' && (sId.includes('phil') || sName.includes('તત્વજ્ઞાન'))) {
+      subMatch = true;
+    } else if (targetSub === 'udyog' && (sId.includes('udyog') || sId.includes('ind') || sName.includes('ઉદ્યોગ'))) {
+      subMatch = true;
+    } else if (targetSub === 'music' && (sId.includes('mus') || sName.includes('સંગીત'))) {
+      subMatch = true;
     }
 
     if (!subMatch) return false;
@@ -251,14 +353,20 @@ function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches:
  * Supports all 7 subjects (Gujarati, Maths, Science, Social Science, English, Hindi, Sanskrit)
  * Max marks: 50 per subject, Total Max: 350
  */
+/**
+ * Computes Dedicated Single Exam Result (First Exam or Second Exam)
+ * Supports all 7 subjects (Gujarati, Hindi, English, Sanskrit/Psychology, 3 electives)
+ * Max marks: 50 per subject, Total Max: 350
+ */
 export function computeSingleExamStudentResult(
   student: Student,
   studentMarks: MarkRecord[],
-  examId: 'first_exam' | 'second_exam'
+  examId: 'first_exam' | 'second_exam',
+  customSubjects?: Class9SubjectDef[]
 ): StudentResultClass9 {
   const isFirst = examId === 'first_exam';
   const examKeywords = isFirst ? ['first', 'pratham', 'પ્રથમ'] : ['second', 'dwitiya', 'દ્વિતીય'];
-  const subjects = FIRST_SECOND_EXAM_SUBJECTS;
+  const subjects = customSubjects && customSubjects.length > 0 ? customSubjects : FIRST_SECOND_EXAM_SUBJECTS;
   const totalMax = subjects.length * 50; // 350
 
   const scores = subjects.map((subj) => {
@@ -331,11 +439,12 @@ export function computeSingleExamStudentResult(
 export function computeSingleExamAllResults(
   students: Student[],
   marks: MarkRecord[],
-  examId: 'first_exam' | 'second_exam'
+  examId: 'first_exam' | 'second_exam',
+  customSubjects?: Class9SubjectDef[]
 ): StudentResultClass9[] {
   const unranked = students.map((s) => {
     const sMarks = marks.filter((m) => m.studentId === s.id);
-    return computeSingleExamStudentResult(s, sMarks, examId);
+    return computeSingleExamStudentResult(s, sMarks, examId, customSubjects);
   });
 
   // Calculate tie-aware ranks based on totalObtained descending
@@ -360,6 +469,238 @@ export function computeSingleExamAllResults(
 }
 
 /**
+ * Computes full Annual Result for Class 11 (General / Arts).
+ * Exactly identical structure to Class 9, with:
+ * - 7 Main Subjects (100M each from 50 first + 50 second + 80 annual + 20 internal = 200/2)
+ * - 2 Co-Curricular Subjects (100M each from 80 prayogik + 20 internal)
+ * - Total Max: 900 Marks!
+ * - Siddhi Gun counted from all 900 marks:
+ *   e.g. 450/900 = 50% -> 50 - 33 = 17 -> 15 siddhi marks!
+ * - Krupa Gun: Up to 10 marks if needed to pass.
+ * - Minimum 25 marks rule applies: < 25 in any subject cannot receive grace to pass.
+ */
+export function computeClass11StudentResult(
+  student: Student,
+  studentMarks: MarkRecord[],
+  std11Config?: Std11SubjectConfig,
+  manualGraceOverrides?: Record<string, { siddhi?: number; krupa?: number }>,
+  format: "700" | "900" = "900"
+): StudentResultClass9 {
+  const { mainSubjects, coSubjects } = getStd11ActiveSubjects(std11Config);
+  const rawScores: any[] = [];
+
+  // 1. Process 7 Main Subjects (200 combined -> 100 converted)
+  for (const subj of mainSubjects) {
+    const first50 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('first') || t.includes('pratham') || t.includes('પ્રથમ'));
+    const second50 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('second') || t.includes('dwitiya') || t.includes('દ્વિતીય') || t.includes('prelim') || t.includes('પ્રિલિમ'));
+    const pt1_raw = extractMarkValue(studentMarks, subj.id, (t) => t.includes('periodic_1') || t.includes('pt1') || t.includes('સામાયિક ૧') || t.includes('સામાયિક કસોટી ૧') || t.includes('સામાયિક કસોટી - ૧'));
+    const pt2_raw = extractMarkValue(studentMarks, subj.id, (t) => t.includes('periodic_2') || t.includes('pt2') || t.includes('સામાયિક ૨') || t.includes('સામાયિક કસોટી ૨') || t.includes('સામાયિક કસોટી - ૨'));
+    const competency = extractMarkValue(studentMarks, subj.id, (t) => t.includes('competency') || t.includes('સજ્જતા'));
+    const notebook = extractMarkValue(studentMarks, subj.id, (t) => t.includes('notebook') || t.includes('નોટબુક'));
+    const internal20Direct = extractMarkValue(studentMarks, subj.id, (t) => (t.includes('internal') || t.includes('આંતરિક')) && !t.includes('pt1') && !t.includes('pt2') && !t.includes('competency') && !t.includes('notebook'));
+    const annual80 = extractMarkValue(studentMarks, subj.id, (t) => (t.includes('annual') || t.includes('varshik') || t.includes('વાર્ષિક') || t.includes('third')) && !t.includes('prayogik'));
+
+    const pt1_conv = pt1_raw !== null ? Math.round((pt1_raw / 25) * 5 * 10) / 10 : null;
+    const pt2_conv = pt2_raw !== null ? Math.round((pt2_raw / 25) * 5 * 10) / 10 : null;
+
+    let internal20 = internal20Direct;
+    if (internal20 === null && (pt1_conv !== null || pt2_conv !== null || competency !== null || notebook !== null)) {
+      internal20 = Math.min(20, Math.round((pt1_conv || 0) + (pt2_conv || 0) + (competency || 0) + (notebook || 0)));
+    }
+
+    let combined200: number | null = null;
+    let converted100: number | null = null;
+
+    if (annual80 !== null && first50 !== null && second50 !== null && internal20 !== null) {
+      combined200 = first50 + second50 + annual80 + internal20;
+      converted100 = Math.round(combined200 / 2);
+    } else if (annual80 !== null && internal20 !== null) {
+      converted100 = annual80 + internal20;
+    } else if (annual80 !== null) {
+      converted100 = annual80;
+    } else if (second50 !== null) {
+      converted100 = second50;
+    } else if (first50 !== null) {
+      converted100 = first50 * 2;
+    }
+
+    const hasUnenteredMarks = converted100 === null;
+
+    rawScores.push({
+      subject: subj,
+      first50,
+      second50,
+      pt1_raw,
+      pt1_conv,
+      pt2_raw,
+      pt2_conv,
+      competency,
+      notebook,
+      internal20,
+      annual80,
+      combined200,
+      converted100,
+      hasUnenteredMarks,
+    });
+  }
+
+  // 2. Process 2 Co-Subjects (80 Prayogik Annual + 20 Internal = 100) - Only in 900 format
+  if (format === "900") {
+    for (const subj of coSubjects) {
+    const theory40 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('theory40') || (t.includes('theory') && t.includes('40')));
+    const practical40 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('practical40') || (t.includes('practical') && t.includes('40') && !t.includes('internal')));
+    const practicalWork10 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('practical_work') || t.includes('પ્રાયોગિક કાર્ય'));
+    const continuousSkill10 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('continuous_eval') || t.includes('સાતત્યપૂર્ણ') || t.includes('કૌશલ્ય'));
+    const directInternal20 = extractMarkValue(studentMarks, subj.id, (t) => (t.includes('internal') || t.includes('આંતરિક')) && !t.includes('practical_work') && !t.includes('continuous'));
+
+    let internal20 = directInternal20;
+    if (internal20 === null && (practicalWork10 !== null || continuousSkill10 !== null)) {
+      internal20 = Math.min(20, Math.round((practicalWork10 || 0) + (continuousSkill10 || 0)));
+    }
+
+    let annual80: number | null = null;
+    if (theory40 !== null || practical40 !== null) {
+      annual80 = (theory40 || 0) + (practical40 || 0);
+    } else {
+      const rawAnnual80 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('prayogik') || t.includes('annual_80') || t.includes('co_sub'));
+      annual80 = rawAnnual80;
+    }
+
+    let converted100: number | null = null;
+    if (annual80 !== null && internal20 !== null) {
+      converted100 = annual80 + internal20;
+    } else if (annual80 !== null) {
+      converted100 = annual80;
+    } else if (internal20 !== null) {
+      converted100 = internal20;
+    }
+
+    const hasUnenteredMarks = converted100 === null;
+
+    rawScores.push({
+      subject: subj,
+      first50: null,
+      second50: null,
+      pt1_raw: null,
+      pt1_conv: null,
+      pt2_raw: null,
+      pt2_conv: null,
+      competency: null,
+      notebook: null,
+      theory40,
+      practical40,
+      practicalWork10,
+      continuousSkill10,
+      internal20,
+      annual80,
+      combined200: null,
+      converted100,
+      hasUnenteredMarks,
+    });
+    }
+  }
+
+  // 3. Siddhi Pool calculation:
+  const totalMax = format === "700" ? 700 : 900;
+  // User Rule: "here siddhi gun can be counted from all 900 marks like if student got 450/900 his percentage is 50% so 50-33= 17 thats more than 15 so he'll get 15 siddhi"
+  const rawTotalSum = rawScores.reduce((sum, r) => sum + (r.converted100 ?? 0), 0);
+  const rawPercentage = (rawTotalSum / totalMax) * 100;
+  const diff = rawPercentage - 33;
+  const siddhiPoolEarned = diff > 0 ? Math.min(15, Math.floor(diff)) : 0;
+
+  // 4. Grace distribution & Promotion calculation
+  const studentOverrides = manualGraceOverrides?.[student.id] || {};
+  let totalSiddhiUsed = 0;
+  let totalKrupaUsed = 0;
+  let anySubjectIneligibleForPromotion = false;
+
+  const finalScores = rawScores.map((item) => {
+    const rawVal = item.converted100 !== null ? item.converted100 : 0;
+    const subjId = item.subject.id;
+    const isUnder25 = rawVal < 25;
+    const isEligibleForPromotion = !isUnder25;
+
+    if (isUnder25) {
+      anySubjectIneligibleForPromotion = true;
+    }
+
+    const manualSiddhi = studentOverrides[subjId]?.siddhi;
+    const manualKrupa = studentOverrides[subjId]?.krupa;
+
+    let siddhi = 0;
+    let krupa = 0;
+
+    if (!isUnder25) {
+      if (manualSiddhi !== undefined) siddhi = Math.max(0, manualSiddhi);
+      if (manualKrupa !== undefined) krupa = Math.max(0, manualKrupa);
+    }
+
+    totalSiddhiUsed += siddhi;
+    totalKrupaUsed += krupa;
+
+    const finalMarksWithGrace = item.converted100 !== null ? Math.min(100, rawVal + siddhi + krupa) : null;
+    const effectiveMark = finalMarksWithGrace !== null ? finalMarksWithGrace : 0;
+    const grade = item.converted100 !== null ? calculateGsebGrade(effectiveMark, 100) : '-';
+    const isPassed = effectiveMark >= 33;
+
+    return {
+      ...item,
+      siddhiGiven: siddhi,
+      krupaGiven: krupa,
+      finalMarksWithGrace,
+      grade,
+      isPassed,
+      isEligibleForPromotion,
+    };
+  });
+
+  const totalObtained = finalScores.reduce((acc, curr) => acc + (curr.finalMarksWithGrace || 0), 0);
+  const percentage = Math.round((totalObtained / totalMax) * 100 * 10) / 10;
+  const overallGrade = calculateGsebGrade(percentage, 100);
+
+  const hasIncompleteMarks = finalScores.some((s) => s.hasUnenteredMarks);
+  const anySubjectFailed = finalScores.some((s) => !s.isPassed);
+  const isEligibleForPromotion = !anySubjectIneligibleForPromotion;
+
+  let overallResult: 'PASS' | 'PASS_WITH_SIDDHI' | 'PASS_WITH_KRUPA' | 'NEEDS_IMPROVEMENT' = 'PASS';
+  let overallResultGu = 'ઉત્તીર્ણ (Pass)';
+
+  if (anySubjectFailed) {
+    overallResult = 'NEEDS_IMPROVEMENT';
+    overallResultGu = isEligibleForPromotion ? 'સુધારણા જરૂરી (Needs Improvement)' : 'અપાત્ર (Not Eligible - <25 Marks)';
+  } else if (totalKrupaUsed > 0) {
+    overallResult = 'PASS_WITH_KRUPA';
+    overallResultGu = 'કૃપા ગુણ સાથે ઉત્તીર્ણ (*)';
+  } else if (totalSiddhiUsed > 0) {
+    overallResult = 'PASS_WITH_SIDDHI';
+    overallResultGu = 'સિદ્ધિ ગુણ સાથે ઉત્તીર્ણ (#)';
+  }
+
+  const isEligibleForRank = (overallResult === 'PASS' || overallResult === 'PASS_WITH_SIDDHI') && isEligibleForPromotion;
+
+  return {
+    student,
+    rollNumber: student.rollNumber || '',
+    grNumber: student.grNumber || '',
+    section: student.section || student.division || 'A',
+    format,
+    scores: finalScores,
+    totalObtained,
+    totalMax,
+    percentage,
+    overallGrade,
+    overallResult,
+    overallResultGu,
+    isEligibleForPromotion,
+    isEligibleForRank,
+    siddhiPoolEarned,
+    totalSiddhiUsed,
+    totalKrupaUsed,
+    hasIncompleteMarks,
+  };
+}
+
+/**
  * Computes full Annual Result for any standard (9, 10, 11, 12)
  */
 export function computeMultiStandardStudentResult(
@@ -367,11 +708,15 @@ export function computeMultiStandardStudentResult(
   studentMarks: MarkRecord[],
   standard: StandardKey,
   stream: StreamKey = 'general',
-  format9: '700' | '1000' = '700',
-  manualGraceOverrides?: Record<string, { siddhi?: number; krupa?: number }>
+  format9: '700' | '1000' | '900' = '700',
+  manualGraceOverrides?: Record<string, { siddhi?: number; krupa?: number }>,
+  std11Config?: Std11SubjectConfig
 ): StudentResultClass9 {
   if (standard === '9') {
-    return computeClass9StudentResult(student, studentMarks, format9, manualGraceOverrides);
+    return computeClass9StudentResult(student, studentMarks, format9 === '1000' ? '1000' : '700', manualGraceOverrides);
+  }
+  if (standard === '11') {
+    return computeClass11StudentResult(student, studentMarks, std11Config, manualGraceOverrides, format9 === '700' ? '700' : '900');
   }
 
   const subjects = getSubjectsForStandard(standard, stream);
@@ -524,19 +869,23 @@ export function computeMultiStandardAllResults(
   marks: MarkRecord[],
   standard: StandardKey,
   stream: StreamKey = 'general',
-  format9: '700' | '1000' = '700',
+  format9: '700' | '1000' | '900' = '700',
   manualGraceOverrides?: Record<string, Record<string, { siddhi?: number; krupa?: number }>>,
-  activeExamId: string = 'annual_result'
+  activeExamId: string = 'annual_result',
+  std11Config?: Std11SubjectConfig
 ): StudentResultClass9[] {
   // If First Exam or Second Exam is specifically selected, use the dedicated 350-mark exam calculator
   if (activeExamId === 'first_exam' || activeExamId === 'second_exam') {
-    return computeSingleExamAllResults(students, marks, activeExamId);
+    const subjectsToUse = standard === '11'
+      ? getStd11ActiveSubjects(std11Config).mainSubjects
+      : FIRST_SECOND_EXAM_SUBJECTS;
+    return computeSingleExamAllResults(students, marks, activeExamId, subjectsToUse);
   }
 
   const unranked = students.map((s) => {
     const sMarks = marks.filter((m) => m.studentId === s.id);
     const overrides = manualGraceOverrides?.[s.id];
-    return computeMultiStandardStudentResult(s, sMarks, standard, stream, format9, overrides ? { [s.id]: overrides } : undefined);
+    return computeMultiStandardStudentResult(s, sMarks, standard, stream, format9, overrides ? { [s.id]: overrides } : undefined, std11Config);
   });
 
   // Calculate tie-aware ranks based on totalObtained descending
