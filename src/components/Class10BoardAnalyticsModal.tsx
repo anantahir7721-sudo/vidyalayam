@@ -53,13 +53,13 @@ export const Class10BoardAnalyticsModal: React.FC<Class10BoardAnalyticsModalProp
       console.error(e);
     }
     return {
-      gujarati: { name: school?.principalName || 'શ્રી એમ.એચ.જેઠવા', contact: school?.phone || '9426014777' },
+      gujarati: { name: school?.principalName || 'શ્રી એમ.એચ.જેઠવા', contact: (school as any)?.phone || '9426014777' },
       english: { name: 'શ્રી વી.એમ.ઠાકર', contact: '9408541083' },
       maths: { name: 'શ્રી એન.આર.યાડ', contact: '7203070830' },
       science: { name: 'શ્રી એન.આર.યાડ', contact: '7203070830' },
       social_science: { name: 'શ્રી વી.એમ.ઠાકર', contact: '9408541083' },
-      sanskrit_hindi: { name: school?.principalName || 'શ્રી એમ.એચ.જેઠવા', contact: school?.phone || '9426014777' },
-      physical_education: { name: 'શ્રી પી.ટી.શિક્ષક', contact: school?.phone || '' },
+      sanskrit_hindi: { name: school?.principalName || 'શ્રી એમ.એચ.જેઠવા', contact: (school as any)?.phone || '9426014777' },
+      physical_education: { name: 'શ્રી પી.ટી.શિક્ષક', contact: (school as any)?.phone || '' },
     };
   });
 
@@ -164,7 +164,7 @@ export const Class10BoardAnalyticsModal: React.FC<Class10BoardAnalyticsModalProp
 
     if (selectedCategory !== 'ALL') {
       list = list.filter((r) => {
-        const cat = (r.student.category || (r.student as any).caste || '').toUpperCase().trim();
+        const cat = ((r.student as any).category || (r.student as any).caste || '').toUpperCase().trim();
         if (selectedCategory === 'SC') return cat.includes('SC') || cat.includes('અનુસૂચિત જાતિ');
         if (selectedCategory === 'ST') return cat.includes('ST') || cat.includes('અનુસૂચિત જનજાતિ');
         if (selectedCategory === 'OBC') return cat.includes('OBC') || cat.includes('SEBC') || cat.includes('બક્ષી');
@@ -248,7 +248,7 @@ export const Class10BoardAnalyticsModal: React.FC<Class10BoardAnalyticsModalProp
           <tr>
             <td style="border: 1px solid #000; padding: 6px 10px; font-weight: bold;">આચાર્યશ્રીનું નામ :</td>
             <td style="border: 1px solid #000; padding: 6px 10px;">${school?.principalName || 'શ્રી એમ.એચ.જેઠવા'}</td>
-            <td style="border: 1px solid #000; padding: 6px 10px; font-size: 12px;">મો.નં. : ${school?.phone || '9426014777'}</td>
+            <td style="border: 1px solid #000; padding: 6px 10px; font-size: 12px;">મો.નં. : ${(school as any)?.phone || '9426014777'}</td>
           </tr>
         </table>
 
@@ -386,7 +386,7 @@ export const Class10BoardAnalyticsModal: React.FC<Class10BoardAnalyticsModalProp
                 <td style="border: 1px solid #000; padding: 5px 6px;">${st ? st.totalMax : ''}</td>
                 <td style="border: 1px solid #000; padding: 5px 6px; font-weight: bold;">${st ? st.totalObtained : ''}</td>
                 <td style="border: 1px solid #000; padding: 5px 6px; font-weight: bold;">${st ? st.percentage : ''}</td>
-                <td style="border: 1px solid #000; padding: 5px 6px; font-family: monospace;">${st ? (st.student.phone || (st.student as any).mobile || '-') : ''}</td>
+                <td style="border: 1px solid #000; padding: 5px 6px; font-family: monospace;">${st ? ((st.student as any).phone || (st.student as any).mobile || '-') : ''}</td>
               </tr>
             `;
               })
@@ -626,7 +626,7 @@ export const Class10BoardAnalyticsModal: React.FC<Class10BoardAnalyticsModalProp
               <div className="grid grid-cols-12 divide-x divide-black">
                 <div className="col-span-3 p-2 font-bold bg-slate-100">આચાર્યશ્રીનું નામ :</div>
                 <div className="col-span-6 p-2 font-bold">{school?.principalName || 'શ્રી એમ.એચ.જેઠવા'}</div>
-                <div className="col-span-3 p-2 font-bold text-center">મો.નં. : {school?.phone || '9426014777'}</div>
+                <div className="col-span-3 p-2 font-bold text-center">મો.નં. : {(school as any)?.phone || '9426014777'}</div>
               </div>
             </div>
 
@@ -768,7 +768,7 @@ export const Class10BoardAnalyticsModal: React.FC<Class10BoardAnalyticsModalProp
                         <td className="border border-black p-1.5">{st ? st.totalMax : '-'}</td>
                         <td className="border border-black p-1.5 font-bold">{st ? st.totalObtained : '-'}</td>
                         <td className="border border-black p-1.5 font-black text-[#C45A2D]">{st ? `${st.percentage}%` : '-'}</td>
-                        <td className="border border-black p-1.5 font-mono">{st ? (st.student.phone || (st.student as any).mobile || '-') : '-'}</td>
+                        <td className="border border-black p-1.5 font-mono">{st ? (((st.student as any).phone || (st.student as any).mobile || '-')) : '-'}</td>
                       </tr>
                     );
                   })}

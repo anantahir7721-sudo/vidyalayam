@@ -312,9 +312,12 @@ export interface StudentResultClass9 {
  * Extracts numeric value or null from MarkRecord
  * Robustly matches by subjectId, subjectName, examId, examType, and document ID
  */
-function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches: (examType: string) => boolean): number | null {
+function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches: (examType: string) => boolean, targetStudentId?: string): number | null {
   const targetSub = subjectId.toLowerCase().trim();
   const found = records.find((m) => {
+    if (targetStudentId && String(m.studentId || '') !== String(targetStudentId)) {
+      return false;
+    }
     const sId = (m.subjectId || '').toLowerCase().trim();
     const sName = (m.subjectName || '').toLowerCase().trim();
     let subMatch = false;
@@ -391,8 +394,11 @@ export function computeClass9StudentResult(
   format: '700' | '1000' = '700',
   manualGraceOverrides?: Record<string, { siddhi?: number; krupa?: number }>
 ): StudentResultClass9 {
+  const targetStudentId = String(student.id || '');
+  const thisStudentMarks = studentMarks.filter(
+    (m) => String(m.studentId || '') === targetStudentId
+  );
   const subjectsToUse = format === '1000' ? ALL_CLASS_9_SUBJECTS : CLASS_9_MAIN_SUBJECTS;
-
   const rawScores: {
     subject: Class9SubjectDef;
     first50: number | null;
@@ -417,32 +423,32 @@ export function computeClass9StudentResult(
   for (const subj of subjectsToUse) {
     // 1. First Exam (50M)
     const first50 = subj.hasFirstSecondExam
-      ? extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('first') || ex.includes('pratham') || ex.includes('પ્રથમ'))
+      ? extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('first') || ex.includes('pratham') || ex.includes('પ્રથમ'), targetStudentId)
       : null;
 
     // 2. Second Exam (50M)
     const second50 = subj.hasFirstSecondExam
-      ? extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('second') || ex.includes('dwitiya') || ex.includes('દ્વિતીય'))
+      ? extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('second') || ex.includes('dwitiya') || ex.includes('દ્વિતીય'), targetStudentId)
       : null;
 
     // 3. Periodic Test 1 (25M)
-    const pt1_raw = extractMarkValue(studentMarks, subj.id, (ex) => (ex.includes('pt') && ex.includes('1')) || (ex.includes('periodic') && ex.includes('1')) || (ex.includes('એકમ') && ex.includes('1')));
+    const pt1_raw = extractMarkValue(thisStudentMarks, subj.id, (ex) => (ex.includes('pt') && ex.includes('1')) || (ex.includes('periodic') && ex.includes('1')) || (ex.includes('એકમ') && ex.includes('1')), targetStudentId);
     const pt1_conv = convertPeriodicTestTo5(pt1_raw);
 
     // 4. Periodic Test 2 (25M)
-    const pt2_raw = extractMarkValue(studentMarks, subj.id, (ex) => (ex.includes('pt') && ex.includes('2')) || (ex.includes('periodic') && ex.includes('2')) || (ex.includes('એકમ') && ex.includes('2')));
+    const pt2_raw = extractMarkValue(thisStudentMarks, subj.id, (ex) => (ex.includes('pt') && ex.includes('2')) || (ex.includes('periodic') && ex.includes('2')) || (ex.includes('એકમ') && ex.includes('2')), targetStudentId);
     const pt2_conv = convertPeriodicTestTo5(pt2_raw);
 
     // 5. Internal Assessment components
     // Main Subjects: 5 + 5 + 5 + 5 (PT1: 5, PT2: 5, Competency: 5, Notebook: 5)
     // Prayogik Subjects: 10 + 10 (Practical Work/Project: 10, Continuous Evaluation/Skill: 10)
-    const competency = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('competency') || ex.includes('સજ્જતા'));
-    const notebook = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('notebook') || ex.includes('નોટબુક'));
-    const practicalWork10 = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('practical_work') || ex.includes('પ્રાયોગિક_કાર્ય') || ex.includes('પ્રોજેક્ટ'));
-    const continuousSkill10 = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('continuous_skill') || ex.includes('સાતત્યપૂર્ણ') || ex.includes('કૌશલ્ય'));
+    const competency = extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('competency') || ex.includes('સજ્જતા'), targetStudentId);
+    const notebook = extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('notebook') || ex.includes('નોટબુક'), targetStudentId);
+    const practicalWork10 = extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('practical_work') || ex.includes('પ્રાયોગિક_કાર્ય') || ex.includes('પ્રોજેક્ટ'), targetStudentId);
+    const continuousSkill10 = extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('continuous_skill') || ex.includes('સાતત્યપૂર્ણ') || ex.includes('કૌશલ્ય'), targetStudentId);
 
     // Check direct internal record if entered as single lump sum
-    const directInternal = extractMarkValue(studentMarks, subj.id, (ex) => ex.includes('internal') || ex.includes('આંતરિક'));
+    const directInternal = extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('internal') || ex.includes('આંતરિક'), targetStudentId);
     let internal20: number | null = directInternal;
 
     if (internal20 === null) {

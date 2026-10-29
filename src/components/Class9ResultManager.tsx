@@ -48,6 +48,7 @@ import {
   computeClass9StudentResult,
 } from '../utils/class9ResultCalculations';
 import { Class10BoardAnalyticsModal } from './Class10BoardAnalyticsModal';
+import { Std10SubjectSelectionModal } from './Std10SubjectSelectionModal';
 import {
   StandardKey,
   StreamKey,
@@ -110,7 +111,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     return DEFAULT_STD_11_SUBJECT_CONFIG;
   });
 
-  // Std 10 Subject Configuration State (Maths Basic/Std, Sanskrit/Hindi)
+  // Std 10 Subject Configuration State (Maths Basic/Std, Sanskrit/Hindi, PT/Computer)
   const [std10Config, setStd10Config] = useState<Std10SubjectConfig>(() => {
     try {
       const saved = localStorage.getItem(`vidyalayam_std10_subject_config_${school?.id || 'default'}`);
@@ -121,8 +122,18 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     return DEFAULT_STD_10_SUBJECT_CONFIG;
   });
 
-  // Std 10 Board Analytics Official A4 Modal state
+  // Std 10 Modals state
   const [boardAnalyticsModalOpen, setBoardAnalyticsModalOpen] = useState(false);
+  const [std10SubjectModalOpen, setStd10SubjectModalOpen] = useState(false);
+
+  const updateStd10Config = (newCfg: Std10SubjectConfig) => {
+    setStd10Config(newCfg);
+    try {
+      localStorage.setItem(`vidyalayam_std10_subject_config_${school?.id || 'default'}`, JSON.stringify(newCfg));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const updateStd11Config = (newCfg: Std11SubjectConfig) => {
     setStd11Config(newCfg);
@@ -246,6 +257,12 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     return {};
   });
 
+    const [siddhiDirtyStudents, setSiddhiDirtyStudents] = useState<Set<string>>(new Set());
+  const [siddhiSaveSuccess, setSiddhiSaveSuccess] = useState<string | null>(null);
+  const locallyModifiedStudentsRef = useRef<Set<string>>(new Set());
+  const deletedMarkKeysRef = useRef<Set<string>>(new Set());
+  const saveLocalInputsTimerRef = useRef<any>(null);
+
   // Sync saved grace marks from Firestore (examId === 'siddhi_krupa_grace')
   useEffect(() => {
     if (!marks || marks.length === 0) return;
@@ -255,21 +272,31 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     setManualGraceOverrides((prev) => {
       const merged = { ...prev };
       let hasChanges = false;
+
       graceRecords.forEach((m) => {
         if (!m.studentId || !m.subjectId) return;
+        // Never overwrite students who have been modified locally in this session or are dirty
+        if (siddhiDirtyStudents.has(m.studentId) || locallyModifiedStudentsRef.current.has(m.studentId)) {
+          return;
+        }
+
         const qm = (m as any).questionMarks;
         const siddhi = qm?.siddhi !== undefined ? qm.siddhi : 0;
         const krupa = qm?.krupa !== undefined ? qm.krupa : 0;
 
+        // If local state already has an entry for this student and subject, do not overwrite with old cloud mark
+        if (merged[m.studentId]?.[m.subjectId] !== undefined) {
+          return;
+        }
+
         if (!merged[m.studentId]) {
           merged[m.studentId] = {};
         }
-        const existing = merged[m.studentId][m.subjectId];
-        if (!existing || existing.siddhi !== siddhi || existing.krupa !== krupa) {
-          merged[m.studentId][m.subjectId] = { siddhi, krupa };
-          hasChanges = true;
-        }
+
+        merged[m.studentId][m.subjectId] = { siddhi, krupa };
+        hasChanges = true;
       });
+
       if (hasChanges) {
         try {
           localStorage.setItem(`vidyalayam_grace_overrides_${school?.id || 'default'}`, JSON.stringify(merged));
@@ -280,7 +307,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       }
       return prev;
     });
-  }, [marks, school?.id]);
+  }, [marks, school?.id, siddhiDirtyStudents]);
 
   const [graceModalStudent, setGraceModalStudent] = useState<StudentResultClass9 | null>(null);
 
@@ -290,8 +317,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   const [siddhiSectionFilter, setSiddhiSectionFilter] = useState<string>('ALL');
   const [siddhiFilterMode, setSiddhiFilterMode] = useState<'ALL' | 'ELIGIBLE' | 'ELIGIBLE_SIDDHI' | 'NEEDS_GRACE' | 'PASSED' | 'FAILED'>('ELIGIBLE');
   const [siddhiViewLayout, setSiddhiViewLayout] = useState<'student' | 'overview'>('student');
-  const [siddhiDirtyStudents, setSiddhiDirtyStudents] = useState<Set<string>>(new Set());
-  const [siddhiSaveSuccess, setSiddhiSaveSuccess] = useState<string | null>(null);
+
 
   // Marks Entry Local State: studentId_subjectId_examType -> string value
   const [gridInputs, setGridInputs] = useState<Record<string, string>>({});
@@ -422,7 +448,12 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   const entrySubjects = useMemo(() => {
     if (selectedStandard === '10') {
       if (marksEntryExamId === 'board_practical') {
-        return [CLASS_10_AVAILABLE_SUBJECTS.physical_education];
+        const coSub = std10Config.defaultCoSubject === 'computer' ? CLASS_10_AVAILABLE_SUBJECTS.computer : CLASS_10_AVAILABLE_SUBJECTS.physical_education;
+        return [coSub];
+      }
+      if (marksEntryExamId === 'board_exam' || marksEntryExamId === 'internal_assessment') {
+        const { mainSubjects } = getStd10StudentSubjects(undefined, std10Config);
+        return mainSubjects; // 6 main subjects for board exam (80M) and internal assessment (20M)
       }
       const { allSubjects } = getStd10StudentSubjects(undefined, std10Config);
       return allSubjects;
@@ -642,8 +673,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
           subjectsForInputs.forEach((subj) => {
             const syncKey = (key: string, targetExamId: string, examKeywords: string[]) => {
-              // CRITICAL: NEVER overwrite keys currently focused, dirty, or in-flight!
-              if (focusedCellKeyRef.current === key || dirtyKeysRef.current.has(key)) return;
+              // CRITICAL: NEVER overwrite keys currently focused, dirty, or recently cleared!
+              if (focusedCellKeyRef.current === key || dirtyKeysRef.current.has(key) || deletedMarkKeysRef.current.has(key)) return;
 
               const cloudVal = getExistingMarkVal(studentMarks, subj, targetExamId, examKeywords);
               const expectedVal = cloudVal !== null ? cloudVal : '';
@@ -1113,6 +1144,11 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
   // Handle cell modification in Spreadsheet Grid with immediate offline save & auto-sync
   const handleCellChange = (key: string, value: string, maxMarks: number) => {
+    if (selectedStandard === '10' && !std10Config?.isFinalized) {
+      setStd10SubjectModalOpen(true);
+      return;
+    }
+
     const trimmed = value.trim();
     let updatedVal: string | null = null;
 
@@ -1137,15 +1173,25 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
       gridInputsRef.current = nextInputs;
       setGridInputs(nextInputs);
 
-      // 3. Immediate offline local persistence (synchronous)
-      try {
-        localStorage.setItem(
-          `vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`,
-          JSON.stringify(nextInputs)
-        );
-      } catch (e) {
-        console.error('Local cache error:', e);
+      // 3. Asynchronous debounced local persistence (prevents JSON stringify UI freezing!)
+      if (trimmed === '') {
+        deletedMarkKeysRef.current.add(key);
+      } else {
+        deletedMarkKeysRef.current.delete(key);
       }
+      if (saveLocalInputsTimerRef.current) {
+        clearTimeout(saveLocalInputsTimerRef.current);
+      }
+      saveLocalInputsTimerRef.current = setTimeout(() => {
+        try {
+          localStorage.setItem(
+            `vidyalayam_class9_inputs_${school?.id || 'default'}_${selectedStandard}`,
+            JSON.stringify(gridInputsRef.current)
+          );
+        } catch (e) {
+          console.error('Local cache error:', e);
+        }
+      }, 500);
 
       // 4. Trigger debounced real-time cloud synchronization
       triggerDebouncedMarksSync();
@@ -1339,9 +1385,31 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
         });
       });
 
+      const idsToDelete: string[] = [];
+      filteredStudents.forEach((st) => {
+        const studentGrace = currentOverrides[st.id] || {};
+        marks.forEach((m) => {
+          if (m.studentId === st.id && m.examId === 'siddhi_krupa_grace') {
+            const sid = m.subjectId;
+            const curG = studentGrace[sid];
+            if (!curG || ((curG.siddhi || 0) === 0 && (curG.krupa || 0) === 0)) {
+              idsToDelete.push(m.id);
+            }
+          }
+        });
+      });
+
+      const uniqueDeleteGraceIds = Array.from(new Set(idsToDelete));
+      if (uniqueDeleteGraceIds.length > 0) {
+        await bulkDeleteMarks(school.id, uniqueDeleteGraceIds);
+      }
       if (recordsToSave.length > 0) {
         await saveBatchExamMarks(school.id, recordsToSave);
       }
+      if (uniqueDeleteGraceIds.length > 0 || recordsToSave.length > 0) {
+        onRefresh?.();
+      }
+
       setSiddhiDirtyStudents(new Set());
       try {
         localStorage.removeItem(`vidyalayam_pending_grace_${school?.id || 'default'}`);
@@ -1408,7 +1476,9 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     nextStudentMap[subjectId] = { ...(nextStudentMap[subjectId] || {}), [field]: validNum };
     const nextOverrides = { ...manualGraceOverridesRef.current, [studentId]: nextStudentMap };
 
+    manualGraceOverridesRef.current = nextOverrides;
     setManualGraceOverrides(nextOverrides);
+    locallyModifiedStudentsRef.current.add(studentId);
     setSiddhiDirtyStudents((prev) => new Set(prev).add(studentId));
 
     // 1. Immediate offline local persistence
@@ -2965,6 +3035,18 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 )}
               </div>
 
+              {/* Std 10 Subject Selection Toolbar Button */}
+              {selectedStandard === '10' && (
+                <button
+                  type="button"
+                  onClick={() => setStd10SubjectModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-orange-100 hover:bg-orange-200 dark:bg-orange-950/40 dark:hover:bg-orange-900/50 text-[#C45A2D] dark:text-[#f59c73] border border-[#C45A2D]/30 text-xs font-bold transition-all cursor-pointer shadow-xs"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>વિષય પસંદગી પત્રક ({std10Config?.isFinalized ? '✓ ફાઇનલ' : '⚠️ બાકી'})</span>
+                </button>
+              )}
+
               {/* Clear Exam Marks from Cloud */}
               {marksEntryExamId !== 'siddhi_krupa_entry' && (
                 <button
@@ -2980,6 +3062,31 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               )}
             </div>
           </div>
+
+          {/* Std 10 Subject Selection Mandatory Prompt Banner */}
+          {selectedStandard === '10' && !std10Config?.isFinalized && (
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500 text-amber-950 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md animate-pulse">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-6 h-6 text-amber-600 shrink-0" />
+                <div>
+                  <div className="font-black text-xs sm:text-sm">
+                    ⚠️ ધોરણ ૧૦ ના વૈકલ્પિક વિષયો પસંદ કરવા ફરજિયાત છે!
+                  </div>
+                  <div className="text-[11px] sm:text-xs text-amber-900 dark:text-amber-300 mt-0.5">
+                    ગુણ એન્ટ્રી કરતાં પહેલાં વિદ્યાર્થીવાર ગણિત (બેઝિક/સ્ટાન્ડર્ડ), સંસ્કૃત/હિન્દી અને પી.ટી./કમ્પ્યુટર પસંદ કરી સાચવો (Save કરો).
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStd10SubjectModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-[#C45A2D] hover:bg-[#a84a22] text-white font-black text-xs transition-all shadow-md cursor-pointer shrink-0 flex items-center gap-1.5"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>વિષય પસંદગી કરો & અનલૉક કરો</span>
+              </button>
+            </div>
+          )}
 
           {saveSuccessMsg && (
             <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
@@ -3879,8 +3986,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               </button>
             </div>
 
-            {/* Annual Format Selector: 700 vs 1000 (Std 9) | 700 vs 900 (Std 11) */}
-            {resultExamMode === 'annual' && (
+            {/* Annual Format Selector: 700 vs 1000 (Std 9) | 700 vs 900 (Std 11) - Hidden for Std 10 */}
+            {resultExamMode === 'annual' && selectedStandard !== '10' && (
               <div className="flex items-center gap-1 p-1 bg-amber-500/10 dark:bg-amber-950/30 rounded-2xl border border-amber-300 dark:border-amber-700/60 text-xs">
                 <button
                   type="button"
@@ -4073,7 +4180,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
                 </button>
               </div>
 
-              {resultExamMode === 'annual' && (
+              {resultExamMode === 'annual' && selectedStandard !== '10' && (
                 <>
                   <div className="flex items-center gap-1 p-1 bg-amber-500/10 dark:bg-amber-950/30 rounded-2xl border border-amber-300 dark:border-amber-700/60 text-xs">
                     <button
@@ -5110,6 +5217,18 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
           students={activeStandardStudents}
           marks={marks}
           results={allResults}
+        />
+      )}
+
+      {/* Std 10 Subject Selection Modal (Maths Basic/Std, Sanskrit/Hindi, PT/Computer) */}
+      {selectedStandard === '10' && (
+        <Std10SubjectSelectionModal
+          isOpen={std10SubjectModalOpen}
+          onClose={() => setStd10SubjectModalOpen(false)}
+          students={activeStandardStudents}
+          config={std10Config}
+          onSave={updateStd10Config}
+          getSeatNumber={getSeatNumber}
         />
       )}
     </div>
