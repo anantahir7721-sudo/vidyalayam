@@ -21,7 +21,7 @@ interface NotificationCenterModalProps {
   notifications: AppNotification[];
   schoolId?: string | null;
   title?: string;
-  onNavigateTab?: (tab: string) => void;
+  onNavigateTab?: (tab: string, metadata?: Record<string, any>) => void;
 }
 
 export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({
@@ -73,7 +73,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     }
     const target = notif.actionTab || notif.actionUrl || (notif.category === 'birthday' ? 'birthdays' : notif.category === 'github_update' ? 'settings' : null);
     if (target && onNavigateTab) {
-      onNavigateTab(target);
+      onNavigateTab(target, notif.metadata);
       onClose();
     }
   };

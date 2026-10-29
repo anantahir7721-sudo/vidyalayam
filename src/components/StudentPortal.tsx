@@ -30,7 +30,7 @@ import {
   Bell,
   Settings,
 } from 'lucide-react';
-import { StudentSession, OnlineExam, MarkRecord, AppNotification } from '../types';
+import { StudentSession, OnlineExam, MarkRecord, AppNotification, ExamReleaseConfig } from '../types';
 import {
   fetchStudentExams,
   fetchStudentMarks,
@@ -49,6 +49,7 @@ import {
   subscribeToStudentNotifications,
   checkUpcomingExamReminders,
 } from '../services/notificationService';
+import { subscribeExamReleaseConfigs } from '../services/firestoreService';
 import { NotificationCenterModal } from './NotificationCenterModal';
 import { StudentExamScreen } from './StudentExamScreen';
 import { DailyNewsTab } from './DailyNewsTab';
@@ -61,7 +62,7 @@ import { SchoolNoticeBoardTab } from './SchoolNoticeBoardTab';
 import { ThemeToggle } from './ThemeToggle';
 import { SettingsTab } from './SettingsTab';
 import { subscribeToSchoolProfile } from '../services/authService';
-import { calculateClassResults } from '../utils/resultFormulaUtils';
+import { calculateClassResults, calculateGsebGrade, getSubjectsForStandard } from '../utils/resultFormulaUtils';
 import { getStudentDiseCode } from '../utils/idCardPdf';
 import { VidyalayamLogo } from './VidyalayamLogo';
 
@@ -104,6 +105,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
   const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
 
+  // Selective Result Publishing & Exam Navigation
+  const [selectedResultExam, setSelectedResultExam] = useState<'first_exam' | 'second_exam' | 'annual'>('first_exam');
+  const [releaseConfigs, setReleaseConfigs] = useState<ExamReleaseConfig[]>([]);
+
   const student = session.student;
   const initialSchool = session.school || {
     id: session.schoolId || '',
@@ -122,6 +127,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
     } catch (e) {}
     return initialSchool;
   });
+
+  // Real-time synchronization of school exam release configurations
+  useEffect(() => {
+    const schoolId = session.schoolId || session.school?.id;
+    if (!schoolId) return;
+
+    const unsub = subscribeExamReleaseConfigs(schoolId, (configs) => {
+      setReleaseConfigs(configs);
+    });
+
+    return () => unsub();
+  }, [session.schoolId, session.school?.id]);
 
   // Real-time synchronization of school toggles for student view
   useEffect(() => {
@@ -309,6 +326,46 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
       }
     }
   }, [serverTime, isTimeSynced, exams, activeExamId]);
+
+
+  // Helper: Find mark for a student by subject ID and exam
+  const getStudentSubjectMark = (subjId: string, examType: 'first_exam' | 'second_exam' | 'annual') => {
+    const cleanSubj = subjId.toLowerCase().trim();
+    return marks.find((m) => {
+      const mSubj = (m.subjectId || '').toLowerCase().trim();
+      const mExId = ((m as any).examId || '').toLowerCase().trim();
+      const mDocId = (m.id || '').toLowerCase().trim();
+
+      let isSubMatch = false;
+      if (cleanSubj === 'science') {
+        if (mSubj === 'social_science' || mSubj === 'ss') return false;
+        isSubMatch = mSubj === 'science' || mSubj === 'sci' || Boolean(m.subjectName && m.subjectName.includes('વિજ્ઞાન') && !m.subjectName.includes('સામાજિક'));
+      } else if (cleanSubj === 'social_science') {
+        if (mSubj === 'science' && !mSubj.includes('social')) return false;
+        isSubMatch = mSubj === 'social_science' || mSubj === 'ss' || Boolean(m.subjectName && m.subjectName.includes('સામાજિક'));
+      } else if (cleanSubj.includes('maths')) {
+        isSubMatch = mSubj.includes('math') || Boolean(m.subjectName && m.subjectName.includes('ગણિત'));
+      } else if (cleanSubj === 'hindi') {
+        isSubMatch = (mSubj === 'hindi' || Boolean(m.subjectName && m.subjectName.includes('હિન્દી'))) && !mSubj.includes('sanskrit');
+      } else if (cleanSubj === 'sanskrit') {
+        isSubMatch = mSubj === 'sanskrit' || Boolean(m.subjectName && m.subjectName.includes('સંસ્કૃત'));
+      } else if (cleanSubj.includes('pe') || cleanSubj.includes('computer')) {
+        isSubMatch = mSubj.includes('pe') || mSubj.includes('computer') || mSubj.includes('yoga') || Boolean(m.subjectName && (m.subjectName.includes('શારીરિક') || m.subjectName.includes('કમ્પ્યુટર')));
+      } else {
+        isSubMatch = mSubj === cleanSubj || Boolean(m.subjectName && m.subjectName.toLowerCase().includes(cleanSubj));
+      }
+
+      if (!isSubMatch) return false;
+
+      if (examType === 'first_exam') {
+        return mExId === 'first_exam' || mDocId.includes('_first_exam_') || mExId.includes('first') || mExId.includes('pratham') || Boolean(m.examType?.includes('First') || m.examType?.includes('પ્રથમ'));
+      }
+      if (examType === 'second_exam') {
+        return mExId === 'second_exam' || mDocId.includes('_second_exam_') || mExId.includes('second') || mExId.includes('dwitiya') || mExId.includes('prelim') || Boolean(m.examType?.includes('Second') || m.examType?.includes('દ્વિતીય') || m.examType?.includes('પ્રિલિમ'));
+      }
+      return mExId === 'annual_exam' || mDocId.includes('_annual_exam_') || mExId.includes('annual') || mExId.includes('varshik') || mExId.includes('board') || Boolean(m.examType?.includes('Annual') || m.examType?.includes('વાર્ષિક') || m.examType?.includes('બોર્ડ'));
+    });
+  };
 
   // Compute calculated GSEB result for this student using the official calculation engine
   const calculatedResult = React.useMemo(() => {
@@ -563,7 +620,22 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
 
             <button
               type="button"
-              onClick={() => setIsNotifModalOpen(true)}
+              onClick={() => {
+                const latestNotif = notifications.find((n) => !n.read) || notifications[0];
+                if (latestNotif?.category === 'exam_result' || latestNotif?.metadata?.examId) {
+                  setActiveTab('result');
+                  const exId = (latestNotif.metadata?.examId || '').toLowerCase();
+                  if (exId.includes('second') || exId.includes('dwitiya') || exId.includes('prelim')) {
+                    setSelectedResultExam('second_exam');
+                  } else if (exId.includes('annual') || exId.includes('varshik') || exId.includes('board')) {
+                    setSelectedResultExam('annual');
+                  } else {
+                    setSelectedResultExam('first_exam');
+                  }
+                } else {
+                  setIsNotifModalOpen(true);
+                }
+              }}
               className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer ml-auto"
             >
               <span>સૂચના જુઓ</span>
@@ -937,133 +1009,432 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-xs">
-                      {rec.subjects?.map((sub, sIdx) => (
-                        <div key={sIdx} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5">
-                          <div className="text-slate-500 dark:text-slate-400 text-[11px] truncate">{sub.subjectName}</div>
-                          <div className="font-bold text-slate-900 dark:text-white text-sm mt-0.5">
-                            <span className="text-emerald-600 dark:text-emerald-400">{sub.marksObtained}</span> / {sub.maxMarks}
-                          </div>
+                    {(() => {
+                      const cleanStd = String(student.standard || '9').trim().replace(/^class\s*/i, '');
+                      const exKey = rec.examType === 'first_term' ? 'first_exam' : rec.examType === 'second_term' ? 'second_exam' : 'annual_exam';
+                      const currentCfg = releaseConfigs.find((c) => c.standard === cleanStd && c.examId === exKey);
+                      const isWholeLive = Boolean(currentCfg?.isWholeExamReleased);
+                      const releasedSubIds = currentCfg?.releasedSubjectIds || [];
+
+                      return (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-xs">
+                          {rec.subjects?.map((sub, sIdx) => {
+                            const subAny = sub as any;
+                            const subId = (subAny.subjectId || subAny.id || '').toLowerCase();
+                            const isLive = isWholeLive || releasedSubIds.some((id) => id.toLowerCase() === subId || sub.subjectName?.toLowerCase().includes(id));
+
+                            return (
+                              <div key={sIdx} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex flex-col justify-between">
+                                <div>
+                                  <div className="text-slate-500 dark:text-slate-400 text-[11px] truncate">{sub.subjectName}</div>
+                                  <div className="font-bold text-slate-900 dark:text-white text-sm mt-0.5">
+                                    {isLive ? (
+                                      <>
+                                        <span className="text-emerald-600 dark:text-emerald-400">{sub.marksObtained}</span> / {sub.maxMarks}
+                                      </>
+                                    ) : (
+                                      <span className="text-slate-400">- / {sub.maxMarks}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="mt-1 text-[10px]">
+                                  {isLive ? (
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">જાહેર થયેલ</span>
+                                  ) : (
+                                    <span className="text-slate-400">પ્રકાશન બાકી</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
             )}
           </div>
         ) : activeTab === 'result' ? (
-          /* My Progress Card / Result View */
+          /* My Results View with Selective School Publishing Controls */
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">વાર્ષિક પ્રગતિપત્રક (GSEB Progress Card)</h3>
+            {/* Header & Print Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>📄 પરીક્ષા પરિણામ પત્રક (Student Exam Results)</span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#C45A2D]/15 text-[#C45A2D] dark:bg-black/20 dark:text-white">
+                    ધોરણ {student.standard}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  શાળા દ્વારા સત્તાવાર જાહેર થયેલ પરીક્ષાઓ અને વિષયોના ગુણ
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200 dark:border-transparent"
+                >
+                  <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  પ્રિન્ટ / PDF ડાઉનલોડ
+                </button>
+              </div>
+            </div>
+
+            {/* Exam Selector Tabs */}
+            <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-[#121921] rounded-2xl border border-slate-200 dark:border-white/10 overflow-x-auto max-w-full">
               <button
                 type="button"
-                onClick={() => window.print()}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200 dark:border-transparent"
+                onClick={() => setSelectedResultExam('first_exam')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                  selectedResultExam === 'first_exam'
+                    ? 'bg-[#C45A2D] text-white shadow-xs ring-1 ring-[#C45A2D]/40'
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
               >
-                <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                પ્રિન્ટ / PDF ડાઉનલોડ
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>પ્રથમ પરીક્ષા પરિણામ</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedResultExam('second_exam')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                  selectedResultExam === 'second_exam'
+                    ? 'bg-[#C45A2D] text-white shadow-xs ring-1 ring-[#C45A2D]/40'
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>દ્વિતીય / પ્રિલિમ પરીક્ષા</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedResultExam('annual')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                  selectedResultExam === 'annual'
+                    ? 'bg-[#C45A2D] text-white shadow-xs ring-1 ring-[#C45A2D]/40'
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Award className="w-3.5 h-3.5" />
+                <span>વાર્ષિક પ્રગતિપત્રક (GSEB Progress Card)</span>
               </button>
             </div>
 
-            {calculatedResult ? (
-              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-2xl space-y-6 print:border-none print:shadow-none print:p-0">
-                {/* School Header on mark sheet */}
-                <div className="text-center pb-4 border-b border-slate-200 dark:border-white/10 space-y-1">
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white uppercase tracking-wide">
-                    {school.schoolName}
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    DISE કોડ: {school.diseCode} • જિલ્લો: {school.district || '-'}
-                  </p>
-                  <div className="inline-block px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-300 dark:border-emerald-500/30 mt-1">
-                    વાર્ષિક પરિણામ પત્રક (Progress Card) • ધોરણ {student.standard}
-                  </div>
-                </div>
+            {/* Content for Selected Exam */}
+            {(() => {
+              const cleanStd = String(student.standard || '9').trim().replace(/^class\s*/i, '');
+              const curriculumSubjects = getSubjectsForStandard(cleanStd);
+              const isStd10 = cleanStd === '10';
+              const defaultMax = isStd10 ? 80 : 50;
 
-                {/* Student Info Box */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs">
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px] block">વિદ્યાર્થીનું નામ:</span>
-                    <strong className="text-slate-900 dark:text-white">{student.studentName}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px] block">G.R. નંબર:</span>
-                    <strong className="text-slate-900 dark:text-white">{student.grNumber || '-'}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px] block">રોલ નંબર:</span>
-                    <strong className="text-slate-900 dark:text-white">{student.rollNumber || '-'}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px] block">જન્મ તારીખ:</span>
-                    <strong className="text-slate-900 dark:text-white">{student.dob || '-'}</strong>
-                  </div>
-                </div>
+              if (selectedResultExam === 'first_exam' || selectedResultExam === 'second_exam') {
+                const currentCfg = releaseConfigs.find(
+                  (c) => c.standard === cleanStd && c.examId === selectedResultExam
+                );
+                const isWholeReleased = Boolean(currentCfg?.isWholeExamReleased);
+                const releasedSubIds = currentCfg?.releasedSubjectIds || [];
+                const hasAnyReleased = isWholeReleased || releasedSubIds.length > 0;
 
-                {/* Subjects Table */}
-                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-white/10 text-[11px]">
-                        <th className="p-3">વિષય</th>
-                        <th className="p-3 text-center">પ્રથમ સત્ર (50)</th>
-                        <th className="p-3 text-center">દ્વિતીય સત્ર (50)</th>
-                        <th className="p-3 text-center">વાર્ષિક (100)</th>
-                        <th className="p-3 text-center">ગ્રેડ</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                      {calculatedResult.subjectScores.map((sub, sIdx) => (
-                        <tr key={sIdx} className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
-                          <td className="p-3 font-semibold text-slate-900 dark:text-white">{sub.subjectNameGu || sub.subjectNameEn}</td>
-                          <td className="p-3 text-center text-slate-700 dark:text-slate-300">{sub.prathamRaw ?? '-'}</td>
-                          <td className="p-3 text-center text-slate-700 dark:text-slate-300">{sub.dwitiyaRaw ?? '-'}</td>
-                          <td className="p-3 text-center font-bold text-slate-900 dark:text-white">{sub.finalMarkWithGrace ?? sub.total100 ?? '-'}</td>
-                          <td className="p-3 text-center">
-                            <span className="px-2 py-0.5 rounded font-bold text-[11px] bg-slate-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-300">
-                              {sub.grade || '-'}
+                const examTitle =
+                  selectedResultExam === 'first_exam'
+                    ? 'પ્રથમ પરીક્ષા પરિણામ'
+                    : isStd10
+                    ? 'પ્રિલિમિનરી પરીક્ષા પરિણામ'
+                    : 'દ્વિતીય પરીક્ષા પરિણામ';
+
+                if (!hasAnyReleased) {
+                  return (
+                    <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+                        <AlertCircle className="w-6 h-6" />
+                      </div>
+                      <div className="font-bold text-base text-slate-900 dark:text-white">{examTitle} હજુ જાહેર થયેલ નથી</div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                        શાળા દ્વારા આ પરીક્ષાનું પરિણામ હજુ સુધી સત્તાવાર જાહેર કરવામાં આવ્યું નથી.
+                        શિક્ષક દ્વારા વિષયવાર ગુણ કે સમગ્ર પરિણામ જાહેર કરવામાં આવશે ત્યારે તમને એપ્લિકેશનમાં નોટિફિકેશન મળશે.
+                      </p>
+                    </div>
+                  );
+                }
+
+                // Calculate summary across released main subjects
+                let totalObtained = 0;
+                let totalMax = 0;
+                let releasedMainCount = 0;
+                const totalMainCount = curriculumSubjects.filter((s) => s.isMainSubject !== false).length;
+
+                curriculumSubjects.forEach((sub) => {
+                  const isReleased = isWholeReleased || releasedSubIds.includes(sub.id);
+                  if (isReleased && sub.isMainSubject !== false) {
+                    releasedMainCount++;
+                    const m = getStudentSubjectMark(sub.id, selectedResultExam);
+                    if (m && m.totalObtained !== undefined && m.totalObtained !== null) {
+                      totalObtained += Number(m.totalObtained) || 0;
+                      totalMax += Number(m.totalMax) || defaultMax;
+                    } else {
+                      totalMax += defaultMax;
+                    }
+                  }
+                });
+
+                const percentage = totalMax > 0 ? Math.round((totalObtained / totalMax) * 1000) / 10 : 0;
+                const overallGrade = calculateGsebGrade(totalObtained, totalMax);
+
+                return (
+                  <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-2xl space-y-6 print:border-none print:shadow-none print:p-0">
+                    {/* School Header */}
+                    <div className="text-center pb-4 border-b border-slate-200 dark:border-white/10 space-y-1">
+                      <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white uppercase tracking-wide">
+                        {school.schoolName}
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        DISE કોડ: {school.diseCode} • જિલ્લો: {school.district || '-'}
+                      </p>
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-300 dark:border-emerald-500/30 mt-1">
+                        <span>{examTitle} • ધોરણ {student.standard}</span>
+                      </div>
+                    </div>
+
+                    {/* Student Info Box */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs">
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px] block">વિદ્યાર્થીનું નામ:</span>
+                        <strong className="text-slate-900 dark:text-white">{student.studentName}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px] block">G.R. નંબર:</span>
+                        <strong className="text-slate-900 dark:text-white">{student.grNumber || '-'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px] block">રોલ નંબર:</span>
+                        <strong className="text-slate-900 dark:text-white">{student.rollNumber || '-'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px] block">જન્મ તારીખ:</span>
+                        <strong className="text-slate-900 dark:text-white">{student.dob || '-'}</strong>
+                      </div>
+                    </div>
+
+                    {/* Status Alert Banner */}
+                    {isWholeReleased ? (
+                      <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/40 text-emerald-900 dark:text-emerald-200 text-xs font-semibold flex items-center gap-2.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>સત્તાવાર સમગ્ર પરીક્ષા પરિણામ શાળા દ્વારા જાહેર કરવામાં આવ્યું છે. ટકાવારી અને ગ્રેડ નીચે મુજબ છે.</span>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-500/40 text-blue-900 dark:text-blue-200 text-xs font-semibold flex items-center gap-2.5">
+                        <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <span>શાળા દ્વારા કેટલાક વિષયોના ગુણ જાહેર કરેલ છે. સમગ્ર પરીક્ષાનું આખરી પરિણામ અને ટકાવારી શાળા દ્વારા સત્તાવાર જાહેર થયા બાદ અહીં દેખાશે.</span>
+                      </div>
+                    )}
+
+                    {/* Subjects Marks Table */}
+                    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-white/10 text-[11px]">
+                            <th className="p-3 w-12 text-center">ક્રમ</th>
+                            <th className="p-3">વિષયનું નામ</th>
+                            <th className="p-3 text-center">કુલ ગુણ</th>
+                            <th className="p-3 text-center">મેળવેલ ગુણ</th>
+                            <th className="p-3 text-center">ગ્રેડ</th>
+                            <th className="p-3 text-center">પ્રકાશન સ્થિતિ</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                          {curriculumSubjects.map((sub, sIdx) => {
+                            const isReleased = isWholeReleased || releasedSubIds.includes(sub.id);
+                            const markRec = getStudentSubjectMark(sub.id, selectedResultExam);
+                            const maxM = markRec?.totalMax || defaultMax;
+                            const obtainedVal = markRec && markRec.totalObtained !== undefined && markRec.totalObtained !== null ? markRec.totalObtained : null;
+                            const gradeVal = obtainedVal !== null ? (markRec?.overallGrade || calculateGsebGrade(obtainedVal, maxM)) : '-';
+
+                            return (
+                              <tr key={sub.id || sIdx} className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
+                                <td className="p-3 text-center text-slate-500 font-mono">{sIdx + 1}</td>
+                                <td className="p-3 font-semibold text-slate-900 dark:text-white">
+                                  <div>{sub.nameGu}</div>
+                                  <div className="text-[10px] text-slate-500">{sub.nameEn}</div>
+                                </td>
+                                <td className="p-3 text-center text-slate-600 dark:text-slate-300 font-mono">{maxM}</td>
+                                <td className="p-3 text-center font-bold text-sm">
+                                  {isReleased ? (
+                                    obtainedVal !== null ? (
+                                      <span className="text-emerald-600 dark:text-emerald-400 font-mono">{obtainedVal}</span>
+                                    ) : (
+                                      <span className="text-slate-400">-</span>
+                                    )
+                                  ) : (
+                                    <span className="text-slate-400 font-black text-base">-</span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-center">
+                                  {isReleased && obtainedVal !== null ? (
+                                    <span className="px-2 py-0.5 rounded font-bold text-[11px] bg-slate-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-300">
+                                      {gradeVal}
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400">-</span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-center">
+                                  {isReleased ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 inline-flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                      જાહેર કરેલ
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5">
+                                      પ્રકાશન બાકી
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Grand Total & Final Percentage Card */}
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">સમગ્ર પરીક્ષા પરિણામ સ્થિતિ:</div>
+                        <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                          {isWholeReleased ? (
+                            <span className="text-emerald-600 dark:text-emerald-400">
+                              {percentage >= 33 ? 'ઉત્તીર્ણ (PASS)' : 'સુધારણા જરૂરી (NEEDS IMPROVEMENT)'}
                             </span>
-                          </td>
+                          ) : (
+                            <span className="text-slate-500 dark:text-slate-400">
+                              આંશિક ગુણ જાહેર (આખરી પરિણામ બાકી)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">કુલ ગુણ / ટકાવારી:</div>
+                        <div className="text-base sm:text-lg font-bold font-mono text-slate-900 dark:text-white mt-0.5">
+                          {isWholeReleased ? (
+                            <>
+                              <span className="text-emerald-600 dark:text-emerald-400">{totalObtained}</span> / {totalMax} ({percentage}%)
+                            </>
+                          ) : (
+                            <span className="text-slate-400">- / - (-)</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Annual Progress Card View
+              return calculatedResult ? (
+                <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-2xl space-y-6 print:border-none print:shadow-none print:p-0">
+                  {/* School Header on mark sheet */}
+                  <div className="text-center pb-4 border-b border-slate-200 dark:border-white/10 space-y-1">
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white uppercase tracking-wide">
+                      {school.schoolName}
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      DISE કોડ: {school.diseCode} • જિલ્લો: {school.district || '-'}
+                    </p>
+                    <div className="inline-block px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-300 dark:border-emerald-500/30 mt-1">
+                      વાર્ષિક પરિણામ પત્રક (Progress Card) • ધોરણ {student.standard}
+                    </div>
+                  </div>
+
+                  {/* Student Info Box */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs">
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] block">વિદ્યાર્થીનું નામ:</span>
+                      <strong className="text-slate-900 dark:text-white">{student.studentName}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] block">G.R. નંબર:</span>
+                      <strong className="text-slate-900 dark:text-white">{student.grNumber || '-'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] block">રોલ નંબર:</span>
+                      <strong className="text-slate-900 dark:text-white">{student.rollNumber || '-'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] block">જન્મ તારીખ:</span>
+                      <strong className="text-slate-900 dark:text-white">{student.dob || '-'}</strong>
+                    </div>
+                  </div>
+
+                  {/* Subjects Table */}
+                  <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-white/10 text-[11px]">
+                          <th className="p-3">વિષય</th>
+                          <th className="p-3 text-center">પ્રથમ સત્ર (50)</th>
+                          <th className="p-3 text-center">દ્વિતીય સત્ર (50)</th>
+                          <th className="p-3 text-center">વાર્ષિક (100)</th>
+                          <th className="p-3 text-center">ગ્રેડ</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Final Result Status & Total */}
-                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/40 flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <div className="text-xs text-slate-600 dark:text-slate-300">વાર્ષિક પરિણામ:</div>
-                    <div className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                      {calculatedResult.resultStatus === 'PASS'
-                        ? 'ઉત્તીર્ણ (PASS)'
-                        : calculatedResult.resultStatus === 'PASS_WITH_SIDDHI'
-                        ? 'સિદ્ધિ ગુણ સાથે ઉત્તીર્ણ (PASS WITH SIDDHI)'
-                        : calculatedResult.resultStatus === 'PASS_WITH_KRUPA'
-                        ? 'કૃપા ગુણ સાથે ઉત્તીર્ણ (PASS WITH KRUPA)'
-                        : 'સુધારણા જરૂરી (NEEDS IMPROVEMENT)'}
-                    </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                        {calculatedResult.subjectScores.map((sub, sIdx) => (
+                          <tr key={sIdx} className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
+                            <td className="p-3 font-semibold text-slate-900 dark:text-white">{sub.subjectNameGu || sub.subjectNameEn}</td>
+                            <td className="p-3 text-center text-slate-700 dark:text-slate-300">{sub.prathamRaw ?? '-'}</td>
+                            <td className="p-3 text-center text-slate-700 dark:text-slate-300">{sub.dwitiyaRaw ?? '-'}</td>
+                            <td className="p-3 text-center font-bold text-slate-900 dark:text-white">{sub.finalMarkWithGrace ?? sub.total100 ?? '-'}</td>
+                            <td className="p-3 text-center">
+                              <span className="px-2 py-0.5 rounded font-bold text-[11px] bg-slate-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-300">
+                                {sub.grade || '-'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
 
-                  <div className="text-right">
-                    <div className="text-xs text-slate-600 dark:text-slate-300">કુલ ગુણ / ટકાવારી:</div>
-                    <div className="text-lg font-bold text-slate-900 dark:text-white">
-                      {calculatedResult.totalObtained} / {calculatedResult.totalMax} ({calculatedResult.percentage}%)
+                  {/* Final Result Status & Total */}
+                  <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/40 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <div className="text-xs text-slate-600 dark:text-slate-300">વાર્ષિક પરિણામ:</div>
+                      <div className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                        {calculatedResult.resultStatus === 'PASS'
+                          ? 'ઉત્તીર્ણ (PASS)'
+                          : calculatedResult.resultStatus === 'PASS_WITH_SIDDHI'
+                          ? 'સિદ્ધિ ગુણ સાથે ઉત્તીર્ણ (PASS WITH SIDDHI)'
+                          : calculatedResult.resultStatus === 'PASS_WITH_KRUPA'
+                          ? 'કૃપા ગુણ સાથે ઉત્તીર્ણ (PASS WITH KRUPA)'
+                          : 'સુધારણા જરૂરી (NEEDS IMPROVEMENT)'}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-xs text-slate-600 dark:text-slate-300">કુલ ગુણ / ટકાવારી:</div>
+                      <div className="text-lg font-bold text-slate-900 dark:text-white">
+                        {calculatedResult.totalObtained} / {calculatedResult.totalMax} ({calculatedResult.percentage}%)
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm space-y-2">
-                <FileText className="w-10 h-10 mx-auto text-slate-400 dark:text-slate-500 opacity-40" />
-                <div className="font-bold text-sm text-slate-900 dark:text-white">પરિણામ હજુ તૈયાર નથી</div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                  શાળા દ્વારા વાર્ષિક ગુણ નોંધાયા બાદ અહીં તમારું સત્તાવાર પરિણામ પત્રક જોવા મળશે.
-                </p>
-              </div>
-            )}
+              ) : (
+                <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#121921] border border-slate-200 dark:border-white/10 shadow-sm space-y-2">
+                  <FileText className="w-10 h-10 mx-auto text-slate-400 dark:text-slate-500 opacity-40" />
+                  <div className="font-bold text-sm text-slate-900 dark:text-white">વાર્ષિક પરિણામ હજુ તૈયાર નથી</div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                    શાળા દ્વારા વાર્ષિક ગુણ નોંધાયા અને જાહેર થયા બાદ અહીં તમારું સત્તાવાર પ્રગતિપત્રક જોવા મળશે.
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         ) : activeTab === 'idcard' ? (
           /* ID Card View */
@@ -1367,24 +1738,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
         notifications={notifications}
         schoolId={session.schoolId || session.school?.id}
         title="પરીક્ષા & પરિણામ સૂચનાઓ"
-        onNavigateTab={(tab) => {
-          if (
-            [
-              'upcoming_exams',
-              'samachar',
-              'notice_board',
-              'prashnotari',
-              'janva_jevu',
-              'abhivyakti',
-              'suvichar',
-              'presentation',
-              'marks',
-              'result',
-              'idcard',
-              'profile',
-              'history',
-            ].includes(tab)
-          ) {
+        onNavigateTab={(tab, metadata) => {
+          if (tab === 'result' || tab === 'marks') {
+            setActiveTab('result');
+            const exId = (metadata?.examId || '').toLowerCase();
+            if (exId.includes('second') || exId.includes('dwitiya') || exId.includes('prelim')) {
+              setSelectedResultExam('second_exam');
+            } else if (exId.includes('annual') || exId.includes('varshik') || exId.includes('board')) {
+              setSelectedResultExam('annual');
+            } else {
+              setSelectedResultExam('first_exam');
+            }
+          } else {
             setActiveTab(tab as StudentTab);
           }
         }}

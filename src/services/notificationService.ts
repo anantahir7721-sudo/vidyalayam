@@ -452,3 +452,80 @@ export function checkUpcomingExamReminders(exams: any[]): void {
     }
   }
 }
+
+/**
+ * Dispatch Push & In-App Notification when school releases exam results (Whole Exam or Individual Subject).
+ * Deep links directly to the specific exam result tab in Student Portal!
+ */
+export async function notifyResultRelease(params: {
+  schoolId: string;
+  schoolName: string;
+  standard: string;
+  examId: string;
+  examName: string;
+  subjectName?: string;
+  isWholeExam?: boolean;
+  students: Array<{ id: string; studentName: string; grNumber?: string }>;
+}): Promise<number> {
+  const { schoolId, schoolName, standard, examId, examName, subjectName, isWholeExam, students } = params;
+  if (!schoolId || !standard || !students.length) return 0;
+
+  const isWhole = Boolean(isWholeExam);
+  const title = isWhole
+    ? `📢 ${examName} નું પરિણામ જાહેર થયેલ છે!`
+    : `📝 ${examName} - ${subjectName || 'વિષય'} ના ગુણ જાહેર થયા!`;
+
+  const body = isWhole
+    ? `ધોરણ ${standard} નું ${examName} નું સત્તાવાર પરિણામ અને માર્કશીટ જાહેર કરવામાં આવી છે. ટકાવારી અને ગુણ જોવા અહીં ક્લિક કરો.`
+    : `ધોરણ ${standard} ના વિદ્યાર્થીઓ માટે ${examName} માં ${subjectName || 'વિષય'} ના ગુણ જાહેર થયા છે. ગુણ જોવા અહીં ક્લિક કરો.`;
+
+  // 1. Send native browser / android push notification
+  try {
+    sendNotification(title, body, 'exam');
+  } catch (e) {
+    console.warn('[NotificationService] push trigger note:', e);
+  }
+
+  // 2. Dispatch personalized notifications to all students of this standard
+  const items = students.map((st) => ({
+    studentId: st.id,
+    studentName: st.studentName,
+    standard,
+    title,
+    body,
+    category: 'exam_result' as const,
+    metadata: {
+      examId,
+      standard,
+      subjectName: subjectName || '',
+      isWholeExam: isWhole,
+      action: 'open_result',
+    },
+  }));
+
+  const count = await createBulkStudentNotifications(schoolId, items);
+
+  // 3. Also post a school-wide alert so student sessions immediately receive real-time push
+  try {
+    await createAppNotification({
+      title,
+      body,
+      targetType: 'school',
+      schoolId,
+      schoolName,
+      standard,
+      category: 'exam_result',
+      actionTab: 'result',
+      metadata: {
+        examId,
+        standard,
+        subjectName: subjectName || '',
+        isWholeExam: isWhole,
+        action: 'open_result',
+      },
+    });
+  } catch {}
+
+  return count;
+}
+

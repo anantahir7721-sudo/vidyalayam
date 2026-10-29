@@ -24,6 +24,7 @@ import {
   School,
   SchoolAdmissionSettings,
   AdmissionApplication,
+  ExamReleaseConfig,
 } from '../types';
 import { cleanAndNormalizeBloodGroup, diagnoseStudentBloodGroup } from '../utils/bloodGroupUtils';
 
@@ -1485,5 +1486,221 @@ export async function deleteAdmissionApplication(
   const ref = doc(db, 'schools', schoolId, 'admissions', applicationId);
   await deleteDoc(ref);
 }
+
+// =========================================================================
+// Exam Result Release & Publishing Management
+// =========================================================================
+
+/**
+ * Fetch all exam result release configurations for a school.
+ */
+export async function getExamReleaseConfigs(schoolId: string): Promise<ExamReleaseConfig[]> {
+  const cleanSchoolId = (schoolId || '').trim();
+  if (!cleanSchoolId) return [];
+
+  // Try cached local copy first for instantaneous render
+  let localList: ExamReleaseConfig[] = [];
+  try {
+    const raw = localStorage.getItem(`vidyalayam_exam_releases_${cleanSchoolId}`);
+    if (raw) localList = JSON.parse(raw);
+  } catch {}
+
+  try {
+    const colRef = collection(db, 'schools', cleanSchoolId, 'exam_releases');
+    const snap = await getDocs(colRef);
+    const remoteList = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ExamReleaseConfig));
+    if (remoteList.length > 0) {
+      try {
+        localStorage.setItem(`vidyalayam_exam_releases_${cleanSchoolId}`, JSON.stringify(remoteList));
+      } catch {}
+      return remoteList;
+    }
+  } catch (err) {
+    console.warn('[Firestore] getExamReleaseConfigs error, using local fallback:', err);
+  }
+
+  return localList;
+}
+
+/**
+ * Subscribe to real-time updates for school exam release configurations.
+ */
+export function subscribeExamReleaseConfigs(
+  schoolId: string,
+  callback: (configs: ExamReleaseConfig[]) => void
+): () => void {
+  const cleanSchoolId = (schoolId || '').trim();
+  if (!cleanSchoolId) {
+    callback([]);
+    return () => {};
+  }
+
+  // Immediately notify with local cache
+  try {
+    const raw = localStorage.getItem(`vidyalayam_exam_releases_${cleanSchoolId}`);
+    if (raw) callback(JSON.parse(raw));
+  } catch {}
+
+  const colRef = collection(db, 'schools', cleanSchoolId, 'exam_releases');
+  return onSnapshot(
+    colRef,
+    (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ExamReleaseConfig));
+      try {
+        localStorage.setItem(`vidyalayam_exam_releases_${cleanSchoolId}`, JSON.stringify(list));
+      } catch {}
+      callback(list);
+    },
+    (err) => {
+      console.warn('[Firestore] subscribeExamReleaseConfigs error:', err);
+    }
+  );
+}
+
+/**
+ * Save an exam release configuration to Firestore and local storage.
+ */
+export async function saveExamReleaseConfig(
+  schoolId: string,
+  config: ExamReleaseConfig
+): Promise<void> {
+  const cleanSchoolId = (schoolId || '').trim();
+  if (!cleanSchoolId || !config.standard || !config.examId) return;
+
+  const docId = config.id || `${config.standard}_${config.examId}`;
+  const now = new Date().toISOString();
+  const payload: ExamReleaseConfig = {
+    ...config,
+    id: docId,
+    schoolId: cleanSchoolId,
+    updatedAt: now,
+  };
+
+  // 1. Optimistically update local storage
+  try {
+    const raw = localStorage.getItem(`vidyalayam_exam_releases_${cleanSchoolId}`);
+    const existingList: ExamReleaseConfig[] = raw ? JSON.parse(raw) : [];
+    const index = existingList.findIndex((item) => item.id === docId);
+    if (index >= 0) {
+      existingList[index] = payload;
+    } else {
+      existingList.push(payload);
+    }
+    localStorage.setItem(`vidyalayam_exam_releases_${cleanSchoolId}`, JSON.stringify(existingList));
+  } catch {}
+
+  // 2. Persist to Firestore
+  try {
+    const docRef = doc(db, 'schools', cleanSchoolId, 'exam_releases', docId);
+    await setDoc(docRef, payload, { merge: true });
+  } catch (err) {
+    console.error('[Firestore] saveExamReleaseConfig error:', err);
+    throw err;
+  }
+}
+
+/**
+ * Toggle individual subject release status for an exam.
+ */
+export async function toggleSubjectReleaseStatus(
+  schoolId: string,
+  standard: string,
+  examId: string,
+  examName: string,
+  subjectId: string,
+  isReleased: boolean
+): Promise<ExamReleaseConfig> {
+  const cleanSchoolId = (schoolId || '').trim();
+  const docId = `${standard}_${examId}`;
+  const now = new Date().toISOString();
+
+  // Load existing or initialize
+  let currentConfig: ExamReleaseConfig = {
+    id: docId,
+    schoolId: cleanSchoolId,
+    standard,
+    examId,
+    examName,
+    isWholeExamReleased: false,
+    releasedSubjectIds: [],
+    subjectReleasedAt: {},
+  };
+
+  try {
+    const raw = localStorage.getItem(`vidyalayam_exam_releases_${cleanSchoolId}`);
+    if (raw) {
+      const list: ExamReleaseConfig[] = JSON.parse(raw);
+      const found = list.find((c) => c.id === docId);
+      if (found) currentConfig = { ...currentConfig, ...found };
+    }
+  } catch {}
+
+  const currentReleased = new Set(currentConfig.releasedSubjectIds || []);
+  const currentSubjectTimes = { ...(currentConfig.subjectReleasedAt || {}) };
+
+  if (isReleased) {
+    currentReleased.add(subjectId);
+    currentSubjectTimes[subjectId] = now;
+  } else {
+    currentReleased.delete(subjectId);
+    delete currentSubjectTimes[subjectId];
+  }
+
+  const updatedConfig: ExamReleaseConfig = {
+    ...currentConfig,
+    releasedSubjectIds: Array.from(currentReleased),
+    subjectReleasedAt: currentSubjectTimes,
+    updatedAt: now,
+  };
+
+  await saveExamReleaseConfig(cleanSchoolId, updatedConfig);
+  return updatedConfig;
+}
+
+/**
+ * Toggle whole exam release status.
+ */
+export async function toggleWholeExamReleaseStatus(
+  schoolId: string,
+  standard: string,
+  examId: string,
+  examName: string,
+  isReleased: boolean
+): Promise<ExamReleaseConfig> {
+  const cleanSchoolId = (schoolId || '').trim();
+  const docId = `${standard}_${examId}`;
+  const now = new Date().toISOString();
+
+  let currentConfig: ExamReleaseConfig = {
+    id: docId,
+    schoolId: cleanSchoolId,
+    standard,
+    examId,
+    examName,
+    isWholeExamReleased: false,
+    releasedSubjectIds: [],
+    subjectReleasedAt: {},
+  };
+
+  try {
+    const raw = localStorage.getItem(`vidyalayam_exam_releases_${cleanSchoolId}`);
+    if (raw) {
+      const list: ExamReleaseConfig[] = JSON.parse(raw);
+      const found = list.find((c) => c.id === docId);
+      if (found) currentConfig = { ...currentConfig, ...found };
+    }
+  } catch {}
+
+  const updatedConfig: ExamReleaseConfig = {
+    ...currentConfig,
+    isWholeExamReleased: isReleased,
+    releasedAt: isReleased ? now : undefined,
+    updatedAt: now,
+  };
+
+  await saveExamReleaseConfig(cleanSchoolId, updatedConfig);
+  return updatedConfig;
+}
+
 
 

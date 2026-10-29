@@ -545,6 +545,19 @@ export interface AppNotification {
   metadata?: Record<string, any>;
 }
 
+export interface ExamReleaseConfig {
+  id: string; // e.g. `${standard}_${examId}`
+  schoolId: string;
+  standard: string; // '9' | '10' | '11' | '12'
+  examId: string; // 'first_exam' | 'second_exam' | 'annual_exam' | 'prelim' | 'board_exam'
+  examName: string;
+  isWholeExamReleased: boolean;
+  releasedSubjectIds: string[]; // List of subject IDs released individually
+  releasedAt?: string;
+  subjectReleasedAt?: Record<string, string>; // subjectId -> ISO string
+  updatedAt?: string;
+}
+
 // Outward Letter (જાવક પત્ર) Interfaces
 export interface OutwardLetterSettings {
   letterheadUrl?: string; // Base64 data URL or uploaded image URL of A4 PNG letterhead

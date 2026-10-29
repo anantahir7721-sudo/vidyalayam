@@ -35,7 +35,9 @@ import {
   Smartphone,
   RefreshCw,
   Trash2,
+  Bell,
 } from 'lucide-react';
+import { ResultPublishTab } from './ResultPublishTab';
 import {
   Class9ExamType,
   CLASS_9_MAIN_SUBJECTS,
@@ -164,8 +166,8 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   // Active Std 11 Subjects Memo (7 Main + 2 Co-subs)
   const std11Active = useMemo(() => getStd11ActiveSubjects(std11Config), [std11Config]);
 
-  // View Navigation Tabs: Marks Entry | Download Section | Result Register | Marksheet | Siddhi-Krupa
-  const [viewTab, setViewTab] = useState<'marks_entry' | 'download_section' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry'>('marks_entry');
+  // View Navigation Tabs: Marks Entry | Download Section | Result Register | Marksheet | Siddhi-Krupa | Publish Results
+  const [viewTab, setViewTab] = useState<'marks_entry' | 'download_section' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry' | 'publish_results'>('marks_entry');
   const [showDetailedKpi, setShowDetailedKpi] = useState(false);
 
   // Exam Selection in Marks Entry
@@ -348,7 +350,7 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
   const focusedCellKeyRef = useRef<string | null>(null);
 
   // Zero-friction tab navigation: all changes are auto-saved in local cache and synced to cloud
-  const handleSwitchTab = (newTab: 'marks_entry' | 'download_section' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry') => {
+  const handleSwitchTab = (newTab: 'marks_entry' | 'download_section' | 'result_register' | 'individual_marksheet' | 'siddhi_krupa_entry' | 'publish_results') => {
     setViewTab(newTab);
     if (newTab === 'siddhi_krupa_entry') {
       setMarksEntryExamId('siddhi_krupa_entry');
@@ -2615,6 +2617,19 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
               <span>✨ સિદ્ધિ–કૃપા</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => handleSwitchTab('publish_results')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+              viewTab === 'publish_results'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm ring-1 ring-purple-400'
+                : 'text-purple-800 dark:text-purple-300 hover:text-purple-900 bg-purple-500/10'
+            }`}
+          >
+            <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
+            <span>📢 પરિણામ પ્રકાશન & પુશ</span>
+          </button>
         </div>
 
         {/* Quick export/print buttons */}
@@ -2697,6 +2712,24 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* VIEW TAB: RESULT PUBLISH & PUSH NOTIFICATIONS (પરિણામ પ્રકાશન & પુશ) */}
+      {viewTab === 'publish_results' && (
+        <ResultPublishTab
+          school={school}
+          students={students}
+          marks={marks}
+          selectedStandard={selectedStandard}
+          onSelectStandard={(std) => setSelectedStandard(std as any)}
+          subjects={
+            selectedStandard === '10'
+              ? (Object.values(CLASS_10_AVAILABLE_SUBJECTS) as any)
+              : selectedStandard === '11'
+              ? (std11Active.allSubjects as any)
+              : (ALL_CLASS_9_SUBJECTS as any)
+          }
+        />
+      )}
 
       {/* VIEW TAB: DEDICATED DOWNLOAD SECTION (ડાઉનલોડ સેક્શન) */}
       {viewTab === 'download_section' && (
