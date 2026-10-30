@@ -10,10 +10,14 @@ import {
   HelpCircle,
   Sparkles,
   Download,
+  Calendar,
+  Clock,
+  RotateCcw,
 } from 'lucide-react';
 import { OnlineExam, MCQQuestion, ExamAttempt, School } from '../types';
 import { generateOmrSheetHtml, OmrSheetMode } from '../utils/omrSheetUtils';
 import { printHtmlDocument } from '../utils/printAndPdfUtils';
+import { PrintDatePromptModal } from './PrintDatePromptModal';
 
 interface OnlineExamOmrModalProps {
   isOpen: boolean;
@@ -36,16 +40,33 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
   initialStudentId = 'ALL',
   initialMode = 'checked',
 }) => {
+  // Helper to format today's date (DD-MM-YYYY)
+  const getTodayFormatted = () => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   const [mode, setMode] = useState<OmrSheetMode>(initialMode);
   const [selectedStudentId, setSelectedStudentId] = useState<string>(initialStudentId);
+  const [customPrintDate, setCustomPrintDate] = useState<string>(() => {
+    return exam.scheduledDate || getTodayFormatted();
+  });
+
+  // Prompt modal state for explicit date confirmation on download/print
+  const [isPromptOpen, setIsPromptOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'print' | 'html'>('print');
 
   // Sync initial student or mode when modal opens or initial props change
   React.useEffect(() => {
     if (isOpen) {
       if (initialStudentId) setSelectedStudentId(initialStudentId);
       if (initialMode) setMode(initialMode);
+      setCustomPrintDate(exam.scheduledDate || getTodayFormatted());
     }
-  }, [isOpen, initialStudentId, initialMode]);
+  }, [isOpen, initialStudentId, initialMode, exam.scheduledDate]);
 
   // Generate the current HTML string for preview and printing
   const htmlContent = useMemo(() => {
@@ -56,8 +77,9 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
       school,
       mode,
       selectedAttemptId: selectedStudentId,
+      customPrintDate,
     });
-  }, [exam, questions, attempts, school, mode, selectedStudentId]);
+  }, [exam, questions, attempts, school, mode, selectedStudentId, customPrintDate]);
 
   const targetCount =
     selectedStudentId === 'ALL'
@@ -70,20 +92,44 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
     return found?.studentName || 'પસંદ કરેલ વિદ્યાર્થી';
   }, [selectedStudentId, attempts]);
 
-  const handlePrint = () => {
+  const executePrint = (dateToUse?: string) => {
+    const activeDate = dateToUse || customPrintDate;
     const modeLabel = mode === 'checked' ? 'Checked_OMR' : 'Unchecked_OMR';
     const studentLabel =
       selectedStudentId === 'ALL'
         ? 'All_Students'
         : currentStudentName.replace(/\s+/g, '_');
-    const jobTitle = `${exam.title.replace(/\s+/g, '_')}_${modeLabel}_${studentLabel}`;
-    printHtmlDocument(htmlContent, jobTitle);
+    const cleanDate = activeDate.replace(/[^a-zA-Z0-9]/g, '_');
+    const jobTitle = `${exam.title.replace(/\s+/g, '_')}_${modeLabel}_${studentLabel}_${cleanDate}`;
+    
+    const finalHtml = generateOmrSheetHtml({
+      exam,
+      questions,
+      attempts,
+      school,
+      mode,
+      selectedAttemptId: selectedStudentId,
+      customPrintDate: activeDate,
+    });
+    printHtmlDocument(finalHtml, jobTitle);
   };
 
-  const handleDownloadHtml = () => {
+  const executeDownloadHtml = (dateToUse?: string) => {
+    const activeDate = dateToUse || customPrintDate;
     const modeLabel = mode === 'checked' ? 'Checked_OMR' : 'Unchecked_OMR';
-    const filename = `${exam.title.replace(/\s+/g, '_')}_${modeLabel}.html`;
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const cleanDate = activeDate.replace(/[^a-zA-Z0-9]/g, '_');
+    const filename = `${exam.title.replace(/\s+/g, '_')}_${modeLabel}_${cleanDate}.html`;
+    
+    const finalHtml = generateOmrSheetHtml({
+      exam,
+      questions,
+      attempts,
+      school,
+      mode,
+      selectedAttemptId: selectedStudentId,
+      customPrintDate: activeDate,
+    });
+    const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -92,6 +138,25 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleRequestPrint = () => {
+    setPendingAction('print');
+    setIsPromptOpen(true);
+  };
+
+  const handleRequestDownloadHtml = () => {
+    setPendingAction('html');
+    setIsPromptOpen(true);
+  };
+
+  const handlePromptConfirm = (confirmedDate: string) => {
+    setCustomPrintDate(confirmedDate);
+    if (pendingAction === 'print') {
+      executePrint(confirmedDate);
+    } else {
+      executeDownloadHtml(confirmedDate);
+    }
   };
 
   if (!isOpen) return null;
@@ -121,7 +186,7 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
-                onClick={handlePrint}
+                onClick={handleRequestPrint}
                 disabled={attempts.length === 0}
                 className="px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30 cursor-pointer disabled:opacity-40 transition-all shrink-0"
                 title="પ્રિન્ટર પર પ્રિન્ટ કાઢો અથવા PDF તરીકે સેવ કરો"
@@ -143,44 +208,77 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
           </div>
         </div>
 
-        {/* Control Bar: Mode Toggle & Student Selector - Stacked cleanly on mobile */}
-        <div className="shrink-0 p-2 sm:p-3 bg-slate-100/95 dark:bg-slate-900/70 border-b border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 text-xs">
+        {/* Control Bar: Mode Toggle & Student Selector & Custom Date - Stacked cleanly on mobile */}
+        <div className="shrink-0 p-2 sm:p-3 bg-slate-100/95 dark:bg-slate-900/70 border-b border-slate-200 dark:border-white/10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 text-xs">
           
-          {/* Mode Segmented Switch */}
-          <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-200 dark:bg-slate-800 p-1 border border-slate-300 dark:border-white/10 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setMode('checked')}
-              className={`px-2.5 py-1.5 rounded-lg font-bold flex items-center justify-center gap-1 transition-all cursor-pointer text-xs ${
-                mode === 'checked'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">તપાસેલ (Checked)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('unchecked')}
-              className={`px-2.5 py-1.5 rounded-lg font-bold flex items-center justify-center gap-1 transition-all cursor-pointer text-xs ${
-                mode === 'unchecked'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">અનચેક્ડ (Unchecked)</span>
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Mode Segmented Switch */}
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-200 dark:bg-slate-800 p-1 border border-slate-300 dark:border-white/10 shrink-0">
+              <button
+                type="button"
+                onClick={() => setMode('checked')}
+                className={`px-2.5 py-1.5 rounded-lg font-bold flex items-center justify-center gap-1 transition-all cursor-pointer text-xs ${
+                  mode === 'checked'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">તપાસેલ (Checked)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('unchecked')}
+                className={`px-2.5 py-1.5 rounded-lg font-bold flex items-center justify-center gap-1 transition-all cursor-pointer text-xs ${
+                  mode === 'unchecked'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">અનચેક્ડ (Unchecked)</span>
+              </button>
+            </div>
+
+            {/* Custom Print Date Input in Toolbar */}
+            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-300 dark:border-white/10 shadow-xs shrink-0">
+              <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 shrink-0">OMR તારીખ:</span>
+              <input
+                type="text"
+                value={customPrintDate}
+                onChange={(e) => setCustomPrintDate(e.target.value)}
+                placeholder="તારીખ દાખલ કરો"
+                className="w-24 sm:w-28 px-1.5 py-0.5 text-xs font-bold font-mono text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 rounded border border-slate-300 dark:border-white/10 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={() => setCustomPrintDate(getTodayFormatted())}
+                className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                title="આજની તારીખ સેટ કરો"
+              >
+                આજ
+              </button>
+              {exam.scheduledDate && exam.scheduledDate !== customPrintDate && (
+                <button
+                  type="button"
+                  onClick={() => setCustomPrintDate(exam.scheduledDate)}
+                  className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 transition-colors cursor-pointer"
+                  title="મૂળ પરીક્ષા તારીખ"
+                >
+                  પરીક્ષા
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Student Selector Dropdown */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 w-full md:w-auto">
             <span className="font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap text-[11px] sm:text-xs shrink-0">વિદ્યાર્થી:</span>
             <select
               value={selectedStudentId}
               onChange={(e) => setSelectedStudentId(e.target.value)}
-              className="flex-1 sm:w-64 px-2 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none cursor-pointer truncate"
+              className="flex-1 md:w-60 px-2 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none cursor-pointer truncate"
             >
               <option value="ALL">
                 👥 બધા વિદ્યાર્થીઓ ({attempts.length}) — પ્રત્યેક ૧ પેજ
@@ -242,7 +340,7 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={handleDownloadHtml}
+              onClick={handleRequestDownloadHtml}
               className="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer text-xs shrink-0"
               title="HTML ફાઇલ ડાઉનલોડ કરો"
             >
@@ -252,7 +350,7 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
 
             <button
               type="button"
-              onClick={handlePrint}
+              onClick={handleRequestPrint}
               disabled={attempts.length === 0}
               className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 shadow-md shadow-indigo-600/30 text-xs sm:text-sm shrink-0"
             >
@@ -263,6 +361,18 @@ export const OnlineExamOmrModal: React.FC<OnlineExamOmrModalProps> = ({
         </div>
 
       </div>
+
+      {/* Date Prompt Modal before download/print */}
+      <PrintDatePromptModal
+        isOpen={isPromptOpen}
+        onClose={() => setIsPromptOpen(false)}
+        title="OMR ઉત્તરવહી પર છાપવાની તારીખ"
+        subtitle="તમે જે તારીખ અહીં નક્કી કરશો તે જ OMR ના હેડરમાં છપાશે."
+        initialDate={customPrintDate}
+        examScheduledDate={exam.scheduledDate}
+        onConfirm={handlePromptConfirm}
+        actionType={pendingAction === 'print' ? 'print' : 'download'}
+      />
     </div>
   );
 };

@@ -23,12 +23,14 @@ import {
   RefreshCw,
   Copy,
   FileQuestion,
+  FileCheck2,
 } from 'lucide-react';
 import {
   School,
   Student,
   OnlineExam,
   MCQQuestion,
+  ExamAttempt,
   AllowedStandard,
   OnlineExamType,
   OnlineExamStatus,
@@ -39,6 +41,7 @@ import {
   updateOnlineExam,
   deleteOnlineExam,
   getExamQuestions,
+  getExamAttempts,
   getServerTime,
   findConflictingExam,
 } from '../services/onlineExamService';
@@ -53,6 +56,7 @@ import { OnlineExamEditor } from './OnlineExamEditor';
 import { OnlineExamAnalyticsModal } from './OnlineExamAnalyticsModal';
 import { QuestionBankModal } from './QuestionBankModal';
 import { OnlineExamQuestionPaperModal } from './OnlineExamQuestionPaperModal';
+import { OnlineExamOmrModal } from './OnlineExamOmrModal';
 
 interface OnlineExamManagerProps {
   school: School;
@@ -103,6 +107,29 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
       console.error('Error loading questions for paper:', err);
     } finally {
       setLoadingPaperExamId(null);
+    }
+  };
+
+  // OMR Sheet Modal from Exam Card
+  const [omrTarget, setOmrTarget] = useState<{
+    exam: OnlineExam;
+    questions: MCQQuestion[];
+    attempts: ExamAttempt[];
+  } | null>(null);
+  const [loadingOmrExamId, setLoadingOmrExamId] = useState<string | null>(null);
+
+  const handleOpenOmr = async (exam: OnlineExam) => {
+    try {
+      setLoadingOmrExamId(exam.id);
+      const [qs, ats] = await Promise.all([
+        getExamQuestions(school.id, exam.id),
+        getExamAttempts(school.id, exam.id),
+      ]);
+      setOmrTarget({ exam, questions: qs, attempts: ats });
+    } catch (err) {
+      console.error('Error loading questions/attempts for OMR:', err);
+    } finally {
+      setLoadingOmrExamId(null);
     }
   };
 
@@ -578,6 +605,20 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
                       </span>
                     </button>
 
+                    {/* OMR Sheet Download */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenOmr(exam)}
+                      disabled={loadingOmrExamId === exam.id}
+                      className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-950 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                      title="OMR ઉત્તરવહી પ્રિન્ટ & PDF ડાઉનલોડ (તપાસેલ અથવા અનચેક્ડ)"
+                    >
+                      <FileCheck2 className="w-3.5 h-3.5 text-indigo-800 dark:text-indigo-400" />
+                      <span className="text-indigo-950 dark:text-indigo-300 font-bold">
+                        {loadingOmrExamId === exam.id ? '...' : 'OMR'}
+                      </span>
+                    </button>
+
                     {/* Edit or Retake New Entry */}
                     {checkExamConcluded(exam) ? (
                       <button
@@ -682,6 +723,18 @@ export const OnlineExamManager: React.FC<OnlineExamManagerProps> = ({
           onClose={() => setQuestionPaperTarget(null)}
           exam={questionPaperTarget.exam}
           questions={questionPaperTarget.questions}
+          school={school}
+        />
+      )}
+
+      {/* Online Exam OMR Modal */}
+      {omrTarget && (
+        <OnlineExamOmrModal
+          isOpen={Boolean(omrTarget)}
+          onClose={() => setOmrTarget(null)}
+          exam={omrTarget.exam}
+          questions={omrTarget.questions}
+          attempts={omrTarget.attempts}
           school={school}
         />
       )}

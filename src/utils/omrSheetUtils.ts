@@ -9,6 +9,7 @@ export interface GenerateOmrHtmlOptions {
   school?: School;
   mode: OmrSheetMode;
   selectedAttemptId?: string; // If provided, generates for this attempt only; otherwise all attempts
+  customPrintDate?: string; // User-selected date to print on OMR header
 }
 
 /**
@@ -16,7 +17,8 @@ export interface GenerateOmrHtmlOptions {
  * Engineered for strictly ONE PAGE PER STUDENT on standard A4 portrait paper.
  */
 export function generateOmrSheetHtml(options: GenerateOmrHtmlOptions): string {
-  const { exam, questions, attempts, school, mode, selectedAttemptId } = options;
+  const { exam, questions, attempts, school, mode, selectedAttemptId, customPrintDate } = options;
+  const printDate = (customPrintDate && customPrintDate.trim()) ? customPrintDate.trim() : (exam.scheduledDate || '-');
 
   // Filter attempts based on selection
   const targetAttempts = selectedAttemptId && selectedAttemptId !== 'ALL'
@@ -134,7 +136,7 @@ export function generateOmrSheetHtml(options: GenerateOmrHtmlOptions): string {
             </tr>
             <tr>
               <td class="lbl">પરીક્ષા તારીખ:</td>
-              <td class="val">${exam.scheduledDate || '-'}</td>
+              <td class="val"><strong>${printDate}</strong></td>
               <td class="lbl">સબમિશન સમય:</td>
               <td class="val text-xs">${formattedSubmittedTime}</td>
               <td class="lbl">કુલ પ્રશ્નો:</td>
