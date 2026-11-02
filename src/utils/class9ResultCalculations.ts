@@ -312,7 +312,12 @@ export interface StudentResultClass9 {
  * Extracts numeric value or null from MarkRecord
  * Robustly matches by subjectId, subjectName, examId, examType, and document ID
  */
-function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches: (examType: string) => boolean, targetStudentId?: string): number | null {
+function extractMarkValue(
+  records: MarkRecord[],
+  subjectId: string,
+  examMatches: (examType: string, record: MarkRecord) => boolean,
+  targetStudentId?: string
+): number | null {
   const targetSub = subjectId.toLowerCase().trim();
   const found = records.find((m) => {
     if (targetStudentId && String(m.studentId || '') !== String(targetStudentId)) {
@@ -371,7 +376,7 @@ function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches:
     if (!subMatch) return false;
 
     const fullExamString = `${(m as any).examId || ''} ${m.examType || ''} ${m.id || ''}`.toLowerCase();
-    return examMatches(fullExamString);
+    return examMatches(fullExamString, m);
   });
   if (!found) return null;
   if (found.overallGrade === 'AB') return 0;
@@ -431,13 +436,79 @@ export function computeClass9StudentResult(
       ? extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('second') || ex.includes('dwitiya') || ex.includes('દ્વિતીય'), targetStudentId)
       : null;
 
-    // 3. Periodic Test 1 (25M)
-    const pt1_raw = extractMarkValue(thisStudentMarks, subj.id, (ex) => (ex.includes('pt') && ex.includes('1')) || (ex.includes('periodic') && ex.includes('1')) || (ex.includes('એકમ') && ex.includes('1')), targetStudentId);
-    const pt1_conv = convertPeriodicTestTo5(pt1_raw);
+    // 3. Periodic Test 1 (25M) - Strictly ignore 5M internal components
+    const pt1_raw = extractMarkValue(
+      thisStudentMarks,
+      subj.id,
+      (ex, m) => {
+        if (m.totalMax === 5) return false;
+        const eid = ((m as any).examId || '').toLowerCase();
+        if (eid.startsWith('internal')) return false;
+        return (
+          eid === 'periodic_test_1' ||
+          eid === 'periodic_1' ||
+          ex.includes('periodic_test_1') ||
+          ex.includes('periodic_1') ||
+          ex.includes('સામાયિક કસોટી ૧') ||
+          ex.includes('સામાયિક ૧') ||
+          ex.includes('સામાયિક કસોટી - ૧') ||
+          ex.includes('એકમ કસોટી ૧') ||
+          ex.includes('એકમ_1')
+        );
+      },
+      targetStudentId
+    );
+    let pt1_conv = convertPeriodicTestTo5(pt1_raw);
+    if (pt1_conv === null) {
+      const directPt1 = extractMarkValue(
+        thisStudentMarks,
+        subj.id,
+        (ex, m) => {
+          if (m.totalMax === 25) return false;
+          const eid = ((m as any).examId || '').toLowerCase();
+          return eid === 'internal_pt1' || (m.totalMax === 5 && (eid.includes('pt1') || ex.includes('internal_pt1')));
+        },
+        targetStudentId
+      );
+      if (directPt1 !== null) pt1_conv = directPt1;
+    }
 
-    // 4. Periodic Test 2 (25M)
-    const pt2_raw = extractMarkValue(thisStudentMarks, subj.id, (ex) => (ex.includes('pt') && ex.includes('2')) || (ex.includes('periodic') && ex.includes('2')) || (ex.includes('એકમ') && ex.includes('2')), targetStudentId);
-    const pt2_conv = convertPeriodicTestTo5(pt2_raw);
+    // 4. Periodic Test 2 (25M) - Strictly ignore 5M internal components
+    const pt2_raw = extractMarkValue(
+      thisStudentMarks,
+      subj.id,
+      (ex, m) => {
+        if (m.totalMax === 5) return false;
+        const eid = ((m as any).examId || '').toLowerCase();
+        if (eid.startsWith('internal')) return false;
+        return (
+          eid === 'periodic_test_2' ||
+          eid === 'periodic_2' ||
+          ex.includes('periodic_test_2') ||
+          ex.includes('periodic_2') ||
+          ex.includes('સામાયિક કસોટી ૨') ||
+          ex.includes('સામાયિક ૨') ||
+          ex.includes('સામાયિક કસોટી - ૨') ||
+          ex.includes('એકમ કસોટી ૨') ||
+          ex.includes('એકમ_2')
+        );
+      },
+      targetStudentId
+    );
+    let pt2_conv = convertPeriodicTestTo5(pt2_raw);
+    if (pt2_conv === null) {
+      const directPt2 = extractMarkValue(
+        thisStudentMarks,
+        subj.id,
+        (ex, m) => {
+          if (m.totalMax === 25) return false;
+          const eid = ((m as any).examId || '').toLowerCase();
+          return eid === 'internal_pt2' || (m.totalMax === 5 && (eid.includes('pt2') || ex.includes('internal_pt2')));
+        },
+        targetStudentId
+      );
+      if (directPt2 !== null) pt2_conv = directPt2;
+    }
 
     // 5. Internal Assessment components
     // Main Subjects: 5 + 5 + 5 + 5 (PT1: 5, PT2: 5, Competency: 5, Notebook: 5)
@@ -447,8 +518,18 @@ export function computeClass9StudentResult(
     const practicalWork10 = extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('practical_work') || ex.includes('પ્રાયોગિક_કાર્ય') || ex.includes('પ્રોજેક્ટ'), targetStudentId);
     const continuousSkill10 = extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('continuous_skill') || ex.includes('સાતત્યપૂર્ણ') || ex.includes('કૌશલ્ય'), targetStudentId);
 
-    // Check direct internal record if entered as single lump sum
-    const directInternal = extractMarkValue(thisStudentMarks, subj.id, (ex) => ex.includes('internal') || ex.includes('આંતરિક'), targetStudentId);
+    // Check direct internal record if entered as single lump sum (Strictly ignore subcomponents of 5 or 10)
+    const directInternal = extractMarkValue(
+      thisStudentMarks,
+      subj.id,
+      (ex, m) => {
+        if (m.totalMax === 5 || m.totalMax === 10) return false;
+        const eid = ((m as any).examId || '').toLowerCase();
+        if (eid.startsWith('internal_pt') || eid.includes('competency') || eid.includes('notebook') || eid.includes('practical_work') || eid.includes('continuous')) return false;
+        return eid === 'internal_assessment' || (ex.includes('internal') && !ex.includes('pt') && !ex.includes('competency') && !ex.includes('notebook')) || (ex.includes('આંતરિક') && ex.includes('૨૦'));
+      },
+      targetStudentId
+    );
     let internal20: number | null = directInternal;
 
     if (internal20 === null) {

@@ -556,52 +556,181 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
     (studentMarks: MarkRecord[], subj: any, targetExamId: string, examKeywords: string[]): string | null => {
       const targetSubId = (subj.id || '').toLowerCase().trim();
       const targetSubName = (subj.nameGu || '').toLowerCase().trim();
+      const cleanTarget = targetExamId.toLowerCase().trim();
 
-      const found = studentMarks.find((m) => {
+      // 1. Precise Subject Matching: Absolutely NEVER allow cross-matching between science & social_science or hindi & sanskrit
+      const matchingSubMarks = studentMarks.filter((m) => {
         const sId = (m.subjectId || '').toLowerCase().trim();
         const sName = (m.subjectName || '').toLowerCase().trim();
 
-        // 1. Precise Subject Matching: Absolutely NEVER allow cross-matching between science & social_science or hindi & sanskrit
-        let subMatch = false;
-
         if (targetSubId === 'science') {
-          if (sId === 'social_science' || sId === 'ss' || sName.includes('સામાજિક')) {
-            return false;
-          }
-          subMatch = sId === 'science' || sId === 'sci' || (sName.includes('વિજ્ઞાન') && !sName.includes('સામાજિક'));
+          if (sId === 'social_science' || sId === 'ss' || sName.includes('સામાજિક')) return false;
+          return sId === 'science' || sId === 'sci' || (sName.includes('વિજ્ઞાન') && !sName.includes('સામાજિક'));
         } else if (targetSubId === 'social_science') {
-          if (sId === 'science' || (sName.includes('વિજ્ઞાન') && !sName.includes('સામાજિક') && sId !== 'social_science' && sId !== 'ss')) {
-            return false;
-          }
-          subMatch = sId === 'social_science' || sId === 'ss' || sName.includes('સામાજિક');
+          if (sId === 'science' || (sName.includes('વિજ્ઞાન') && !sName.includes('સામાજિક') && sId !== 'social_science' && sId !== 'ss')) return false;
+          return sId === 'social_science' || sId === 'ss' || sName.includes('સામાજિક');
         } else if (targetSubId === 'hindi') {
-          if (sId === 'sanskrit' || sName.includes('સંસ્કૃત')) {
-            return false;
-          }
-          subMatch = sId === 'hindi' || sId === 'hin' || (sName.includes('હિન્દી') && !sName.includes('સંસ્કૃત'));
+          if (sId === 'sanskrit' || sName.includes('સંસ્કૃત')) return false;
+          return sId === 'hindi' || sId === 'hin' || (sName.includes('હિન્દી') && !sName.includes('સંસ્કૃત'));
         } else if (targetSubId === 'sanskrit') {
-          if (sId === 'hindi' || sName.includes('હિન્દી')) {
-            return false;
-          }
-          subMatch = sId === 'sanskrit' || sId === 'san' || (sName.includes('સંસ્કૃત') && !sName.includes('હિન્દી'));
+          if (sId === 'hindi' || sName.includes('હિન્દી')) return false;
+          return sId === 'sanskrit' || sId === 'san' || (sName.includes('સંસ્કૃત') && !sName.includes('હિન્દી'));
         } else if (sId === targetSubId) {
-          subMatch = true;
+          return true;
         } else if (sName && targetSubName && (sName === targetSubName || sName.startsWith(targetSubName) || targetSubName.startsWith(sName))) {
-          subMatch = true;
-        }
-
-        if (!subMatch) return false;
-
-        const mExId = ((m as any).examId || '').toLowerCase().trim();
-        const mExType = (m.examType || '').toLowerCase().trim();
-        const mDocId = (m.id || '').toLowerCase().trim();
-        const cleanTargetExam = targetExamId.toLowerCase().trim();
-
-        if (mExId === cleanTargetExam || mDocId.includes(`_${cleanTargetExam}_`)) {
           return true;
         }
-        return examKeywords.some((k) => mExType.includes(k) || mExId.includes(k) || mDocId.includes(k));
+        return false;
       });
+
+      if (matchingSubMarks.length === 0) return null;
+
+      // 2. Strict Categorized Exact & Match Resolution
+      // CRITICAL: Absolutely NEVER allow internal_pt1 (5M) to cross-match into periodic_test_1 (25M) or vice-versa!
+      let found: MarkRecord | undefined;
+
+      if (cleanTarget === 'periodic_test_1') {
+        found = matchingSubMarks.find((m) => {
+          const eid = ((m as any).examId || '').toLowerCase().trim();
+          const mid = (m.id || '').toLowerCase().trim();
+          if (eid.startsWith('internal') || mid.includes('_internal_') || m.totalMax === 5) return false;
+          return eid === 'periodic_test_1' || eid === 'periodic_1' || mid.includes('_periodic_test_1_') || mid.includes('_periodic_1_');
+        });
+
+        // Auto-heal: If periodic_test_1 in Firestore was accidentally set to 5 by previous bug,
+        // but internal_pt1 is 5 (which means 5.0 out of 5, originating from full marks 25/25), restore 25!
+        if (found && found.totalObtained === 5) {
+          const intPt1 = matchingSubMarks.find((m) => ((m as any).examId || '').toLowerCase() === 'internal_pt1');
+          if (intPt1 && intPt1.totalObtained === 5) {
+            return '25';
+          }
+        }
+      } else if (cleanTarget === 'periodic_test_2') {
+        found = matchingSubMarks.find((m) => {
+          const eid = ((m as any).examId || '').toLowerCase().trim();
+          const mid = (m.id || '').toLowerCase().trim();
+          if (eid.startsWith('internal') || mid.includes('_internal_') || m.totalMax === 5) return false;
+          return eid === 'periodic_test_2' || eid === 'periodic_2' || mid.includes('_periodic_test_2_') || mid.includes('_periodic_2_');
+        });
+
+        // Auto-heal for periodic_test_2 as well
+        if (found && found.totalObtained === 5) {
+          const intPt2 = matchingSubMarks.find((m) => ((m as any).examId || '').toLowerCase() === 'internal_pt2');
+          if (intPt2 && intPt2.totalObtained === 5) {
+            return '25';
+          }
+        }
+      } else if (cleanTarget === 'internal_pt1') {
+        found = matchingSubMarks.find((m) => {
+          const eid = ((m as any).examId || '').toLowerCase().trim();
+          const mid = (m.id || '').toLowerCase().trim();
+          if (m.totalMax === 25 || mid.includes('_periodic_test_1_')) return false;
+          return eid === 'internal_pt1' || mid.includes('_internal_pt1_');
+        });
+      } else if (cleanTarget === 'internal_pt2') {
+        found = matchingSubMarks.find((m) => {
+          const eid = ((m as any).examId || '').toLowerCase().trim();
+          const mid = (m.id || '').toLowerCase().trim();
+          if (m.totalMax === 25 || mid.includes('_periodic_test_2_')) return false;
+          return eid === 'internal_pt2' || mid.includes('_internal_pt2_');
+        });
+      } else if (cleanTarget === 'internal_assessment') {
+        found = matchingSubMarks.find((m) => {
+          const eid = ((m as any).examId || '').toLowerCase().trim();
+          const mid = (m.id || '').toLowerCase().trim();
+          const isSub =
+            eid.startsWith('internal_pt') ||
+            eid === 'internal_competency' ||
+            eid === 'internal_notebook' ||
+            eid === 'internal_practical_work' ||
+            eid === 'internal_continuous_eval' ||
+            mid.includes('_internal_pt') ||
+            mid.includes('_internal_comp') ||
+            mid.includes('_internal_note') ||
+            mid.includes('_internal_prac') ||
+            mid.includes('_internal_cont') ||
+            m.totalMax === 5 ||
+            m.totalMax === 10;
+          if (isSub) return false;
+          return eid === 'internal_assessment' || mid.includes('_internal_assessment_');
+        });
+      } else if (cleanTarget === 'annual_exam') {
+        found = matchingSubMarks.find((m) => {
+          const eid = ((m as any).examId || '').toLowerCase().trim();
+          const mid = (m.id || '').toLowerCase().trim();
+          if (
+            eid === 'annual_theory' ||
+            eid === 'annual_practical' ||
+            eid === 'theory40' ||
+            eid === 'practical40' ||
+            mid.includes('theory') ||
+            mid.includes('practical') ||
+            m.totalMax === 40
+          ) {
+            return false;
+          }
+          return eid === 'annual_exam' || mid.includes('_annual_exam_');
+        });
+      } else if (cleanTarget === 'annual_theory') {
+        found = matchingSubMarks.find((m) => {
+          const eid = ((m as any).examId || '').toLowerCase().trim();
+          const mid = (m.id || '').toLowerCase().trim();
+          if (eid === 'annual_exam' || m.totalMax === 80) return false;
+          return eid === 'annual_theory' || eid === 'theory40' || mid.includes('_annual_theory_');
+        });
+      } else if (cleanTarget === 'annual_practical') {
+        found = matchingSubMarks.find((m) => {
+          const eid = ((m as any).examId || '').toLowerCase().trim();
+          const mid = (m.id || '').toLowerCase().trim();
+          if (eid === 'annual_exam' || eid === 'internal_practical_work' || m.totalMax === 80 || m.totalMax === 10) return false;
+          return eid === 'annual_practical' || eid === 'practical40' || mid.includes('_annual_practical_');
+        });
+      } else {
+        found = matchingSubMarks.find((m) => {
+          const eid = ((m as any).examId || '').toLowerCase().trim();
+          const mid = (m.id || '').toLowerCase().trim();
+          return eid === cleanTarget || mid.includes(`_${cleanTarget}_`);
+        });
+      }
+
+      // 3. Fallback Keyword Match with strict category guards
+      if (!found && examKeywords && examKeywords.length > 0) {
+        found = matchingSubMarks.find((m) => {
+          const mExId = ((m as any).examId || '').toLowerCase().trim();
+          const mExType = (m.examType || '').toLowerCase().trim();
+          const mDocId = (m.id || '').toLowerCase().trim();
+
+          // Anti-cross-contamination guards
+          if (cleanTarget === 'periodic_test_1' || cleanTarget === 'periodic_test_2') {
+            if (mExId.startsWith('internal') || mDocId.includes('_internal_') || m.totalMax === 5) return false;
+          }
+          if (cleanTarget === 'internal_pt1' || cleanTarget === 'internal_pt2') {
+            if (m.totalMax === 25 || mDocId.includes('_periodic_test_') || mExType.includes('(૨૫)')) return false;
+          }
+          if (cleanTarget === 'internal_assessment') {
+            if (
+              m.totalMax === 5 ||
+              m.totalMax === 10 ||
+              mExId.startsWith('internal_pt') ||
+              mExId.includes('competency') ||
+              mExId.includes('notebook')
+            ) {
+              return false;
+            }
+          }
+          if (cleanTarget === 'annual_exam') {
+            if (m.totalMax === 40 || mExId.includes('theory') || mExId.includes('practical')) return false;
+          }
+          if (cleanTarget === 'annual_theory') {
+            if (m.totalMax === 80 || mExId === 'annual_exam') return false;
+          }
+          if (cleanTarget === 'annual_practical') {
+            if (m.totalMax === 80 || mExId === 'annual_exam' || mExId === 'internal_practical_work') return false;
+          }
+
+          return examKeywords.some((k) => mExType.includes(k) || mExId.includes(k) || mDocId.includes(k));
+        });
+      }
 
       if (!found) return null;
       if (found.overallGrade === 'AB') return 'AB';
@@ -642,18 +771,18 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
           // Main Exams
           applyVal(`${student.id}_${subj.id}_first_exam`, 'first_exam', ['first', 'pratham', 'પ્રથમ']);
           applyVal(`${student.id}_${subj.id}_second_exam`, 'second_exam', ['second', 'dwitiya', 'દ્વિતીય', 'prelim', 'પ્રિલિમ']);
-          applyVal(`${student.id}_${subj.id}_periodic_test_1`, 'periodic_test_1', ['pt1', 'periodic_1', 'periodic_test_1', 'સામાયિક કસોટી ૧', 'એકમ_1', 'કસોટી ૧']);
-          applyVal(`${student.id}_${subj.id}_periodic_test_2`, 'periodic_test_2', ['pt2', 'periodic_2', 'periodic_test_2', 'સામાયિક કસોટી ૨', 'એકમ_2', 'કસોટી ૨']);
-          applyVal(`${student.id}_${subj.id}_internal_assessment`, 'internal_assessment', ['internal', 'આંતરિક', 'internal_assessment']);
-          applyVal(`${student.id}_${subj.id}_annual_exam`, 'annual_exam', ['annual', 'varshik', 'વાર્ષિક', 'board', 'બોર્ડ', 'annual_exam']);
+          applyVal(`${student.id}_${subj.id}_periodic_test_1`, 'periodic_test_1', ['periodic_1', 'periodic_test_1', 'સામાયિક કસોટી ૧', 'સામાયિક ૧', 'સામાયિક કસોટી - ૧', 'એકમ_1', 'એકમ કસોટી ૧']);
+          applyVal(`${student.id}_${subj.id}_periodic_test_2`, 'periodic_test_2', ['periodic_2', 'periodic_test_2', 'સામાયિક કસોટી ૨', 'સામાયિક ૨', 'સામાયિક કસોટી - ૨', 'એકમ_2', 'એકમ કસોટી ૨']);
+          applyVal(`${student.id}_${subj.id}_internal_assessment`, 'internal_assessment', ['internal_assessment', 'આંતરિક મૂલ્યાંકન', 'આંતરિક (૨૦)']);
+          applyVal(`${student.id}_${subj.id}_annual_exam`, 'annual_exam', ['annual_exam', 'વાર્ષિક પરીક્ષા (૮૦)', 'varshik_80']);
 
           // Prayogik Theory & Practical (40 + 40)
-          applyVal(`${student.id}_${subj.id}_theory40`, 'annual_theory', ['annual_theory', 'theory', 'થિયરી']);
-          applyVal(`${student.id}_${subj.id}_practical40`, 'annual_practical', ['annual_practical', 'practical', 'પ્રાયોગિક', 'પ્રેક્ટિકલ']);
+          applyVal(`${student.id}_${subj.id}_theory40`, 'annual_theory', ['annual_theory', 'theory40', 'વાર્ષિક થિયરી']);
+          applyVal(`${student.id}_${subj.id}_practical40`, 'annual_practical', ['annual_practical', 'practical40', 'વાર્ષિક પ્રાયોગિક']);
 
           // Internal Assessment Components (5+5+5+5 for Main, 10+10 for Prayogik)
-          applyVal(`${student.id}_${subj.id}_internal_pt1`, 'internal_pt1', ['internal_pt1', 'pt1_conv', 'કસોટી_૧', 'કસોટી ૧']);
-          applyVal(`${student.id}_${subj.id}_internal_pt2`, 'internal_pt2', ['internal_pt2', 'pt2_conv', 'કસોટી_૨', 'કસોટી ૨']);
+          applyVal(`${student.id}_${subj.id}_internal_pt1`, 'internal_pt1', ['internal_pt1', 'pt1_conv', 'આંતરિક_કસોટી_૧']);
+          applyVal(`${student.id}_${subj.id}_internal_pt2`, 'internal_pt2', ['internal_pt2', 'pt2_conv', 'આંતરિક_કસોટી_૨']);
           applyVal(`${student.id}_${subj.id}_internal_competency`, 'internal_competency', ['internal_competency', 'competency', 'સજ્જતા']);
           applyVal(`${student.id}_${subj.id}_internal_notebook`, 'internal_notebook', ['internal_notebook', 'notebook', 'નોટબુક']);
           applyVal(`${student.id}_${subj.id}_internal_practical_work`, 'internal_practical_work', ['internal_practical_work', 'પ્રાયોગિક_કાર્ય', 'પ્રોજેક્ટ']);
@@ -688,14 +817,14 @@ export const Class9ResultManager: React.FC<Class9ResultManagerProps> = ({
 
             syncKey(`${student.id}_${subj.id}_first_exam`, 'first_exam', ['first', 'pratham', 'પ્રથમ']);
             syncKey(`${student.id}_${subj.id}_second_exam`, 'second_exam', ['second', 'dwitiya', 'દ્વિતીય', 'prelim', 'પ્રિલિમ']);
-            syncKey(`${student.id}_${subj.id}_periodic_test_1`, 'periodic_test_1', ['pt1', 'periodic_1', 'periodic_test_1', 'સામાયિક કસોટી ૧', 'એકમ_1', 'કસોટી ૧']);
-            syncKey(`${student.id}_${subj.id}_periodic_test_2`, 'periodic_test_2', ['pt2', 'periodic_2', 'periodic_test_2', 'સામાયિક કસોટી ૨', 'એકમ_2', 'કસોટી ૨']);
-            syncKey(`${student.id}_${subj.id}_internal_assessment`, 'internal_assessment', ['internal', 'આંતરિક', 'internal_assessment']);
-            syncKey(`${student.id}_${subj.id}_annual_exam`, 'annual_exam', ['annual', 'varshik', 'વાર્ષિક', 'board', 'બોર્ડ', 'annual_exam']);
-            syncKey(`${student.id}_${subj.id}_theory40`, 'annual_theory', ['annual_theory', 'theory', 'થિયરી']);
-            syncKey(`${student.id}_${subj.id}_practical40`, 'annual_practical', ['annual_practical', 'practical', 'પ્રાયોગિક', 'પ્રેક્ટિકલ']);
-            syncKey(`${student.id}_${subj.id}_internal_pt1`, 'internal_pt1', ['internal_pt1', 'pt1_conv', 'કસોટી_૧', 'કસોટી ૧']);
-            syncKey(`${student.id}_${subj.id}_internal_pt2`, 'internal_pt2', ['internal_pt2', 'pt2_conv', 'કસોટી_૨', 'કસોટી ૨']);
+            syncKey(`${student.id}_${subj.id}_periodic_test_1`, 'periodic_test_1', ['periodic_1', 'periodic_test_1', 'સામાયિક કસોટી ૧', 'સામાયિક ૧', 'સામાયિક કસોટી - ૧', 'એકમ_1', 'એકમ કસોટી ૧']);
+            syncKey(`${student.id}_${subj.id}_periodic_test_2`, 'periodic_test_2', ['periodic_2', 'periodic_test_2', 'સામાયિક કસોટી ૨', 'સામાયિક ૨', 'સામાયિક કસોટી - ૨', 'એકમ_2', 'એકમ કસોટી ૨']);
+            syncKey(`${student.id}_${subj.id}_internal_assessment`, 'internal_assessment', ['internal_assessment', 'આંતરિક મૂલ્યાંકન', 'આંતરિક (૨૦)']);
+            syncKey(`${student.id}_${subj.id}_annual_exam`, 'annual_exam', ['annual_exam', 'વાર્ષિક પરીક્ષા (૮૦)', 'varshik_80']);
+            syncKey(`${student.id}_${subj.id}_theory40`, 'annual_theory', ['annual_theory', 'theory40', 'વાર્ષિક થિયરી']);
+            syncKey(`${student.id}_${subj.id}_practical40`, 'annual_practical', ['annual_practical', 'practical40', 'વાર્ષિક પ્રાયોગિક']);
+            syncKey(`${student.id}_${subj.id}_internal_pt1`, 'internal_pt1', ['internal_pt1', 'pt1_conv', 'આંતરિક_કસોટી_૧']);
+            syncKey(`${student.id}_${subj.id}_internal_pt2`, 'internal_pt2', ['internal_pt2', 'pt2_conv', 'આંતરિક_કસોટી_૨']);
             syncKey(`${student.id}_${subj.id}_internal_competency`, 'internal_competency', ['internal_competency', 'competency', 'સજ્જતા']);
             syncKey(`${student.id}_${subj.id}_internal_notebook`, 'internal_notebook', ['internal_notebook', 'notebook', 'નોટબુક']);
             syncKey(`${student.id}_${subj.id}_internal_practical_work`, 'internal_practical_work', ['internal_practical_work', 'પ્રાયોગિક_કાર્ય', 'પ્રોજેક્ટ']);

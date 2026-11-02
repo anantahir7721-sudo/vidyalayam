@@ -371,7 +371,12 @@ export function getExamsForStandard(standard: StandardKey): StandardExamConfig[]
  * Extracts a numeric mark from records
  * Robustly matches by subjectId, subjectName, examId, examType, and document ID
  */
-function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches: (examType: string) => boolean, targetStudentId?: string): number | null {
+function extractMarkValue(
+  records: MarkRecord[],
+  subjectId: string,
+  examMatches: (examType: string, record: MarkRecord) => boolean,
+  targetStudentId?: string
+): number | null {
   const targetSub = subjectId.toLowerCase().trim();
   const found = records.find((m) => {
     if (targetStudentId && String(m.studentId || '') !== String(targetStudentId)) {
@@ -434,7 +439,7 @@ function extractMarkValue(records: MarkRecord[], subjectId: string, examMatches:
     if (!subMatch) return false;
 
     const fullExamString = `${(m as any).examId || ''} ${m.examType || ''} ${m.id || ''}`.toLowerCase();
-    return examMatches(fullExamString);
+    return examMatches(fullExamString, m);
   });
   if (!found) return null;
   if (found.overallGrade === 'AB') return 0;
@@ -590,15 +595,47 @@ export function computeClass11StudentResult(
   for (const subj of mainSubjects) {
     const first50 = extractMarkValue(thisStudentMarks, subj.id, (t) => t.includes('first') || t.includes('pratham') || t.includes('પ્રથમ'));
     const second50 = extractMarkValue(thisStudentMarks, subj.id, (t) => t.includes('second') || t.includes('dwitiya') || t.includes('દ્વિતીય') || t.includes('prelim') || t.includes('પ્રિલિમ'));
-    const pt1_raw = extractMarkValue(thisStudentMarks, subj.id, (t) => t.includes('periodic_1') || t.includes('pt1') || t.includes('સામાયિક ૧') || t.includes('સામાયિક કસોટી ૧') || t.includes('સામાયિક કસોટી - ૧'));
-    const pt2_raw = extractMarkValue(thisStudentMarks, subj.id, (t) => t.includes('periodic_2') || t.includes('pt2') || t.includes('સામાયિક ૨') || t.includes('સામાયિક કસોટી ૨') || t.includes('સામાયિક કસોટી - ૨'));
+    const pt1_raw = extractMarkValue(thisStudentMarks, subj.id, (t, m) => {
+      if (m.totalMax === 5) return false;
+      const eid = ((m as any).examId || '').toLowerCase();
+      if (eid.startsWith('internal')) return false;
+      return eid === 'periodic_test_1' || eid === 'periodic_1' || t.includes('periodic_test_1') || t.includes('periodic_1') || t.includes('સામાયિક ૧') || t.includes('સામાયિક કસોટી ૧') || t.includes('સામાયિક કસોટી - ૧') || t.includes('એકમ કસોટી ૧') || t.includes('એકમ_1');
+    });
+    const pt2_raw = extractMarkValue(thisStudentMarks, subj.id, (t, m) => {
+      if (m.totalMax === 5) return false;
+      const eid = ((m as any).examId || '').toLowerCase();
+      if (eid.startsWith('internal')) return false;
+      return eid === 'periodic_test_2' || eid === 'periodic_2' || t.includes('periodic_test_2') || t.includes('periodic_2') || t.includes('સામાયિક ૨') || t.includes('સામાયિક કસોટી ૨') || t.includes('સામાયિક કસોટી - ૨') || t.includes('એકમ કસોટી ૨') || t.includes('એકમ_2');
+    });
     const competency = extractMarkValue(thisStudentMarks, subj.id, (t) => t.includes('competency') || t.includes('સજ્જતા'));
     const notebook = extractMarkValue(thisStudentMarks, subj.id, (t) => t.includes('notebook') || t.includes('નોટબુક'));
-    const internal20Direct = extractMarkValue(thisStudentMarks, subj.id, (t) => (t.includes('internal') || t.includes('આંતરિક')) && !t.includes('pt1') && !t.includes('pt2') && !t.includes('competency') && !t.includes('notebook'));
+    const internal20Direct = extractMarkValue(thisStudentMarks, subj.id, (t, m) => {
+      if (m.totalMax === 5 || m.totalMax === 10) return false;
+      const eid = ((m as any).examId || '').toLowerCase();
+      if (eid.startsWith('internal_pt') || eid.includes('competency') || eid.includes('notebook') || eid.includes('practical_work') || eid.includes('continuous')) return false;
+      return eid === 'internal_assessment' || ((t.includes('internal') || t.includes('આંતરિક')) && !t.includes('pt1') && !t.includes('pt2') && !t.includes('competency') && !t.includes('notebook'));
+    });
     const annual80 = extractMarkValue(thisStudentMarks, subj.id, (t) => (t.includes('annual') || t.includes('varshik') || t.includes('વાર્ષિક') || t.includes('third')) && !t.includes('prayogik'));
 
-    const pt1_conv = pt1_raw !== null ? Math.round((pt1_raw / 25) * 5 * 10) / 10 : null;
-    const pt2_conv = pt2_raw !== null ? Math.round((pt2_raw / 25) * 5 * 10) / 10 : null;
+    let pt1_conv = pt1_raw !== null ? Math.round((pt1_raw / 25) * 5 * 10) / 10 : null;
+    if (pt1_conv === null) {
+      const directPt1 = extractMarkValue(thisStudentMarks, subj.id, (t, m) => {
+        if (m.totalMax === 25) return false;
+        const eid = ((m as any).examId || '').toLowerCase();
+        return eid === 'internal_pt1' || (m.totalMax === 5 && (eid.includes('pt1') || t.includes('internal_pt1')));
+      });
+      if (directPt1 !== null) pt1_conv = directPt1;
+    }
+
+    let pt2_conv = pt2_raw !== null ? Math.round((pt2_raw / 25) * 5 * 10) / 10 : null;
+    if (pt2_conv === null) {
+      const directPt2 = extractMarkValue(thisStudentMarks, subj.id, (t, m) => {
+        if (m.totalMax === 25) return false;
+        const eid = ((m as any).examId || '').toLowerCase();
+        return eid === 'internal_pt2' || (m.totalMax === 5 && (eid.includes('pt2') || t.includes('internal_pt2')));
+      });
+      if (directPt2 !== null) pt2_conv = directPt2;
+    }
 
     let internal20 = internal20Direct;
     if (internal20 === null && (pt1_conv !== null || pt2_conv !== null || competency !== null || notebook !== null)) {
@@ -1081,9 +1118,24 @@ export function computeMultiStandardStudentResult(
   for (const subj of subjects) {
     const first50 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('first') || t.includes('pratham') || t.includes('પ્રથમ'));
     const second50 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('second') || t.includes('dwitiya') || t.includes('દ્વિતીય') || t.includes('prelim') || t.includes('પ્રિલિમ'));
-    const pt1_raw = extractMarkValue(studentMarks, subj.id, (t) => t.includes('periodic_1') || t.includes('pt1') || t.includes('એકમ_1') || t.includes('એકમ કસોટી ૧') || t.includes('એકમ કસોટી - ૧'));
-    const pt2_raw = extractMarkValue(studentMarks, subj.id, (t) => t.includes('periodic_2') || t.includes('pt2') || t.includes('એકમ_2') || t.includes('એકમ કસોટી ૨') || t.includes('એકમ કસોટી - ૨'));
-    const internal20 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('internal') || t.includes('આંતરિક'));
+    const pt1_raw = extractMarkValue(studentMarks, subj.id, (t, m) => {
+      if (m.totalMax === 5) return false;
+      const eid = ((m as any).examId || '').toLowerCase();
+      if (eid.startsWith('internal')) return false;
+      return eid === 'periodic_test_1' || eid === 'periodic_1' || t.includes('periodic_test_1') || t.includes('periodic_1') || t.includes('એકમ_1') || t.includes('એકમ કસોટી ૧') || t.includes('એકમ કસોટી - ૧') || t.includes('સામાયિક ૧');
+    });
+    const pt2_raw = extractMarkValue(studentMarks, subj.id, (t, m) => {
+      if (m.totalMax === 5) return false;
+      const eid = ((m as any).examId || '').toLowerCase();
+      if (eid.startsWith('internal')) return false;
+      return eid === 'periodic_test_2' || eid === 'periodic_2' || t.includes('periodic_test_2') || t.includes('periodic_2') || t.includes('એકમ_2') || t.includes('એકમ કસોટી ૨') || t.includes('એકમ કસોટી - ૨') || t.includes('સામાયિક ૨');
+    });
+    const internal20 = extractMarkValue(studentMarks, subj.id, (t, m) => {
+      if (m.totalMax === 5 || m.totalMax === 10) return false;
+      const eid = ((m as any).examId || '').toLowerCase();
+      if (eid.startsWith('internal_pt') || eid.includes('competency') || eid.includes('notebook') || eid.includes('practical_work') || eid.includes('continuous')) return false;
+      return eid === 'internal_assessment' || ((t.includes('internal') || t.includes('આંતરિક')) && !t.includes('pt1') && !t.includes('pt2') && !t.includes('competency') && !t.includes('notebook'));
+    });
     const annual80 = extractMarkValue(studentMarks, subj.id, (t) => t.includes('annual') || t.includes('varshik') || t.includes('વાર્ષિક') || t.includes('board') || t.includes('બોર્ડ'));
 
     // Check if direct 100 mark exists
