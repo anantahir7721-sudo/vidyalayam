@@ -49,7 +49,9 @@ import {
   subscribeToStudentNotifications,
   checkUpcomingExamReminders,
 } from '../services/notificationService';
-import { subscribeExamReleaseConfigs } from '../services/firestoreService';
+import { subscribeExamReleaseConfigs, subscribeToMarks } from '../services/firestoreService';
+import { ALL_CLASS_9_SUBJECTS } from '../utils/class9ResultCalculations';
+import { getStd10StudentSubjects } from '../utils/multiStandardResultCalculations';
 import { NotificationCenterModal } from './NotificationCenterModal';
 import { StudentExamScreen } from './StudentExamScreen';
 import { DailyNewsTab } from './DailyNewsTab';
@@ -173,6 +175,36 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
     window.addEventListener('vidyalayam_navigate_tab', handleCustomNav);
     return () => window.removeEventListener('vidyalayam_navigate_tab', handleCustomNav);
   }, []);
+
+  // Real-time synchronization of student's marks from school collection & local cache
+  useEffect(() => {
+    const schoolId = session.schoolId || session.school?.id;
+    if (!schoolId || !student) return;
+
+    const unsub = subscribeToMarks(schoolId, (allMarks) => {
+      const studentGr = (student.grNumber || '').toString().trim().toLowerCase();
+      const studentName = (student.studentName || '').toString().trim().toLowerCase();
+      const studentId = (student.id || '').toString().trim().toLowerCase();
+
+      const myMarks = allMarks.filter((m) => {
+        const mStudentId = (m.studentId || '').toString().trim().toLowerCase();
+        const mGr = (m.grNumber || '').toString().trim().toLowerCase();
+        const mName = (m.studentName || '').toString().trim().toLowerCase();
+
+        if (studentId && mStudentId === studentId) return true;
+        if (studentGr && (mGr === studentGr || mStudentId === studentGr)) return true;
+        if (studentName && mName && (mName === studentName || mName.includes(studentName) || studentName.includes(mName))) return true;
+
+        return false;
+      });
+
+      if (myMarks.length > 0) {
+        setMarks(myMarks);
+      }
+    });
+
+    return () => unsub();
+  }, [session.schoolId, session.school?.id, student?.id, student?.grNumber, student?.studentName]);
 
   // Real-time synchronization of school toggles for student view
   useEffect(() => {
@@ -377,16 +409,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
       } else if (cleanSubj === 'social_science') {
         if (mSubj === 'science' && !mSubj.includes('social')) return false;
         isSubMatch = mSubj === 'social_science' || mSubj === 'ss' || Boolean(m.subjectName && m.subjectName.includes('સામાજિક'));
-      } else if (cleanSubj.includes('maths')) {
+      } else if (cleanSubj.includes('math')) {
         isSubMatch = mSubj.includes('math') || Boolean(m.subjectName && m.subjectName.includes('ગણિત'));
       } else if (cleanSubj === 'hindi') {
         isSubMatch = (mSubj === 'hindi' || Boolean(m.subjectName && m.subjectName.includes('હિન્દી'))) && !mSubj.includes('sanskrit');
       } else if (cleanSubj === 'sanskrit') {
         isSubMatch = mSubj === 'sanskrit' || Boolean(m.subjectName && m.subjectName.includes('સંસ્કૃત'));
-      } else if (cleanSubj.includes('pe') || cleanSubj.includes('computer')) {
-        isSubMatch = mSubj.includes('pe') || mSubj.includes('computer') || mSubj.includes('yoga') || Boolean(m.subjectName && (m.subjectName.includes('શારીરિક') || m.subjectName.includes('કમ્પ્યુટર')));
+      } else if (cleanSubj.includes('pe') || cleanSubj.includes('physical') || cleanSubj.includes('yoga')) {
+        isSubMatch = mSubj.includes('pe') || mSubj.includes('physical') || mSubj.includes('yoga') || Boolean(m.subjectName && (m.subjectName.includes('શારીરિક') || m.subjectName.includes('યોગ')));
+      } else if (cleanSubj.includes('comp')) {
+        isSubMatch = mSubj.includes('comp') || Boolean(m.subjectName && m.subjectName.includes('કમ્પ્યુટર'));
       } else {
-        isSubMatch = mSubj === cleanSubj || Boolean(m.subjectName && m.subjectName.toLowerCase().includes(cleanSubj));
+        isSubMatch = mSubj === cleanSubj || Boolean(m.subjectName && m.subjectName.toLowerCase().includes(cleanSubj)) || cleanSubj.includes(mSubj);
       }
 
       if (!isSubMatch) return false;
@@ -1046,16 +1080,45 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
                     {(() => {
                       const cleanStd = String(student.standard || '9').trim().replace(/^class\s*/i, '');
                       const exKey = rec.examType === 'first_term' ? 'first_exam' : rec.examType === 'second_term' ? 'second_exam' : 'annual_exam';
-                      const currentCfg = releaseConfigs.find((c) => c.standard === cleanStd && c.examId === exKey);
+                      const currentCfg = releaseConfigs.find((c) => {
+                        const cStd = String(c.standard || '').trim().replace(/^class\s*/i, '');
+                        const stdMatch = cStd === cleanStd || cStd === String(student.standard).trim() || String(c.standard).includes(cleanStd);
+                        const examMatch =
+                          c.examId === exKey ||
+                          (exKey === 'first_exam' && (c.examId.includes('first') || c.examId.includes('pratham'))) ||
+                          (exKey === 'second_exam' && (c.examId.includes('second') || c.examId.includes('prelim') || c.examId.includes('dwitiya'))) ||
+                          (exKey === 'annual_exam' && (c.examId.includes('annual') || c.examId.includes('varshik')));
+                        return stdMatch && examMatch;
+                      });
                       const isWholeLive = Boolean(currentCfg?.isWholeExamReleased);
                       const releasedSubIds = currentCfg?.releasedSubjectIds || [];
+
+                      const isSubLive = (subId: string, subName: string = '') => {
+                        if (isWholeLive) return true;
+                        const sId = subId.toLowerCase();
+                        const sName = subName.toLowerCase();
+                        return releasedSubIds.some((rId) => {
+                          const cleanRId = rId.toLowerCase();
+                          if (cleanRId === sId) return true;
+                          if (sId.includes(cleanRId) || cleanRId.includes(sId)) return true;
+                          if (cleanRId === 'science' && sId.includes('science') && !sId.includes('social')) return true;
+                          if (cleanRId === 'social_science' && (sId.includes('social') || sId === 'ss')) return true;
+                          if (cleanRId.includes('math') && sId.includes('math')) return true;
+                          if (cleanRId === 'hindi' && (sId === 'hindi' || sId === 'hindi_sanskrit')) return true;
+                          if (cleanRId === 'sanskrit' && (sId === 'sanskrit' || sId === 'hindi_sanskrit')) return true;
+                          if ((cleanRId.includes('pe') || cleanRId.includes('physical') || cleanRId.includes('yoga')) && (sId.includes('pe') || sId.includes('physical') || sId.includes('yoga'))) return true;
+                          if (cleanRId.includes('comp') && sId.includes('comp')) return true;
+                          if (sName && (sName.includes(cleanRId) || cleanRId.includes(sName))) return true;
+                          return false;
+                        });
+                      };
 
                       return (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-xs">
                           {rec.subjects?.map((sub, sIdx) => {
                             const subAny = sub as any;
                             const subId = (subAny.subjectId || subAny.id || '').toLowerCase();
-                            const isLive = isWholeLive || releasedSubIds.some((id) => id.toLowerCase() === subId || sub.subjectName?.toLowerCase().includes(id));
+                            const isLive = isSubLive(subId, sub.subjectName || '');
 
                             return (
                               <div key={sIdx} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex flex-col justify-between">
@@ -1163,17 +1226,47 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
             {/* Content for Selected Exam */}
             {(() => {
               const cleanStd = String(student.standard || '9').trim().replace(/^class\s*/i, '');
-              const curriculumSubjects = getSubjectsForStandard(cleanStd);
               const isStd10 = cleanStd === '10';
+              const curriculumSubjects = isStd10
+                ? getStd10StudentSubjects(student).allSubjects
+                : cleanStd === '9'
+                ? ALL_CLASS_9_SUBJECTS
+                : getSubjectsForStandard(cleanStd);
               const defaultMax = isStd10 ? 80 : 50;
 
               if (selectedResultExam === 'first_exam' || selectedResultExam === 'second_exam') {
-                const currentCfg = releaseConfigs.find(
-                  (c) => c.standard === cleanStd && c.examId === selectedResultExam
-                );
+                const currentCfg = releaseConfigs.find((c) => {
+                  const cStd = String(c.standard || '').trim().replace(/^class\s*/i, '');
+                  const stdMatch = cStd === cleanStd || cStd === String(student.standard).trim() || String(c.standard).includes(cleanStd);
+                  const examMatch =
+                    c.examId === selectedResultExam ||
+                    (selectedResultExam === 'first_exam' && (c.examId.includes('first') || c.examId.includes('pratham'))) ||
+                    (selectedResultExam === 'second_exam' && (c.examId.includes('second') || c.examId.includes('prelim') || c.examId.includes('dwitiya')));
+                  return stdMatch && examMatch;
+                });
                 const isWholeReleased = Boolean(currentCfg?.isWholeExamReleased);
                 const releasedSubIds = currentCfg?.releasedSubjectIds || [];
                 const hasAnyReleased = isWholeReleased || releasedSubIds.length > 0;
+
+                const isSubjectReleased = (subId: string, subName: string = '') => {
+                  if (isWholeReleased) return true;
+                  const sId = subId.toLowerCase();
+                  const sName = subName.toLowerCase();
+                  return releasedSubIds.some((rId) => {
+                    const cleanRId = rId.toLowerCase();
+                    if (cleanRId === sId) return true;
+                    if (sId.includes(cleanRId) || cleanRId.includes(sId)) return true;
+                    if (cleanRId === 'science' && sId.includes('science') && !sId.includes('social')) return true;
+                    if (cleanRId === 'social_science' && (sId.includes('social') || sId === 'ss')) return true;
+                    if (cleanRId.includes('math') && sId.includes('math')) return true;
+                    if (cleanRId === 'hindi' && (sId === 'hindi' || sId === 'hindi_sanskrit')) return true;
+                    if (cleanRId === 'sanskrit' && (sId === 'sanskrit' || sId === 'hindi_sanskrit')) return true;
+                    if ((cleanRId.includes('pe') || cleanRId.includes('physical') || cleanRId.includes('yoga')) && (sId.includes('pe') || sId.includes('physical') || sId.includes('yoga'))) return true;
+                    if (cleanRId.includes('comp') && sId.includes('comp')) return true;
+                    if (sName && (sName.includes(cleanRId) || cleanRId.includes(sName))) return true;
+                    return false;
+                  });
+                };
 
                 const examTitle =
                   selectedResultExam === 'first_exam'
@@ -1204,7 +1297,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
                 const totalMainCount = curriculumSubjects.filter((s) => s.isMainSubject !== false).length;
 
                 curriculumSubjects.forEach((sub) => {
-                  const isReleased = isWholeReleased || releasedSubIds.includes(sub.id);
+                  const isReleased = isSubjectReleased(sub.id, sub.nameGu);
                   if (isReleased && sub.isMainSubject !== false) {
                     releasedMainCount++;
                     const m = getStudentSubjectMark(sub.id, selectedResultExam);
@@ -1283,7 +1376,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                           {curriculumSubjects.map((sub, sIdx) => {
-                            const isReleased = isWholeReleased || releasedSubIds.includes(sub.id);
+                            const isReleased = isSubjectReleased(sub.id, sub.nameGu);
                             const markRec = getStudentSubjectMark(sub.id, selectedResultExam);
                             const maxM = markRec?.totalMax || defaultMax;
                             const obtainedVal = markRec && markRec.totalObtained !== undefined && markRec.totalObtained !== null ? markRec.totalObtained : null;

@@ -1432,13 +1432,27 @@ async function startServer() {
       const { student, school } = session;
 
       const marksCol = collection(db, 'schools', school.id, 'marks');
-      const marksQuery = query(marksCol, where('studentId', '==', student.id));
-      const marksSnap = await getDocs(marksQuery);
+      const marksMap = new Map<string, any>();
 
-      const markRecords = marksSnap.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
+      // 1. Query by student ID
+      if (student.id) {
+        try {
+          const marksQuery = query(marksCol, where('studentId', '==', student.id));
+          const marksSnap = await getDocs(marksQuery);
+          marksSnap.docs.forEach((d) => marksMap.set(d.id, { id: d.id, ...d.data() }));
+        } catch (e) {}
+      }
+
+      // 2. Query by GR number if present
+      if (student.grNumber && student.grNumber.trim()) {
+        try {
+          const grQuery = query(marksCol, where('grNumber', '==', student.grNumber.trim()));
+          const grSnap = await getDocs(grQuery);
+          grSnap.docs.forEach((d) => marksMap.set(d.id, { id: d.id, ...d.data() }));
+        } catch (e) {}
+      }
+
+      const markRecords = Array.from(marksMap.values());
 
       return res.json({
         marks: markRecords,

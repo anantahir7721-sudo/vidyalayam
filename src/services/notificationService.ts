@@ -190,53 +190,82 @@ export function subscribeToStudentNotifications(
     return () => {};
   }
 
-  const notifsCol = collection(db, 'schools', cleanSchoolId, 'notifications');
-  
-  // Build targets this student can match: by studentId, grNumber, diseCode, standard, or 'all'
   const cleanStd = studentExtra?.standard ? String(studentExtra.standard).trim().replace(/^class\s*/i, '') : '';
-  const targetIds = Array.from(
-    new Set(
-      [
-        cleanStudentId,
-        studentExtra?.grNumber?.trim(),
-        studentExtra?.diseCode?.trim(),
-        cleanStd,
-        cleanStd ? `std_${cleanStd}` : '',
-        'all',
-      ].filter((x): x is string => Boolean(x && x.length > 0))
-    )
-  );
+  const cleanGr = (studentExtra?.grNumber || '').toString().trim().toLowerCase();
+  const cleanDise = (studentExtra?.diseCode || '').toString().trim().toLowerCase();
 
-  const q =
-    targetIds.length > 1
-      ? query(notifsCol, where('targetId', 'in', targetIds.slice(0, 10)), limit(50))
-      : query(notifsCol, where('targetId', '==', cleanStudentId), limit(50));
+  const notifsCol = collection(db, 'schools', cleanSchoolId, 'notifications');
+  const q = query(notifsCol, limit(100));
 
   let isInitialLoad = true;
   const notifiedIds = new Set<string>();
 
-  return onSnapshot(
+  // Helper to test if a notification belongs to this student
+  const isStudentNotification = (n: any): boolean => {
+    const tType = n.targetType;
+    const tId = (n.targetId || '').toString().trim();
+    const sId = (n.studentId || '').toString().trim();
+    const stStd = (n.standard || '').toString().trim().replace(/^class\s*/i, '');
+    const gr = (n.grNumber || '').toString().trim().toLowerCase();
+
+    // Broadcasts to all or entire school
+    if (tId === 'all' || tType === 'school') {
+      if (!stStd || stStd === cleanStd) return true;
+    }
+    // Standard-wide alert (e.g. 'std_9' or '9')
+    if (cleanStd && (tId === cleanStd || tId === `std_${cleanStd}` || stStd === cleanStd)) {
+      return true;
+    }
+    // Targeted directly by studentId
+    if (tId === cleanStudentId || sId === cleanStudentId) return true;
+    // Targeted by GR number
+    if (cleanGr && (tId.toLowerCase() === cleanGr || gr === cleanGr)) return true;
+    // Targeted by DISE code
+    if (cleanDise && tId.toLowerCase() === cleanDise) return true;
+
+    return false;
+  };
+
+  const unsubFirestore = onSnapshot(
     q,
     (snapshot) => {
-      const list = snapshot.docs
-        .map((d) => d.data() as AppNotification)
+      const allDocs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as AppNotification));
+      const list = allDocs
+        .filter(isStudentNotification)
         .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
       callback(list);
 
-      // On initial load: Register existing notifications as seen so opening the app NEVER pops an annoying push alert!
+      // On initial load:
+      // If there are recent unread exam/result notifications (< 24 hours), pop the notification once!
       if (isInitialLoad) {
-        list.forEach((n) => notifiedIds.add(n.id));
         isInitialLoad = false;
+        const recentUnread = list.find((n) => {
+          if (n.read) return false;
+          const isRecent = Date.now() - (n.timestamp || 0) < 24 * 60 * 60 * 1000;
+          if (!isRecent) return false;
+          const cat = (n.category || '').toLowerCase();
+          const t = (n.title || '').toLowerCase();
+          return cat.includes('result') || cat.includes('exam') || t.includes('પરિણામ') || t.includes('ગુણ');
+        });
+
+        if (recentUnread) {
+          const alertKey = `vidyalayam_shown_alert_${recentUnread.id}`;
+          if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem(alertKey)) {
+            sessionStorage.setItem(alertKey, 'true');
+            sendNotification(recentUnread.title, recentUnread.body, 'exam');
+          }
+        }
+
+        list.forEach((n) => notifiedIds.add(n.id));
         return;
       }
 
       // In-session real-time arrival:
-      // Strictly restrict student push notifications to Exam & Result alerts as per user request
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
-          const notif = change.doc.data() as AppNotification;
-          if (!notif.read && !notifiedIds.has(notif.id)) {
+          const notif = { id: change.doc.id, ...change.doc.data() } as AppNotification;
+          if (isStudentNotification(notif) && !notif.read && !notifiedIds.has(notif.id)) {
             notifiedIds.add(notif.id);
             const cat = (notif.category || '').toLowerCase();
             const t = (notif.title || '').toLowerCase();
@@ -261,6 +290,28 @@ export function subscribeToStudentNotifications(
       console.warn('[NotificationService] Student notif listen error:', err);
     }
   );
+
+  // Local window event listener for instantaneous notifications across tabs
+  const handleLocalResultPublish = (e: any) => {
+    const detail = e.detail;
+    if (detail && detail.schoolId === cleanSchoolId) {
+      const pubStd = String(detail.standard || '').trim().replace(/^class\s*/i, '');
+      if (!pubStd || pubStd === cleanStd) {
+        sendNotification(detail.title, detail.body, 'exam');
+      }
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('vidyalayam_result_published', handleLocalResultPublish);
+  }
+
+  return () => {
+    unsubFirestore();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('vidyalayam_result_published', handleLocalResultPublish);
+    }
+  };
 }
 
 /**
@@ -529,6 +580,15 @@ export async function notifyResultRelease(params: {
       },
     });
   } catch {}
+
+  // 4. Dispatch local window event so student sessions in any open tab/browser instantly show notification
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('vidyalayam_result_published', {
+        detail: { schoolId, standard, examId, subjectName, isWholeExam, title, body },
+      })
+    );
+  }
 
   return count;
 }

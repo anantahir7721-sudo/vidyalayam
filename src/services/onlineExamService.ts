@@ -1432,38 +1432,76 @@ export async function submitStudentExam(
 }
 
 export async function fetchStudentMarks(token: string) {
+  const session = getStoredStudentSession();
+  const schoolId = session?.school?.id || (session as any)?.schoolId;
+  const student = session?.student;
+
   try {
     const res = await fetch(apiUrl('/api/student/my-marks'), {
       headers: { 'x-student-token': token },
     });
     const contentType = res.headers.get('content-type') || '';
     if (res.ok && contentType.includes('application/json')) {
-      return await res.json();
+      const data = await res.json();
+      if (Array.isArray(data?.marks) && data.marks.length > 0) {
+        return data;
+      }
     }
   } catch (netErr) {}
 
-  // Client Firestore Fallback
-  const session = getStoredStudentSession();
-  if (!session || !session.school?.id || !session.student) {
+  // Client Firestore & Local Storage Fallback
+  if (!schoolId || !student) {
     return { marks: [], studentName: '', standard: '' };
   }
 
+  const marksMap = new Map<string, any>();
+  const studentId = (student.id || '').trim();
+  const studentGr = (student.grNumber || '').toString().trim().toLowerCase();
+  const studentName = (student.studentName || '').toString().trim().toLowerCase();
+
+  // 1. Check local storage marks cache (instant sync for teacher tests in same browser)
+  if (typeof window !== 'undefined') {
+    try {
+      const cachedRaw = localStorage.getItem(`vidyalayam_school_marks_${schoolId}`) ||
+                        localStorage.getItem('vidyalayam_school_marks_last');
+      if (cachedRaw) {
+        const cachedList: any[] = JSON.parse(cachedRaw);
+        if (Array.isArray(cachedList)) {
+          cachedList.forEach((m) => {
+            const mId = (m.studentId || '').toString().trim();
+            const mGr = (m.grNumber || '').toString().trim().toLowerCase();
+            const mName = (m.studentName || '').toString().trim().toLowerCase();
+            if ((studentId && mId === studentId) || (studentGr && (mGr === studentGr || mId === studentGr)) || (studentName && mName === studentName)) {
+              marksMap.set(m.id, m);
+            }
+          });
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 2. Query Firestore by studentId
   try {
-    const marksCol = collection(db, 'schools', session.school.id, 'marks');
-    const marksQuery = query(marksCol, where('studentId', '==', session.student.id));
-    const marksSnap = await getDocs(marksQuery);
-    const markRecords = marksSnap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    }));
+    const marksCol = collection(db, 'schools', schoolId, 'marks');
+    if (studentId) {
+      const marksQuery = query(marksCol, where('studentId', '==', studentId));
+      const marksSnap = await getDocs(marksQuery);
+      marksSnap.docs.forEach((d) => marksMap.set(d.id, { id: d.id, ...d.data() }));
+    }
 
-    return {
-      marks: markRecords,
-      studentName: session.student.studentName,
-      standard: session.student.standard,
-    };
+    // 3. Query Firestore by grNumber if present
+    if (studentGr) {
+      const grQuery = query(marksCol, where('grNumber', '==', student.grNumber?.trim()));
+      const grSnap = await getDocs(grQuery);
+      grSnap.docs.forEach((d) => marksMap.set(d.id, { id: d.id, ...d.data() }));
+    }
   } catch (err) {
-    console.warn('fetchStudentMarks client fallback error:', err);
-    return { marks: [], studentName: '', standard: '' };
+    console.warn('fetchStudentMarks firestore query warning:', err);
   }
+
+  return {
+    marks: Array.from(marksMap.values()),
+    studentName: student.studentName,
+    standard: student.standard,
+  };
 }
