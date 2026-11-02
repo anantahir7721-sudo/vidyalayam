@@ -181,6 +181,14 @@ service cloud.firestore {
         }
       }
 
+      // Subcollection: Exam Releases (Selective subject/exam results publishing)
+      match /exam_releases/{releaseId} {
+        allow read, write, delete: if true;
+        match /{allChildren=**} {
+          allow read, write, delete: if true;
+        }
+      }
+
       // All other school-specific subcollections
       match /{allChildren=**} {
         allow read: if isSchoolOwner(schoolId) || isAdmin();

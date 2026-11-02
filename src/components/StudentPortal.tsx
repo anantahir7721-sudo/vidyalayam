@@ -135,10 +135,44 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ session, onLogout,
 
     const unsub = subscribeExamReleaseConfigs(schoolId, (configs) => {
       setReleaseConfigs(configs);
+      // When release configs update, refresh student marks so any newly released marks are instantly populated
+      if (session.sessionToken) {
+        fetchStudentMarks(session.sessionToken)
+          .then((marksData) => {
+            if (marksData?.marks && Array.isArray(marksData.marks)) {
+              setMarks(marksData.marks);
+            }
+          })
+          .catch(() => {});
+      }
     });
 
     return () => unsub();
-  }, [session.schoolId, session.school?.id]);
+  }, [session.schoolId, session.school?.id, session.sessionToken]);
+
+  // Deep-link navigation handler for Push Notifications & Custom Navigation Events
+  useEffect(() => {
+    const handleCustomNav = (e: any) => {
+      const tab = e.detail?.tab;
+      const metadata = e.detail?.metadata;
+      if (tab === 'result' || tab === 'marks') {
+        setActiveTab('result');
+        const exId = (metadata?.examId || '').toLowerCase();
+        if (exId.includes('second') || exId.includes('dwitiya') || exId.includes('prelim')) {
+          setSelectedResultExam('second_exam');
+        } else if (exId.includes('annual') || exId.includes('varshik') || exId.includes('board')) {
+          setSelectedResultExam('annual');
+        } else {
+          setSelectedResultExam('first_exam');
+        }
+      } else if (tab) {
+        setActiveTab(tab as StudentTab);
+      }
+    };
+
+    window.addEventListener('vidyalayam_navigate_tab', handleCustomNav);
+    return () => window.removeEventListener('vidyalayam_navigate_tab', handleCustomNav);
+  }, []);
 
   // Real-time synchronization of school toggles for student view
   useEffect(() => {

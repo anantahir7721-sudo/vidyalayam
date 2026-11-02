@@ -175,9 +175,26 @@ export const ResultPublishTab: React.FC<ResultPublishTabProps> = ({
         newStatus
       );
 
+      // Auto-dispatch push & in-app notification when whole exam is released
+      if (newStatus && standardStudents.length > 0) {
+        notifyResultRelease({
+          schoolId: school.id,
+          schoolName: school.schoolName || 'શાળા પોર્ટલ',
+          standard: selectedStandard,
+          examId: selectedExamId,
+          examName: currentExam.nameGu,
+          isWholeExam: true,
+          students: standardStudents.map((s) => ({
+            id: s.id,
+            studentName: s.studentName,
+            grNumber: s.grNumber,
+          })),
+        }).catch((e) => console.warn('Auto-notify whole exam note:', e));
+      }
+
       setStatusMessage({
         text: newStatus
-          ? `✅ ${currentExam.nameGu} નું સમગ્ર પરિણામ સફળતાપૂર્વક જાહેર કરવામાં આવ્યું છે!`
+          ? `✅ ${currentExam.nameGu} નું સમગ્ર પરિણામ સફળતાપૂર્વક જાહેર થયું અને છાત્રોને પુશ નોટિફિકેશન ગયું!`
           : `🔒 ${currentExam.nameGu} નું સમગ્ર પરિણામ અપ્રગટ (Draft) કરવામાં આવ્યું છે.`,
         type: 'success',
       });
@@ -241,9 +258,27 @@ export const ResultPublishTab: React.FC<ResultPublishTabProps> = ({
         newStatus
       );
 
+      // Auto-dispatch push & in-app notification when subject is released
+      if (newStatus && standardStudents.length > 0) {
+        notifyResultRelease({
+          schoolId: school.id,
+          schoolName: school.schoolName || 'શાળા પોર્ટલ',
+          standard: selectedStandard,
+          examId: selectedExamId,
+          examName: currentExam.nameGu,
+          subjectName,
+          isWholeExam: false,
+          students: standardStudents.map((s) => ({
+            id: s.id,
+            studentName: s.studentName,
+            grNumber: s.grNumber,
+          })),
+        }).catch((e) => console.warn('Auto-notify subject release note:', e));
+      }
+
       setStatusMessage({
         text: newStatus
-          ? `✅ "${subjectName}" ના ગુણ સફળતાપૂર્વક જાહેર કર્યા!`
+          ? `✅ "${subjectName}" ના ગુણ સફળતાપૂર્વક જાહેર કર્યા અને વિદ્યાર્થીઓને પુશ નોટિફિકેશન મોકલાયું!`
           : `🔒 "${subjectName}" ના ગુણ અપ્રગટ કર્યા.`,
         type: 'success',
       });

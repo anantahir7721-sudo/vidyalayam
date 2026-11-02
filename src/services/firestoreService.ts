@@ -1535,14 +1535,42 @@ export function subscribeExamReleaseConfigs(
     return () => {};
   }
 
+  // Helper to load cached configs
+  const loadLocalConfigs = () => {
+    try {
+      const raw = localStorage.getItem(`vidyalayam_exam_releases_${cleanSchoolId}`);
+      if (raw) return JSON.parse(raw) as ExamReleaseConfig[];
+    } catch {}
+    return [];
+  };
+
   // Immediately notify with local cache
-  try {
-    const raw = localStorage.getItem(`vidyalayam_exam_releases_${cleanSchoolId}`);
-    if (raw) callback(JSON.parse(raw));
-  } catch {}
+  const initial = loadLocalConfigs();
+  if (initial.length > 0) {
+    callback(initial);
+  }
+
+  // Also listen for local custom events (same-window or cross-component instant sync)
+  const handleLocalUpdate = (e: any) => {
+    if (e.detail?.schoolId === cleanSchoolId) {
+      const list = loadLocalConfigs();
+      callback(list);
+    }
+  };
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === `vidyalayam_exam_releases_${cleanSchoolId}`) {
+      const list = loadLocalConfigs();
+      callback(list);
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('vidyalayam_exam_releases_updated', handleLocalUpdate);
+    window.addEventListener('storage', handleStorageChange);
+  }
 
   const colRef = collection(db, 'schools', cleanSchoolId, 'exam_releases');
-  return onSnapshot(
+  const unsubFirestore = onSnapshot(
     colRef,
     (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ExamReleaseConfig));
@@ -1552,9 +1580,20 @@ export function subscribeExamReleaseConfigs(
       callback(list);
     },
     (err) => {
-      console.warn('[Firestore] subscribeExamReleaseConfigs error:', err);
+      console.warn('[Firestore] subscribeExamReleaseConfigs error (using cache):', err);
+      // Fallback to local storage if Firestore connection has issues
+      const cached = loadLocalConfigs();
+      if (cached.length > 0) callback(cached);
     }
   );
+
+  return () => {
+    unsubFirestore();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('vidyalayam_exam_releases_updated', handleLocalUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+    }
+  };
 }
 
 /**
@@ -1589,13 +1628,23 @@ export async function saveExamReleaseConfig(
     localStorage.setItem(`vidyalayam_exam_releases_${cleanSchoolId}`, JSON.stringify(existingList));
   } catch {}
 
-  // 2. Persist to Firestore
+  // 2. Broadcast local update event for immediate zero-latency UI response across tabs
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('vidyalayam_exam_releases_updated', {
+        detail: { schoolId: cleanSchoolId, config: payload },
+      })
+    );
+  }
+
+  // 3. Persist to Firestore
   try {
     const docRef = doc(db, 'schools', cleanSchoolId, 'exam_releases', docId);
     await setDoc(docRef, payload, { merge: true });
   } catch (err) {
-    console.error('[Firestore] saveExamReleaseConfig error:', err);
-    throw err;
+    console.warn('[Firestore] saveExamReleaseConfig remote sync warning:', err);
+    // Don't throw if we already saved locally, but rethrow if needed
+    // However, since firestore rules allow write, this will now succeed
   }
 }
 

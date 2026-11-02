@@ -192,13 +192,16 @@ export function subscribeToStudentNotifications(
 
   const notifsCol = collection(db, 'schools', cleanSchoolId, 'notifications');
   
-  // Build targets this student can match: by studentId, grNumber, diseCode, or 'all'
+  // Build targets this student can match: by studentId, grNumber, diseCode, standard, or 'all'
+  const cleanStd = studentExtra?.standard ? String(studentExtra.standard).trim().replace(/^class\s*/i, '') : '';
   const targetIds = Array.from(
     new Set(
       [
         cleanStudentId,
         studentExtra?.grNumber?.trim(),
         studentExtra?.diseCode?.trim(),
+        cleanStd,
+        cleanStd ? `std_${cleanStd}` : '',
         'all',
       ].filter((x): x is string => Boolean(x && x.length > 0))
     )
@@ -505,12 +508,13 @@ export async function notifyResultRelease(params: {
 
   const count = await createBulkStudentNotifications(schoolId, items);
 
-  // 3. Also post a school-wide alert so student sessions immediately receive real-time push
+  // 3. Also post a school/standard-wide alert so student sessions immediately receive real-time push
   try {
     await createAppNotification({
       title,
       body,
       targetType: 'school',
+      targetId: standard ? `std_${standard}` : 'all',
       schoolId,
       schoolName,
       standard,

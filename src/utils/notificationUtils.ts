@@ -142,7 +142,7 @@ export async function sendNotification(
   if (typeof window !== 'undefined' && 'Notification' in window) {
     try {
       const createAndAttachNotif = () => {
-        const targetTab = type === 'birthday' ? 'birthdays' : type === 'github_update' ? 'settings' : 'overview';
+        const targetTab = type === 'birthday' ? 'birthdays' : type === 'github_update' ? 'settings' : type === 'exam' ? 'result' : 'overview';
         const notif = new Notification(title, {
           body,
           icon: '/icon-192.png',
@@ -160,6 +160,9 @@ export async function sendNotification(
           } else if (type === 'github_update') {
             window.location.hash = '#settings';
             window.dispatchEvent(new CustomEvent('vidyalayam_navigate_tab', { detail: { tab: 'settings' } }));
+          } else if (type === 'exam') {
+            window.location.hash = '#result';
+            window.dispatchEvent(new CustomEvent('vidyalayam_navigate_tab', { detail: { tab: 'result' } }));
           }
         };
       };
